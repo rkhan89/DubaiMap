@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Dubai Bites</title>
+<meta name="theme-color" content="#2E1F47">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app">
+
+  <!-- top bar -->
+  <div class="topbar">
+    <div class="brand">
+      <span class="brand-stamp">🕌</span>
+      <div>
+        <h1>Dubai Bites</h1>
+        <span>your scrapbook of the city</span>
+      </div>
+    </div>
+    <button class="icon-btn" id="btnFilter" aria-label="Filters">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M4 6h16M7 12h10M10 18h4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+
+  <!-- map view -->
+  <div class="map-wrap" id="mapWrap">
+    <div class="map-viewport" id="mapViewport">
+      <svg id="mapSvg" xmlns="http://www.w3.org/2000/svg"></svg>
+      <div id="pinsLayer"></div>
+    </div>
+    <div class="zoom-ctrl">
+      <button id="zoomIn" aria-label="Zoom in">+</button>
+      <button id="zoomOut" aria-label="Zoom out">−</button>
+    </div>
+    <div class="empty-state hidden" id="emptyState">
+      <div class="empty-card">
+        <h2>Nothing pinned yet</h2>
+        <p>Tap the + below to drop your first coffee, karak or pizza stop on the map.</p>
+      </div>
+    </div>
+    <div class="cluster-pop hidden" id="clusterPop"></div>
+  </div>
+
+  <!-- list view -->
+  <div class="list-wrap" id="listWrap">
+    <div class="list-head">
+      <div class="list-count" id="listCount">0 places</div>
+      <select class="sort-select" id="sortSelect" aria-label="Sort places">
+        <option value="recent">Newest first</option>
+        <option value="rating">Highest rated</option>
+        <option value="name">Name A–Z</option>
+      </select>
+    </div>
+    <div id="listBody"></div>
+  </div>
+
+  <!-- bottom nav -->
+  <div class="bottomnav">
+    <button class="nav-btn active" id="tabMap">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M9 4 3 6.5v14L9 18l6 2.5 6-2.5v-14L15 6.5 9 4z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><line x1="9" y1="4" x2="9" y2="18" stroke="currentColor" stroke-width="1.8"/><line x1="15" y1="6.5" x2="15" y2="20.5" stroke="currentColor" stroke-width="1.8"/></svg>
+      <span>Map</span>
+    </button>
+    <button class="nav-add" id="btnAdd" aria-label="Add place">+</button>
+    <button class="nav-btn" id="tabList">
+      <svg viewBox="0 0 24 24" fill="none"><line x1="5" y1="7" x2="19" y2="7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="5" y1="17" x2="19" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <span>List</span>
+    </button>
+  </div>
+
+</div>
+
+<div class="overlay" id="overlay"></div>
+
+<!-- filter sheet -->
+<div class="sheet sheet-sm" id="sheetFilter">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head"><h2>Filter the map</h2><button class="sheet-close" data-close aria-label="Close">✕</button></div>
+  <div class="sheet-body">
+    <div class="chip-grid" id="filterCats"></div>
+    <button class="chip top-rated" id="chipTopRated">★ Top rated only</button>
+  </div>
+</div>
+
+<!-- detail sheet -->
+<div class="sheet" id="sheetDetail">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head"><h2 id="detailTitle">Place</h2><button class="sheet-close" data-close aria-label="Close">✕</button></div>
+  <div class="sheet-body" id="detailBody"></div>
+  <div class="sheet-foot">
+    <button class="btn btn-danger" id="detailDelete">Delete</button>
+    <button class="btn btn-primary" id="detailEdit">Edit</button>
+  </div>
+</div>
+
+<!-- add/edit form sheet -->
+<div class="sheet" id="sheetForm">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head"><h2 id="formTitle">Add place</h2><button class="sheet-close" data-close aria-label="Close">✕</button></div>
+  <div class="sheet-body">
+    <div class="field">
+      <label for="fName">Name</label>
+      <input type="text" id="fName" placeholder="e.g. Sunset Karak Corner" maxlength="60">
+    </div>
+    <div class="field">
+      <label for="fZone">Area</label>
+      <select id="fZone"></select>
+    </div>
+    <div class="field">
+      <label>Categories</label>
+      <div class="cat-grid" id="fCats"></div>
+    </div>
+    <div class="field">
+      <label>Your rating</label>
+      <div class="star-row" id="fStars">
+        <button type="button" data-v="1" aria-label="1 star">★</button><button type="button" data-v="2" aria-label="2 star">★</button><button type="button" data-v="3" aria-label="3 star">★</button><button type="button" data-v="4" aria-label="4 star">★</button><button type="button" data-v="5" aria-label="5 star">★</button>
+      </div>
+    </div>
+    <div class="field">
+      <label for="fDate">Date visited</label>
+      <input type="date" id="fDate">
+    </div>
+    <div class="field">
+      <label for="fPhoto">Photo (optional)</label>
+      <div class="photo-drop" id="fPhotoDrop">
+        <span id="fPhotoLabel">Tap to add a photo</span>
+        <input type="file" accept="image/*" id="fPhoto">
+        <button type="button" class="photo-remove" id="fPhotoRemove" aria-label="Remove photo">✕</button>
+      </div>
+    </div>
+    <div class="field">
+      <label for="fNotes">Notes (optional)</label>
+      <textarea id="fNotes" placeholder="What to order, the vibe, anything worth remembering" maxlength="300"></textarea>
+    </div>
+  </div>
+  <div class="sheet-foot">
+    <button class="btn btn-ghost" data-close>Cancel</button>
+    <button class="btn btn-primary" id="formSave">Save place</button>
+  </div>
+</div>
+
+<script src="app.js" defer></script>
+</body>
+</html>
