@@ -37,9 +37,9 @@
   <main class="map-wrap" id="mapWrap">
     <canvas id="mapCanvas" aria-label="Isometric map of Dubai"></canvas>
     <div id="mapOverlay">
-      <div id="labelsLayer"></div>
-      <div id="meDot" class="me-dot hidden" aria-hidden="true"></div>
       <div id="pinsLayer"></div>
+      <div id="labelsLayer"></div>
+      <div id="meDot" class="me hidden"><div class="me-ring"></div><button class="me-sprite" id="meSprite" aria-label="You are here. Customise your avatar"></button></div>
     </div>
 
     <div class="map-ctrl">
@@ -130,10 +130,24 @@
   </div>
 </div>
 
+<!-- area sheet: everything saved in one area -->
+<div class="sheet" id="sheetArea" role="dialog" aria-labelledby="areaTitle">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head">
+    <div class="head-text"><h2 id="areaTitle">Area</h2><div class="head-sub" id="areaMeta"></div></div>
+    <button class="sheet-close" data-close aria-label="Close">✕</button>
+  </div>
+  <div class="sheet-body" id="areaList"></div>
+  <div class="sheet-foot">
+    <button class="btn btn-ghost" id="areaShow">Show on map</button>
+    <button class="btn btn-primary" id="areaAdd">Add place here</button>
+  </div>
+</div>
+
 <!-- detail sheet -->
 <div class="sheet" id="sheetDetail" role="dialog" aria-labelledby="detailTitle">
   <div class="sheet-handle"></div>
-  <div class="sheet-head"><h2 id="detailTitle">Place</h2><button class="sheet-close" data-close aria-label="Close">✕</button></div>
+  <div class="sheet-head"><button class="back-btn hidden" id="detailBack" aria-label="Back"></button><h2 id="detailTitle">Place</h2><button class="sheet-close" data-close aria-label="Close">✕</button></div>
   <div class="sheet-body" id="detailBody"></div>
   <div class="sheet-foot">
     <button class="btn btn-danger" id="detailDelete">Delete</button>
@@ -172,6 +186,7 @@
       <label>Your rating</label>
       <div class="star-row" id="fStars">
         <button type="button" data-v="1" aria-label="1 star">★</button><button type="button" data-v="2" aria-label="2 stars">★</button><button type="button" data-v="3" aria-label="3 stars">★</button><button type="button" data-v="4" aria-label="4 stars">★</button><button type="button" data-v="5" aria-label="5 stars">★</button>
+        <span class="stars-val" id="fStarsVal"></span>
       </div>
     </div>
     <div class="field been-only">
@@ -194,6 +209,25 @@
   <div class="sheet-foot">
     <button class="btn btn-ghost" data-close>Cancel</button>
     <button class="btn btn-primary" id="formSave">Save place</button>
+  </div>
+</div>
+
+<!-- avatar sheet -->
+<div class="sheet" id="sheetMe" role="dialog" aria-labelledby="meTitle">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head"><h2 id="meTitle">Your avatar</h2><button class="sheet-close" data-close aria-label="Close">✕</button></div>
+  <div class="sheet-body">
+    <div class="me-preview" id="mePreview"></div>
+    <div class="field"><label>Skin</label><div class="swatches" id="avSkin"></div></div>
+    <div class="field"><label>Hair &amp; headwear</label><div class="opt-row" id="avHair"></div></div>
+    <div class="field"><label>Hair / headwear colour</label><div class="swatches" id="avHairColor"></div></div>
+    <div class="field"><label>Outfit</label><div class="opt-row" id="avOutfit"></div></div>
+    <div class="field" id="avShirtField"><label>Top colour</label><div class="swatches" id="avShirt"></div></div>
+    <p class="me-note">You appear on the map only on this phone. Your location is never saved or sent anywhere.</p>
+  </div>
+  <div class="sheet-foot">
+    <button class="btn btn-ghost" id="meStop">Hide me</button>
+    <button class="btn btn-primary" data-close>Done</button>
   </div>
 </div>
 

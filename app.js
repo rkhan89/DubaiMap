@@ -76,7 +76,7 @@ function toLatLng(a,i){
 const G = (lat,lng)=>{ const p=toAI(lat,lng); return [p.a,p.i]; };
 
 const T = 0.2;                                   // km per tile
-const A_MIN=-3.4, A_MAX=32.6, I_MIN=-9.0, I_MAX=10.2;
+const A_MIN=-6.0, A_MAX=36.0, I_MIN=-9.0, I_MAX=21.6;
 const ROWS = Math.round((A_MAX-A_MIN)/T);        // along the coast
 const COLS = Math.round((I_MAX-I_MIN)/T);        // inland
 const TW=16, TH=8, LIP=3.5, SLAB=16;
@@ -138,9 +138,9 @@ function hashOffset(str, range){
 /* =========================================================
    CITY DATA  (all in a/i km; positions from real coordinates)
    ========================================================= */
-const COAST = [[-3.4,-0.55],[-2.87,-0.49],[-1,-0.15],[0,0],[1.2,0.1],[2.24,0.05],[3.41,0.35],[5.4,0.6],[9,0.5],
+const COAST = [[-6,-1.0],[-3.4,-0.55],[-2.87,-0.49],[-1,-0.15],[0,0],[1.2,0.1],[2.24,0.05],[3.41,0.35],[5.4,0.6],[9,0.5],
   [12,0.45],[15,0.45],[17.5,0.35],[19.6,0.25],[20.2,-0.2],[21.2,-0.25],[21.8,0.15],[23.5,0.05],[26.6,-0.2],
-  [28,0.1],[30,0.35],[32.6,0.5]];
+  [28,0.1],[30,0.35],[31.5,0.8],[32.6,1.9],[34,2.8],[36,3.3]];
 const coastIn = a => lerpPts(COAST,a) + 0.06*Math.sin(a*2.1);
 
 const CREEK = [G(25.2715,55.2880),G(25.2640,55.2970),G(25.2555,55.3060),G(25.2485,55.3150),G(25.2400,55.3260),
@@ -204,13 +204,32 @@ const DISTRICTS = [
   {a:[26.8,32.2], i:[0.4,5.3],  st:'mid',   h:[8,22],   p:0.42},   // Deira
   {a:[26.4,28.4], i:[6.6,8.6],  st:'mid',   h:[10,22],  p:0.32},   // Festival City
   {a:[6.8,11.6],  i:[6.2,9.5],  st:'villa', h:[5,7],    p:0.45},   // Dubai Hills
-  {a:[1.2,5.8],   i:[6.1,9.3],  st:'mid',   h:[8,18],   p:0.38},   // JVC
+  {a:[0.2,5.8],   i:[6.1,9.3],  st:'mid',   h:[8,18],   p:0.38},   // JVC / JVT
+  {a:[3.2,5.0],   i:[2.3,3.2],  st:'glass', h:[20,48],  p:0.45},   // Barsha Heights (TECOM)
+  {a:[-4.6,-1.6], i:[2.8,6.0],  st:'mid',   h:[8,16],   p:0.4},    // Al Furjan / Discovery Gardens
+  {a:[1.0,4.8],   i:[9.9,11.8], st:'mid',   h:[8,16],   p:0.35},   // Motor City / Sports City
+  {a:[4.8,8.8],   i:[11.8,14.6],st:'villa', h:[5,7],    p:0.45},   // Arabian Ranches
+  {a:[16.5,20.5], i:[9.9,12.4], st:'villa', h:[5,7],    p:0.4},    // Nad Al Sheba
+  {a:[23.4,25.3], i:[8.8,10.2], st:'glass', h:[22,58],  p:0.45},   // Dubai Creek Harbour
+  {a:[23.6,25.4], i:[6.0,7.4],  st:'mid',   h:[9,20],   p:0.4},    // Al Jaddaf
+  {a:[26.8,28.2], i:[5.4,6.5],  st:'low',   h:[7,12],   p:0.45},   // Al Garhoud
+  {a:[31.8,35.6], i:[3.4,8.4],  st:'mid',   h:[9,20],   p:0.42},   // Al Qusais / Al Nahda
+  {a:[28.6,31.8], i:[11.6,15.0],st:'villa', h:[5,7],    p:0.5},    // Mirdif
+  {a:[25.6,28.6], i:[13.4,16.4],st:'villa', h:[5,7],    p:0.45},   // Al Warqa
+  {a:[32.4,35.9], i:[16.4,20.4],st:'villa', h:[5,7],    p:0.3},    // Al Khawaneej
+  {a:[23.6,25.8], i:[15.6,17.6],st:'mid',   h:[7,12],   p:0.55},   // International City
+  {a:[17.8,20.0], i:[16.2,18.4],st:'mid',   h:[9,20],   p:0.4},    // Silicon Oasis
+  {a:[20.2,22.2], i:[18.8,20.8],st:'ind',   h:[6,10],   p:0.35},   // Academic City
 ];
 const PARKS = [
   {a:[16.0,16.9], i:[3.0,3.6]},    // Safa Park
   {a:[23.6,24.7], i:[2.55,3.7]},   // Zabeel Park (Dubai Frame)
   {a:[8.0,9.4],   i:[6.9,8.3]},    // Dubai Hills Park
   {a:[25.3,25.95],i:[3.6,4.6]},    // Creek Park
+  {a:[31.3,32.5], i:[15.3,16.8]},  // Mushrif Park
+  {a:[33.0,34.0], i:[17.0,17.8]},  // Khawaneej farms
+  {a:[34.6,35.5], i:[18.4,19.3]},
+  {a:[33.4,34.2], i:[19.4,20.2]},
 ];
 const AIRPORT = {a:[28.3,30.4], i:[5.4,9.8]};
 const RUNWAYS = [{a:29.0, i:[5.7,9.5]}, {a:29.6, i:[5.9,9.5]}];
@@ -221,9 +240,16 @@ const ROADS = [
   {k:0, pts:[G(25.035,55.085),G(25.0705,55.1395),G(25.098,55.172),G(25.1185,55.2005),G(25.155,55.229),G(25.185,55.255),G(25.2045,55.2705),G(25.2255,55.2855),G(25.2330,55.2930)]}, // Sheikh Zayed Rd
   {k:0, pts:[G(25.2330,55.2930),G(25.2440,55.3035),G(25.2485,55.3150),G(25.2600,55.3260),G(25.2800,55.3420),G(25.300,55.360)]},  // Al Maktoum Bridge
   {k:0, pts:[G(25.030,55.140),G(25.050,55.165),G(25.080,55.195),G(25.115,55.225),G(25.150,55.245),G(25.175,55.270),G(25.190,55.300),G(25.2150,55.3300),G(25.2350,55.3450),G(25.2600,55.3480)]}, // Al Khail -> Garhoud
-  {k:0, pts:[[-3.4,9.7],[24,9.7]]},                                                                   // Mohammed bin Zayed
+  {k:0, pts:[G(25.005,55.150),G(25.045,55.210),G(25.090,55.275),G(25.140,55.335),G(25.195,55.395),G(25.240,55.420),G(25.300,55.430)]}, // Mohammed bin Zayed (E311)
+  {k:0, pts:[G(24.990,55.230),G(25.060,55.330),G(25.120,55.410),G(25.180,55.470),G(25.250,55.510),G(25.290,55.520)]}, // Emirates Rd (E611)
+  {k:1, pts:[G(25.200,55.320),G(25.160,55.370),G(25.120,55.420),G(25.080,55.470)]},                   // Al Ain Rd (E66)
+  {k:1, pts:[G(25.205,55.350),G(25.180,55.420),G(25.160,55.480),G(25.150,55.520)]},                   // Hatta Rd (E44)
+  {k:1, pts:[G(25.258,55.365),G(25.245,55.420),G(25.235,55.480),G(25.230,55.520)]},                   // Al Khawaneej Rd
+  {k:1, pts:[G(25.285,55.375),G(25.265,55.395),G(25.215,55.405),G(25.170,55.395)]},                   // Tripoli St / Mirdif
+  {k:1, pts:[G(25.100,55.180),G(25.060,55.220),G(25.030,55.255)]},                                    // Hessa St
+  {k:1, pts:[G(25.035,55.110),G(25.020,55.150),G(25.010,55.200)]},                                    // Furjan / Discovery Gardens
   {k:1, pts:[[-3.4,-0.1],[0,0.42],[2.2,0.55],[3.4,0.8],[5.4,1.0],[9,0.95],[15,0.9],[17.5,0.8],[19.6,0.7],[21.2,0.62],[23.5,0.5],[26.2,0.45]]}, // Jumeirah Beach Rd
-  {k:1, pts:[[26.9,0.3],[28,0.55],[30,0.8],[32.6,0.95]]},                                             // Deira corniche
+  {k:1, pts:[[26.9,0.3],[28,0.55],[30,0.8],[31.6,1.25],[32.6,2.35],[34.5,3.3],[36,3.8]]},                                             // Deira corniche
   {k:1, pts:[[0.6,0.45],[0.6,9.7]]}, {k:1, pts:[[4.15,0.8],[4.15,9.7]]}, {k:1, pts:[[7.9,0.95],[7.9,9.7]]},
   {k:1, pts:[[11.4,0.92],[11.4,9.7]]}, {k:1, pts:[[14.9,0.9],[14.9,6.5]]}, {k:1, pts:[[21.3,0.62],[21.3,6.6]]},
   {k:1, pts:[[23.5,0.5],[23.5,5.5]]}, {k:1, pts:[[25.2,0.45],[25.2,6.0]]}, {k:1, pts:[[28.4,0.6],[28.4,5.4]]},
@@ -245,6 +271,8 @@ const LANDMARKS = [
   {k:'atlantis', at:ATLANTIS, name:'Atlantis'},
   {k:'moe',      at:[G(25.1181,55.2006)[0], G(25.1181,55.2006)[1]+0.35]},
   {k:'terminal', at:[30.05,6.9]},
+  {k:'meydan',   at:G(25.1570,55.2980)},
+  {k:'ibn',      at:G(25.0450,55.1180)},
 ];
 
 /* =========================================================
@@ -272,6 +300,38 @@ const ZONES = [
   {id:'burdubai',    label:'Bur Dubai',     lat:25.2600, lng:55.2950},
   {id:'deira',       label:'Deira',         lat:25.2700, lng:55.3200},
   {id:'festivalcity',label:'Festival City', lat:25.2230, lng:55.3520},
+  // creek-side
+  {id:'alseef',      label:'Al Seef',       lat:25.2590, lng:55.2990},
+  {id:'creekharbour',label:'Dubai Creek Harbour', lat:25.2010, lng:55.3500},
+  {id:'aljaddaf',    label:'Al Jaddaf',     lat:25.2170, lng:55.3300},
+  {id:'oudmetha',    label:'Oud Metha',     lat:25.2350, lng:55.3150},
+  {id:'algarhoud',   label:'Al Garhoud',    lat:25.2400, lng:55.3450},
+  // old Dubai + north
+  {id:'satwa',       label:'Al Satwa',      lat:25.2250, lng:55.2750},
+  {id:'alqusais',    label:'Al Qusais',     lat:25.2780, lng:55.3800},
+  {id:'alnahda',     label:'Al Nahda',      lat:25.2900, lng:55.3700},
+  {id:'almamzar',    label:'Al Mamzar',     lat:25.2960, lng:55.3450},
+  // east
+  {id:'mirdif',      label:'Mirdif',        lat:25.2180, lng:55.4200},
+  {id:'alwarqa',     label:'Al Warqa',      lat:25.1900, lng:55.4100},
+  {id:'alkhawaneej', label:'Al Khawaneej',  lat:25.2270, lng:55.4800},
+  {id:'intlcity',    label:'International City', lat:25.1650, lng:55.4100},
+  {id:'siliconoasis',label:'Silicon Oasis', lat:25.1200, lng:55.3800},
+  {id:'meydan',      label:'Meydan',        lat:25.1600, lng:55.3000},
+  {id:'nadalsheba',  label:'Nad Al Sheba',  lat:25.1500, lng:55.3300},
+  {id:'d3',          label:'Design District', lat:25.1870, lng:55.2970},
+  // south-west
+  {id:'alsafa',      label:'Al Safa',       lat:25.1800, lng:55.2400},
+  {id:'alsufouh',    label:'Al Sufouh',     lat:25.1100, lng:55.1700},
+  {id:'barshaheights',label:'Barsha Heights', lat:25.0950, lng:55.1770},
+  {id:'dubaiharbour',label:'Dubai Harbour', lat:25.0930, lng:55.1450},
+  {id:'jvt',         label:'JVT',           lat:25.0500, lng:55.1900},
+  {id:'motorcity',   label:'Motor City',    lat:25.0470, lng:55.2350},
+  {id:'sportscity',  label:'Sports City',   lat:25.0400, lng:55.2200},
+  {id:'ranches',     label:'Arabian Ranches', lat:25.0550, lng:55.2700},
+  {id:'furjan',      label:'Al Furjan',     lat:25.0300, lng:55.1500},
+  {id:'discovery',   label:'Discovery Gardens', lat:25.0400, lng:55.1400},
+  {id:'ibnbattuta',  label:'Ibn Battuta',   lat:25.0450, lng:55.1180},
 ];
 ZONES.forEach(z=>{ const p=toAI(z.lat,z.lng); z.a=p.a; z.i=p.i; });
 const zoneById = id => ZONES.find(z=>z.id===id);
@@ -286,11 +346,14 @@ const LABELS = [
   {t:'The World', a:14.8, i:-8.6, tier:1, sea:true},
   {t:'Dubai Creek', a:26.25, i:4.9, tier:2, sea:true},
   ...['palm','marina','downtown','deira'].map(id=>({z:id, tier:0})),
-  ...['jlt','barsha','alquoz','jumeirah','businessbay','karama','burdubai','dubaihills','jvc','umsuqeim','festivalcity'].map(id=>({z:id, tier:1})),
-  ...['jbr','bluewaters','mediacity','citywalk','difc','lamer'].map(id=>({z:id, tier:2})),
+  ...['jlt','barsha','alquoz','jumeirah','businessbay','karama','burdubai','dubaihills','jvc','umsuqeim','festivalcity',
+      'mirdif','alkhawaneej','intlcity','siliconoasis','creekharbour','meydan','alqusais','ranches','alwarqa'].map(id=>({z:id, tier:1})),
+  ...['jbr','bluewaters','mediacity','citywalk','difc','lamer','alseef','aljaddaf','oudmetha','algarhoud','satwa','alnahda',
+      'almamzar','nadalsheba','d3','alsafa','alsufouh','barshaheights','dubaiharbour','jvt','motorcity','sportscity','furjan',
+      'discovery','ibnbattuta'].map(id=>({z:id, tier:2})),
   {t:'DXB Airport', a:29.3, i:9.9, tier:1},
   ...LANDMARKS.filter(l=>l.name).map(l=>({t:l.name, a:l.at[0], i:l.at[1], tier:2, lm:true})),
-].map(l=>{ if (l.z){ const z=zoneById(l.z); return {t:z.label, a:z.a, i:z.i+0.35, tier:l.tier}; } return l; });
+].map(l=>{ if (l.z){ const z=zoneById(l.z); return {t:z.label, a:z.a, i:z.i+0.35, tier:l.tier, z:l.z}; } return l; });
 
 /* =========================================================
    TERRAIN RASTER
@@ -376,7 +439,7 @@ function reserveAround(a,i,rad){
 
 function buildObjects(){
   LANDMARKS.forEach(l=>{
-    const rad = l.k==='mall'||l.k==='terminal'||l.k==='atlantis'||l.k==='burj' ? 2 : 1;
+    const rad = l.k==='meydan' ? 4 : l.k==='mall'||l.k==='terminal'||l.k==='atlantis'||l.k==='burj'||l.k==='ibn' ? 2 : 1;
     reserveAround(l.at[0], l.at[1], rad);
     const g=aiToGrid(l.at[0], l.at[1]), p=proj(g.gx,g.gy);
     OBJECTS.push({k:'lm', lm:l.k, x:p.x, y:p.y, d:g.gx+g.gy+0.9});
@@ -615,6 +678,16 @@ function drawLandmark(ctx, o){
       break;
     }
     case 'moe': isoBox(ctx,x,y,1.1,0.55,0,11,'#E9DCC6',{top:'#F6FAFC',floors:4}); break;
+    case 'meydan': {
+      // racecourse: an oval dirt track round a green infield, grandstand along the front straight
+      const iso = (r,k)=>{ ctx.beginPath(); for (let t=0;t<=64;t++){ const a=t/64*Math.PI*2, gx=Math.cos(a)*r*1.5, gy=Math.sin(a)*r;
+        const px=x+(gx-gy)*TW/2, py=y+(gx+gy)*TH/2; t?ctx.lineTo(px,py):ctx.moveTo(px,py); } ctx.closePath(); ctx.fillStyle=k; ctx.fill(); ctx.stroke(); };
+      ctx.lineWidth=LW; ctx.strokeStyle=OUT;
+      iso(2.6,'#C99A63'); iso(2.1,'#8CC46B'); iso(1.3,'#7FB862');
+      isoBox(ctx, x-TW/2*2.95, y+TH/2*2.95, 2.2, 0.3, 0, 11, '#F2EEE6', {floors:4, top:'#DDE7EC'});   // just outside the track at gy=+2.95
+      break;
+    }
+    case 'ibn': isoBox(ctx,x,y,0.5,1.8,0,8,'#E9C99A',{floors:4, top:'#D9A36E'}); break;
     case 'terminal':
       isoBox(ctx,x,y,1.6,0.35,0,8,'#E5EBEE',{floors:4});
       isoBox(ctx,x+30,y+6,0.12,0.12,0,28,'#E5EBEE'); isoBox(ctx,x+30,y+6,0.22,0.22,28,5,'#9FC0D6');
@@ -734,12 +807,13 @@ function render(){
 /* =========================================================
    CAMERA
    ========================================================= */
-const FRAME = (function(){
-  // the part of the map worth framing: palm crescent to airport
-  const pts=[[-2.4,-4.8],[31.8,-4.8],[31.8,9.9],[-2.4,9.9]].map(([a,i])=>aiToWorld(a,i));
-  const xs=pts.map(p=>p.x), ys=pts.map(p=>p.y);
+function aiBounds(pts){
+  const w=pts.map(([a,i])=>aiToWorld(a,i)), xs=w.map(p=>p.x), ys=w.map(p=>p.y);
   return { x0:Math.min(...xs), x1:Math.max(...xs), y0:Math.min(...ys)-60, y1:Math.max(...ys) };
-})();
+}
+// how far the camera may roam (all the land), and what "fit city" frames (palm crescent to the airport)
+const FRAME = aiBounds([[-5.6,-4.8],[35.8,-4.8],[35.8,21.2],[-5.6,21.2]]);
+const CORE  = aiBounds([[-2.4,-4.8],[31.8,-4.8],[31.8,9.9],[-2.4,9.9]]);
 function clampCam(){
   cam.s = Math.max(MIN_S, Math.min(MAX_S, cam.s));
   const cx=(viewW/2-cam.x)/cam.s, cy=(viewH/2-cam.y)/cam.s;
@@ -755,9 +829,9 @@ function fitScaleFor(b, pad){
 function computeBaseFit(){
   // on narrow portrait screens let the far ends crop a little rather than shrink the city to a sliver
   const narrow = viewW < 600;
-  const b = narrow ? {x0:FRAME.x0+(FRAME.x1-FRAME.x0)*0.1, x1:FRAME.x1-(FRAME.x1-FRAME.x0)*0.06, y0:FRAME.y0, y1:FRAME.y1} : FRAME;
+  const b = narrow ? {x0:CORE.x0+(CORE.x1-CORE.x0)*0.1, x1:CORE.x1-(CORE.x1-CORE.x0)*0.06, y0:CORE.y0, y1:CORE.y1} : CORE;
   baseFit = fitScaleFor(b, {x:10, top:20, bottom:20});
-  MIN_S = baseFit*0.8;
+  MIN_S = Math.min(baseFit*0.8, fitScaleFor(FRAME, {x:10, top:20, bottom:20}));   // can zoom out to the whole map
   return b;
 }
 function fitCity(animate){
@@ -853,7 +927,7 @@ function stopInertia(){ if (inertia){ cancelAnimationFrame(inertia); inertia=nul
         };
         inertia=requestAnimationFrame(step);
       } else { interacting=false; requestRender(); }
-      if (!dragged && e.type==='pointerup' && !e.target.closest('.pin')){
+      if (!dragged && e.type==='pointerup' && !e.target.closest('.pin, .map-label, .me')){
         const now=performance.now();
         if (now-lastTap.t < 300 && Math.hypot(e.clientX-lastTap.x, e.clientY-lastTap.y) < 30){
           const r=wrap.getBoundingClientRect(), sx=e.clientX-r.left, sy=e.clientY-r.top;
@@ -894,11 +968,25 @@ const labelsLayer = document.getElementById('labelsLayer');
 const pinsLayer = document.getElementById('pinsLayer');
 const labelEls = LABELS.map(l=>{
   const el=document.createElement('div');
-  el.className='map-label'+(l.sea?' sea':'')+(l.lm?' lm':'');
-  el.innerHTML=`<span>${l.t}</span>`;
-  const p=aiToWorld(l.a,l.i); el._wx=p.x; el._wy=p.y; el._tier=l.tier;
+  el.className='map-label'+(l.sea?' sea':'')+(l.lm?' lm':'')+(l.z?' area':'');
+  el.innerHTML = l.z ? `<span role="button" tabindex="-1">${l.t}<em class="cnt"></em></span>` : `<span>${l.t}</span>`;
+  const p=aiToWorld(l.a,l.i); el._wx=p.x; el._wy=p.y; el._tier=l.tier; el._z=l.z||null; el._n=0;
+  // area names with saved places are tappable: "Business Bay (3)" -> what's saved there
+  if (l.z) el.firstChild.addEventListener('click', e=>{ e.stopPropagation(); if (!picking && el._n) openArea(l.z); });
   labelsLayer.appendChild(el); return el;
 });
+function updateAreaCounts(){
+  const counts={};
+  places.filter(matchesFilters).forEach(p=>{ counts[p.zone]=(counts[p.zone]||0)+1; });
+  labelEls.forEach(el=>{
+    if (!el._z) return;
+    const n=counts[el._z]||0;
+    if (n===el._n) return;
+    el._n=n; el._w=0;
+    el.querySelector('.cnt').textContent = n ? n : '';
+    el.classList.toggle('has-count', n>0);
+  });
+}
 
 const worldCache = new Map();
 function placeAI(p){
@@ -956,7 +1044,7 @@ function buildPins(){
         <div class="polaroid"${cl.items.length>1?` data-count="${cl.items.length}"`:''} style="transform:rotate(${rot.toFixed(1)}deg)">
           <div class="tape"></div>
           <div class="photo" style="${photoStyle(first,cat)}">${first.photo?'':iconSvg(cat.id,'#fff')}</div>
-          <div class="rating">${want?'to try':'★ '+(first.rating||0)}</div>
+          <div class="rating">${want?'to try':'★ '+fmtRating(first.rating)}</div>
         </div>
         ${cl.items.length===1?`<div class="pin-name">${escapeHtml(first.name||'Untitled')}</div>`:''}
       </div>`;
@@ -990,25 +1078,38 @@ function updateOverlay(){
     boxes.push([sx-30*pk, sy-72*pk, sx+30*pk, sy+6]);
   });
   pinsLayer.classList.toggle('show-names', z>=3.2);
-  labelEls.forEach(el=>{
-    let show = el._tier===0 || (el._tier===1 && z>=1.7) || (el._tier===2 && z>=3.2);
-    const sx=el._wx*cam.s+cam.x, sy=el._wy*cam.s+cam.y;
+  // Areas with saved places come first and win: they show at every zoom, sit on top of
+  // the pins (just under their feet) and only give way to each other. Plain labels then
+  // fill in wherever there's room.
+  const chipBoxes=[], hit=(b,list)=>list.some(o=>b[0]<o[2] && b[2]>o[0] && b[1]<o[3] && b[3]>o[1]);
+  const pinBoxes=boxes;
+  labelOrder.forEach(el=>{
+    const chip = el._n>0;
+    let show = chip || el._tier===0 || (el._tier===1 && z>=1.7) || (el._tier===2 && z>=3.2);
+    const sx=el._wx*cam.s+cam.x, sy=el._wy*cam.s+cam.y + (chip?14:0);
     if (show){
       if (sx<-80 || sx>viewW+80 || sy<-20 || sy>viewH+20) show=false;
       else {
         if (!el._w){ el.classList.remove('hidden'); el._w=el.firstChild.offsetWidth||60; el._h=el.firstChild.offsetHeight||14; }
         const b=[sx-el._w/2-2, sy-el._h/2-2, sx+el._w/2+2, sy+el._h/2+2];
-        if (boxes.some(o=>b[0]<o[2] && b[2]>o[0] && b[1]<o[3] && b[3]>o[1])) show=false;
-        else boxes.push(b);
+        if (hit(b,chipBoxes) || (!chip && hit(b,pinBoxes))) show=false;
+        else chipBoxes.push(b);
       }
     }
     el.classList.toggle('hidden', !show);
     if (show) el.style.transform=`translate3d(${sx.toFixed(1)}px,${sy.toFixed(1)}px,0)`;
   });
   const me=document.getElementById('meDot');
-  if (meWorld){ me.classList.remove('hidden'); me.style.transform=`translate3d(${(meWorld.x*cam.s+cam.x).toFixed(1)}px,${(meWorld.y*cam.s+cam.y).toFixed(1)}px,0)`; }
+  if (meWorld && watchId!==null){ me.classList.remove('hidden'); me.style.transform=`translate3d(${(meWorld.x*cam.s+cam.x).toFixed(1)}px,${(meWorld.y*cam.s+cam.y).toFixed(1)}px,0)`; }
 }
-function refreshPins(){ clustersDirty=true; requestRender(); }
+function refreshPins(){
+  clustersDirty=true;
+  updateAreaCounts();
+  // busiest areas claim their spot first
+  labelOrder = labelEls.slice().sort((a,b)=>(b._n-a._n) || (a._tier-b._tier));
+  requestRender();
+}
+let labelOrder = labelEls.slice();
 
 function onClusterTap(cl, evt){
   const pts=cl.items.map(placeWorld);
@@ -1027,7 +1128,7 @@ function openClusterPopover(cl, evt){
     return `<button class="cluster-row" data-id="${p.id}">
       <div class="thumb" style="${photoStyle(p,cat)}">${p.photo?'':iconSvg(cat.id,'#fff')}</div>
       <div class="name">${escapeHtml(p.name||'Untitled')}</div>
-      <div class="rate">${want?'to try':'★'+(p.rating||0)}</div>
+      <div class="rate">${want?'to try':'★'+fmtRating(p.rating)}</div>
     </button>`;
   }).join('');
   pop.querySelectorAll('.cluster-row').forEach(row=>row.addEventListener('click', ()=>{ hidePopover(); openDetail(row.dataset.id); }));
@@ -1049,16 +1150,140 @@ function getPosition(){
     navigator.geolocation.getCurrentPosition(p=>res(p.coords), rej, {enableHighAccuracy:true, timeout:10000, maximumAge:60000});
   });
 }
-async function locateMe(){
-  const btn=document.getElementById('btnLocate'); btn.classList.add('busy');
-  try{
-    const c=await getPosition(), ai=toAI(c.latitude,c.longitude);
-    if (!inMap(ai.a,ai.i)){ toast("You're outside the map. Come back to Dubai!"); return; }
-    meWorld=aiToWorld(ai.a,ai.i);
-    flyTo(meWorld.x, meWorld.y-20/Math.max(cam.s,2.4), Math.max(cam.s,2.4));
-  }catch(e){ toast(e && e.code===1 ? 'Location permission is off for this site.' : "Couldn't get your location."); }
-  finally{ btn.classList.remove('busy'); }
+/* ---------- live location: you, as a little pixel person ---------- */
+const ME_PREF='dubai-bites-show-me';
+let watchId=null, meFirstFix=false, meFlyPending=false;
+function flyToMe(){ if (meWorld){ const s=Math.max(cam.s, baseFit*4); flyTo(meWorld.x, meWorld.y-24/s, s); } }
+function startTracking(fly){
+  const btn=document.getElementById('btnLocate');
+  if (watchId!==null){ if (fly) meWorld ? flyToMe() : (meFlyPending=true); return; }
+  if (!navigator.geolocation){ toast("This browser can't share your location."); return; }
+  btn.classList.add('busy'); meFirstFix=true; meFlyPending=!!fly;
+  watchId = navigator.geolocation.watchPosition(pos=>{
+    btn.classList.remove('busy'); btn.classList.add('on');
+    const ai=toAI(pos.coords.latitude, pos.coords.longitude);
+    if (!inMap(ai.a,ai.i)){
+      if (meFirstFix) toast("You're outside the map. Come back to Dubai!");
+      meWorld=null; document.getElementById('meDot').classList.add('hidden');
+    } else {
+      meWorld=aiToWorld(ai.a,ai.i);
+      if (meFlyPending){ meFlyPending=false; flyToMe(); }
+    }
+    meFirstFix=false;
+    try{ localStorage.setItem(ME_PREF,'1'); }catch(_){}
+    requestRender();
+  }, err=>{
+    btn.classList.remove('busy');
+    toast(err && err.code===1 ? 'Location permission is off for this site.' : "Couldn't get your location.");
+    stopTracking();
+  }, {enableHighAccuracy:true, maximumAge:10000, timeout:20000});
 }
+function stopTracking(){
+  if (watchId!==null) navigator.geolocation.clearWatch(watchId);
+  watchId=null; meWorld=null;
+  document.getElementById('meDot').classList.add('hidden');
+  document.getElementById('btnLocate').classList.remove('on','busy');
+  try{ localStorage.removeItem(ME_PREF); }catch(_){}
+  requestRender();
+}
+function locateMe(){ startTracking(true); }
+// if you turned it on before and the permission is still granted, pick up where you left off (no prompt)
+(function resumeTracking(){
+  let on=false; try{ on=localStorage.getItem(ME_PREF)==='1'; }catch(_){}
+  if (!on || !navigator.permissions) return;
+  navigator.permissions.query({name:'geolocation'}).then(st=>{ if (st.state==='granted') startTracking(false); }).catch(()=>{});
+})();
+
+/* ---------- avatar ---------- */
+const AV_KEY='dubai-bites-avatar-v1';
+const SKINS=['#FBE0C8','#F1C27D','#DDA46F','#B97A4C','#8D5A36','#5E3A22'];
+const HAIR_COLORS=['#1F1612','#4A2E1C','#8A5A2B','#D9B35B','#B8452B','#C9C4BD','#E7A1B0','#6FB7AE','#EADBC0'];
+const TOPS=['#E8B84B','#D9567A','#3FA69A','#4A7FC1','#F4F0E6','#5A8F4E','#C9622D','#3B2A1A'];
+const HAIRS=[['short','Short'],['long','Long'],['buzz','Buzz'],['bun','Bun'],['cap','Cap'],['hijab','Hijab'],['ghutra','Ghutra']];
+const OUTFITS=[['tee','Tee & jeans'],['kandura','Kandura'],['abaya','Abaya'],['dress','Dress']];
+let avatar = (function(){
+  const d={skin:1, hair:'short', hairColor:'#1F1612', outfit:'tee', top:'#E8B84B'};
+  try{ return {...d, ...(JSON.parse(localStorage.getItem(AV_KEY))||{})}; }catch(_){ return d; }
+})();
+function saveAvatar(){ try{ localStorage.setItem(AV_KEY, JSON.stringify(avatar)); }catch(_){} }
+
+// 10x16 sprite; letters are palette slots, '.' is empty. An outline is added round the edge.
+function spriteRows(av){
+  const R=[
+    '..........',
+    '...HHHH...',
+    '..HHHHHH..',
+    '..HSSSSH..',
+    '..SESSES..',
+    '..SSSSSS..',
+    '...SMMS...',
+    '..TTTTTT..',
+    '.TTTTTTTT.',
+    '.STTTTTTS.',
+    '.STTTTTTS.',
+    '..TTTTTT..',
+    '..PPPPPP..',
+    '..PP..PP..',
+    '..PP..PP..',
+    '..BB..BB..',
+  ];
+  const set=(r,s)=>{ R[r]=s; };
+  switch(av.hair){
+    case 'buzz': set(1,'..........'); set(2,'..HHHHHH..'); break;
+    case 'bun':  set(0,'....HH....'); break;
+    case 'long': set(3,'.HHSSSSHH.'); set(4,'.HSESSESH.'); set(5,'.HSSSSSSH.'); set(6,'.HHSMMSHH.'); set(7,'.HTTTTTTH.'); break;
+    case 'cap':  set(0,'...CCCC...'); set(1,'..CCCCCC..'); set(2,'..CCCCCCCC'); break;
+    case 'hijab':
+      set(1,'...HHHH...'); set(2,'..HHHHHH..'); set(3,'.HHSSSSHH.'); set(4,'.HSESSESH.');
+      set(5,'.HSSSSSSH.'); set(6,'.HHSMMSHH.'); set(7,'.HHHHHHHH.'); break;
+    case 'ghutra':
+      set(0,'...WWWW...'); set(1,'..AAAAAA..'); set(2,'.WWWWWWWW.'); set(3,'.WWSSSSWW.');
+      set(4,'.WSESSESW.'); set(5,'.WSSSSSSW.'); set(6,'.WWSMMSWW.'); set(7,'.WWTTTTWW.'); break;
+  }
+  const robe = c=>{ // long robe from shoulders to ankles, hands showing
+    for (let r=7;r<=14;r++) R[r]=R[r].replace(/[TP]/g,c);
+    set(9,'.S'+c.repeat(6)+'S.'); set(10,'.S'+c.repeat(6)+'S.'); set(13,'..'+c.repeat(6)+'..'); set(14,'..'+c.repeat(6)+'..');
+    if (av.hair==='ghutra') set(7,'.WW'+c.repeat(4)+'WW.');
+    if (av.hair==='hijab' || av.hair==='long') R[7]=R[7].replace(/T/g,c);
+  };
+  if (av.outfit==='kandura') robe('K');
+  else if (av.outfit==='abaya') robe('X');
+  else if (av.outfit==='dress'){ set(12,'.TTTTTTTT.'); set(13,'..SS..SS..'); set(14,'..SS..SS..'); }
+  return R;
+}
+function spriteSvg(av, px){
+  const rows=spriteRows(av), H=rows.length, W=rows[0].length;
+  const pal={ H:av.hairColor, S:SKINS[av.skin]||SKINS[1], E:'#2A1B10', M:'#B5534A', T:av.top, P:'#3C5A78', B:'#3B2A1A',
+              C:av.top, W:'#FBFAF5', A:'#1F1612', K:'#FBFAF5', X:'#231E1B' };
+  const filled=(x,y)=> y>=0 && y<H && x>=0 && x<W && rows[y][x]!=='.';
+  let out='';
+  for (let y=-1;y<=H;y++) for (let x=-1;x<=W;x++){
+    let fill=null;
+    if (filled(x,y)) fill=pal[rows[y][x]];
+    else if (filled(x-1,y)||filled(x+1,y)||filled(x,y-1)||filled(x,y+1)) fill='#3B2A1A';
+    if (fill) out+=`<rect x="${x+1}" y="${y+1}" width="1.02" height="1.02" fill="${fill}"/>`;
+  }
+  return `<svg viewBox="0 0 ${W+2} ${H+2}" width="${(W+2)*px}" height="${(H+2)*px}" shape-rendering="crispEdges" aria-hidden="true">${out}</svg>`;
+}
+function renderAvatar(){
+  document.getElementById('meSprite').innerHTML = spriteSvg(avatar, 3);
+  document.getElementById('mePreview').innerHTML = spriteSvg(avatar, 7);
+  const sw=(id, list, key)=>{
+    const el=document.getElementById(id);
+    el.innerHTML=list.map((c,k)=>{ const v=key==='skin'?k:c; return `<button type="button" class="sw${avatar[key]===v?' on':''}" style="background:${c}" data-v="${v}" aria-label="colour ${k+1}"></button>`; }).join('');
+    el.querySelectorAll('.sw').forEach(b=>b.addEventListener('click', ()=>{ avatar[key]= key==='skin'?parseInt(b.dataset.v,10):b.dataset.v; saveAvatar(); renderAvatar(); }));
+  };
+  const opts=(id, list, key)=>{
+    const el=document.getElementById(id);
+    el.innerHTML=list.map(([v,l])=>`<button type="button" class="opt${avatar[key]===v?' on':''}" data-v="${v}">${l}</button>`).join('');
+    el.querySelectorAll('.opt').forEach(b=>b.addEventListener('click', ()=>{ avatar[key]=b.dataset.v; saveAvatar(); renderAvatar(); }));
+  };
+  sw('avSkin', SKINS, 'skin'); sw('avHairColor', HAIR_COLORS, 'hairColor'); sw('avShirt', TOPS, 'top');
+  opts('avHair', HAIRS, 'hair'); opts('avOutfit', OUTFITS, 'outfit');
+  document.getElementById('avShirtField').classList.toggle('hidden', avatar.outfit==='kandura' || avatar.outfit==='abaya');
+}
+document.getElementById('meSprite').addEventListener('click', e=>{ e.stopPropagation(); if (!picking) openSheet('sheetMe'); });
+document.getElementById('meStop').addEventListener('click', ()=>{ stopTracking(); closeSheets(); toast("You're hidden. Tap ◎ to show yourself again."); });
 
 /* =========================================================
    FILTERS
@@ -1117,20 +1342,51 @@ function renderList(){
     body.innerHTML=`<div class="list-empty">${places.length ? 'Nothing matches.' : 'No places yet. Tap + to add your first.'}</div>`;
     return;
   }
-  body.innerHTML=visible.map(p=>{
-    const z=zoneById(p.zone), cats=p.categories||[], cat0=catById(cats[0]), want=(p.status||'been')==='want';
-    return `<button class="place-row${want?' want':''}" data-id="${p.id}">
-      <div class="place-thumb" style="${photoStyle(p,cat0)}">${p.photo?'':iconSvg(cats[0]||'coffee','#fff')}</div>
-      <div class="place-info">
-        <div class="name">${escapeHtml(p.name||'Untitled')}</div>
-        <div class="meta">${z?z.label:''}${want?' · want to try':(p.dateVisited?' · '+fmtDate(p.dateVisited):'')}</div>
-      </div>
-      <div class="place-cats">${cats.slice(0,3).map(c=>{const cat=catById(c); return cat?`<span class="mini" style="background:${cat.color}">${iconSvg(c,'#fff')}</span>`:'';}).join('')}</div>
-      <div class="place-rating">${want?'<span class="tag-want">to try</span>':'★ '+(p.rating||0)}</div>
-    </button>`;
-  }).join('');
+  body.innerHTML=visible.map(p=>rowHtml(p)).join('');
   body.querySelectorAll('.place-row').forEach(row=>row.addEventListener('click', ()=>openDetail(row.dataset.id)));
 }
+function rowHtml(p, hideArea){
+  const z=zoneById(p.zone), cats=p.categories||[], cat0=catById(cats[0]), want=(p.status||'been')==='want';
+  const when = want ? 'want to try' : (p.dateVisited ? fmtDate(p.dateVisited) : '');
+  const meta = hideArea ? when : [z?z.label:'', when].filter(Boolean).join(' · ');
+  return `<button class="place-row${want?' want':''}" data-id="${p.id}">
+    <div class="place-thumb" style="${photoStyle(p,cat0)}">${p.photo?'':iconSvg(cats[0]||'coffee','#fff')}</div>
+    <div class="place-info">
+      <div class="name">${escapeHtml(p.name||'Untitled')}</div>
+      <div class="meta">${escapeHtml(meta)}</div>
+    </div>
+    <div class="place-cats">${cats.slice(0,3).map(c=>{const cat=catById(c); return cat?`<span class="mini" style="background:${cat.color}">${iconSvg(c,'#fff')}</span>`:'';}).join('')}</div>
+    <div class="place-rating">${want?'<span class="tag-want">to try</span>':'★ '+fmtRating(p.rating)}</div>
+  </button>`;
+}
+function fmtRating(r){ r=r||0; return r%1 ? r.toFixed(1) : String(r); }
+
+/* ---------- area sheet: tap "Business Bay (3)" on the map ---------- */
+let areaZone=null;
+function openArea(zid){
+  const z=zoneById(zid); if(!z) return;
+  areaZone=zid;
+  const list=places.filter(p=>p.zone===zid && matchesFilters(p))
+    .sort((a,b)=>((a.status||'been')==='want')-((b.status||'been')==='want') || (b.rating||0)-(a.rating||0) || (a.name||'').localeCompare(b.name||''));
+  const been=list.filter(p=>(p.status||'been')==='been' && p.rating);
+  const avg=been.length ? (been.reduce((s,p)=>s+p.rating,0)/been.length).toFixed(1) : null;
+  const want=list.filter(p=>p.status==='want').length;
+  const filtered = topRatedOnly || statusFilter!=='all' || activeCats.size<CATEGORIES.length;
+  document.getElementById('areaTitle').textContent=z.label;
+  document.getElementById('areaMeta').textContent =
+    `${list.length} place${list.length!==1?'s':''}` + (avg?` · avg ★ ${avg}`:'') + (want?` · ${want} to try`:'') + (filtered?' · filters on':'');
+  const body=document.getElementById('areaList');
+  body.innerHTML = list.length ? list.map(p=>rowHtml(p,true)).join('') : `<div class="list-empty">Nothing saved here yet.</div>`;
+  body.querySelectorAll('.place-row').forEach(row=>row.addEventListener('click', ()=>openDetail(row.dataset.id, zid)));
+  body.scrollTop=0;
+  openSheet('sheetArea');
+}
+document.getElementById('areaShow').addEventListener('click', ()=>{
+  const list=places.filter(p=>p.zone===areaZone && matchesFilters(p));
+  closeSheets(); switchView('map');
+  list.length ? fitPlaces(list,true) : (()=>{ const z=zoneById(areaZone), w=aiToWorld(z.a,z.i); flyTo(w.x,w.y,baseFit*4); })();
+});
+document.getElementById('areaAdd').addEventListener('click', ()=>openForm(null,{zone:areaZone}));
 document.getElementById('sortSelect').addEventListener('change', e=>{ sortMode=e.target.value; renderList(); });
 document.getElementById('searchInput').addEventListener('input', e=>{ searchQuery=e.target.value; renderList(); });
 
@@ -1165,15 +1421,24 @@ document.getElementById('importFile').addEventListener('change', e=>{
 /* =========================================================
    DETAIL
    ========================================================= */
-function starsHtml(r){ let o=''; for(let k=1;k<=5;k++) o+=`<span class="${k<=r?'':'off'}">★</span>`; return o; }
+function starsHtml(r){
+  let o='';
+  for (let k=1;k<=5;k++) o+=`<span class="${k<=r?'':(k-0.5===r?'half':'off')}">★</span>`;
+  return o+`<b class="stars-num">${fmtRating(r)}</b>`;
+}
 function mapsUrl(p){
   const z=zoneById(p.zone);
   const q = typeof p.lat==='number' ? `${p.lat.toFixed(6)},${p.lng.toFixed(6)}` : `${p.name}, ${z?z.label:''}, Dubai`;
   return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(q);
 }
-function openDetail(id){
+function openDetail(id, fromZone){
   const p=places.find(x=>x.id===id); if(!p) return;
   editingId=id;
+  // opened from an area sheet: offer a way back to it
+  const back=document.getElementById('detailBack'), fz=fromZone&&zoneById(fromZone);
+  back.classList.toggle('hidden', !fz);
+  back.textContent = fz ? '‹ '+fz.label : '';
+  back.onclick = fz ? ()=>openArea(fromZone) : null;
   const z=zoneById(p.zone), cats=p.categories||[], want=(p.status||'been')==='want';
   document.getElementById('detailTitle').textContent=p.name||'Untitled';
   document.getElementById('detailBody').innerHTML=`
@@ -1234,14 +1499,23 @@ function buildFormStatics(){
       <span class="dot" style="background:${c.color}">${iconSvg(c.id,'#fff')}</span><span>${c.label}</span>
     </button>`).join('');
   grid.querySelectorAll('.cat-pick').forEach(btn=>btn.addEventListener('click', ()=>btn.classList.toggle('on')));
-  document.querySelectorAll('#fStars button').forEach(btn=>btn.addEventListener('click', ()=>{
-    const v=parseInt(btn.dataset.v,10), cur=parseInt(document.getElementById('fStars').dataset.value||'0',10);
-    const nv = v===cur ? 0 : v;   // tap the same star again to clear
-    document.getElementById('fStars').dataset.value=nv;
-    document.querySelectorAll('#fStars button').forEach(b=>b.classList.toggle('on', parseInt(b.dataset.v,10)<=nv));
+  document.querySelectorAll('#fStars button').forEach(btn=>btn.addEventListener('click', e=>{
+    // left half of a star = half a star
+    const r=btn.getBoundingClientRect(), half = e.clientX && (e.clientX-r.left) < r.width/2;
+    const v=parseInt(btn.dataset.v,10) - (half?0.5:0), cur=parseFloat(document.getElementById('fStars').dataset.value||'0');
+    setStars(v===cur ? 0 : v);   // tap the same value again to clear
   }));
   document.querySelectorAll('#fStatus button').forEach(b=>b.addEventListener('click', ()=>{ draft.status=b.dataset.v; syncStatus(); }));
   document.getElementById('fZone').addEventListener('change', e=>{ draft.zone=e.target.value; draft.lat=null; draft.lng=null; syncLocation(); });
+}
+function setStars(v){
+  const row=document.getElementById('fStars');
+  row.dataset.value=v;
+  row.querySelectorAll('button').forEach(b=>{
+    const k=parseInt(b.dataset.v,10);
+    b.classList.toggle('on', k<=v); b.classList.toggle('half', k-0.5===v);
+  });
+  document.getElementById('fStarsVal').textContent = v ? fmtRating(v) : 'Tap left half for ½';
 }
 function syncStatus(){
   document.querySelectorAll('#fStatus button').forEach(b=>b.classList.toggle('on', b.dataset.v===draft.status));
@@ -1268,8 +1542,7 @@ function openForm(id, opts){
   document.getElementById('fPhoto').value='';
   document.querySelectorAll('#fCats .cat-pick').forEach(b=>b.classList.toggle('on', p?(p.categories||[]).includes(b.dataset.cat):false));
   const rating=p?(p.rating||0):0;
-  document.getElementById('fStars').dataset.value=rating;
-  document.querySelectorAll('#fStars button').forEach(b=>b.classList.toggle('on', parseInt(b.dataset.v,10)<=rating));
+  setStars(rating);
   setPhotoPreview(p&&p.photo);
   syncStatus(); syncLocation();
   openSheet('sheetForm');
@@ -1327,7 +1600,7 @@ document.getElementById('formSave').addEventListener('click', ()=>{
   const want = draft.status==='want';
   const data = {
     name, zone:draft.zone, status:draft.status, categories:cats,
-    rating: want ? 0 : parseInt(document.getElementById('fStars').dataset.value||'0',10),
+    rating: want ? 0 : parseFloat(document.getElementById('fStars').dataset.value||'0'),
     dateVisited: want ? '' : (document.getElementById('fDate').value || todayLocal()),
     notes: document.getElementById('fNotes').value.trim(),
     lat: draft.lat, lng: draft.lng,
@@ -1458,6 +1731,7 @@ function initialView(){
   needsCenter=false; lastW=viewW;
 }
 buildFormStatics();
+renderAvatar();
 renderFilters();
 renderList();
 updateEmpty();
@@ -1466,7 +1740,7 @@ setTimeout(()=>{
   buildTerrain(); buildObjects(); prepRoads(); buildCache();
   document.getElementById('mapLoading').classList.add('done');
   if (resizeCanvas()) initialView();
-  requestRender();
+  refreshPins();
 });
 new ResizeObserver(()=>{
   if (!cache || wrap.classList.contains('hidden-view')) return;
