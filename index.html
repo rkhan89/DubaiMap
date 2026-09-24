@@ -2,20 +2,27 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Dubai Bites</title>
-<meta name="theme-color" content="#2E1F47">
+<meta name="description" content="A scrapbook map of the best food, coffee and desserts in Dubai.">
+<meta name="theme-color" content="#F7EEDD">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Dubai Bites">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%23F2A65A'/><text x='50' y='70' font-size='60' text-anchor='middle'>🕌</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=Silkscreen&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 <div class="app">
 
   <!-- top bar -->
-  <div class="topbar">
+  <header class="topbar">
     <div class="brand">
-      <span class="brand-stamp">🕌</span>
+      <span class="brand-stamp" aria-hidden="true">🕌</span>
       <div>
         <h1>Dubai Bites</h1>
         <span>your scrapbook of the city</span>
@@ -24,42 +31,76 @@
     <button class="icon-btn" id="btnFilter" aria-label="Filters">
       <svg viewBox="0 0 24 24" fill="none"><path d="M4 6h16M7 12h10M10 18h4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
     </button>
-  </div>
+  </header>
 
   <!-- map view -->
-  <div class="map-wrap" id="mapWrap">
-    <div class="map-viewport" id="mapViewport">
-      <svg id="mapSvg" xmlns="http://www.w3.org/2000/svg"></svg>
+  <main class="map-wrap" id="mapWrap">
+    <canvas id="mapCanvas" aria-label="Isometric map of Dubai"></canvas>
+    <div id="mapOverlay">
+      <div id="labelsLayer"></div>
+      <div id="meDot" class="me-dot hidden" aria-hidden="true"></div>
       <div id="pinsLayer"></div>
     </div>
-    <div class="zoom-ctrl">
+
+    <div class="map-ctrl">
       <button id="zoomIn" aria-label="Zoom in">+</button>
       <button id="zoomOut" aria-label="Zoom out">−</button>
+      <button id="btnFit" aria-label="Show all places">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button id="btnLocate" aria-label="Show my location">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="2.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+      </button>
     </div>
+
     <div class="empty-state hidden" id="emptyState">
       <div class="empty-card">
         <h2>Nothing pinned yet</h2>
-        <p>Tap the + below to drop your first coffee, karak or pizza stop on the map.</p>
+        <p>Drop your first coffee, karak or pizza stop on the map.</p>
+        <button class="btn btn-primary btn-sm" id="emptyAdd">Add a place</button>
       </div>
     </div>
     <div class="cluster-pop hidden" id="clusterPop"></div>
-  </div>
+
+    <div class="pick-ui" id="pickUI">
+      <div class="pick-hint">Drag the map to line up the pin</div>
+      <div class="pick-marker" aria-hidden="true"><div class="polaroid"><div class="tape"></div><div class="photo"></div></div><div class="pick-shadow"></div></div>
+      <div class="pick-actions">
+        <button class="btn btn-ghost" id="pickCancel">Cancel</button>
+        <button class="btn btn-primary" id="pickConfirm">Set location</button>
+      </div>
+    </div>
+
+    <div class="map-loading" id="mapLoading"><span>Building Dubai…</span></div>
+  </main>
 
   <!-- list view -->
-  <div class="list-wrap" id="listWrap">
+  <section class="list-wrap" id="listWrap">
     <div class="list-head">
-      <div class="list-count" id="listCount">0 places</div>
+      <div class="search">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="2"/><path d="m16 16 4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input type="search" id="searchInput" placeholder="Search places, areas, notes" aria-label="Search places">
+      </div>
       <select class="sort-select" id="sortSelect" aria-label="Sort places">
-        <option value="recent">Newest first</option>
-        <option value="rating">Highest rated</option>
-        <option value="name">Name A–Z</option>
+        <option value="recent">Newest</option>
+        <option value="rating">Top rated</option>
+        <option value="name">A–Z</option>
       </select>
     </div>
+    <div class="list-count" id="listCount">0 places</div>
     <div id="listBody"></div>
-  </div>
+    <div class="backup">
+      <div class="backup-title">Backup</div>
+      <p>Your places are saved in this browser only. Export a backup now and then, or to move them to another phone.</p>
+      <div class="backup-btns">
+        <button class="btn btn-ghost btn-sm" id="btnExport">Export</button>
+        <label class="btn btn-ghost btn-sm file-btn">Import<input type="file" id="importFile" accept="application/json,.json"></label>
+      </div>
+    </div>
+  </section>
 
   <!-- bottom nav -->
-  <div class="bottomnav">
+  <nav class="bottomnav">
     <button class="nav-btn active" id="tabMap">
       <svg viewBox="0 0 24 24" fill="none"><path d="M9 4 3 6.5v14L9 18l6 2.5 6-2.5v-14L15 6.5 9 4z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><line x1="9" y1="4" x2="9" y2="18" stroke="currentColor" stroke-width="1.8"/><line x1="15" y1="6.5" x2="15" y2="20.5" stroke="currentColor" stroke-width="1.8"/></svg>
       <span>Map</span>
@@ -69,24 +110,28 @@
       <svg viewBox="0 0 24 24" fill="none"><line x1="5" y1="7" x2="19" y2="7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="5" y1="17" x2="19" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       <span>List</span>
     </button>
-  </div>
+  </nav>
 
 </div>
 
 <div class="overlay" id="overlay"></div>
 
 <!-- filter sheet -->
-<div class="sheet sheet-sm" id="sheetFilter">
+<div class="sheet sheet-sm" id="sheetFilter" role="dialog" aria-labelledby="filterTitle">
   <div class="sheet-handle"></div>
-  <div class="sheet-head"><h2>Filter the map</h2><button class="sheet-close" data-close aria-label="Close">✕</button></div>
+  <div class="sheet-head"><h2 id="filterTitle">Filter the map</h2><button class="sheet-close" data-close aria-label="Close">✕</button></div>
   <div class="sheet-body">
+    <div class="seg" id="filterStatus">
+      <button data-v="all" class="on">All</button><button data-v="been">Been</button><button data-v="want">Want to try</button>
+    </div>
     <div class="chip-grid" id="filterCats"></div>
-    <button class="chip top-rated" id="chipTopRated">★ Top rated only</button>
+    <button class="chip top-rated" id="chipTopRated">★ Top rated only (4+)</button>
+    <button class="link-btn" id="filterReset">Reset filters</button>
   </div>
 </div>
 
 <!-- detail sheet -->
-<div class="sheet" id="sheetDetail">
+<div class="sheet" id="sheetDetail" role="dialog" aria-labelledby="detailTitle">
   <div class="sheet-handle"></div>
   <div class="sheet-head"><h2 id="detailTitle">Place</h2><button class="sheet-close" data-close aria-label="Close">✕</button></div>
   <div class="sheet-body" id="detailBody"></div>
@@ -97,29 +142,39 @@
 </div>
 
 <!-- add/edit form sheet -->
-<div class="sheet" id="sheetForm">
+<div class="sheet" id="sheetForm" role="dialog" aria-labelledby="formTitle">
   <div class="sheet-handle"></div>
   <div class="sheet-head"><h2 id="formTitle">Add place</h2><button class="sheet-close" data-close aria-label="Close">✕</button></div>
   <div class="sheet-body">
     <div class="field">
       <label for="fName">Name</label>
-      <input type="text" id="fName" placeholder="e.g. Sunset Karak Corner" maxlength="60">
+      <input type="text" id="fName" placeholder="e.g. Sunset Karak Corner" maxlength="60" autocomplete="off">
+    </div>
+    <div class="seg" id="fStatus">
+      <button type="button" data-v="been" class="on">Been there</button><button type="button" data-v="want">Want to try</button>
     </div>
     <div class="field">
-      <label for="fZone">Area</label>
+      <label for="fZone">Where</label>
       <select id="fZone"></select>
+      <div class="loc-row">
+        <span class="loc-text" id="fLocText">Somewhere in Downtown</span>
+        <button type="button" class="loc-btn" id="fPickMap">Pick on map</button>
+        <button type="button" class="loc-btn" id="fUseLoc" aria-label="Use my location">
+          <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="2.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
     </div>
     <div class="field">
       <label>Categories</label>
       <div class="cat-grid" id="fCats"></div>
     </div>
-    <div class="field">
+    <div class="field been-only">
       <label>Your rating</label>
       <div class="star-row" id="fStars">
-        <button type="button" data-v="1" aria-label="1 star">★</button><button type="button" data-v="2" aria-label="2 star">★</button><button type="button" data-v="3" aria-label="3 star">★</button><button type="button" data-v="4" aria-label="4 star">★</button><button type="button" data-v="5" aria-label="5 star">★</button>
+        <button type="button" data-v="1" aria-label="1 star">★</button><button type="button" data-v="2" aria-label="2 stars">★</button><button type="button" data-v="3" aria-label="3 stars">★</button><button type="button" data-v="4" aria-label="4 stars">★</button><button type="button" data-v="5" aria-label="5 stars">★</button>
       </div>
     </div>
-    <div class="field">
+    <div class="field been-only">
       <label for="fDate">Date visited</label>
       <input type="date" id="fDate">
     </div>
@@ -141,6 +196,8 @@
     <button class="btn btn-primary" id="formSave">Save place</button>
   </div>
 </div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"><span id="toastMsg"></span><button id="toastAction"></button></div>
 
 <script src="app.js" defer></script>
 </body>
