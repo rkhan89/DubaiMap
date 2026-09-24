@@ -1044,7 +1044,7 @@ function buildPins(){
         <div class="polaroid"${cl.items.length>1?` data-count="${cl.items.length}"`:''} style="transform:rotate(${rot.toFixed(1)}deg)">
           <div class="tape"></div>
           <div class="photo" style="${photoStyle(first,cat)}">${first.photo?'':iconSvg(cat.id,'#fff')}</div>
-          <div class="rating">${want?'to try':'★ '+fmtRating(first.rating)}</div>
+          <div class="rating">${want?'to try':starLabel(first.rating,' ')}</div>
         </div>
         ${cl.items.length===1?`<div class="pin-name">${escapeHtml(first.name||'Untitled')}</div>`:''}
       </div>`;
@@ -1072,12 +1072,15 @@ function updateOverlay(){
   const pk = Math.max(0.72, Math.min(1, 0.72 + (z-1)*0.28));
   pinsLayer.style.setProperty('--pin-k', pk.toFixed(3));
   const boxes = [];   // screen rects already taken, so labels never sit under a pin or another label
+  const showNames = z>=3.2;
   pinEls.forEach(el=>{
     const cl=el._cl, sx=cl.x*cam.s+cam.x, sy=cl.y*cam.s+cam.y;
     el.style.transform=`translate3d(${sx.toFixed(1)}px,${sy.toFixed(1)}px,0)`;
-    boxes.push([sx-30*pk, sy-72*pk, sx+30*pk, sy+6]);
+    // the polaroid, plus the name tag hanging under single pins when names are showing
+    const named = showNames && cl.items.length===1;
+    boxes.push([sx-(named?58:30*pk), sy-72*pk, sx+(named?58:30*pk), sy+(named?28:6)]);
   });
-  pinsLayer.classList.toggle('show-names', z>=3.2);
+  pinsLayer.classList.toggle('show-names', showNames);
   // Areas with saved places come first and win: they show at every zoom, sit on top of
   // the pins (just under their feet) and only give way to each other. Plain labels then
   // fill in wherever there's room.
@@ -1086,12 +1089,19 @@ function updateOverlay(){
   labelOrder.forEach(el=>{
     const chip = el._n>0;
     let show = chip || el._tier===0 || (el._tier===1 && z>=1.7) || (el._tier===2 && z>=3.2);
-    const sx=el._wx*cam.s+cam.x, sy=el._wy*cam.s+cam.y + (chip?14:0);
+    const sx=el._wx*cam.s+cam.x;
+    let sy=el._wy*cam.s+cam.y + (chip?14:0);
     if (show){
       if (sx<-80 || sx>viewW+80 || sy<-20 || sy>viewH+20) show=false;
       else {
         if (!el._w){ el.classList.remove('hidden'); el._w=el.firstChild.offsetWidth||60; el._h=el.firstChild.offsetHeight||14; }
-        const b=[sx-el._w/2-2, sy-el._h/2-2, sx+el._w/2+2, sy+el._h/2+2];
+        let b=[sx-el._w/2-2, sy-el._h/2-2, sx+el._w/2+2, sy+el._h/2+2];
+        // a chip never covers a pin or its name tag: drop it just below whatever it lands on
+        for (let k=0; chip && k<4; k++){
+          const o=pinBoxes.find(o=>b[0]<o[2] && b[2]>o[0] && b[1]<o[3] && b[3]>o[1]);
+          if (!o) break;
+          sy=o[3]+el._h/2+4; b=[sx-el._w/2-2, sy-el._h/2-2, sx+el._w/2+2, sy+el._h/2+2];
+        }
         if (hit(b,chipBoxes) || (!chip && hit(b,pinBoxes))) show=false;
         else chipBoxes.push(b);
       }
@@ -1128,7 +1138,7 @@ function openClusterPopover(cl, evt){
     return `<button class="cluster-row" data-id="${p.id}">
       <div class="thumb" style="${photoStyle(p,cat)}">${p.photo?'':iconSvg(cat.id,'#fff')}</div>
       <div class="name">${escapeHtml(p.name||'Untitled')}</div>
-      <div class="rate">${want?'to try':'★'+fmtRating(p.rating)}</div>
+      <div class="rate">${want?'to try':starLabel(p.rating)}</div>
     </button>`;
   }).join('');
   pop.querySelectorAll('.cluster-row').forEach(row=>row.addEventListener('click', ()=>{ hidePopover(); openDetail(row.dataset.id); }));
@@ -1356,10 +1366,11 @@ function rowHtml(p, hideArea){
       <div class="meta">${escapeHtml(meta)}</div>
     </div>
     <div class="place-cats">${cats.slice(0,3).map(c=>{const cat=catById(c); return cat?`<span class="mini" style="background:${cat.color}">${iconSvg(c,'#fff')}</span>`:'';}).join('')}</div>
-    <div class="place-rating">${want?'<span class="tag-want">to try</span>':'★ '+fmtRating(p.rating)}</div>
+    <div class="place-rating">${want?'<span class="tag-want">to try</span>':p.rating?starLabel(p.rating,' '):'<span class="tag-want">unrated</span>'}</div>
   </button>`;
 }
 function fmtRating(r){ r=r||0; return r%1 ? r.toFixed(1) : String(r); }
+function starLabel(r, sep){ return r ? '★'+(sep||'')+fmtRating(r) : 'unrated'; }
 
 /* ---------- area sheet: tap "Business Bay (3)" on the map ---------- */
 let areaZone=null;
@@ -1424,7 +1435,7 @@ document.getElementById('importFile').addEventListener('change', e=>{
 function starsHtml(r){
   let o='';
   for (let k=1;k<=5;k++) o+=`<span class="${k<=r?'':(k-0.5===r?'half':'off')}">★</span>`;
-  return o+`<b class="stars-num">${fmtRating(r)}</b>`;
+  return r ? o+`<b class="stars-num">${fmtRating(r)}</b>` : '<span class="unrated">Not rated yet</span>';
 }
 function mapsUrl(p){
   const z=zoneById(p.zone);
