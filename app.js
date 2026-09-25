@@ -47,7 +47,9 @@ const CATEGORIES = [
   {id:'fastfood',  label:'Fast food',  color:'#D6A72C', icon:c=>`<path d="M7.5 10h9l-1.3 9.4a1 1 0 0 1-1 .8H9.8a1 1 0 0 1-1-.8L7.5 10z" fill="none" stroke="${c}" stroke-width="2"/><line x1="10" y1="4" x2="9.6" y2="10" stroke="${c}" stroke-width="1.8" stroke-linecap="round"/><line x1="12" y1="3.5" x2="12" y2="10" stroke="${c}" stroke-width="1.8" stroke-linecap="round"/><line x1="14" y1="4" x2="14.4" y2="10" stroke="${c}" stroke-width="1.8" stroke-linecap="round"/>`},
   {id:'cafeteria', label:'Cafeteria',  color:'#7A8B99', icon:c=>`<rect x="4.5" y="7" width="15" height="10" rx="2" fill="none" stroke="${c}" stroke-width="2"/><line x1="9.5" y1="7" x2="9.5" y2="17" stroke="${c}" stroke-width="1.6"/><line x1="14.5" y1="7" x2="14.5" y2="17" stroke="${c}" stroke-width="1.6"/>`},
   {id:'karak',     label:'Karak',      color:'#B5451B', icon:c=>`<path d="M9 5h6l-.9 11a1.3 1.3 0 0 1-1.3 1.2h-1.6A1.3 1.3 0 0 1 9.9 16L9 5z" fill="none" stroke="${c}" stroke-width="2"/><ellipse cx="12" cy="19" rx="4.5" ry="1.1" fill="none" stroke="${c}" stroke-width="1.6"/>`},
-  {id:'pizza',     label:'Pizza',      color:'#D64545', icon:c=>`<path d="M12 4.3 20 19H4L12 4.3z" fill="none" stroke="${c}" stroke-width="2" stroke-linejoin="round"/><path d="M5.4 17.3h13.2" stroke="${c}" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="11" r=".9" fill="${c}"/><circle cx="9.8" cy="14.5" r=".9" fill="${c}"/><circle cx="14.2" cy="14.5" r=".9" fill="${c}"/>`}
+  {id:'pizza',     label:'Pizza',      color:'#D64545', icon:c=>`<path d="M12 4.3 20 19H4L12 4.3z" fill="none" stroke="${c}" stroke-width="2" stroke-linejoin="round"/><path d="M5.4 17.3h13.2" stroke="${c}" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="11" r=".9" fill="${c}"/><circle cx="9.8" cy="14.5" r=".9" fill="${c}"/><circle cx="14.2" cy="14.5" r=".9" fill="${c}"/>`},
+  {id:'acai',      label:'Acai',       color:'#8E4FD6', icon:c=>`<path d="M12 4c4 0 7 3.2 7 7.2C19 16 16 20 12 20S5 16 5 11.2C5 7.2 8 4 12 4z" fill="none" stroke="${c}" stroke-width="2"/><path d="M9 9c.6 1 .6 2 0 3M12 8c.6 1.2 .6 2.4 0 3.6M15 9c.6 1 .6 2 0 3" stroke="${c}" stroke-width="1.6" stroke-linecap="round"/>`},
+  {id:'froyo',     label:'Froyo',      color:'#E893B8', icon:c=>`<path d="M8 11c0-3 1.8-5.5 4-5.5s4 2.5 4 5.5" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round"/><path d="M7 11h10l-1.6 7.4a1 1 0 0 1-1 .8H9.6a1 1 0 0 1-1-.8L7 11z" fill="none" stroke="${c}" stroke-width="2"/><circle cx="12" cy="5" r="1" fill="${c}"/>`}
 ];
 const catById = id => CATEGORIES.find(c=>c.id===id);
 function iconSvg(catId, color){
@@ -992,7 +994,7 @@ const worldCache = new Map();
 function placeAI(p){
   if (typeof p.lat==='number' && typeof p.lng==='number') return toAI(p.lat,p.lng);
   const z = zoneById(p.zone) || zoneById('downtown');
-  const [oa,oi] = hashOffset(String(p.id), 0.55);
+  const [oa,oi] = hashOffset(String(p.id), 0.8);   // spread places that only have an area
   return { a:z.a+oa, i:z.i+oi };
 }
 function placeWorld(p){
@@ -1357,7 +1359,7 @@ function renderList(){
 }
 function rowHtml(p, hideArea){
   const z=zoneById(p.zone), cats=p.categories||[], cat0=catById(cats[0]), want=(p.status||'been')==='want';
-  const when = want ? 'want to try' : (p.dateVisited ? fmtDate(p.dateVisited) : '');
+  const when = want ? '' : (p.dateVisited ? fmtDate(p.dateVisited) : '');   // "to try" already has its own tag
   const meta = hideArea ? when : [z?z.label:'', when].filter(Boolean).join(' · ');
   return `<button class="place-row${want?' want':''}" data-id="${p.id}">
     <div class="place-thumb" style="${photoStyle(p,cat0)}">${p.photo?'':iconSvg(cats[0]||'coffee','#fff')}</div>
@@ -1741,11 +1743,30 @@ function initialView(){
   }
   needsCenter=false; lastW=viewW;
 }
+// Starter list of real Dubai spots (saved as "want to try"). Added once per browser on
+// top of whatever is already saved; deleting one later doesn't bring it back.
+const SEED_FLAG='dubai-bites-seeded-v1';
+async function loadSeed(){
+  try{ if (localStorage.getItem(SEED_FLAG)) return; }catch(_){ return; }
+  try{
+    const res = await fetch('seed-places.json', {cache:'no-cache'});
+    if (!res.ok) return;
+    const seed = await res.json(), have = new Set(places.map(p=>p.id));
+    const add = seed.filter(p=>!have.has(p.id));
+    places.push(...add);
+    persistPlaces();
+    localStorage.setItem(SEED_FLAG, '1');
+    refreshPins(); renderList(); updateEmpty();
+    if (add.length) toast(`Added ${add.length} Dubai spots to try`);
+  }catch(_){ /* offline or blocked: just try again next visit */ }
+}
+
 buildFormStatics();
 renderAvatar();
 renderFilters();
 renderList();
 updateEmpty();
+loadSeed();
 // a timer, not rAF: rAF never fires in a background tab, and the city should be ready when you switch to it
 setTimeout(()=>{
   buildTerrain(); buildObjects(); prepRoads(); buildCache();
