@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_stack" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&amp;family=Nunito+Sans:wght@700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600&amp;family=Space+Mono:wght@400;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      colors: {
+        "on-primary-fixed": "#281900",
+        "on-surface-variant": "#504535",
+        "surface": "#fff8f5",
+        "inverse-surface": "#412c1c",
+        "surface-container": "#ffeadd",
+        "on-secondary": "#ffffff",
+        "on-tertiary-fixed-variant": "#314e21",
+        "primary-fixed-dim": "#fabc4d",
+        "inverse-primary": "#fabc4d",
+        "surface-container-low": "#fff1e9",
+        "inverse-on-surface": "#ffede3",
+        "tertiary": "#486636",
+        "on-primary-container": "#5e4000",
+        "surface-container-lowest": "#ffffff",
+        "on-secondary-fixed-variant": "#6c3a13",
+        "on-tertiary": "#ffffff",
+        "on-error": "#ffffff",
+        "secondary-fixed-dim": "#ffb688",
+        "on-tertiary-container": "#304d20",
+        "tertiary-container": "#9cbe85",
+        "secondary-container": "#feb383",
+        "on-primary-fixed-variant": "#604100",
+        "error-container": "#ffdad6",
+        "surface-variant": "#ffdcc4",
+        "on-surface": "#291709",
+        "on-secondary-fixed": "#311300",
+        "outline": "#827563",
+        "secondary-fixed": "#ffdbc7",
+        "secondary": "#895029",
+        "tertiary-fixed-dim": "#aed196",
+        "surface-dim": "#f6d3bc",
+        "primary-fixed": "#ffdead",
+        "surface-tint": "#7e5700",
+        "tertiary-fixed": "#c9edb0",
+        "surface-bright": "#fff8f5",
+        "on-tertiary-fixed": "#082100",
+        "on-secondary-container": "#78431c",
+        "on-primary": "#ffffff",
+        "on-background": "#291709",
+        "error": "#ba1a1a",
+        "outline-variant": "#d4c4b0",
+        "background": "#fff8f5",
+        "surface-container-high": "#ffe3d0",
+        "primary-container": "#e5a93c",
+        "primary": "#7e5700",
+        "surface-container-highest": "#ffdcc4",
+        "on-error-container": "#93000a"
+      },
+      borderRadius: {
+        "DEFAULT": "0.25rem",
+        "lg": "0.5rem",
+        "xl": "0.75rem",
+        "full": "9999px"
+      },
+      spacing: {
+        "space-md": "1rem",
+        "space-xs": "0.25rem",
+        "space-xl": "2rem",
+        "gutter": "1rem",
+        "space-sm": "0.5rem",
+        "margin": "1.25rem",
+        "space-lg": "1.5rem"
+      },
+      fontFamily: {
+        "body-md": ["Plus Jakarta Sans"],
+        "label-sm": ["Space Mono"],
+        "headline-sm": ["Nunito Sans"],
+        "headline-md": ["Nunito Sans"],
+        "label-lg": ["Plus Jakarta Sans"],
+        "body-lg": ["Plus Jakarta Sans"],
+        "headline-lg": ["Nunito Sans"],
+        "headline-xl-mobile": ["Nunito Sans"],
+        "headline-xl": ["Nunito Sans"],
+        "caption": ["Caveat"],
+        "label-md": ["Space Mono"],
+        "body-sm": ["Plus Jakarta Sans"]
+      },
+      fontSize: {
+        "body-md": ["14px", { "lineHeight": "21px", "fontWeight": "400" }],
+        "label-sm": ["10px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "400" }],
+        "headline-sm": ["18px", { "lineHeight": "24px", "fontWeight": "700" }],
+        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "700" }],
+        "label-lg": ["14px", { "lineHeight": "18px", "fontWeight": "600" }],
+        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "500" }],
+        "headline-lg": ["26px", { "lineHeight": "34px", "fontWeight": "700" }],
+        "headline-xl-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "800" }],
+        "headline-xl": ["34px", { "lineHeight": "42px", "fontWeight": "800" }],
+        "caption": ["18px", { "lineHeight": "22px", "fontWeight": "600" }],
+        "label-md": ["11px", { "lineHeight": "16px", "letterSpacing": "0.06em", "fontWeight": "700" }],
+        "body-sm": ["13px", { "lineHeight": "18px", "fontWeight": "400" }]
+      }
+    }
+  }
+}</script><style>@layer base{html,body{width:100%;margin:0;padding:0;}body{overscroll-behavior-y:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface text-on-surface font-body-md text-body-md min-h-screen flex flex-col antialiased selection:bg-primary-container selection:text-on-primary-container"><header class="fixed top-0 inset-x-0 z-50 bg-surface/85 backdrop-blur-xl pt-safe shadow-[0_1px_8px_rgba(41,23,9,0.04)]"><div class="h-16 px-margin flex items-center justify-between"><button aria-label="Go back" class="w-11 h-11 -ml-space-xs rounded-full flex items-center justify-center text-on-surface hover:bg-surface-container active:translate-y-px transition-all" onclick="history.back()" type="button"><span class="material-symbols-outlined text-[24px]">arrow_back</span></button><div class="flex flex-col items-center justify-center flex-1 px-space-xs"><h1 class="font-headline-sm text-headline-sm text-on-surface text-center tracking-tight truncate max-w-[200px]">Taste Persona Selection</h1><div aria-label="Onboarding progress" class="flex items-center gap-1.5 mt-1"><span class="w-5 h-1.5 rounded-full bg-primary-container"></span><span class="w-1.5 h-1.5 rounded-full bg-surface-variant"></span><span class="w-1.5 h-1.5 rounded-full bg-surface-variant"></span><span class="w-1.5 h-1.5 rounded-full bg-surface-variant"></span></div></div><div class="flex items-center gap-space-xs -mr-space-xs"><button aria-label="Scrapbook options" class="w-11 h-11 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container active:translate-y-px transition-all" type="button"><span class="material-symbols-outlined text-[22px]">more_vert</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center ml-0.5"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex-1 flex flex-col relative w-full pt-16 bg-surface pb-safe"><div class="flex flex-col w-full relative">
+<!-- Warm background ambient ephemera (simulating the scrapbook behind the sheet) -->
+<div aria-hidden="true" class="px-margin pt-space-md pb-space-lg flex flex-col gap-space-md opacity-40 blur-[0.5px] select-none pointer-events-none">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-secondary text-[20px]">auto_stories</span>
+<span class="font-headline-sm text-headline-sm text-secondary">Dubai Gastronomy Log</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-container px-2 py-0.5 rounded-full">OCT 2024</span>
+</div>
+<div class="bg-surface-container-low rounded-xl p-space-md shadow-sm">
+<div class="w-full h-28 rounded-lg overflow-hidden bg-surface-container relative">
+<img class="w-full h-full object-cover" data-alt="A vintage top-down aesthetic food photograph of traditional Middle Eastern flatbreads, spiced dips, and golden karak chai in rustic clay cups on textured linen paper in warm afternoon Dubai sunlight." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBgp7LzyandLlemIu4Uk9mdCsRh7sG2_aLGKfWwF8Ec7aW_H4xv0gTD-L_9Owx0or54uKl0yyMjH63kJb7RD3WV_KOh3mSScwVXIdymd5LZs-q-7pypsSXWgcuL13xM-IL8m1NAsNMcgjWer-u2_QcCLoDL8yUqr6Bh0icEJeF9hXerqTrk0fCS6JMCskgB9nEiTSU8D5z1TwJUDgug0hF0mgLjEmg6kdVoUDfSWNHbn-vF7bNgGvWrIQ"/>
+</div>
+<p class="font-caption text-caption text-secondary mt-space-xs text-center transform -rotate-1">Exploring back-alleys around Al Satwa...</p>
+</div>
+</div>
+<!-- Tactile Bottom Sheet / Card Overlay -->
+<div class="w-full bg-surface-container-lowest rounded-t-[28px] shadow-[0_-10px_32px_rgba(41,23,9,0.14)] relative z-10 px-margin pt-space-sm pb-space-xl flex flex-col">
+<!-- Sheet Drag Handle Pill -->
+<div class="w-10 h-1.5 rounded-full bg-surface-variant self-center my-space-xs"></div>
+<!-- Washi tape header delight -->
+<div class="self-center -mt-3 mb-space-sm">
+<span class="inline-block px-3 py-0.5 bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider rounded-sm shadow-sm rotate-[-1deg]">
+        Auto-Sync • Camera Roll
+      </span>
+</div>
+<!-- Title & Subtitle Framing -->
+<div class="flex flex-col items-center text-center px-space-xs mb-space-md">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-primary mb-2 shadow-sm">
+<span class="material-symbols-outlined text-[24px]">photo_library</span>
+</div>
+<h2 class="font-headline-xl-mobile text-headline-xl-mobile text-on-surface tracking-tight" id="sheet-title">
+        Found 6 places on this phone
+      </h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">
+        Add them to your scrapbook?
+      </p>
+</div>
+<!-- Place Checklist Container -->
+<div aria-label="Detected food places" class="flex flex-col gap-2.5 mb-space-md" role="group">
+<!-- Item 1: Trio Cafe -->
+<label class="group flex items-center gap-3 p-3 rounded-xl bg-surface-container-low hover:bg-surface-container active:scale-[0.99] transition-all cursor-pointer shadow-sm select-none">
+<div class="relative flex items-center justify-center">
+<input checked="" class="peer sr-only" data-place-item="" type="checkbox"/>
+<div class="w-5 h-5 rounded-md bg-surface-container-lowest flex items-center justify-center shadow-[0_2px_0_#d4c4b0] peer-checked:bg-primary-container peer-checked:shadow-[0_2px_0_#5e4000] transition-all">
+<span class="material-symbols-outlined text-[16px] text-on-primary-container opacity-0 peer-checked:opacity-100 font-bold transition-opacity">check</span>
+</div>
+</div>
+<div class="w-11 h-11 rounded-lg overflow-hidden bg-surface-container flex-shrink-0 relative">
+<img class="w-full h-full object-cover" data-alt="Artisanal pour over coffee being poured into a ceramic mug on a light oak counter in a minimalist chic Dubai Mall coffee shop, cozy warm tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDOfa-4t7WxxfDylLZw6x-9grETjiFVLoE5dpZCoKUGZtUAHuDeEB_2cHpl-mLhSIxzQEJ1QcGeWUcvri80Xr1TVekVz3XkgEGWCJGAJk43sRV_LgvUjt4wOJOHU9teDqPrmEU4mTgT5Qhmb-wlHCYrsGo1CoS_X8HfeEyk5_7OB4ebu9ncJet-pgUB3H3uwqeXNm14WQoWCcP7DMD950gPbDLB5IS8tTWoSwEaIaxBV-XV0zw3os4EBQ"/>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1">
+<h3 class="font-headline-sm text-[16px] leading-tight text-on-surface truncate">Trio Cafe</h3>
+<span class="px-2 py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm uppercase flex-shrink-0">Coffee</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant truncate">Dubai Mall • <span class="text-secondary font-medium">2 photos found</span></p>
+</div>
+</label>
+<!-- Item 2: Knot Bakehouse -->
+<label class="group flex items-center gap-3 p-3 rounded-xl bg-surface-container-low hover:bg-surface-container active:scale-[0.99] transition-all cursor-pointer shadow-sm select-none">
+<div class="relative flex items-center justify-center">
+<input checked="" class="peer sr-only" data-place-item="" type="checkbox"/>
+<div class="w-5 h-5 rounded-md bg-surface-container-lowest flex items-center justify-center shadow-[0_2px_0_#d4c4b0] peer-checked:bg-primary-container peer-checked:shadow-[0_2px_0_#5e4000] transition-all">
+<span class="material-symbols-outlined text-[16px] text-on-primary-container opacity-0 peer-checked:opacity-100 font-bold transition-opacity">check</span>
+</div>
+</div>
+<div class="w-11 h-11 rounded-lg overflow-hidden bg-surface-container flex-shrink-0 relative">
+<img class="w-full h-full object-cover" data-alt="Flaky cardamom twisted buns and gourmet pastries glazed with syrup sitting on parchment paper in an industrial chic Al Quoz warehouse bakery." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBahBIbwZXko1No4c3YZ-xBzhk9hTsefE4nYzp_JbEowBDiFibRKmy8sBEK8fv1XVGClEkKWNMOvJ3RqEaPdRUZlEV1DQGPCnb2xp70Gt_u5aBGOBTz2MNAxuicKW7xRtdVuJXLi2mJtf6mqvID9lyEJOG-Z6zFtnTZ4FMyXbj6L0MaCjn2o_FSetH0e0vB35MXKuY3KKNGl8Ni0Deb65fVg_2wod88xr3Qz-htc1FdBuZKW3ClukUgiw"/>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1">
+<h3 class="font-headline-sm text-[16px] leading-tight text-on-surface truncate">Knot Bakehouse</h3>
+<span class="px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-label-sm text-label-sm uppercase flex-shrink-0">Dessert</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant truncate">Al Quoz • <span class="text-secondary font-medium">1 photo</span></p>
+</div>
+</label>
+<!-- Item 3: Tom & Serg -->
+<label class="group flex items-center gap-3 p-3 rounded-xl bg-surface-container-low hover:bg-surface-container active:scale-[0.99] transition-all cursor-pointer shadow-sm select-none">
+<div class="relative flex items-center justify-center">
+<input checked="" class="peer sr-only" data-place-item="" type="checkbox"/>
+<div class="w-5 h-5 rounded-md bg-surface-container-lowest flex items-center justify-center shadow-[0_2px_0_#d4c4b0] peer-checked:bg-primary-container peer-checked:shadow-[0_2px_0_#5e4000] transition-all">
+<span class="material-symbols-outlined text-[16px] text-on-primary-container opacity-0 peer-checked:opacity-100 font-bold transition-opacity">check</span>
+</div>
+</div>
+<div class="w-11 h-11 rounded-lg overflow-hidden bg-surface-container flex-shrink-0 relative">
+<img class="w-full h-full object-cover" data-alt="A brightly lit urban warehouse brunch table with smashed avocado toast, poached eggs, and latte art in green ceramics at Tom and Serg Dubai." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCqXsTcBLfhTv04oVmUW6f5icPZ1BGse7q3Ya0HwKLBH9F-ANtrjABuxl6Mtub-XrEaoR4kyP3bxfDRU7PeiiJERsJYwTQmZAE6hNmdGemV0xdl8ck2x2xfgoppBId7mwrZoqd2YGr8UR-tWC2lYbNmOflElukoyV2eQ8IAm6GUOWhl1NtQrDAMahvqLrmWhkwOkvgc4_WdWkiQDH7UkN5QmAG2C2sxrMrh0ZQgnp79r86pZ2VLgiI_nw"/>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1">
+<h3 class="font-headline-sm text-[16px] leading-tight text-on-surface truncate">Tom &amp; Serg</h3>
+<span class="px-2 py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm uppercase flex-shrink-0">Coffee</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant truncate">Al Quoz • <span class="text-secondary font-medium">3 photos</span></p>
+</div>
+</label>
+<!-- Item 4: Emmy Squared -->
+<label class="group flex items-center gap-3 p-3 rounded-xl bg-surface-container-low hover:bg-surface-container active:scale-[0.99] transition-all cursor-pointer shadow-sm select-none">
+<div class="relative flex items-center justify-center">
+<input checked="" class="peer sr-only" data-place-item="" type="checkbox"/>
+<div class="w-5 h-5 rounded-md bg-surface-container-lowest flex items-center justify-center shadow-[0_2px_0_#d4c4b0] peer-checked:bg-primary-container peer-checked:shadow-[0_2px_0_#5e4000] transition-all">
+<span class="material-symbols-outlined text-[16px] text-on-primary-container opacity-0 peer-checked:opacity-100 font-bold transition-opacity">check</span>
+</div>
+</div>
+<div class="w-11 h-11 rounded-lg overflow-hidden bg-surface-container flex-shrink-0 relative">
+<img class="w-full h-full object-cover" data-alt="Crispy frico-crusted Detroit style square pizza with burrata dollops and spicy hot honey drizzle served on vintage tin tray in Jumeirah." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD61YioW-Ekpg_o6gQUZQkgwpBgJR95cm5-brqNEBrIwhYy0Q_gZQ4GlsFLqTRRnRywMglUS2KcJtd2wxucaGBXwugqHoQ8bpuDw2ff4oUNbnJSLBV3LVjSUONAPRaHTOtSXinRS9QrHCwg1ETlFmZOVEG4714qU6UW_N8vqQ9yRLra9OrsUvx_BUvmym8-McWCo4poRi0-sa4qrAP0iKDFu90n8eiEGiUhIi2U_EsyxXBOgON2Mg443w"/>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1">
+<h3 class="font-headline-sm text-[16px] leading-tight text-on-surface truncate">Emmy Squared</h3>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-highest text-on-surface font-label-sm text-label-sm uppercase flex-shrink-0">Pizza</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant truncate">Jumeirah • Location Bookmark</p>
+</div>
+</label>
+<!-- Item 5: Koukh Al Shay -->
+<label class="group flex items-center gap-3 p-3 rounded-xl bg-surface-container-low hover:bg-surface-container active:scale-[0.99] transition-all cursor-pointer shadow-sm select-none">
+<div class="relative flex items-center justify-center">
+<input checked="" class="peer sr-only" data-place-item="" type="checkbox"/>
+<div class="w-5 h-5 rounded-md bg-surface-container-lowest flex items-center justify-center shadow-[0_2px_0_#d4c4b0] peer-checked:bg-primary-container peer-checked:shadow-[0_2px_0_#5e4000] transition-all">
+<span class="material-symbols-outlined text-[16px] text-on-primary-container opacity-0 peer-checked:opacity-100 font-bold transition-opacity">check</span>
+</div>
+</div>
+<div class="w-11 h-11 rounded-lg overflow-hidden bg-surface-container flex-shrink-0 relative">
+<img class="w-full h-full object-cover" data-alt="Steaming cup of authentic saffron karak tea held up outside an iconic roadside cafe on 2nd of December street Al Diyafa Dubai during golden sunset hour." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBcHOIpVnIrs0Lnj0AwaPAo7z1kLBmWOpzaf7qKwAkQE24Lxcjqei1rRl7jj1O1eruGPp7TDWT1Si3qClwpeUYUDnGStmjZEf1jmUgJlEIiZf6jFgYA_CGGVVCdriwJ05mJKypHMtBoD1yRL354IZMLpVSadVHgr6C1bVykUM2yoabwhxZAiiJ4VNInDQJmIpcWKQ1c7orQHt3YdK9go4HyZXQoHvk6nh-iYDXfuytrq_KWihIs_ltXgw"/>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1">
+<h3 class="font-headline-sm text-[16px] leading-tight text-on-surface truncate">Koukh Al Shay</h3>
+<span class="px-2 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm uppercase flex-shrink-0">Karak</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant truncate">Al Diyafa • Photo &amp; Check-in</p>
+</div>
+</label>
+<!-- Item 6: Ravi Restaurant -->
+<label class="group flex items-center gap-3 p-3 rounded-xl bg-surface-container-low hover:bg-surface-container active:scale-[0.99] transition-all cursor-pointer shadow-sm select-none">
+<div class="relative flex items-center justify-center">
+<input checked="" class="peer sr-only" data-place-item="" type="checkbox"/>
+<div class="w-5 h-5 rounded-md bg-surface-container-lowest flex items-center justify-center shadow-[0_2px_0_#d4c4b0] peer-checked:bg-primary-container peer-checked:shadow-[0_2px_0_#5e4000] transition-all">
+<span class="material-symbols-outlined text-[16px] text-on-primary-container opacity-0 peer-checked:opacity-100 font-bold transition-opacity">check</span>
+</div>
+</div>
+<div class="w-11 h-11 rounded-lg overflow-hidden bg-surface-container flex-shrink-0 relative">
+<img class="w-full h-full object-cover" data-alt="Traditional Pakistani mutton karahi curry bubbling in an iron wok with fresh ginger shreds and tandoori roti at historic Ravi Restaurant in Satwa." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAasYNzgORM3VdfDEq6vHmiYTGAw6ew-W9kCDTi7cS81sMUsx92uOsNhYH-qGpsux39XxzDqxxczG22ucKCTMIWwuowWmaGoayssEIIvNwLSFcjAwgnu5mnlvEKY8-OOByet87oI13NKYRnWrVKi3Lp0Hi4JvCZOX803iAPIPy8MxTmOn0NFKmnHd_Yo2LbXhvSTRkM4FQA_UxnIRYf_g3j8F8OvzI22YKUVedze66ugpoHRpZq8cER4A"/>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1">
+<h3 class="font-headline-sm text-[16px] leading-tight text-on-surface truncate">Ravi Restaurant</h3>
+<span class="px-2 py-0.5 rounded-full bg-secondary-fixed-dim text-on-secondary-fixed-variant font-label-sm text-label-sm uppercase flex-shrink-0">Fast food</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant truncate">Satwa • Historic Bookmark</p>
+</div>
+</label>
+</div>
+<!-- Result summary card preview with postal perforation & gold stamp -->
+<div class="bg-surface-container-high rounded-xl p-space-md mb-space-lg relative overflow-hidden shadow-sm">
+<div class="flex items-center justify-between relative z-10">
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5 text-secondary">
+<span class="material-symbols-outlined text-[18px]">verified</span>
+<span class="font-label-md text-label-md uppercase tracking-wider">Preview Scrapbook Sync</span>
+</div>
+<span class="font-headline-md text-headline-md text-on-surface mt-0.5" id="summary-counter">
+            6 places added, 0 skipped
+          </span>
+<p class="font-caption text-caption text-secondary mt-0.5">Ready to paste into your personal food itinerary</p>
+</div>
+<!-- Chunky Gold Completion Stamp -->
+<div class="w-16 h-16 rounded-full bg-primary-container text-on-primary-container flex flex-col items-center justify-center transform rotate-12 shadow-[0_2px_8px_rgba(229,169,60,0.4)] flex-shrink-0 select-none">
+<span class="material-symbols-outlined text-[20px] font-bold">military_tech</span>
+<span class="font-label-sm text-[9px] uppercase tracking-tighter font-bold">READY</span>
+</div>
+</div>
+<!-- Postal receipt dashed divider -->
+<div class="w-full border-t border-dashed border-outline-variant my-2.5 opacity-60"></div>
+<div class="flex items-center justify-between text-on-surface-variant font-label-sm text-label-sm">
+<span>ARCHIVE BATCH #DXB-884</span>
+<span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-tertiary"></span> SYNC VERIFIED</span>
+</div>
+</div>
+<!-- Tactile Action Buttons -->
+<div class="flex flex-col gap-2.5">
+<!-- Chunky Gold Import Button -->
+<button class="w-full py-3.5 px-space-md rounded-xl bg-primary-container text-on-primary-container font-headline-sm text-headline-sm flex items-center justify-center gap-2 shadow-[0_3px_0_#5e4000] active:translate-y-0.5 active:shadow-[0_1px_0_#5e4000] transition-all cursor-pointer" id="import-btn" type="button">
+<span class="material-symbols-outlined text-[20px]">library_add_check</span>
+<span id="import-btn-text">Import Selected (6)</span>
+</button>
+<!-- Paper Outline / Skip Button -->
+<button class="w-full py-3 px-space-md rounded-xl bg-surface-container-low text-on-surface font-headline-sm text-[16px] flex items-center justify-center gap-2 shadow-[0_2px_0_#d4c4b0] active:translate-y-0.5 active:shadow-[0_1px_0_#d4c4b0] transition-all hover:bg-surface-container cursor-pointer" onclick="history.back()" type="button">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant">close</span>
+<span>Skip for now</span>
+</button>
+</div>
+<!-- Hand-annotated playful reassurance -->
+<p class="font-caption text-caption text-on-surface-variant text-center mt-3 transform -rotate-1">
+      Don't worry, you can easily delete or retag items later!
+    </p>
+</div>
+</div>
+<script>
+  (function () {
+    const checkboxes = document.querySelectorAll('[data-place-item]');
+    const counterEl = document.getElementById('summary-counter');
+    const importBtnText = document.getElementById('import-btn-text');
+    const importBtn = document.getElementById('import-btn');
+
+    function updateSummary() {
+      const total = checkboxes.length;
+      let selected = 0;
+      checkboxes.forEach(cb => {
+        if (cb.checked) selected++;
+      });
+      const skipped = total - selected;
+
+      counterEl.textContent = `${selected} place${selected === 1 ? '' : 's'} added, ${skipped} skipped`;
+      importBtnText.textContent = `Import Selected (${selected})`;
+
+      if (selected === 0) {
+        importBtn.classList.add('opacity-50', 'pointer-events-none');
+      } else {
+        importBtn.classList.remove('opacity-50', 'pointer-events-none');
+      }
+    }
+
+    checkboxes.forEach(cb => {
+      cb.addEventListener('change', updateSummary);
+    });
+
+    importBtn.addEventListener('click', function() {
+      importBtn.innerHTML = '<span class="material-symbols-outlined animate-spin text-[20px]">sync</span><span>Pasting into journal...</span>';
+      setTimeout(() => {
+        importBtn.innerHTML = '<span class="material-symbols-outlined text-[20px]">done_all</span><span>Pasted to Scrapbook!</span>';
+        importBtn.classList.remove('bg-primary-container', 'text-on-primary-container');
+        importBtn.classList.add('bg-tertiary', 'text-on-tertiary', 'shadow-[0_3px_0_#304d20]');
+      }, 700);
+    });
+  })();
+</script></main></body></html>

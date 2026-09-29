@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_tab" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&amp;family=Nunito+Sans:wght@700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600&amp;family=Space+Mono:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "surface-dim": "#f6d3bc", "error": "#ba1a1a", "primary": "#7e5700", "on-tertiary": "#ffffff", "on-error-container": "#93000a", "on-error": "#ffffff", "on-background": "#291709", "inverse-surface": "#412c1c", "primary-container": "#e5a93c", "secondary-fixed-dim": "#ffb688", "secondary-fixed": "#ffdbc7", "surface-container-highest": "#ffdcc4", "secondary": "#895029", "background": "#fff8f5", "secondary-container": "#feb383", "surface-container": "#ffeadd", "on-surface-variant": "#504535", "tertiary-container": "#9cbe85", "tertiary-fixed-dim": "#aed196", "on-secondary-fixed": "#311300", "surface-container-lowest": "#ffffff", "on-surface": "#291709", "error-container": "#ffdad6", "inverse-on-surface": "#ffede3", "surface-tint": "#7e5700", "on-primary-fixed": "#281900", "surface": "#fff8f5", "outline": "#827563", "primary-fixed-dim": "#fabc4d", "surface-variant": "#ffdcc4", "surface-container-high": "#ffe3d0", "on-tertiary-container": "#304d20", "on-secondary-fixed-variant": "#6c3a13", "on-secondary-container": "#78431c", "surface-container-low": "#fff1e9", "tertiary-fixed": "#c9edb0", "outline-variant": "#d4c4b0", "on-primary": "#ffffff", "primary-fixed": "#ffdead", "tertiary": "#486636", "on-tertiary-fixed-variant": "#314e21", "inverse-primary": "#fabc4d", "on-tertiary-fixed": "#082100", "on-secondary": "#ffffff", "surface-bright": "#fff8f5", "on-primary-fixed-variant": "#604100", "on-primary-container": "#5e4000" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "space-sm": "0.5rem", "gutter": "1rem", "margin": "1.25rem", "space-md": "1rem", "space-xl": "2rem", "space-xs": "0.25rem", "space-lg": "1.5rem" }, "fontFamily": { "headline-lg": ["Nunito Sans"], "body-lg": ["Plus Jakarta Sans"], "headline-xl": ["Nunito Sans"], "body-sm": ["Plus Jakarta Sans"], "headline-xl-mobile": ["Nunito Sans"], "caption": ["Caveat"], "headline-sm": ["Nunito Sans"], "label-lg": ["Plus Jakarta Sans"], "headline-md": ["Nunito Sans"], "label-sm": ["Space Mono"], "label-md": ["Space Mono"], "body-md": ["Plus Jakarta Sans"] }, "fontSize": { "headline-lg": ["26px", { "lineHeight": "34px", "fontWeight": "700" }], "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "500" }], "headline-xl": ["34px", { "lineHeight": "42px", "fontWeight": "800" }], "body-sm": ["13px", { "lineHeight": "18px", "fontWeight": "400" }], "headline-xl-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "800" }], "caption": ["18px", { "lineHeight": "22px", "fontWeight": "600" }], "headline-sm": ["18px", { "lineHeight": "24px", "fontWeight": "700" }], "label-lg": ["14px", { "lineHeight": "18px", "fontWeight": "600" }], "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "700" }], "label-sm": ["10px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "400" }], "label-md": ["11px", { "lineHeight": "16px", "letterSpacing": "0.06em", "fontWeight": "700" }], "body-md": ["14px", { "lineHeight": "21px", "fontWeight": "400" }] } } } };</script><style>@layer base{html,body{width:100vw;margin:0;padding:0;background-color:#fff8f5;}body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface text-on-surface font-body-md min-h-screen flex flex-col antialiased selection:bg-primary-container selection:text-on-primary-container"><header class="fixed top-0 w-full z-50 bg-surface/90 backdrop-blur-xl pt-safe shadow-[0_4px_16px_rgba(74,51,25,0.06)]"><div class="h-20 px-margin flex items-center justify-between"><div class="flex items-center gap-space-sm"><div class="w-10 h-10 rounded-xl bg-primary-container flex items-center justify-center shadow-[0_2px_0_#432818] rotate-[-2deg]"><span class="material-symbols-outlined text-on-primary-container text-[22px]">local_dining</span></div><div class="flex flex-col"><h1 class="font-headline-md text-headline-md text-on-surface leading-tight tracking-tight">Dubai Bites</h1><p class="font-caption text-caption text-secondary -mt-1">your scrapbook of the city</p></div></div><div class="flex items-center gap-space-sm"><button aria-label="Filter places" class="w-11 h-11 rounded-full bg-surface-container-low flex items-center justify-center text-on-surface shadow-[0_2px_0_#d4c4b0] active:translate-y-0.5 transition-all"><span class="material-symbols-outlined text-[22px]">tune</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-[0_1px_2px_rgba(41,23,9,0.2)]"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex-1 w-full bg-surface pt-20 pb-28"><div class="flex flex-col w-full px-margin space-y-space-md">
+<!-- Search & Filter Bar -->
+<div class="flex items-center gap-space-sm w-full">
+<div class="flex-1 flex items-center h-12 px-space-md bg-surface-container-low rounded-xl shadow-sm">
+<span class="material-symbols-outlined text-outline text-[20px] mr-2">search</span>
+<input class="bg-transparent border-0 outline-none w-full font-body-md text-body-md text-on-surface placeholder:text-outline" placeholder="Search 14 spots..." type="text"/>
+<button aria-label="Voice search" class="flex items-center justify-center text-outline hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined text-[18px]">mic</span>
+</button>
+</div>
+<button aria-label="Advanced Filter Options" class="w-12 h-12 rounded-xl bg-surface-container-high flex items-center justify-center text-on-surface shadow-sm active:translate-y-0.5 transition-all">
+<span class="material-symbols-outlined text-[20px]">instant_mix</span>
+</button>
+</div>
+<!-- Me vs Crew Tactile Segmented Control -->
+<div class="w-full p-1 bg-surface-container-high rounded-full shadow-inner flex relative select-none">
+<button class="flex-1 py-2 rounded-full font-headline-sm text-headline-sm transition-all duration-200 text-on-surface-variant flex items-center justify-center gap-1.5 z-10" id="tab-me" onclick="switchScope('me')">
+<span>Me</span>
+<span class="font-label-sm text-label-sm bg-surface-container px-2 py-0.5 rounded-full text-secondary">14</span>
+</button>
+<button class="flex-1 py-2 rounded-full font-headline-sm text-headline-sm transition-all duration-200 bg-surface-container-lowest text-on-surface shadow-sm flex items-center justify-center gap-1.5 z-10" id="tab-crew" onclick="switchScope('crew')">
+<span>Crew</span>
+<span class="font-label-sm text-label-sm bg-primary-container text-on-primary-container px-2 py-0.5 rounded-full font-bold">26</span>
+</button>
+</div>
+<!-- Category Filter Pill Chips Carousel -->
+<div class="w-full -mx-margin px-margin overflow-x-auto flex items-center gap-2 no-scrollbar py-1">
+<button class="shrink-0 h-8 px-3.5 rounded-full bg-primary text-on-primary font-label-md text-label-md flex items-center gap-1.5 shadow-sm active:translate-y-0.5 transition-all">
+<span>All</span>
+<span class="opacity-75 font-label-sm text-label-sm">26</span>
+</button>
+<button class="shrink-0 h-8 px-3.5 rounded-full bg-surface-container-low text-on-surface-variant font-label-md text-label-md flex items-center gap-1.5 active:translate-y-0.5 transition-all">
+<span>☕ Coffee</span>
+<span class="opacity-60 font-label-sm text-label-sm">8</span>
+</button>
+<button class="shrink-0 h-8 px-3.5 rounded-full bg-surface-container-low text-on-surface-variant font-label-md text-label-md flex items-center gap-1.5 active:translate-y-0.5 transition-all">
+<span>🫖 Karak</span>
+<span class="opacity-60 font-label-sm text-label-sm">6</span>
+</button>
+<button class="shrink-0 h-8 px-3.5 rounded-full bg-surface-container-low text-on-surface-variant font-label-md text-label-md flex items-center gap-1.5 active:translate-y-0.5 transition-all">
+<span>🍕 Pizza</span>
+<span class="opacity-60 font-label-sm text-label-sm">4</span>
+</button>
+<button class="shrink-0 h-8 px-3.5 rounded-full bg-surface-container-low text-on-surface-variant font-label-md text-label-md flex items-center gap-1.5 active:translate-y-0.5 transition-all">
+<span>🍰 Dessert</span>
+<span class="opacity-60 font-label-sm text-label-sm">5</span>
+</button>
+<button class="shrink-0 h-8 px-3.5 rounded-full bg-surface-container-low text-on-surface-variant font-label-md text-label-md flex items-center gap-1.5 active:translate-y-0.5 transition-all">
+<span>🍔 Burgers</span>
+<span class="opacity-60 font-label-sm text-label-sm">3</span>
+</button>
+</div>
+<!-- Social Scrapbook Meta Bar: Active View & Sorting Filter -->
+<div class="flex items-center justify-between pt-1">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
+<span class="font-caption text-caption text-secondary">Dubai Foodie Circle shared feed</span>
+</div>
+<button class="flex items-center gap-1 bg-surface-container-low px-2.5 py-1 rounded-lg text-secondary active:scale-95 transition-transform">
+<span class="font-label-sm text-label-sm">Recent visits</span>
+<span class="material-symbols-outlined text-[16px]">arrow_drop_down</span>
+</button>
+</div>
+<!-- Places Scrapbook Stack -->
+<div class="space-y-space-md w-full">
+<!-- Place 1: Trio Cafe -->
+<div class="w-full bg-surface-container-lowest rounded-2xl p-space-md shadow-[0_4px_16px_rgba(74,51,25,0.06)] relative overflow-hidden active:scale-[0.99] transition-transform">
+<div class="flex items-start gap-space-md">
+<div class="w-20 h-20 rounded-xl overflow-hidden shrink-0 bg-surface-container relative">
+<img class="w-full h-full object-cover" data-alt="A sunlit, cozy artisanal coffee house interior in Dubai Mall with rich amber wooden counters, warm latte art, and ceramic mugs on a rustic table with earthy tones" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDWt9ZhQfrvqME9a7juA7SN9wX-YthVwP5s6bEg1sCbhAmg41SGGAu3YX9CTkimciSEHpx-bFp-k18NypMobOf03vDvRmQxRTdNCbl17bmS7uPVWy0TaC_EzUQjg22743DobWT-NPsG8eL1Jaxv6T7UxBj3JlcEd5hRPTv2ssLaVOwTX4IyRcmLbZmH2c7NIzRX8_qO6tBIXD5SJ_nYtA-I16Igd9H7Kbhjm88sUritVXqHUlKTwuFutQ"/>
+<span class="absolute bottom-1 right-1 bg-surface-container-lowest/90 px-1.5 py-0.5 rounded text-[10px] font-label-sm font-bold text-on-surface">4.8★</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1">
+<span class="font-label-sm text-label-sm text-primary font-bold tracking-wide uppercase">☕ Coffee</span>
+<span class="material-symbols-outlined text-outline text-[18px]">chevron_right</span>
+</div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface truncate mt-0.5">Trio Cafe</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[14px] text-outline">location_on</span>
+            Dubai Mall
+          </p>
+<div class="flex items-center justify-between mt-2 pt-2 border-t-0 bg-surface-container-low/60 -mx-2 px-2 py-1 rounded-lg">
+<p class="font-caption text-caption text-secondary truncate max-w-[170px]">
+              Maya: “The cardamom note was crazy good”
+            </p>
+<!-- Stacked Social Avatars -->
+<div class="flex items-center -space-x-2 shrink-0">
+<div class="w-5 h-5 rounded-full bg-primary-container text-on-primary-container text-[9px] font-bold flex items-center justify-center shadow-sm">You</div>
+<div class="w-5 h-5 rounded-full bg-tertiary-container text-on-tertiary-container text-[9px] font-bold flex items-center justify-center shadow-sm">M</div>
+<div class="w-5 h-5 rounded-full bg-secondary-container text-on-secondary-container text-[9px] font-bold flex items-center justify-center shadow-sm">O</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Place 2: Ravi Restaurant -->
+<div class="w-full bg-surface-container-lowest rounded-2xl p-space-md shadow-[0_4px_16px_rgba(74,51,25,0.06)] relative overflow-hidden active:scale-[0.99] transition-transform">
+<div class="flex items-start gap-space-md">
+<div class="w-20 h-20 rounded-xl overflow-hidden shrink-0 bg-surface-container relative">
+<img class="w-full h-full object-cover" data-alt="Classic aromatic Pakistani butter chicken with hot flaky layered parotta breads served in steel bowls on outdoor street tables in Satwa Dubai under warm ambient lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDiutIh5mvbLxavym-y1ujCH4R7irC9emxr1Nd9SftOk3AjJd1OfyKG8QMxLK_ui_i1IOdeZKpw1Fm8YSZqCjTNic5ancW_Ie1aGVX6jpr1cJuQ3cOXFJ-JlJ48-KLiy66NtVVDDYyFMOXiFJobaRDZs3wJ9nD6YTMqix-_Tq91ot69zRODGvKzopE1FV6wyxZdmRpQLYFl8U23AcMTLbfP5FxjTe0c0uQPpxzVYf9qxgtX4k7-U9pJmQ"/>
+<span class="absolute bottom-1 right-1 bg-surface-container-lowest/90 px-1.5 py-0.5 rounded text-[10px] font-label-sm font-bold text-on-surface">4.9★</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1">
+<span class="font-label-sm text-label-sm text-secondary font-bold tracking-wide uppercase">🍛 Cafeteria</span>
+<span class="material-symbols-outlined text-outline text-[18px]">chevron_right</span>
+</div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface truncate mt-0.5">Ravi Restaurant</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[14px] text-outline">location_on</span>
+            Satwa
+          </p>
+<div class="flex items-center justify-between mt-2 pt-2 bg-surface-container-low/60 -mx-2 px-2 py-1 rounded-lg">
+<p class="font-caption text-caption text-secondary truncate max-w-[185px]">
+              Kabir: “Legendary butter chicken &amp; parottas”
+            </p>
+<div class="flex items-center -space-x-2 shrink-0">
+<div class="w-5 h-5 rounded-full bg-secondary text-on-secondary text-[9px] font-bold flex items-center justify-center shadow-sm">O</div>
+<div class="w-5 h-5 rounded-full bg-tertiary text-on-tertiary text-[9px] font-bold flex items-center justify-center shadow-sm">K</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Place 3: Knot Bakehouse (TO TRY Ribbon) -->
+<div class="w-full bg-surface-container-lowest rounded-2xl p-space-md shadow-[0_4px_16px_rgba(74,51,25,0.06)] relative overflow-hidden active:scale-[0.99] transition-transform">
+<!-- Scrapbook Stamp / Ribbon -->
+<div class="absolute -right-8 top-3 rotate-45 bg-primary-container text-on-primary-container font-label-sm text-[9px] tracking-wider font-bold py-1 px-8 shadow-sm">
+        TO TRY
+      </div>
+<div class="flex items-start gap-space-md">
+<div class="w-20 h-20 rounded-xl overflow-hidden shrink-0 bg-surface-container relative">
+<img class="w-full h-full object-cover" data-alt="Artisanal flaky golden cardamom babka knots and pistachio cream buns styled on cream parchment paper with soft cinematic Dubai gallery warehouse lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD8SIHYQsKdgC02m4eJwOTzhwFJvkZLhCdUZGrrfKfUpMZd0D1Np-5j6hC5Wd6oMcC0WbZHNU-blHm68FHeK1JefLjztDj5QdysRmkKDM5yIV3llfyafD2N9QfumFw1CodIMDNYH0WD1v1_qqSvpUtIu9VVbc2MGgvj3ZEDHl5XCiVd6P_ZH1xA-CxUBjFN48B6PTUCQi0vKFTw_k9dIFu1cIEQkl42wO5uiY2UgW0yHVIpNBcJ25Osaw"/>
+<div class="absolute inset-0 bg-inverse-surface/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-surface-container-lowest text-[22px] drop-shadow">bookmark</span>
+</div>
+</div>
+<div class="flex-1 min-w-0 pr-6">
+<div class="flex items-center justify-between gap-1">
+<span class="font-label-sm text-label-sm text-tertiary font-bold tracking-wide uppercase">🍰 Dessert</span>
+</div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface truncate mt-0.5">Knot Bakehouse</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[14px] text-outline">location_on</span>
+            Al Quoz
+          </p>
+<div class="flex items-center justify-between mt-2 pt-2 bg-surface-container-low/60 -mx-2 px-2 py-1 rounded-lg">
+<p class="font-body-sm text-[12px] text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-primary">favorite</span>
+              Saved by Maya &amp; Layla
+            </p>
+<div class="flex items-center -space-x-2 shrink-0">
+<div class="w-5 h-5 rounded-full bg-secondary-container text-on-secondary-container text-[9px] font-bold flex items-center justify-center shadow-sm">M</div>
+<div class="w-5 h-5 rounded-full bg-tertiary-fixed-dim text-on-tertiary-container text-[9px] font-bold flex items-center justify-center shadow-sm">L</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Place 4: Secret Karak Corner (Private Spot) -->
+<div class="w-full bg-surface-container-low/80 rounded-2xl p-space-md shadow-[0_4px_16px_rgba(74,51,25,0.06)] relative overflow-hidden active:scale-[0.99] transition-transform">
+<div class="flex items-start gap-space-md">
+<div class="w-20 h-20 rounded-xl overflow-hidden shrink-0 bg-surface-dim relative">
+<img class="w-full h-full object-cover" data-alt="Traditional steaming hot saffron karak tea poured from an antique brass teapot into a glass cup in an authentic Deira alleyway bathed in golden evening lantern rays" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCqErWl3SoQHmaJ9v9n4INr0LTTGYOhyVCus3mnige5GnRnGOy5rI1oAZhvSn189HGZYE7ez8nl20qlxS_5PH09v8f5j060zIURUav_4NgP70dy2sv7BXIuB5Lv_v79FGV_kSfSCwhObu1GE8ZBglF9xrw_Vwg5tdVLks7bagDaFwirr7jcRMxDqdeZ37TkNWdKY3j5vaPZv57J3IQpG5xDdY0sZEevBEHghX683uJrhwOiBAKkdRixTA"/>
+<div class="absolute bottom-1 right-1 bg-inverse-surface/80 rounded-full p-0.5 flex items-center justify-center">
+<span class="material-symbols-outlined text-inverse-on-surface text-[12px]">lock</span>
+</div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1">
+<div class="flex items-center gap-1">
+<span class="font-label-sm text-label-sm text-primary font-bold tracking-wide uppercase">🫖 Karak</span>
+<span class="bg-surface-dim text-on-surface px-1.5 py-0.2 rounded font-label-sm text-[9px] flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[10px]">lock</span> Private
+              </span>
+</div>
+<span class="material-symbols-outlined text-outline text-[18px]">chevron_right</span>
+</div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface truncate mt-0.5">Secret Karak Corner</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[14px] text-outline">location_on</span>
+            Deira Gold Souk alleys
+          </p>
+<div class="mt-2 pt-2 bg-surface-container-lowest/80 -mx-2 px-2 py-1 rounded-lg">
+<p class="font-caption text-caption text-secondary truncate">
+              “Hidden back-alley gem, saffron karak only 2 AED”
+            </p>
+</div>
+</div>
+</div>
+</div>
+<!-- Place 5: Emmy Squared -->
+<div class="w-full bg-surface-container-lowest rounded-2xl p-space-md shadow-[0_4px_16px_rgba(74,51,25,0.06)] relative overflow-hidden active:scale-[0.99] transition-transform">
+<div class="flex items-start gap-space-md">
+<div class="w-20 h-20 rounded-xl overflow-hidden shrink-0 bg-surface-container relative">
+<img class="w-full h-full object-cover" data-alt="Thick square Detroit style pizza with crispy caramelized cheesy edges and spicy pepperoni cups topped with burrata in a trendy Jumeirah cafe setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAninMR2WbMtWlVq3dsQ2A9ITEWIRC-Sj-kOCaWRN__HVPNJF_BV8yC6yyUGfWIdcaxmK2rQ9UwrK-mPb7AntuKKLIFoc9U6McL6lqTSBlWNS2mBF1BzrkTODLWpv9r3Rf4ITYTBMSyfGC3hAZ0AQ9cceZ9RRUqKqQL6Dw7BaDUElFwTygpoc09wtcOwhPRJEOMPdDmK41Rn9QW2JxH9X6gZoGuWCApIxP5t86L4Ut4Wv1ZANJVDqk80Q"/>
+<span class="absolute bottom-1 right-1 bg-surface-container-lowest/90 px-1.5 py-0.5 rounded text-[10px] font-label-sm font-bold text-on-surface">4.6★</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1">
+<span class="font-label-sm text-label-sm text-secondary font-bold tracking-wide uppercase">🍕 Pizza</span>
+<span class="material-symbols-outlined text-outline text-[18px]">chevron_right</span>
+</div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface truncate mt-0.5">Emmy Squared</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[14px] text-outline">location_on</span>
+            Jumeirah Beach Road
+          </p>
+<div class="flex items-center justify-between mt-2 pt-2 bg-surface-container-low/60 -mx-2 px-2 py-1 rounded-lg">
+<p class="font-caption text-caption text-secondary truncate max-w-[190px]">
+              Noor: “That crispy cheese crust is unbeatable”
+            </p>
+<div class="flex items-center -space-x-2 shrink-0">
+<div class="w-5 h-5 rounded-full bg-primary-container text-on-primary-container text-[9px] font-bold flex items-center justify-center shadow-sm">You</div>
+<div class="w-5 h-5 rounded-full bg-secondary-fixed text-on-secondary-fixed text-[9px] font-bold flex items-center justify-center shadow-sm">N</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Micro scrapbook memory footer note -->
+<div class="pt-space-sm pb-space-lg flex flex-col items-center justify-center text-center">
+<div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container text-secondary">
+<span class="material-symbols-outlined text-[16px]">local_activity</span>
+<span class="font-label-sm text-label-sm tracking-wide uppercase">End of Scrapbook Page</span>
+</div>
+<p class="font-caption text-caption text-secondary mt-1.5">12 more entries hidden in your personal vault</p>
+</div>
+</div>
+<script>
+  function switchScope(scope) {
+    const meBtn = document.getElementById('tab-me');
+    const crewBtn = document.getElementById('tab-crew');
+    
+    if (scope === 'me') {
+      meBtn.classList.add('bg-surface-container-lowest', 'text-on-surface', 'shadow-sm');
+      meBtn.classList.remove('text-on-surface-variant');
+      crewBtn.classList.remove('bg-surface-container-lowest', 'text-on-surface', 'shadow-sm');
+      crewBtn.classList.add('text-on-surface-variant');
+    } else {
+      crewBtn.classList.add('bg-surface-container-lowest', 'text-on-surface', 'shadow-sm');
+      crewBtn.classList.remove('text-on-surface-variant');
+      meBtn.classList.remove('bg-surface-container-lowest', 'text-on-surface', 'shadow-sm');
+      meBtn.classList.add('text-on-surface-variant');
+    }
+  }
+
+  // Sync shell navigation bar active class for List tab
+  document.addEventListener('DOMContentLoaded', () => {
+    const listNav = document.querySelector('nav a[data-path="places-list"]');
+    if (listNav) {
+      listNav.classList.add('text-primary', 'font-bold');
+      listNav.classList.remove('text-on-surface-variant');
+      const icon = listNav.querySelector('.material-symbols-outlined');
+      if (icon) {
+        icon.style.fontVariationSettings = "'FILL' 1";
+      }
+    }
+    const mapNav = document.querySelector('nav a[data-path="explore-map"]');
+    if (mapNav) {
+      mapNav.classList.remove('text-primary', 'font-bold');
+      mapNav.classList.add('text-on-surface-variant');
+    }
+  });
+</script></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface/90 backdrop-blur-xl shadow-[0_-4px_20px_rgba(51,32,17,0.08)]" data-active-classes="text-primary font-bold"><div class="h-20 px-gutter flex items-center justify-around relative"><a class="flex flex-col items-center justify-center w-20 h-14 text-on-surface-variant transition-colors" data-path="explore-map" href="#"><span class="material-symbols-outlined text-[24px]">map</span><span class="font-label-sm text-label-sm uppercase tracking-wider mt-1">Map</span></a><div class="relative -top-5"><a aria-label="Log a bite" class="w-14 h-14 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center shadow-[0_4px_0_#432818] active:translate-y-1 active:shadow-[0_2px_0_#432818] transition-all transform hover:scale-105" data-path="log-entry" href="#"><span class="material-symbols-outlined text-[30px] font-bold">add</span></a></div><a aria-current="page" class="flex flex-col items-center justify-center w-20 h-14 transition-colors text-primary font-bold" data-path="places-list" href="#"><span class="material-symbols-outlined text-[24px]">format_list_bulleted</span><span class="font-label-sm text-label-sm uppercase tracking-wider mt-1">List</span></a></div></nav></body></html>

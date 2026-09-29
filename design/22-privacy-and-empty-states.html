@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_stack" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&amp;family=Nunito+Sans:wght@700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600&amp;family=Space+Mono:wght@400;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;background-color:#fff8f5;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "on-error": "#ffffff", "on-secondary-fixed": "#311300", "tertiary-fixed": "#c9edb0", "surface-variant": "#ffdcc4", "on-surface": "#291709", "surface-tint": "#7e5700", "inverse-surface": "#412c1c", "on-secondary-container": "#78431c", "inverse-primary": "#fabc4d", "secondary-fixed-dim": "#ffb688", "background": "#fff8f5", "surface-dim": "#f6d3bc", "error": "#ba1a1a", "secondary": "#895029", "inverse-on-surface": "#ffede3", "primary-fixed": "#ffdead", "on-primary-container": "#5e4000", "secondary-container": "#feb383", "surface-container-highest": "#ffdcc4", "on-surface-variant": "#504535", "on-secondary-fixed-variant": "#6c3a13", "on-tertiary-fixed-variant": "#314e21", "on-tertiary": "#ffffff", "tertiary": "#486636", "secondary-fixed": "#ffdbc7", "primary-container": "#e5a93c", "on-primary-fixed": "#281900", "on-error-container": "#93000a", "surface-container": "#ffeadd", "on-secondary": "#ffffff", "surface-container-high": "#ffe3d0", "on-tertiary-container": "#304d20", "surface-bright": "#fff8f5", "on-background": "#291709", "surface-container-lowest": "#ffffff", "tertiary-container": "#9cbe85", "surface-container-low": "#fff1e9", "error-container": "#ffdad6", "tertiary-fixed-dim": "#aed196", "on-primary-fixed-variant": "#604100", "surface": "#fff8f5", "primary-fixed-dim": "#fabc4d", "on-tertiary-fixed": "#082100", "outline-variant": "#d4c4b0", "outline": "#827563", "primary": "#7e5700", "on-primary": "#ffffff" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "space-xs": "0.25rem", "space-xl": "2rem", "margin": "1.25rem", "gutter": "1rem", "space-lg": "1.5rem", "space-sm": "0.5rem", "space-md": "1rem" }, "fontFamily": { "body-sm": ["Plus Jakarta Sans"], "headline-lg": ["Nunito Sans"], "label-sm": ["Space Mono"], "caption": ["Caveat"], "headline-xl": ["Nunito Sans"], "headline-sm": ["Nunito Sans"], "label-md": ["Space Mono"], "headline-xl-mobile": ["Nunito Sans"], "headline-md": ["Nunito Sans"], "body-lg": ["Plus Jakarta Sans"], "body-md": ["Plus Jakarta Sans"], "label-lg": ["Plus Jakarta Sans"] }, "fontSize": { "body-sm": ["13px", { "lineHeight": "18px", "fontWeight": "400" }], "headline-lg": ["26px", { "lineHeight": "34px", "fontWeight": "700" }], "label-sm": ["10px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "400" }], "caption": ["18px", { "lineHeight": "22px", "fontWeight": "600" }], "headline-xl": ["34px", { "lineHeight": "42px", "fontWeight": "800" }], "headline-sm": ["18px", { "lineHeight": "24px", "fontWeight": "700" }], "label-md": ["11px", { "lineHeight": "16px", "letterSpacing": "0.06em", "fontWeight": "700" }], "headline-xl-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "800" }], "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "700" }], "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "500" }], "body-md": ["14px", { "lineHeight": "21px", "fontWeight": "400" }], "label-lg": ["14px", { "lineHeight": "18px", "fontWeight": "600" }] } } } };</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface text-on-surface font-body-md text-body-md flex flex-col min-h-screen selection:bg-secondary-container selection:text-on-secondary-container"><header class="fixed top-0 w-full z-50 pt-safe bg-surface/85 backdrop-blur-xl shadow-[0_1px_8px_rgba(41,23,9,0.05)]"><div class="h-16 px-margin flex items-center justify-between"><div class="flex items-center gap-space-sm"><button aria-label="Go back" class="min-w-[44px] min-h-[44px] w-11 h-11 flex items-center justify-center rounded-full text-secondary hover:text-on-surface transition-colors" onclick="history.back()"><span class="material-symbols-outlined text-[24px]">arrow_back</span></button><div class="flex flex-col"><span class="font-caption text-caption text-secondary leading-none">Scrapbook Page</span><h1 class="font-headline-sm text-headline-sm text-on-surface leading-tight tracking-tight line-clamp-1">Open Book Viewer</h1></div></div><div class="flex items-center gap-space-xs"><button aria-label="Bookmark or Favorite" class="min-w-[44px] min-h-[44px] w-11 h-11 flex items-center justify-center rounded-full text-on-surface-variant hover:text-on-surface transition-colors"><span class="material-symbols-outlined text-[20px]">bookmark</span></button><button aria-label="Share memory" class="min-w-[44px] min-h-[44px] w-11 h-11 flex items-center justify-center rounded-full text-on-surface-variant hover:text-on-surface transition-colors"><span class="material-symbols-outlined text-[20px]">share</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center ml-space-xs"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex-1 flex flex-col relative w-full pt-16 pb-safe bg-surface px-margin"><div class="flex flex-col w-full pb-10 space-y-6">
+<!-- Overview Context Pill -->
+<div class="flex items-center justify-between bg-surface-container-high rounded-full px-4 py-2 shadow-sm">
+<div class="flex items-center space-x-2">
+<span class="material-symbols-outlined text-secondary text-[18px]">verified_user</span>
+<span class="font-label-md text-label-md text-on-surface uppercase tracking-wider">Spec 3.22 Showcase</span>
+</div>
+<span class="font-caption text-caption text-secondary">Tactile Memory Vault</span>
+</div>
+<!-- SECTION 1: MY BOOK - PRIVATE PHOTOS INDICATOR -->
+<section class="flex flex-col space-y-3">
+<div class="flex items-baseline justify-between px-1">
+<div class="flex items-center space-x-1.5">
+<span class="material-symbols-outlined text-primary text-[20px]">lock</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">My Book: Private Visibility</h2>
+</div>
+<span class="font-caption text-caption text-secondary">Personal Keepsakes</span>
+</div>
+<!-- Scrapbook Spread Surface -->
+<div class="bg-surface-container-low rounded-xl p-4 shadow-sm flex flex-col space-y-4 relative overflow-hidden">
+<!-- Faux Washi Tape Accent at Top -->
+<div class="absolute -top-1.5 left-1/2 -translate-x-1/2 w-24 h-4 bg-surface-variant/80 rounded-sm transform -rotate-1 pointer-events-none shadow-xs"></div>
+<!-- Explanatory Tactile Note Note -->
+<div class="bg-surface-container-highest/60 rounded-lg p-3 flex items-start space-x-2.5">
+<span class="material-symbols-outlined text-primary text-[20px] shrink-0 mt-0.5" style="font-variation-settings: 'FILL' 1;">shield_person</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+<strong class="font-headline-sm text-[13px] text-on-surface">Private photos are only visible to you.</strong> They never appear on the crew map, Karak feed, or shared memory book.
+        </p>
+</div>
+<!-- Polaroids Canvas Row -->
+<div class="grid grid-cols-2 gap-3 pt-1">
+<!-- Polaroid Card 1 -->
+<div class="bg-surface-container-lowest p-2 pb-3 rounded-lg shadow-sm flex flex-col space-y-2 relative transform -rotate-1 transition-transform hover:rotate-0">
+<!-- Top Masking Tape Piece -->
+<div class="absolute -top-2 left-6 w-12 h-3.5 bg-secondary-fixed/70 rounded-xs shadow-xs pointer-events-none"></div>
+<!-- Image Box with Badge -->
+<div class="relative w-full aspect-square rounded-md overflow-hidden bg-surface-dim">
+<img class="w-full h-full object-cover" data-alt="A sunlit, vintage overhead close-up of a clay cup of fragrant steaming Karak chai resting on a rustic wooden cafe table in Al Fahidi Dubai, warm amber and creamy tones, soft film grain texture, tactile photography feel." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCr0zVq_czeqQM-YbptSnv8gL1f30s3aThAu0KGKIrlsVTtOLFXMH_ta_x4l8cEiOeTYVfDQ6esSiq0uFhPSu9wEojlhe2ik_xUIuwDGJy98ZZA1TCAdNCuT7t-S1Ns-oaJv1gVAmGTGqBO8eJTI0F7Qi7QuwBcp9d9Y4_u5mC0kIzQpjM-MYV6NBhjKSyVulsNO2I-kOoUYPM38D7K6e9x8QsPvrUzN7w6hsyz-2m_yk3IAdmR9Sw0QQ"/>
+<!-- Embossed Gold Padlock Badge -->
+<div class="absolute bottom-1.5 left-1.5 right-1.5 bg-on-secondary-fixed/90 backdrop-blur-xs rounded-full px-2 py-1 flex items-center justify-center space-x-1 shadow-md">
+<span class="material-symbols-outlined text-primary-fixed text-[13px]" style="font-variation-settings: 'FILL' 1;">lock</span>
+<span class="font-label-sm text-label-sm text-primary-fixed uppercase tracking-wider">Only Me</span>
+</div>
+</div>
+<!-- Handwritten Caption Strip -->
+<div class="flex flex-col px-0.5">
+<span class="font-caption text-caption text-secondary leading-tight truncate">Quiet morning cup...</span>
+<span class="font-label-sm text-[9px] text-on-surface-variant">Al Fahidi • 07:15 AM</span>
+</div>
+</div>
+<!-- Polaroid Card 2 -->
+<div class="bg-surface-container-lowest p-2 pb-3 rounded-lg shadow-sm flex flex-col space-y-2 relative transform rotate-1 transition-transform hover:rotate-0">
+<!-- Top Masking Tape Piece -->
+<div class="absolute -top-2 right-6 w-12 h-3.5 bg-surface-variant/80 rounded-xs shadow-xs pointer-events-none"></div>
+<!-- Image Box with Badge -->
+<div class="relative w-full aspect-square rounded-md overflow-hidden bg-surface-dim">
+<img class="w-full h-full object-cover" data-alt="Crispy golden Oman chips wrapped snugly inside folded warm parotta flatbread with spicy melted cheese sauce, warm golden hour kitchen light in Satwa Dubai, tactile and nostalgic food photobook aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBHJOyS_tkfk9RfyZPHGsCNVbhn8t3eeeZ4jQJMNAlp5x6I7iWGHv4j2IjARRqNHhTMzUvMUq26NzOdzM1cwEdz02Vv2o2h3_BifaUXhWpNqTbpL-Q7enIhCdq-alspyZCVIMiz0z2S27DFi8atl40gKEGkR9ztWutpwH5yaMIHmleBHt38MuAyqh29avKYEnPVE8HCA8jPHdTwdY2gs7IygpvwPQ_DuEadyVfHQ1hfyTYtjVzLhSjRiw"/>
+<!-- Embossed Gold Padlock Badge -->
+<div class="absolute bottom-1.5 left-1.5 right-1.5 bg-on-secondary-fixed/90 backdrop-blur-xs rounded-full px-2 py-1 flex items-center justify-center space-x-1 shadow-md">
+<span class="material-symbols-outlined text-primary-fixed text-[13px]" style="font-variation-settings: 'FILL' 1;">lock</span>
+<span class="font-label-sm text-label-sm text-primary-fixed uppercase tracking-wider">Only Me</span>
+</div>
+</div>
+<!-- Handwritten Caption Strip -->
+<div class="flex flex-col px-0.5">
+<span class="font-caption text-caption text-secondary leading-tight truncate">Satwa secret bakery</span>
+<span class="font-label-sm text-[9px] text-on-surface-variant">Secret Alley • 11:40 PM</span>
+</div>
+</div>
+</div>
+<!-- Footer Privacy Status Indicator -->
+<div class="flex items-center justify-center space-x-2 pt-1 text-on-surface-variant">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+<span class="font-label-md text-label-md uppercase tracking-wider text-secondary">Encrypted Local Scrapbook Vault</span>
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+</div>
+</div>
+</section>
+<!-- SECTION 2: EMPTY CREW BOOK STATE -->
+<section class="flex flex-col space-y-3">
+<div class="flex items-baseline justify-between px-1">
+<div class="flex items-center space-x-1.5">
+<span class="material-symbols-outlined text-secondary text-[20px]">groups</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Crew Book: Empty State</h2>
+</div>
+<span class="font-caption text-caption text-secondary">Awaiting Memories</span>
+</div>
+<!-- Blank Sketchbook Tactile Card -->
+<div class="bg-surface-container-low rounded-xl p-5 shadow-sm flex flex-col items-center text-center space-y-4 relative">
+<!-- Faux Postcard Perforated Stamp Corner -->
+<div class="absolute top-3 right-3 w-9 h-11 bg-surface-container-high rounded-sm p-1 flex flex-col items-center justify-center shadow-xs">
+<span class="material-symbols-outlined text-secondary text-[16px]">local_cafe</span>
+<span class="font-label-sm text-[8px] text-secondary tracking-widest mt-0.5">DXB</span>
+</div>
+<!-- Illustrated Open Blank Sketchbook & Plate -->
+<div class="w-36 h-32 relative flex items-center justify-center mt-1">
+<!-- Sketchbook Underlay Shape -->
+<div class="w-32 h-24 bg-surface-container-highest rounded-lg shadow-sm transform -rotate-2 flex items-center justify-around px-2">
+<!-- Spiral Binder Holes Effect -->
+<div class="flex flex-col space-y-2">
+<div class="w-2 h-2 rounded-full bg-surface-dim"></div>
+<div class="w-2 h-2 rounded-full bg-surface-dim"></div>
+<div class="w-2 h-2 rounded-full bg-surface-dim"></div>
+<div class="w-2 h-2 rounded-full bg-surface-dim"></div>
+</div>
+<!-- Clean Polaroid Outline Placeholder -->
+<div class="w-20 h-20 bg-surface-container-lowest rounded-md p-1.5 flex flex-col items-center justify-center space-y-1 transform rotate-3 shadow-xs">
+<div class="w-full h-11 bg-surface-container rounded-sm flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary/40 text-[26px]">camera</span>
+</div>
+<div class="w-10 h-1 bg-surface-dim rounded-full"></div>
+</div>
+</div>
+<!-- Floating Empty Karak Saucer Emblem -->
+<div class="absolute -bottom-2 -left-1 w-11 h-11 rounded-full bg-surface-container-lowest shadow-md flex items-center justify-center">
+<span class="material-symbols-outlined text-primary-container text-[22px]">restaurant</span>
+</div>
+</div>
+<!-- Copy Block -->
+<div class="space-y-1.5 max-w-xs px-2">
+<h3 class="font-headline-md text-headline-md text-on-surface">No shared photos yet</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+          When you or someone in <span class="font-headline-sm text-[13px] text-secondary">Karak Crew</span> logs a food trail and chooses <em class="font-caption text-[16px] text-on-surface">"Share with crew"</em>, they will automatically paste onto these pages!
+        </p>
+</div>
+<!-- Chunky Tactile CTA Button -->
+<button class="w-full bg-primary-container text-on-primary-container font-headline-sm text-headline-sm py-3 px-4 rounded-xl shadow-md active:translate-y-0.5 active:shadow-xs transition-all flex items-center justify-center space-x-2" id="btn-add-crew">
+<span class="material-symbols-outlined text-[20px]">add_a_photo</span>
+<span>Add the first crew photo</span>
+</button>
+<!-- Subtext Prompt -->
+<div class="flex items-center space-x-1.5 text-secondary">
+<span class="material-symbols-outlined text-[16px]">map</span>
+<span class="font-caption text-caption">Pin your favorite Deira street stall</span>
+</div>
+</div>
+</section>
+<!-- SECTION 3: PAGE LOADING STATE -->
+<section class="flex flex-col space-y-3">
+<div class="flex items-baseline justify-between px-1">
+<div class="flex items-center space-x-1.5">
+<span class="material-symbols-outlined text-tertiary text-[20px]">hourglass_top</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Tactile Page Loading State</h2>
+</div>
+<span class="font-caption text-caption text-tertiary">Freshly Printing</span>
+</div>
+<!-- Shimmering Tactile Skeleton Canvas -->
+<div class="bg-surface-container-low rounded-xl p-4 shadow-sm flex flex-col space-y-4 relative overflow-hidden">
+<!-- Top Deckled Skeleton Headers -->
+<div class="flex items-center justify-between">
+<div class="flex items-center space-x-2">
+<div class="w-7 h-7 rounded-full bg-surface-container-highest animate-pulse"></div>
+<div class="space-y-1">
+<div class="w-24 h-3 bg-surface-container-highest rounded-full animate-pulse"></div>
+<div class="w-16 h-2 bg-surface-container-high rounded-full animate-pulse"></div>
+</div>
+</div>
+<div class="w-14 h-5 rounded-full bg-surface-container-highest animate-pulse"></div>
+</div>
+<!-- Pulsing Polaroid Skeleton Tile -->
+<div class="bg-surface-container-lowest p-3 rounded-lg shadow-sm flex flex-col space-y-3 relative">
+<!-- Soft Washed Tape Outline Indicator -->
+<div class="absolute -top-2 left-1/2 -translate-x-1/2 w-16 h-3.5 bg-surface-container-high/80 rounded-xs animate-pulse pointer-events-none"></div>
+<!-- Shimmering Photo Area -->
+<div class="w-full aspect-[4/3] rounded-md bg-surface-container-high relative overflow-hidden flex items-center justify-center">
+<div class="absolute inset-0 bg-gradient-to-r from-transparent via-surface-container-lowest/40 to-transparent -translate-x-full animate-[shimmer_2s_infinite]"></div>
+<span class="material-symbols-outlined text-secondary/30 text-[36px] animate-pulse">image</span>
+</div>
+<!-- Embossed Deckled Skeleton Text Lines -->
+<div class="space-y-2 pt-1">
+<div class="flex items-center justify-between">
+<div class="w-3/5 h-3.5 bg-surface-container-high rounded-full animate-pulse"></div>
+<div class="w-1/5 h-2.5 bg-surface-container rounded-full animate-pulse"></div>
+</div>
+<div class="w-4/5 h-2.5 bg-surface-container rounded-full animate-pulse"></div>
+<div class="w-2/5 h-2 bg-surface-container-high rounded-full animate-pulse"></div>
+</div>
+</div>
+<!-- Small Grid of Shimmering Mini Polaroid Tiles -->
+<div class="grid grid-cols-3 gap-2">
+<div class="bg-surface-container-lowest p-1.5 pb-2 rounded-md shadow-xs flex flex-col space-y-1.5">
+<div class="w-full aspect-square bg-surface-container-high rounded-xs animate-pulse"></div>
+<div class="w-3/4 h-2 bg-surface-container rounded-full mx-auto animate-pulse"></div>
+</div>
+<div class="bg-surface-container-lowest p-1.5 pb-2 rounded-md shadow-xs flex flex-col space-y-1.5">
+<div class="w-full aspect-square bg-surface-container-high rounded-xs animate-pulse"></div>
+<div class="w-2/3 h-2 bg-surface-container rounded-full mx-auto animate-pulse"></div>
+</div>
+<div class="bg-surface-container-lowest p-1.5 pb-2 rounded-md shadow-xs flex flex-col space-y-1.5">
+<div class="w-full aspect-square bg-surface-container-high rounded-xs animate-pulse"></div>
+<div class="w-4/5 h-2 bg-surface-container rounded-full mx-auto animate-pulse"></div>
+</div>
+</div>
+<!-- Tactile Status Pill -->
+<div class="flex items-center justify-center space-x-2 py-1">
+<span class="w-2 h-2 rounded-full bg-tertiary animate-ping"></span>
+<span class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Pasting freshly stamped memories...</span>
+</div>
+</div>
+</section>
+</div>
+<script>
+  // Simple micro-interaction for button tactile press feedback
+  document.getElementById('btn-add-crew')?.addEventListener('click', function() {
+    this.classList.add('scale-95');
+    setTimeout(() => {
+      this.classList.remove('scale-95');
+    }, 150);
+  });
+</script></main></body></html>

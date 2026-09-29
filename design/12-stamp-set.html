@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_stack" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&amp;family=Nunito+Sans:wght@700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600&amp;family=Space+Mono:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "surface-dim": "#f6d3bc", "error": "#ba1a1a", "primary": "#7e5700", "on-tertiary": "#ffffff", "on-error-container": "#93000a", "on-error": "#ffffff", "on-background": "#291709", "inverse-surface": "#412c1c", "primary-container": "#e5a93c", "secondary-fixed-dim": "#ffb688", "secondary-fixed": "#ffdbc7", "surface-container-highest": "#ffdcc4", "secondary": "#895029", "background": "#fff8f5", "secondary-container": "#feb383", "surface-container": "#ffeadd", "on-surface-variant": "#504535", "tertiary-container": "#9cbe85", "tertiary-fixed-dim": "#aed196", "on-secondary-fixed": "#311300", "surface-container-lowest": "#ffffff", "on-surface": "#291709", "error-container": "#ffdad6", "inverse-on-surface": "#ffede3", "surface-tint": "#7e5700", "on-primary-fixed": "#281900", "surface": "#fff8f5", "outline": "#827563", "primary-fixed-dim": "#fabc4d", "surface-variant": "#ffdcc4", "surface-container-high": "#ffe3d0", "on-tertiary-container": "#304d20", "on-secondary-fixed-variant": "#6c3a13", "on-secondary-container": "#78431c", "surface-container-low": "#fff1e9", "tertiary-fixed": "#c9edb0", "outline-variant": "#d4c4b0", "on-primary": "#ffffff", "primary-fixed": "#ffdead", "tertiary": "#486636", "on-tertiary-fixed-variant": "#314e21", "inverse-primary": "#fabc4d", "on-tertiary-fixed": "#082100", "on-secondary": "#ffffff", "surface-bright": "#fff8f5", "on-primary-fixed-variant": "#604100", "on-primary-container": "#5e4000" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "space-sm": "0.5rem", "gutter": "1rem", "margin": "1.25rem", "space-md": "1rem", "space-xl": "2rem", "space-xs": "0.25rem", "space-lg": "1.5rem" }, "fontFamily": { "headline-lg": ["Nunito Sans"], "body-lg": ["Plus Jakarta Sans"], "headline-xl": ["Nunito Sans"], "body-sm": ["Plus Jakarta Sans"], "headline-xl-mobile": ["Nunito Sans"], "caption": ["Caveat"], "headline-sm": ["Nunito Sans"], "label-lg": ["Plus Jakarta Sans"], "headline-md": ["Nunito Sans"], "label-sm": ["Space Mono"], "label-md": ["Space Mono"], "body-md": ["Plus Jakarta Sans"] }, "fontSize": { "headline-lg": ["26px", { "lineHeight": "34px", "fontWeight": "700" }], "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "500" }], "headline-xl": ["34px", { "lineHeight": "42px", "fontWeight": "800" }], "body-sm": ["13px", { "lineHeight": "18px", "fontWeight": "400" }], "headline-xl-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "800" }], "caption": ["18px", { "lineHeight": "22px", "fontWeight": "600" }], "headline-sm": ["18px", { "lineHeight": "24px", "fontWeight": "700" }], "label-lg": ["14px", { "lineHeight": "18px", "fontWeight": "600" }], "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "700" }], "label-sm": ["10px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "400" }], "label-md": ["11px", { "lineHeight": "16px", "letterSpacing": "0.06em", "fontWeight": "700" }], "body-md": ["14px", { "lineHeight": "21px", "fontWeight": "400" }] } } } };</script><style>@layer base{html,body{width:100vw;margin:0;padding:0;background-color:#fff8f5;}body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface text-on-surface font-body-md min-h-screen flex flex-col antialiased selection:bg-primary-container selection:text-on-primary-container"><header class="fixed top-0 w-full z-50 bg-surface/90 backdrop-blur-xl pt-safe shadow-[0_2px_12px_rgba(74,51,25,0.05)]"><div class="h-16 px-margin flex items-center justify-between"><button aria-label="Go back" class="w-11 h-11 rounded-full bg-surface-container-low flex items-center justify-center text-on-surface shadow-[0_2px_0_#d4c4b0] active:translate-y-0.5 transition-all" onclick="history.back()"><span class="material-symbols-outlined text-[20px]">arrow_back</span></button><div class="flex-1 text-center px-space-sm"><h1 class="font-headline-sm text-headline-sm text-on-surface truncate">Log Entry</h1></div><div class="flex items-center gap-space-xs"><button aria-label="More options" class="w-11 h-11 rounded-full bg-surface-container-low flex items-center justify-center text-on-surface shadow-[0_2px_0_#d4c4b0] active:translate-y-0.5 transition-all"><span class="material-symbols-outlined text-[20px]">more_vert</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-[0_1px_2px_rgba(41,23,9,0.2)]"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex-1 w-full bg-surface pt-16 pb-safe"><div class="flex flex-col w-full pb-10">
+<div class="px-margin pt-space-md pb-space-sm flex flex-col gap-space-xs">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md uppercase tracking-wider text-secondary px-2.5 py-0.5 rounded-full bg-surface-container-high shadow-sm">Map UI Kit • Spec 12</span>
+<span class="font-caption text-caption text-primary rotate-[-2deg]">Dubai Food Atlas v2.4</span>
+</div>
+<h2 class="font-headline-xl-mobile text-headline-xl-mobile text-on-surface">6 Map Stamp States</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Interactive micro-ephemera tokens designed for isometric city canvas navigation and tactile logging.</p>
+</div>
+<div class="px-margin my-space-sm">
+<div class="bg-surface-container-low rounded-xl p-space-md shadow-[0_2px_0_#d4c4b0]">
+<div class="flex items-center justify-between mb-space-sm pb-space-xs border-b border-dashed border-outline-variant/60">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[18px]">auto_stories</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">Component A — Interactive Legend</span>
+</div>
+<span class="font-label-sm text-label-sm text-secondary">TAP TO INSPECT</span>
+</div>
+<div class="grid grid-cols-2 gap-space-sm" id="stamp-grid">
+<div class="stamp-card group relative bg-surface-container-lowest rounded-lg p-space-sm shadow-[0_2px_8px_rgba(74,51,25,0.06)] flex flex-col items-center cursor-pointer transition-all active:translate-y-0.5" data-state="unlit">
+<div class="w-full flex justify-between items-center mb-space-xs">
+<span class="font-label-sm text-label-sm text-outline">STATE 01</span>
+<span class="font-caption text-caption text-outline">Raw note</span>
+</div>
+<div class="relative w-16 h-16 rounded-lg bg-surface-container-low flex flex-col items-center justify-center my-space-xs border-2 border-dashed border-outline-variant shadow-inner">
+<span class="material-symbols-outlined text-outline text-[26px]">coffee</span>
+<span class="font-label-sm text-[9px] text-outline mt-0.5">UNDISCOVERED</span>
+</div>
+<div class="text-center mt-space-xs w-full">
+<p class="font-headline-sm text-sm text-on-surface truncate">1. Unlit Venue</p>
+<p class="font-body-sm text-[11px] text-on-surface-variant line-clamp-1">Faint paper, category icon</p>
+</div>
+</div>
+<div class="stamp-card group relative bg-surface-container-lowest rounded-lg p-space-sm shadow-[0_2px_8px_rgba(74,51,25,0.06)] flex flex-col items-center cursor-pointer transition-all active:translate-y-0.5" data-state="want-to-try">
+<div class="w-full flex justify-between items-center mb-space-xs">
+<span class="font-label-sm text-label-sm text-primary">STATE 02</span>
+<span class="font-caption text-caption text-secondary">Wishlist!</span>
+</div>
+<div class="relative w-16 h-16 rounded-lg bg-surface-container-high flex flex-col items-center justify-center my-space-xs border-2 border-dashed border-primary-container shadow-sm overflow-hidden">
+<div class="absolute -top-1 -right-7 bg-primary-container text-on-primary-container text-[8px] font-label-md px-6 py-0.5 rotate-45 shadow-sm">
+              TO TRY
+            </div>
+<span class="material-symbols-outlined text-secondary text-[26px]">bakery_dining</span>
+<span class="font-label-sm text-[9px] text-secondary font-bold mt-0.5">SAVED</span>
+</div>
+<div class="text-center mt-space-xs w-full">
+<p class="font-headline-sm text-sm text-on-surface truncate">2. Want to Try</p>
+<p class="font-body-sm text-[11px] text-on-surface-variant line-clamp-1">Ribbon fold, amber paper</p>
+</div>
+</div>
+<div class="stamp-card group relative bg-surface-container-lowest rounded-lg p-space-sm shadow-[0_2px_8px_rgba(74,51,25,0.06)] flex flex-col items-center cursor-pointer transition-all active:translate-y-0.5" data-state="visited">
+<div class="w-full flex justify-between items-center mb-space-xs">
+<span class="font-label-sm text-label-sm text-tertiary">STATE 03</span>
+<span class="font-caption text-caption text-tertiary">Stamped</span>
+</div>
+<div class="relative w-16 h-16 rounded-lg bg-surface-container-high flex flex-col items-center justify-center my-space-xs border-2 border-dashed border-secondary shadow-sm">
+<div class="absolute -top-2 -left-2 bg-inverse-surface text-inverse-on-surface w-5 h-5 rounded-full flex items-center justify-center font-label-sm text-[9px] font-bold shadow-sm">
+              #3
+            </div>
+<span class="material-symbols-outlined text-secondary text-[24px]">ramen_dining</span>
+<div class="absolute -bottom-2 bg-primary-container text-on-primary-container px-1.5 py-0.5 rounded-full text-[9px] font-label-md flex items-center gap-0.5 shadow-sm">
+<span class="material-symbols-outlined text-[10px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span>4.8</span>
+</div>
+</div>
+<div class="text-center mt-space-xs w-full">
+<p class="font-headline-sm text-sm text-on-surface truncate">3. Visited / Been</p>
+<p class="font-body-sm text-[11px] text-on-surface-variant line-clamp-1">Score pill + visit badge</p>
+</div>
+</div>
+<div class="stamp-card group relative bg-surface-container-lowest rounded-lg p-space-sm shadow-[0_2px_8px_rgba(74,51,25,0.06)] flex flex-col items-center cursor-pointer transition-all active:translate-y-0.5" data-state="private">
+<div class="w-full flex justify-between items-center mb-space-xs">
+<span class="font-label-sm text-label-sm text-outline">STATE 04</span>
+<span class="font-caption text-caption text-outline">Secret</span>
+</div>
+<div class="relative w-16 h-16 rounded-lg bg-surface-dim flex flex-col items-center justify-center my-space-xs border-2 border-dashed border-outline shadow-sm">
+<div class="absolute -top-2 -right-2 bg-on-surface text-surface-container-lowest w-5 h-5 rounded-full flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-[12px]">lock</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-[24px]">local_bar</span>
+<div class="absolute bottom-1 bg-surface-container-lowest/80 backdrop-blur-xs px-1.5 py-0.2 rounded text-[8px] font-label-sm text-on-surface tracking-wider">
+              ONLY ME
+            </div>
+</div>
+<div class="text-center mt-space-xs w-full">
+<p class="font-headline-sm text-sm text-on-surface truncate">4. Private Note</p>
+<p class="font-body-sm text-[11px] text-on-surface-variant line-clamp-1">Lock seal &amp; privacy veil</p>
+</div>
+</div>
+<div class="stamp-card group relative bg-surface-container-lowest rounded-lg p-space-sm shadow-[0_2px_8px_rgba(74,51,25,0.06)] flex flex-col items-center cursor-pointer transition-all active:translate-y-0.5" data-state="crew">
+<div class="w-full flex justify-between items-center mb-space-xs">
+<span class="font-label-sm text-label-sm text-tertiary">STATE 05</span>
+<span class="font-caption text-caption text-tertiary">Crew jam</span>
+</div>
+<div class="relative w-16 h-16 rounded-lg bg-surface-container-high flex flex-col items-center justify-center my-space-xs border-2 border-dashed border-tertiary shadow-sm">
+<span class="material-symbols-outlined text-tertiary text-[24px]">dinner_dining</span>
+<div class="absolute -bottom-2 -right-1 flex items-center -space-x-1.5">
+<span class="w-4 h-4 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-[8px] flex items-center justify-center border border-surface-container-lowest">M</span>
+<span class="w-4 h-4 rounded-full bg-primary-fixed text-on-primary-fixed font-label-sm text-[8px] flex items-center justify-center border border-surface-container-lowest">O</span>
+<span class="w-4 h-4 rounded-full bg-tertiary text-on-tertiary font-label-sm text-[7px] flex items-center justify-center border border-surface-container-lowest font-bold">+1</span>
+</div>
+</div>
+<div class="text-center mt-space-xs w-full">
+<p class="font-headline-sm text-sm text-on-surface truncate">5. Crew Social</p>
+<p class="font-body-sm text-[11px] text-on-surface-variant line-clamp-1">Stacked avatar cluster</p>
+</div>
+</div>
+<div class="stamp-card group relative bg-surface-container-lowest rounded-lg p-space-sm shadow-[0_2px_8px_rgba(74,51,25,0.06)] flex flex-col items-center cursor-pointer transition-all active:translate-y-0.5" data-state="cluster">
+<div class="w-full flex justify-between items-center mb-space-xs">
+<span class="font-label-sm text-label-sm text-secondary">STATE 06</span>
+<span class="font-caption text-caption text-secondary">Pocket</span>
+</div>
+<div class="relative w-16 h-16 rounded-lg bg-surface-container-highest flex flex-col items-center justify-between p-1 my-space-xs border-2 border-dashed border-secondary shadow-sm">
+<div class="w-5 h-5 rounded-full bg-secondary text-on-secondary flex items-center justify-center font-headline-sm text-[10px] mt-0.5 shadow-sm">
+              4
+            </div>
+<div class="flex items-center gap-0.5 px-1 py-0.5 rounded bg-surface-container-low/90">
+<span class="material-symbols-outlined text-[10px] text-on-surface">coffee</span>
+<span class="material-symbols-outlined text-[10px] text-on-surface">local_pizza</span>
+<span class="material-symbols-outlined text-[10px] text-on-surface">emoji_food_beverage</span>
+<span class="material-symbols-outlined text-[10px] text-on-surface">icecream</span>
+</div>
+</div>
+<div class="text-center mt-space-xs w-full">
+<p class="font-headline-sm text-sm text-on-surface truncate">6. Clustered Spots</p>
+<p class="font-body-sm text-[11px] text-on-surface-variant line-clamp-1">Count + mini category row</p>
+</div>
+</div>
+</div>
+<div class="mt-space-sm p-space-sm rounded-lg bg-surface-container-highest/60 flex items-center justify-between text-on-surface-variant" id="inspector-banner">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[18px]">touch_app</span>
+<span class="font-body-sm text-body-sm" id="inspector-text">Tap any stamp state above to see map behavior</span>
+</div>
+<span class="font-label-sm text-label-sm text-primary uppercase" id="inspector-action">READY</span>
+</div>
+</div>
+</div>
+<div class="px-margin mt-space-sm">
+<div class="flex items-center justify-between mb-space-xs">
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Zoomed-In Density Test</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Al Quoz • 4th Street Coffee Corridor (1:500m scale)</p>
+</div>
+<div class="flex items-center gap-1 bg-surface-container-high px-2 py-1 rounded-full shadow-sm">
+<span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
+<span class="font-label-sm text-label-sm text-tertiary">HIGH DENSITY</span>
+</div>
+</div>
+<div class="relative w-full rounded-2xl overflow-hidden shadow-[0_4px_16px_rgba(74,51,25,0.12)] bg-surface-container-highest aspect-[4/5]">
+<div class="absolute inset-0 bg-cover bg-center" data-alt="Close-up isometric pixel art city district of Dubai Al Quoz warehouses and coffee shops in warm sand, peach, teal grid canals, with miniature roads and palm trees, cozy retro food journal gaming perspective" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuB-kQS9C4Ou6PCUoDI1EvLGobv1bMpkvIYYq4ydeJkX9w-z8IEyB4MSo6hxqC3TnBYfKf6sQpTwonrhWPwTu7OSHQG8nWO3aQrQ6KEj_fS7Ji95PjVWHP54OwwfyQ1t39uIP85RaKsR5kW2HKWzis0l6pmD4jUwPp5fAxUI8cwvvLlw3AcF3c-P4I4k-KojRc-z8PGxzyUUxwyCSorOtreAI2YkSwtk_bflzJILM8ikO9EQOuV8m175KQ')">
+</div>
+<div class="absolute inset-0 bg-gradient-to-t from-inverse-surface/60 via-transparent to-transparent pointer-events-none"></div>
+<div class="absolute top-3 left-3 bg-surface/90 backdrop-blur-md px-2.5 py-1 rounded-full shadow-[0_2px_0_#d4c4b0] flex items-center gap-1.5 z-20">
+<span class="material-symbols-outlined text-primary text-[14px]">layers</span>
+<span class="font-label-sm text-label-sm text-on-surface font-bold">GRID ACCURACY: 99.4%</span>
+</div>
+<div class="absolute top-3 right-3 flex flex-col gap-1.5 z-20">
+<button class="w-8 h-8 rounded-full bg-surface/90 backdrop-blur-md text-on-surface flex items-center justify-center shadow-md active:translate-y-0.5 transition-transform" onclick="togglePins()">
+<span class="material-symbols-outlined text-[16px]">visibility</span>
+</button>
+<button class="w-8 h-8 rounded-full bg-surface/90 backdrop-blur-md text-on-surface flex items-center justify-center shadow-md active:translate-y-0.5 transition-transform">
+<span class="material-symbols-outlined text-[16px]">filter_alt</span>
+</button>
+</div>
+<!-- Map Pin 1: Visited (Top Right) -->
+<div class="absolute top-[22%] right-[18%] z-10 flex flex-col items-center group cursor-pointer">
+<div class="bg-surface-container-lowest px-2 py-1 rounded-md shadow-[0_3px_8px_rgba(41,23,9,0.2)] border border-dashed border-secondary flex items-center gap-1.5 animate-bounce" style="animation-duration: 3s;">
+<div class="w-4 h-4 rounded-full bg-inverse-surface text-inverse-on-surface text-[8px] font-label-sm flex items-center justify-center font-bold">#4</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-[11px] text-on-surface leading-none">Nightjar Coffee</span>
+<div class="flex items-center gap-1 mt-0.5">
+<span class="font-label-sm text-[9px] text-primary flex items-center">★ 4.9</span>
+<span class="font-caption text-[11px] text-secondary">Nitro cold brew</span>
+</div>
+</div>
+</div>
+<div class="w-1.5 h-3 bg-secondary rounded-b-full shadow-sm"></div>
+<div class="w-3 h-1 bg-on-background/25 rounded-full blur-[0.5px]"></div>
+</div>
+<!-- Map Pin 2: Want-to-Try (Middle Left) -->
+<div class="absolute top-[38%] left-[12%] z-10 flex flex-col items-center cursor-pointer">
+<div class="relative bg-surface-container-high px-2 py-1 rounded-md shadow-[0_3px_8px_rgba(41,23,9,0.2)] border border-dashed border-primary-container flex items-center gap-1.5">
+<div class="w-3 h-3 rounded-full bg-primary-container text-on-primary-container text-[8px] flex items-center justify-center font-bold">!</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-[11px] text-on-surface leading-none">Kokoro Handroll</span>
+<span class="font-label-sm text-[8px] text-secondary font-bold">WANT TO TRY</span>
+</div>
+<span class="absolute -top-1.5 -right-1 bg-secondary text-on-secondary text-[7px] font-label-sm px-1 rounded-full uppercase">HOT</span>
+</div>
+<div class="w-1.5 h-3.5 bg-primary-container rounded-b-full shadow-sm"></div>
+<div class="w-3.5 h-1 bg-on-background/30 rounded-full blur-[0.5px]"></div>
+</div>
+<!-- Map Pin 3: Clustered Spots (Center dense area) -->
+<div class="absolute top-[52%] left-[45%] z-20 flex flex-col items-center cursor-pointer">
+<div class="bg-surface-container-lowest px-2 py-1 rounded-full shadow-[0_4px_12px_rgba(41,23,9,0.25)] border-2 border-secondary flex items-center gap-1.5">
+<div class="w-5 h-5 rounded-full bg-secondary text-on-secondary text-[10px] font-headline-sm flex items-center justify-center font-bold">4</div>
+<div class="flex items-center gap-0.5 pr-0.5">
+<span class="material-symbols-outlined text-[12px] text-on-surface">coffee</span>
+<span class="material-symbols-outlined text-[12px] text-on-surface">local_pizza</span>
+<span class="material-symbols-outlined text-[12px] text-secondary">icecream</span>
+</div>
+</div>
+<div class="w-1.5 h-2.5 bg-secondary rounded-b-full"></div>
+<div class="w-3 h-1 bg-on-background/30 rounded-full blur-[0.5px]"></div>
+</div>
+<!-- Map Pin 4: Unlit Venue (Bottom Left) -->
+<div class="absolute bottom-[28%] left-[16%] z-10 flex flex-col items-center opacity-85">
+<div class="bg-surface-container-low/95 backdrop-blur-sm px-1.5 py-0.5 rounded border border-dashed border-outline-variant flex items-center gap-1 shadow-sm">
+<span class="material-symbols-outlined text-outline text-[12px]">storefront</span>
+<span class="font-label-sm text-[9px] text-on-surface-variant">Karak 24 • Unlogged</span>
+</div>
+<div class="w-1 h-2 bg-outline-variant rounded-b-full"></div>
+</div>
+<!-- Map Pin 5: Crew Social (Bottom Center-Right) -->
+<div class="absolute bottom-[16%] right-[22%] z-20 flex flex-col items-center cursor-pointer">
+<div class="bg-surface-container-lowest px-2 py-1 rounded-md shadow-[0_4px_12px_rgba(41,23,9,0.2)] border border-dashed border-tertiary flex items-center gap-1.5">
+<span class="material-symbols-outlined text-tertiary text-[14px]">ramen_dining</span>
+<div class="flex flex-col">
+<span class="font-headline-sm text-[11px] text-on-surface leading-none">Daikan Izakaya</span>
+<span class="font-label-sm text-[8px] text-tertiary">3 crew stamped</span>
+</div>
+<div class="flex items-center -space-x-1 ml-1">
+<span class="w-3.5 h-3.5 rounded-full bg-secondary-container text-[7px] font-bold text-on-secondary-container flex items-center justify-center border border-white">M</span>
+<span class="w-3.5 h-3.5 rounded-full bg-tertiary text-[7px] font-bold text-on-tertiary flex items-center justify-center border border-white">+2</span>
+</div>
+</div>
+<div class="w-1.5 h-3 bg-tertiary rounded-b-full"></div>
+<div class="w-3 h-1 bg-on-background/25 rounded-full blur-[0.5px]"></div>
+</div>
+<div class="absolute bottom-3 left-3 right-3 bg-surface-container-lowest/95 backdrop-blur-md rounded-xl p-2.5 shadow-[0_4px_14px_rgba(41,23,9,0.15)] flex items-center justify-between z-20">
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[16px]">pin_drop</span>
+</div>
+<div>
+<p class="font-headline-sm text-xs text-on-surface">No-Collision Pin Needle Tech</p>
+<p class="font-body-sm text-[10px] text-on-surface-variant">Staggered micro-pill offsets avoid tap overlap</p>
+</div>
+</div>
+<span class="font-label-sm text-label-sm text-secondary bg-surface-container px-2 py-0.5 rounded-full">ACTIVE</span>
+</div>
+</div>
+</div>
+<div class="px-margin mt-space-md">
+<div class="bg-surface-container-high rounded-xl p-space-md shadow-[0_2px_0_#d4c4b0] flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<h4 class="font-headline-sm text-headline-sm text-on-surface">Stamping Guidelines</h4>
+<span class="font-caption text-caption text-primary">Hand-penned rulebook</span>
+</div>
+<div class="space-y-space-xs">
+<div class="flex items-start gap-space-xs text-on-surface">
+<span class="material-symbols-outlined text-secondary text-[16px] mt-0.5">check_circle</span>
+<p class="font-body-sm text-body-sm"><strong class="font-headline-sm text-xs">Tactile Hierarchy:</strong> Visited and Crew stamps take precedence on low zoom; unlit spots fade into subtle ink outlines.</p>
+</div>
+<div class="flex items-start gap-space-xs text-on-surface">
+<span class="material-symbols-outlined text-secondary text-[16px] mt-0.5">check_circle</span>
+<p class="font-body-sm text-body-sm"><strong class="font-headline-sm text-xs">Clustering Rules:</strong> 3+ venues within 18m isometric bounds auto-collapse into Category Pill Rings.</p>
+</div>
+<div class="flex items-start gap-space-xs text-on-surface">
+<span class="material-symbols-outlined text-secondary text-[16px] mt-0.5">check_circle</span>
+<p class="font-body-sm text-body-sm"><strong class="font-headline-sm text-xs">Private Logging:</strong> Places locked under "Only Me" omit crew avatars and display an embossed seal.</p>
+</div>
+</div>
+<div class="mt-space-xs pt-space-xs border-t border-dashed border-outline-variant flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant">MAP TOKEN SHEET • REV 3</span>
+<button class="px-3 py-1.5 rounded-full bg-primary-container text-on-primary-container font-headline-sm text-xs shadow-[0_2px_0_#7e5700] active:translate-y-0.5 transition-all flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">tune</span>
+<span>Calibrate Pin Scale</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<script>
+  const states = {
+    'unlit': {
+      title: 'State 1: Unlit Venue',
+      desc: 'Raw outline stamp. Used for unexplored venues pulled from public index.',
+      action: 'EXPLORE PIN'
+    },
+    'want-to-try': {
+      title: 'State 2: Want-to-Try',
+      desc: 'Amber tone with folded ribbon bookmark. Triggered by wishlist actions.',
+      action: 'NAVIGATE'
+    },
+    'visited': {
+      title: 'State 3: Visited / Been',
+      desc: 'Shows rating star pill and exact numerical visit count (#3, #12, etc.).',
+      action: 'READ NOTES'
+    },
+    'private': {
+      title: 'State 4: Private Stamp',
+      desc: 'Only visible to the journal owner. Displays miniature padlock crest.',
+      action: 'EDIT PRIVACY'
+    },
+    'crew': {
+      title: 'State 5: Crew Social Stamp',
+      desc: 'Combines multiple foodies in one stop. Avatars expand on tap.',
+      action: 'VIEW CREW'
+    },
+    'cluster': {
+      title: 'State 6: Clustered Spots',
+      desc: 'Dense hub containing 4 spots. Shows category row preview.',
+      action: 'UNPACK (4)'
+    }
+  };
+
+  const cards = document.querySelectorAll('.stamp-card');
+  const bannerText = document.getElementById('inspector-text');
+  const bannerAction = document.getElementById('inspector-action');
+
+  cards.forEach(card => {
+    card.addEventListener('click', () => {
+      cards.forEach(c => c.classList.remove('ring-2', 'ring-primary-container'));
+      card.classList.add('ring-2', 'ring-primary-container');
+      const key = card.getAttribute('data-state');
+      const info = states[key];
+      if (info) {
+        bannerText.innerHTML = '<strong>' + info.title + ':</strong> ' + info.desc;
+        bannerAction.textContent = info.action;
+      }
+    });
+  });
+
+  function togglePins() {
+    const pins = document.querySelectorAll('[class*="absolute top-"], [class*="absolute bottom-"]');
+    pins.forEach(pin => {
+      if (pin.id !== 'inspector-banner' && !pin.querySelector('.material-symbols-outlined[class*="layers"]')) {
+        pin.classList.toggle('opacity-40');
+      }
+    });
+  }
+</script></main></body></html>

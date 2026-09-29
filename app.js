@@ -1,1786 +1,523 @@
+// App shell: map (Me / Crew modes, stamps, peek card), list feed, filters, profile, nav.
+import { APP } from './config.js';
+import * as S from './store.js';
+import * as M from './model.js';
+import * as MAP from './map.js';
+import { CATEGORIES, catById, iconSvg, esc, fmtRating, ago, agoLong, plural } from './data.js';
+import { avatarHTML, avatarStack, spriteSvg, DEFAULT_AVATAR } from './avatar.js';
+import { $, $$, icon, toast, openSheet, back, stampHTML, catChip, seg, bindSeg, toggleHTML, bindToggle, ratingPill } from './ui.js';
+import { go, state } from './go.js';
+import './onboarding.js';
+import './crew.js';
+import './place.js';
+import './book.js';
+
+const scopeKey = 'bites-scope';
+state.scope = (()=>{ const s=M.defaultScope(); try{ const p=JSON.parse(localStorage.getItem(scopeKey)); if (p && p.mode) s.mode=p.mode; }catch(_){} return s; })();
+const scope = ()=> state.scope;
+function saveScope(){ try{ localStorage.setItem(scopeKey, JSON.stringify({mode:scope().mode})); }catch(_){} }
+
+/* =========================================================
+   BRAND
+   ========================================================= */
+function applyBrand(){
+  document.title = APP.name;
+  $('#brandName').textContent = APP.name;
+  $('#brandTag').textContent = APP.tagline;
+}
+function paintProfileButtons(){
+  const me=S.me();
+  $$('.profile-btn').forEach(b=>{ b.innerHTML = me ? avatarHTML(me, 44) : icon('person'); });
+}
+document.addEventListener('click', e=>{
+  const b=e.target.closest('[data-act="profile"]'); if (b){ e.preventDefault(); openProfile(); }
+  const bk=e.target.closest('[data-act="back"]'); if (bk){ e.preventDefault(); back(); }
+});
+
+/* =========================================================
+   MAP: stamps + overlays
+   ========================================================= */
+const PRIO = { crew:5, visited:4, private:3.5, want:3, unlit:0 };
+let modelCache = [];
+function stampItems(){
+  modelCache = M.mapModel(scope());
+  return modelCache.map(sum=>({ id:sum.v.id, w:MAP.placeWorld(sum.v), prio:PRIO[sum.state] + (sum.rating||0)/10 + sum.visitorIds.length/100, faint:sum.state==='unlit', data:sum }));
+}
+function renderStamp(cl){
+  if (cl.items.length>1){
+    const cats=[...new Set(cl.items.flatMap(i=>i.data.v.categories||[]))];
+    return stampHTML('cluster', {count:cl.items.length, cats});
+  }
+  const sum=cl.items[0].data, v=sum.v, st=sum.state;
+  const others = sum.visitorIds.map(S.user).filter(Boolean);
+  const html = stampHTML(st, {
+    cat:M.primaryCat(v),
+    visits: st==='visited' ? (sum.myVisitCount||sum.visitCount) : 0,
+    rating: st==='crew' ? sum.rating : (sum.myRating||sum.rating),
+    avatars: st==='crew' ? avatarStack(others, 20, 2) : '',
+  });
+  // close-up callout card
+  let line='', foot='';
+  if (st==='unlit'){ line = catById(M.primaryCat(v))?.label || ''; foot = 'Undiscovered'; }
+  else if (st==='want'){
+    const w = sum.wantIds.map(S.user).filter(Boolean);
+    line = w.length ? `${w[0].id===S.me()?.id?'You':w[0].name} saved this` : 'Want to try';
+    foot = `<span class="tag">To try</span>`;
+  } else {
+    line = sum.noteEntry ? sum.noteEntry.notes : (catById(M.primaryCat(v))?.label||'');
+    foot = st==='crew' ? `${avatarStack(others,18,3)}${sum.visitorIds.length} in crew` : `${sum.myVisitCount>1?`Visited ${sum.myVisitCount}x`:'Visited'}${st==='private'?' • only me':''}`;
+    if (sum.rating) foot += `<span style="margin-left:auto">★ ${fmtRating(sum.rating)}</span>`;
+  }
+  const card = `<div class="stamp-card"><span class="tape"></span><div class="sc-name">${esc(v.name)}</div><div class="sc-line">${esc(line)}</div><div class="sc-foot">${foot}</div></div>`;
+  return card + html;
+}
+function rebuild(){
+  if (!S.me()) return;
+  const sc=scope();
+  const crew=S.myCrew(), members=S.crewMembers();
+  // stamps
+  MAP.setStamps(stampItems());
+  const counts={}; modelCache.forEach(s=>{ if (s.state!=='unlit') counts[s.v.zone]=(counts[s.v.zone]||0)+1; });
+  MAP.setAreaCounts(counts);
+  // mode toggle
+  $('#mapMode').innerHTML = `<button data-v="me" class="${sc.mode==='me'?'on':''}">${icon('person')}Me</button><button data-v="crew" class="${sc.mode==='crew'?'on':''}">${icon('group')}Crew${crew&&members.length>1?' <i class="live"></i>':''}</button>`;
+  // member chips (crew mode)
+  const row=$('#memberRow');
+  if (sc.mode==='crew' && members.length>1){
+    const total = modelCache.filter(s=>s.state!=='unlit').length;
+    row.innerHTML = `<button class="person-chip${!sc.members?' on':''}" data-m="all"><span class="ms" style="font-size:18px">done_all</span>All <em>${total}</em></button>` +
+      members.map(u=>`<button class="person-chip${sc.members&&sc.members.has(u.id)?' on':''}" data-m="${u.id}">${avatarHTML(u,30)}${esc(u.id===S.me().id?'You':u.name||u.handle)}</button>`).join('');
+    row.hidden=false;
+  } else { row.innerHTML=''; row.hidden=true; }
+  // me-mode status line
+  if (sc.mode==='me'){
+    const mine = modelCache.filter(s=>s.state!=='unlit');
+    const priv = mine.filter(s=>s.hasPrivate).length;
+    $('#meNoteLine').innerHTML = `Showing your <b>&nbsp;${mine.length}&nbsp;</b> ${mine.length===1?'place':'places'}${priv?` (including ${priv} private ${icon('lock','',true).replace('class="ms"','class="ms" style="font-size:13px"')})`:''}`;
+  } else $('#meNoteLine').innerHTML='';
+  // ticker
+  paintTicker();
+  // crew bar
+  const cb=$('#crewBar');
+  if (crew){ cb.innerHTML = `${icon('groups')}<b>Crew: ${esc(crew.name)}</b><i></i><span>${members.length} ${members.length===1?'member':'active'}</span>`; }
+  else cb.innerHTML = `${icon('group_add')}<b>Crew of one</b><i></i><span>invite friends</span>`;
+  cb.hidden = false;
+  // filter dot
+  const filtered = isFiltered();
+  $('#btnFilter').classList.toggle('filtered', filtered);
+  if (state.view==='list') renderList();
+  paintProfileButtons();
+}
+function isFiltered(){ const sc=scope(); return !!(sc.cats || sc.members || sc.privacy!=='all' || !sc.status.been || !sc.status.want); }
+let rebuildT=null;
+function scheduleRebuild(){ clearTimeout(rebuildT); rebuildT=setTimeout(rebuild, 40); }
+go.refresh = scheduleRebuild;
+
+$('#mapMode').addEventListener('click', e=>{
+  const b=e.target.closest('button'); if (!b) return;
+  scope().mode=b.dataset.v; scope().members=null; saveScope(); hidePeek(); rebuild();
+});
+$('#memberRow').addEventListener('click', e=>{
+  const b=e.target.closest('[data-m]'); if (!b) return;
+  const sc=scope(), id=b.dataset.m;
+  if (id==='all') sc.members=null;
+  else {
+    sc.members = sc.members ? new Set(sc.members) : new Set();
+    sc.members.has(id) ? sc.members.delete(id) : sc.members.add(id);
+    if (!sc.members.size) sc.members=null;
+  }
+  rebuild();
+});
+$('#crewBar').addEventListener('click', ()=>go.crew());
+
+/* ---------- ticker: latest crew activity ---------- */
+let tickIdx=0, tickTimer=null;
+function paintTicker(){
+  const t=$('#ticker');
+  if (scope().mode!=='crew' || S.crewMembers().length<2){ t.hidden=true; clearInterval(tickTimer); return; }
+  const acts = M.activity(8).filter(a=>a.u.id!==S.me().id);
+  if (!acts.length){ t.hidden=true; return; }
+  const show=()=>{
+    const a=acts[tickIdx%acts.length];
+    const verb = a.e.kind==='want' ? 'saved' : 'pinned';
+    const z=MAP.zoneById(a.v.zone);
+    t.innerHTML = `<span class="tape"></span><span class="tk-text"><b>${esc(a.u.name||a.u.handle)}</b> ${verb} <span class="hl">${esc(a.v.name)}</span>${z?` in ${esc(z.label)}`:''}</span><span class="tk-ago">${ago(a.e.createdAt)}</span>${icon('chevron_right')}`;
+    t.onclick=()=>go.place(a.v.id);
+  };
+  show(); t.hidden=false;
+  clearInterval(tickTimer); tickTimer=setInterval(()=>{ tickIdx++; show(); }, 5000);
+}
+
+/* ---------- peek card ---------- */
+let peekId=null;
+function showPeek(venueId){
+  const v=S.venue(venueId); if (!v) return;
+  const sum=M.venueSummary(v, {...scope(), members:null});
+  peekId=venueId;
+  const z=MAP.zoneById(v.zone);
+  const latest = sum.latest && S.user(sum.latest.userId);
+  let tag='', by='';
+  if (sum.state==='crew') tag = sum.rating>=4.5 ? '<span class="tag green">Crew favourite</span>' : `<span class="tag green">${sum.visitorIds.length} in crew</span>`;
+  else if (sum.state==='visited') tag = `<span class="tag">Visited${sum.myVisitCount>1?` ${sum.myVisitCount}x`:''}</span>`;
+  else if (sum.state==='private') tag = `<span class="tag dark">${icon('lock','',true)}Only me</span>`;
+  else if (sum.state==='want') tag = '<span class="tag">To try</span>';
+  else tag = '<span class="tag soft">Undiscovered</span>';
+  if (latest) by = `<span class="hand" style="font-size:19px">${sum.latest.kind==='want'?'Saved':'Added'} by ${esc(latest.id===S.me().id?'you':latest.name||latest.handle)} ${agoLong(sum.latest.createdAt)}</span>`;
+  const q = sum.noteEntry;
+  const qu = q && S.user(q.userId);
+  const photos = S.photos({venueId});
+  $('#peek').innerHTML = `
+    <div class="sheet-handle"></div>
+    <div class="peek-top">${tag}${by}</div>
+    ${sum.rating?`<div class="peek-score">${fmtRating(sum.rating)}<span class="ms" style="font-size:16px">star</span></div>`:''}
+    <h2 style="padding-right:${sum.rating?'64px':'0'}">${esc(v.name)}</h2>
+    <div class="addr">${icon('location_on')}${esc(z?z.label:APP.city)}${(v.categories||[]).length?` • ${esc(catById(v.categories[0])?.label||'')}`:''}</div>
+    ${q?`<div class="peek-quote">${avatarHTML(qu,34)}<q>${esc(q.notes)}</q>${photos.length?`<button class="btn btn-soft btn-sm" data-pk="view">View (${photos.length})</button>`:''}</div>`
+       : (photos.length?`<div class="peek-quote"><span class="grow muted">${plural(photos.length,'photo')} from the crew</span><button class="btn btn-soft btn-sm" data-pk="view">View</button></div>`:'')}
+    <div class="peek-btns">
+      <button class="btn btn-soft" data-pk="open">${icon('menu_book')}Details</button>
+      <button class="btn btn-gold" data-pk="log">${icon('add_a_photo')}Add Bite</button>
+    </div>`;
+  const p=$('#peek'); p.hidden=false; requestAnimationFrame(()=>p.classList.add('in'));
+}
+function hidePeek(){ const p=$('#peek'); if (p.hidden) return; p.classList.remove('in'); peekId=null; setTimeout(()=>{ if (!p.classList.contains('in')) p.hidden=true; }, 280); }
+$('#peek').addEventListener('click', e=>{
+  const b=e.target.closest('[data-pk]');
+  const id=peekId;
+  if (!b){ if (e.target.closest('h2, .addr, .peek-top')) go.place(id); return; }
+  if (b.dataset.pk==='open') go.place(id);
+  if (b.dataset.pk==='log') go.log({venueId:id});
+  if (b.dataset.pk==='view'){ const ps=S.photos({venueId:id}); if (ps.length) go.viewer(ps.map(p=>p.id), 0); }
+});
+// swipe the peek up for the full place sheet, down to dismiss
 (function(){
-"use strict";
-
-/* =========================================================
-   STORAGE
-   This build uses localStorage: zero setup, works the moment
-   it's hosted on Vercel, but data lives on one browser/phone
-   only. If you want it synced across devices, swap the four
-   functions in this block for calls to a real backend
-   (Supabase's free tier is the easy path: a `places` table
-   with the same fields, `supabase.from('places').select()` /
-   `.insert()` / `.update()` / `.delete()` in place of the
-   localStorage calls below). Everything else in this file is
-   storage-agnostic and won't need to change.
-   ========================================================= */
-const LOCAL_KEY = 'dubai-bites-places-v1';
-function loadPlaces(){
-  try{ return JSON.parse(localStorage.getItem(LOCAL_KEY)) || []; }catch(e){ return []; }
-}
-function persistPlaces(){
-  try{ localStorage.setItem(LOCAL_KEY, JSON.stringify(places)); }
-  catch(e){ alert('Could not save: this browser\'s storage is full. Try removing some photos, or export a backup from the List tab.'); }
-}
-function upsertPlace(data, id){
-  if (id){
-    const idx = places.findIndex(p=>p.id===id);
-    if (idx>-1) places[idx] = {...places[idx], ...data};
-  } else {
-    const newId = (self.crypto && crypto.randomUUID) ? crypto.randomUUID() : ('p'+Date.now()+Math.random().toString(36).slice(2));
-    places.unshift({id:newId, createdAt: Date.now(), ...data});
-  }
-  persistPlaces();
-}
-function removePlace(id){
-  places = places.filter(p=>p.id!==id);
-  persistPlaces();
-}
-
-/* =========================================================
-   CATEGORIES
-   ========================================================= */
-const CATEGORIES = [
-  {id:'coffee',    label:'Coffee',     color:'#8B5A2B', icon:c=>`<path d="M5 8h11v6.5A3.5 3.5 0 0 1 12.5 18h-4A3.5 3.5 0 0 1 5 14.5V8z" fill="none" stroke="${c}" stroke-width="2"/><path d="M16 9.2c2.4-.3 3.6 1.2 3.6 2.8s-1.2 3-3.6 2.8" fill="none" stroke="${c}" stroke-width="2"/><path d="M8 4.5c-.6.7-.6 1.3 0 2M11 4.5c-.6.7-.6 1.3 0 2" stroke="${c}" stroke-width="1.6" stroke-linecap="round"/>`},
-  {id:'matcha',    label:'Matcha',     color:'#5F8D4E', icon:c=>`<path d="M4 9.5c0 4.5 3.6 8 8 8s8-3.5 8-8" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round"/><line x1="4" y1="9.5" x2="20" y2="9.5" stroke="${c}" stroke-width="2"/><path d="M9 4l.6 4M12 3.5l0 4M15 4l-.6 4" stroke="${c}" stroke-width="1.6" stroke-linecap="round"/>`},
-  {id:'dessert',   label:'Dessert',    color:'#E1699A', icon:c=>`<path d="M7 11h10l-1.4 8.2a1 1 0 0 1-1 .8H9.4a1 1 0 0 1-1-.8L7 11z" fill="none" stroke="${c}" stroke-width="2"/><path d="M8 11c0-2.8 1.8-5 4-5s4 2.2 4 5" fill="none" stroke="${c}" stroke-width="2"/><circle cx="12" cy="4.6" r="1.2" fill="${c}"/>`},
-  {id:'burger',    label:'Burger',     color:'#C9622D', icon:c=>`<path d="M5 10.5c0-3 3.1-5.3 7-5.3s7 2.3 7 5.3H5z" fill="none" stroke="${c}" stroke-width="2"/><line x1="4.5" y1="13" x2="19.5" y2="13" stroke="${c}" stroke-width="2.2" stroke-linecap="round"/><path d="M5 16.5h14a1.6 1.6 0 0 1-1.6 2.3H6.6A1.6 1.6 0 0 1 5 16.5z" fill="none" stroke="${c}" stroke-width="2"/>`},
-  {id:'fastfood',  label:'Fast food',  color:'#D6A72C', icon:c=>`<path d="M7.5 10h9l-1.3 9.4a1 1 0 0 1-1 .8H9.8a1 1 0 0 1-1-.8L7.5 10z" fill="none" stroke="${c}" stroke-width="2"/><line x1="10" y1="4" x2="9.6" y2="10" stroke="${c}" stroke-width="1.8" stroke-linecap="round"/><line x1="12" y1="3.5" x2="12" y2="10" stroke="${c}" stroke-width="1.8" stroke-linecap="round"/><line x1="14" y1="4" x2="14.4" y2="10" stroke="${c}" stroke-width="1.8" stroke-linecap="round"/>`},
-  {id:'cafeteria', label:'Cafeteria',  color:'#7A8B99', icon:c=>`<rect x="4.5" y="7" width="15" height="10" rx="2" fill="none" stroke="${c}" stroke-width="2"/><line x1="9.5" y1="7" x2="9.5" y2="17" stroke="${c}" stroke-width="1.6"/><line x1="14.5" y1="7" x2="14.5" y2="17" stroke="${c}" stroke-width="1.6"/>`},
-  {id:'karak',     label:'Karak',      color:'#B5451B', icon:c=>`<path d="M9 5h6l-.9 11a1.3 1.3 0 0 1-1.3 1.2h-1.6A1.3 1.3 0 0 1 9.9 16L9 5z" fill="none" stroke="${c}" stroke-width="2"/><ellipse cx="12" cy="19" rx="4.5" ry="1.1" fill="none" stroke="${c}" stroke-width="1.6"/>`},
-  {id:'pizza',     label:'Pizza',      color:'#D64545', icon:c=>`<path d="M12 4.3 20 19H4L12 4.3z" fill="none" stroke="${c}" stroke-width="2" stroke-linejoin="round"/><path d="M5.4 17.3h13.2" stroke="${c}" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="11" r=".9" fill="${c}"/><circle cx="9.8" cy="14.5" r=".9" fill="${c}"/><circle cx="14.2" cy="14.5" r=".9" fill="${c}"/>`},
-  {id:'acai',      label:'Acai',       color:'#8E4FD6', icon:c=>`<path d="M12 4c4 0 7 3.2 7 7.2C19 16 16 20 12 20S5 16 5 11.2C5 7.2 8 4 12 4z" fill="none" stroke="${c}" stroke-width="2"/><path d="M9 9c.6 1 .6 2 0 3M12 8c.6 1.2 .6 2.4 0 3.6M15 9c.6 1 .6 2 0 3" stroke="${c}" stroke-width="1.6" stroke-linecap="round"/>`},
-  {id:'froyo',     label:'Froyo',      color:'#E893B8', icon:c=>`<path d="M8 11c0-3 1.8-5.5 4-5.5s4 2.5 4 5.5" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round"/><path d="M7 11h10l-1.6 7.4a1 1 0 0 1-1 .8H9.6a1 1 0 0 1-1-.8L7 11z" fill="none" stroke="${c}" stroke-width="2"/><circle cx="12" cy="5" r="1" fill="${c}"/>`}
-];
-const catById = id => CATEGORIES.find(c=>c.id===id);
-function iconSvg(catId, color){
-  const cat = catById(catId); if(!cat) return '';
-  return `<svg viewBox="0 0 24 24" fill="none">${cat.icon(color||'#fff')}</svg>`;
-}
-
-/* =========================================================
-   GEOGRAPHY
-   The map is a real (stylised) projection of Dubai. Lat/lng is
-   converted to km, then rotated into a frame whose first axis
-   runs along the coast (Marina -> Deira) and whose second axis
-   points inland. Those two axes are the iso grid's row/col axes,
-   which is what puts the coastline on the screen diagonal.
-     a = km along the coast from JBR beach, i = km inland
-   ========================================================= */
-const GEO = { lat0:25.078, lng0:55.131, kx:100.75, ky:110.57, ax:0.604, ay:0.797 };
-function toAI(lat,lng){
-  const e=(lng-GEO.lng0)*GEO.kx, n=(lat-GEO.lat0)*GEO.ky;
-  return { a:e*GEO.ax+n*GEO.ay, i:e*GEO.ay-n*GEO.ax };
-}
-function toLatLng(a,i){
-  const e=a*GEO.ax+i*GEO.ay, n=a*GEO.ay-i*GEO.ax;
-  return { lat:GEO.lat0+n/GEO.ky, lng:GEO.lng0+e/GEO.kx };
-}
-const G = (lat,lng)=>{ const p=toAI(lat,lng); return [p.a,p.i]; };
-
-const T = 0.2;                                   // km per tile
-const A_MIN=-6.0, A_MAX=36.0, I_MIN=-9.0, I_MAX=21.6;
-const ROWS = Math.round((A_MAX-A_MIN)/T);        // along the coast
-const COLS = Math.round((I_MAX-I_MIN)/T);        // inland
-const TW=16, TH=8, LIP=3.5, SLAB=16;
-const aiToGrid = (a,i)=>({ gx:(i-I_MIN)/T, gy:(A_MAX-a)/T });
-const gridToAI = (gx,gy)=>({ a:A_MAX-gy*T, i:I_MIN+gx*T });
-
-const WORLD = (function(){
-  const PADX=50, PADTOP=90, PADB=50;
-  return {
-    ox: ROWS*TW/2 + PADX, oy: PADTOP,
-    w: (ROWS+COLS)*TW/2 + PADX*2,
-    h: (ROWS+COLS)*TH/2 + PADTOP + SLAB + PADB
-  };
-})();
-function proj(gx,gy){ return { x:(gx-gy)*TW/2 + WORLD.ox, y:(gx+gy)*TH/2 + WORLD.oy }; }
-function aiToWorld(a,i){ const g=aiToGrid(a,i); return proj(g.gx,g.gy); }
-function worldToAI(x,y){
-  const X=x-WORLD.ox, Y=y-WORLD.oy;
-  return gridToAI(X/TW + Y/TH, Y/TH - X/TW);
-}
-function inMap(a,i){ return a>A_MIN && a<A_MAX && i>I_MIN && i<I_MAX; }
-
-/* ---------- small math helpers ---------- */
-function lerpPts(pts, x){
-  if (x<=pts[0][0]) return pts[0][1];
-  for (let k=1;k<pts.length;k++){
-    if (x<=pts[k][0]){ const [x0,y0]=pts[k-1], [x1,y1]=pts[k]; return y0+(y1-y0)*(x-x0)/(x1-x0); }
-  }
-  return pts[pts.length-1][1];
-}
-function distSeg(px,py, ax,ay, bx,by){
-  const dx=bx-ax, dy=by-ay, L=dx*dx+dy*dy;
-  let t = L ? ((px-ax)*dx+(py-ay)*dy)/L : 0; t=Math.max(0,Math.min(1,t));
-  return Math.hypot(px-(ax+t*dx), py-(ay+t*dy));
-}
-function distLine(a,i, pts){
-  let m=Infinity;
-  for (let k=1;k<pts.length;k++) m=Math.min(m, distSeg(a,i, pts[k-1][0],pts[k-1][1], pts[k][0],pts[k][1]));
-  return m;
-}
-function mulberry32(s){ return function(){ s|=0; s=s+0x6D2B79F5|0; let t=Math.imul(s^s>>>15,1|s); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
-function hash2(x,y){ let h=Math.imul(x,374761393)+Math.imul(y,668265263)|0; h=Math.imul(h^(h>>>13),1274126177); return ((h^(h>>>16))>>>0)/4294967295; }
-function vnoise(x,y){
-  const x0=Math.floor(x), y0=Math.floor(y), fx=x-x0, fy=y-y0, s=t=>t*t*(3-2*t);
-  const a=hash2(x0,y0), b=hash2(x0+1,y0), c=hash2(x0,y0+1), d=hash2(x0+1,y0+1), u=s(fx), v=s(fy);
-  return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v;
-}
-function shade(hex, f){
-  const n=parseInt(hex.slice(1),16);
-  const ch=v=>Math.max(0,Math.min(255,Math.round(v*f))).toString(16).padStart(2,'0');
-  return '#'+ch((n>>16)&255)+ch((n>>8)&255)+ch(n&255);
-}
-function hashStr(str){ let h=0; for(let k=0;k<str.length;k++) h=(h*31+str.charCodeAt(k))>>>0; return h; }
-function hashOffset(str, range){
-  const h=hashStr(str);
-  return [ ((h%1000)/1000-0.5)*range, (((h>>>10)%1000)/1000-0.5)*range ];
-}
-
-/* =========================================================
-   CITY DATA  (all in a/i km; positions from real coordinates)
-   ========================================================= */
-const COAST = [[-6,-1.0],[-3.4,-0.55],[-2.87,-0.49],[-1,-0.15],[0,0],[1.2,0.1],[2.24,0.05],[3.41,0.35],[5.4,0.6],[9,0.5],
-  [12,0.45],[15,0.45],[17.5,0.35],[19.6,0.25],[20.2,-0.2],[21.2,-0.25],[21.8,0.15],[23.5,0.05],[26.6,-0.2],
-  [28,0.1],[30,0.35],[31.5,0.8],[32.6,1.9],[34,2.8],[36,3.3]];
-const coastIn = a => lerpPts(COAST,a) + 0.06*Math.sin(a*2.1);
-
-const CREEK = [G(25.2715,55.2880),G(25.2640,55.2970),G(25.2555,55.3060),G(25.2485,55.3150),G(25.2400,55.3260),
-  G(25.2300,55.3350),G(25.2160,55.3420),G(25.2030,55.3440),G(25.1930,55.3400)];
-const LAGOON = { c:G(25.1930,55.3400), r:0.85 };
-const CANAL = [G(25.2160,55.3420),G(25.1990,55.3120),G(25.1890,55.2920),G(25.1850,55.2780),G(25.1870,55.2640),
-  G(25.1920,55.2500),G(25.1990,55.2400),G(25.2040,55.2330)];
-const MARINA = [G(25.0660,55.1335),G(25.0760,55.1400),G(25.0840,55.1440),G(25.0900,55.1470),G(25.0935,55.1440)];
-const BURJ_LAKE = { c:[G(25.1972,55.2744)[0]+0.35, G(25.1972,55.2744)[1]+0.3], r:0.22 };
-
-// Palm Jumeirah: trunk off Al Sufouh, a fan of fronds, and the crescent with Atlantis at its apex
-const PALM = { base:[3.43,0.45], hub:[3.56,-1.15], fr0:0.3, fr1:2.35, fronds:15, span:1.72, cr:3.3, crW:0.13, crSpan:1.84 };
-function palmAt(a,i){
-  const [ha,hi]=PALM.hub;
-  if (distSeg(a,i, PALM.base[0],PALM.base[1], ha,hi) < 0.17) return 2;         // trunk
-  const da=a-ha, di=i-hi, r=Math.hypot(da,di);
-  if (r<0.42) return 2;
-  const th=Math.atan2(da,-di);
-  if (r>=PALM.fr0 && r<=PALM.fr1 && Math.abs(th)<=PALM.span+0.05){
-    const step=(2*PALM.span)/(PALM.fronds-1);
-    const thk=-PALM.span+Math.round((th+PALM.span)/step)*step;
-    if (Math.abs(th-thk)*r < 0.15) return 1;
-  }
-  if (Math.abs(r-PALM.cr)<PALM.crW && Math.abs(th)<PALM.crSpan && Math.abs(Math.abs(th)-0.95)>0.07) return 1;
-  return 0;
-}
-const ATLANTIS = [PALM.hub[0], PALM.hub[1]-PALM.cr];
-
-const ISLANDS = [
-  {e:G(25.0806,55.1205), rx:0.42, ry:0.3, t:'urban'},     // Bluewaters
-  {e:G(25.1412,55.1853), rx:0.14, ry:0.14, t:'beach'},    // Burj Al Arab
-  {e:[18.6,-0.8], rx:0.3, ry:0.24, t:'beach'},            // Jumeirah Bay
-  {r:[[2.35,3.05],[-0.6,0.12]], t:'urban'},               // Dubai Harbour
-  {r:[[24.4,26.0],[-1.0,0.15]], t:'urban'},               // Port Rashid
-  {r:[[27.2,28.4],[-1.9,-0.8]], t:'sand'},                // Deira Islands
-  {r:[[28.7,31.2],[-2.6,-1.3]], t:'sand'},
-  {r:[[29.6,32.2],[-3.9,-3.0]], t:'sand'},
-];
-const WORLD_ISLES = (function(){
-  const rng=mulberry32(7), out=[];
-  for (let k=0;k<95;k++){
-    const ang=rng()*Math.PI*2, rr=Math.sqrt(rng());
-    out.push({a:14.8+Math.cos(ang)*rr*3.0, i:-6.4+Math.sin(ang)*rr*1.8, r:0.09+rng()*0.15});
-  }
-  return out;
+  const p=$('#peek'); let y0=null;
+  p.addEventListener('pointerdown', e=>{ if (e.target.closest('button')) return; y0=e.clientY; });
+  p.addEventListener('pointerup', e=>{ if (y0===null) return; const dy=e.clientY-y0; y0=null; if (dy<-40 && peekId) go.place(peekId); else if (dy>50) hidePeek(); });
 })();
 
-const DISTRICTS = [
-  {a:[-2.0,2.1],  i:[0.1,1.15], st:'glass', h:[24,70],  p:0.42},   // Marina + JBR
-  {a:[-1.4,1.5],  i:[1.5,2.7],  st:'glass', h:[22,60],  p:0.38},   // JLT
-  {a:[2.1,6.2],   i:[0.6,1.9],  st:'mid',   h:[10,22],  p:0.36},   // Media City / Al Sufouh
-  {a:[4.6,9.6],   i:[2.3,4.6],  st:'mid',   h:[9,18],   p:0.34},   // Al Barsha
-  {a:[6.3,17.6],  i:[0.75,2.5], st:'villa', h:[5,7],    p:0.55},   // Umm Suqeim
-  {a:[9.8,16.6],  i:[3.2,6.3],  st:'ind',   h:[6,10],   p:0.5},    // Al Quoz
-  {a:[17.6,23.9], i:[0.6,2.35], st:'low',   h:[7,16],   p:0.45},   // Jumeirah / Satwa / City Walk
-  {a:[19.4,23.8], i:[2.35,3.5], st:'glass', h:[26,68],  p:0.45},   // SZR / DIFC
-  {a:[17.9,20.6], i:[3.1,4.5],  st:'glass', h:[20,54],  p:0.3},    // Downtown
-  {a:[16.8,20.6], i:[4.5,6.4],  st:'glass', h:[20,56],  p:0.38},   // Business Bay
-  {a:[23.9,26.0], i:[1.7,5.3],  st:'mid',   h:[9,18],   p:0.4},    // Karama / Oud Metha
-  {a:[23.9,26.3], i:[0.3,1.7],  st:'low',   h:[8,16],   p:0.55},   // Bur Dubai
-  {a:[26.8,32.2], i:[0.4,5.3],  st:'mid',   h:[8,22],   p:0.42},   // Deira
-  {a:[26.4,28.4], i:[6.6,8.6],  st:'mid',   h:[10,22],  p:0.32},   // Festival City
-  {a:[6.8,11.6],  i:[6.2,9.5],  st:'villa', h:[5,7],    p:0.45},   // Dubai Hills
-  {a:[0.2,5.8],   i:[6.1,9.3],  st:'mid',   h:[8,18],   p:0.38},   // JVC / JVT
-  {a:[3.2,5.0],   i:[2.3,3.2],  st:'glass', h:[20,48],  p:0.45},   // Barsha Heights (TECOM)
-  {a:[-4.6,-1.6], i:[2.8,6.0],  st:'mid',   h:[8,16],   p:0.4},    // Al Furjan / Discovery Gardens
-  {a:[1.0,4.8],   i:[9.9,11.8], st:'mid',   h:[8,16],   p:0.35},   // Motor City / Sports City
-  {a:[4.8,8.8],   i:[11.8,14.6],st:'villa', h:[5,7],    p:0.45},   // Arabian Ranches
-  {a:[16.5,20.5], i:[9.9,12.4], st:'villa', h:[5,7],    p:0.4},    // Nad Al Sheba
-  {a:[23.4,25.3], i:[8.8,10.2], st:'glass', h:[22,58],  p:0.45},   // Dubai Creek Harbour
-  {a:[23.6,25.4], i:[6.0,7.4],  st:'mid',   h:[9,20],   p:0.4},    // Al Jaddaf
-  {a:[26.8,28.2], i:[5.4,6.5],  st:'low',   h:[7,12],   p:0.45},   // Al Garhoud
-  {a:[31.8,35.6], i:[3.4,8.4],  st:'mid',   h:[9,20],   p:0.42},   // Al Qusais / Al Nahda
-  {a:[28.6,31.8], i:[11.6,15.0],st:'villa', h:[5,7],    p:0.5},    // Mirdif
-  {a:[25.6,28.6], i:[13.4,16.4],st:'villa', h:[5,7],    p:0.45},   // Al Warqa
-  {a:[32.4,35.9], i:[16.4,20.4],st:'villa', h:[5,7],    p:0.3},    // Al Khawaneej
-  {a:[23.6,25.8], i:[15.6,17.6],st:'mid',   h:[7,12],   p:0.55},   // International City
-  {a:[17.8,20.0], i:[16.2,18.4],st:'mid',   h:[9,20],   p:0.4},    // Silicon Oasis
-  {a:[20.2,22.2], i:[18.8,20.8],st:'ind',   h:[6,10],   p:0.35},   // Academic City
-];
-const PARKS = [
-  {a:[16.0,16.9], i:[3.0,3.6]},    // Safa Park
-  {a:[23.6,24.7], i:[2.55,3.7]},   // Zabeel Park (Dubai Frame)
-  {a:[8.0,9.4],   i:[6.9,8.3]},    // Dubai Hills Park
-  {a:[25.3,25.95],i:[3.6,4.6]},    // Creek Park
-  {a:[31.3,32.5], i:[15.3,16.8]},  // Mushrif Park
-  {a:[33.0,34.0], i:[17.0,17.8]},  // Khawaneej farms
-  {a:[34.6,35.5], i:[18.4,19.3]},
-  {a:[33.4,34.2], i:[19.4,20.2]},
-];
-const AIRPORT = {a:[28.3,30.4], i:[5.4,9.8]};
-const RUNWAYS = [{a:29.0, i:[5.7,9.5]}, {a:29.6, i:[5.9,9.5]}];
-
-// roads: 0 highway, 1 major, 2 minor. Width in world px, half-width in km for the building mask.
-const RD = [ {w:6.5, km:0.15}, {w:4.4, km:0.1}, {w:3, km:0.07} ];
-const ROADS = [
-  {k:0, pts:[G(25.035,55.085),G(25.0705,55.1395),G(25.098,55.172),G(25.1185,55.2005),G(25.155,55.229),G(25.185,55.255),G(25.2045,55.2705),G(25.2255,55.2855),G(25.2330,55.2930)]}, // Sheikh Zayed Rd
-  {k:0, pts:[G(25.2330,55.2930),G(25.2440,55.3035),G(25.2485,55.3150),G(25.2600,55.3260),G(25.2800,55.3420),G(25.300,55.360)]},  // Al Maktoum Bridge
-  {k:0, pts:[G(25.030,55.140),G(25.050,55.165),G(25.080,55.195),G(25.115,55.225),G(25.150,55.245),G(25.175,55.270),G(25.190,55.300),G(25.2150,55.3300),G(25.2350,55.3450),G(25.2600,55.3480)]}, // Al Khail -> Garhoud
-  {k:0, pts:[G(25.005,55.150),G(25.045,55.210),G(25.090,55.275),G(25.140,55.335),G(25.195,55.395),G(25.240,55.420),G(25.300,55.430)]}, // Mohammed bin Zayed (E311)
-  {k:0, pts:[G(24.990,55.230),G(25.060,55.330),G(25.120,55.410),G(25.180,55.470),G(25.250,55.510),G(25.290,55.520)]}, // Emirates Rd (E611)
-  {k:1, pts:[G(25.200,55.320),G(25.160,55.370),G(25.120,55.420),G(25.080,55.470)]},                   // Al Ain Rd (E66)
-  {k:1, pts:[G(25.205,55.350),G(25.180,55.420),G(25.160,55.480),G(25.150,55.520)]},                   // Hatta Rd (E44)
-  {k:1, pts:[G(25.258,55.365),G(25.245,55.420),G(25.235,55.480),G(25.230,55.520)]},                   // Al Khawaneej Rd
-  {k:1, pts:[G(25.285,55.375),G(25.265,55.395),G(25.215,55.405),G(25.170,55.395)]},                   // Tripoli St / Mirdif
-  {k:1, pts:[G(25.100,55.180),G(25.060,55.220),G(25.030,55.255)]},                                    // Hessa St
-  {k:1, pts:[G(25.035,55.110),G(25.020,55.150),G(25.010,55.200)]},                                    // Furjan / Discovery Gardens
-  {k:1, pts:[[-3.4,-0.1],[0,0.42],[2.2,0.55],[3.4,0.8],[5.4,1.0],[9,0.95],[15,0.9],[17.5,0.8],[19.6,0.7],[21.2,0.62],[23.5,0.5],[26.2,0.45]]}, // Jumeirah Beach Rd
-  {k:1, pts:[[26.9,0.3],[28,0.55],[30,0.8],[31.6,1.25],[32.6,2.35],[34.5,3.3],[36,3.8]]},                                             // Deira corniche
-  {k:1, pts:[[0.6,0.45],[0.6,9.7]]}, {k:1, pts:[[4.15,0.8],[4.15,9.7]]}, {k:1, pts:[[7.9,0.95],[7.9,9.7]]},
-  {k:1, pts:[[11.4,0.92],[11.4,9.7]]}, {k:1, pts:[[14.9,0.9],[14.9,6.5]]}, {k:1, pts:[[21.3,0.62],[21.3,6.6]]},
-  {k:1, pts:[[23.5,0.5],[23.5,5.5]]}, {k:1, pts:[[25.2,0.45],[25.2,6.0]]}, {k:1, pts:[[28.4,0.6],[28.4,5.4]]},
-  {k:1, pts:[[30.6,0.8],[30.6,5.4]]},
-  {k:2, pts:[[10.5,1.6],[24.3,1.5]]},                                                                 // Al Wasl Rd
-  {k:2, pts:[[3.5,0.85],[3.56,-1.05]]},                                                                // Palm trunk
-  {k:2, pts:[[8.87,-0.05],[8.87,0.95]]},                                                               // Burj Al Arab bridge
-  {k:2, pts:[G(25.0806,55.1205),[-0.1,0.2]]},                                                         // Bluewaters bridge
-  {k:2, pts:[[18.6,-0.6],[18.6,0.8]]},                                                                 // Jumeirah Bay bridge
-];
-
-const LANDMARKS = [
-  {k:'burj',     at:G(25.1972,55.2744), name:'Burj Khalifa'},
-  {k:'mall',     at:G(25.1985,55.2796)},
-  {k:'baa',      at:G(25.1412,55.1853), name:'Burj Al Arab'},
-  {k:'ain',      at:G(25.0797,55.1198), name:'Ain Dubai'},
-  {k:'frame',    at:G(25.2353,55.3003), name:'Dubai Frame'},
-  {k:'motf',     at:G(25.2192,55.2819), name:'Museum of the Future'},
-  {k:'atlantis', at:ATLANTIS, name:'Atlantis'},
-  {k:'moe',      at:[G(25.1181,55.2006)[0], G(25.1181,55.2006)[1]+0.35]},
-  {k:'terminal', at:[30.05,6.9]},
-  {k:'meydan',   at:G(25.1570,55.2980)},
-  {k:'ibn',      at:G(25.0450,55.1180)},
-];
-
-/* =========================================================
-   AREAS  (what a place is filed under; also map labels)
-   ========================================================= */
-const ZONES = [
-  {id:'marina',      label:'Dubai Marina',  lat:25.0805, lng:55.1403},
-  {id:'jbr',         label:'JBR',           lat:25.0780, lng:55.1340},
-  {id:'jlt',         label:'JLT',           lat:25.0693, lng:55.1440},
-  {id:'bluewaters',  label:'Bluewaters',    lat:25.0806, lng:55.1205},
-  {id:'palm',        label:'Palm Jumeirah', lat:25.1124, lng:55.1390},
-  {id:'mediacity',   label:'Media City',    lat:25.0950, lng:55.1560},
-  {id:'barsha',      label:'Al Barsha',     lat:25.1100, lng:55.2000},
-  {id:'umsuqeim',    label:'Umm Suqeim',    lat:25.1500, lng:55.2080},
-  {id:'alquoz',      label:'Al Quoz',       lat:25.1400, lng:55.2300},
-  {id:'dubaihills',  label:'Dubai Hills',   lat:25.1050, lng:55.2450},
-  {id:'jvc',         label:'JVC',           lat:25.0600, lng:55.2100},
-  {id:'jumeirah',    label:'Jumeirah',      lat:25.2030, lng:55.2500},
-  {id:'lamer',       label:'La Mer',        lat:25.2280, lng:55.2530},
-  {id:'citywalk',    label:'City Walk',     lat:25.2060, lng:55.2630},
-  {id:'downtown',    label:'Downtown',      lat:25.1950, lng:55.2750},
-  {id:'difc',        label:'DIFC',          lat:25.2130, lng:55.2810},
-  {id:'businessbay', label:'Business Bay',  lat:25.1850, lng:55.2800},
-  {id:'karama',      label:'Karama',        lat:25.2450, lng:55.3050},
-  {id:'burdubai',    label:'Bur Dubai',     lat:25.2600, lng:55.2950},
-  {id:'deira',       label:'Deira',         lat:25.2700, lng:55.3200},
-  {id:'festivalcity',label:'Festival City', lat:25.2230, lng:55.3520},
-  // creek-side
-  {id:'alseef',      label:'Al Seef',       lat:25.2590, lng:55.2990},
-  {id:'creekharbour',label:'Dubai Creek Harbour', lat:25.2010, lng:55.3500},
-  {id:'aljaddaf',    label:'Al Jaddaf',     lat:25.2170, lng:55.3300},
-  {id:'oudmetha',    label:'Oud Metha',     lat:25.2350, lng:55.3150},
-  {id:'algarhoud',   label:'Al Garhoud',    lat:25.2400, lng:55.3450},
-  // old Dubai + north
-  {id:'satwa',       label:'Al Satwa',      lat:25.2250, lng:55.2750},
-  {id:'alqusais',    label:'Al Qusais',     lat:25.2780, lng:55.3800},
-  {id:'alnahda',     label:'Al Nahda',      lat:25.2900, lng:55.3700},
-  {id:'almamzar',    label:'Al Mamzar',     lat:25.2960, lng:55.3450},
-  // east
-  {id:'mirdif',      label:'Mirdif',        lat:25.2180, lng:55.4200},
-  {id:'alwarqa',     label:'Al Warqa',      lat:25.1900, lng:55.4100},
-  {id:'alkhawaneej', label:'Al Khawaneej',  lat:25.2270, lng:55.4800},
-  {id:'intlcity',    label:'International City', lat:25.1650, lng:55.4100},
-  {id:'siliconoasis',label:'Silicon Oasis', lat:25.1200, lng:55.3800},
-  {id:'meydan',      label:'Meydan',        lat:25.1600, lng:55.3000},
-  {id:'nadalsheba',  label:'Nad Al Sheba',  lat:25.1500, lng:55.3300},
-  {id:'d3',          label:'Design District', lat:25.1870, lng:55.2970},
-  // south-west
-  {id:'alsafa',      label:'Al Safa',       lat:25.1800, lng:55.2400},
-  {id:'alsufouh',    label:'Al Sufouh',     lat:25.1100, lng:55.1700},
-  {id:'barshaheights',label:'Barsha Heights', lat:25.0950, lng:55.1770},
-  {id:'dubaiharbour',label:'Dubai Harbour', lat:25.0930, lng:55.1450},
-  {id:'jvt',         label:'JVT',           lat:25.0500, lng:55.1900},
-  {id:'motorcity',   label:'Motor City',    lat:25.0470, lng:55.2350},
-  {id:'sportscity',  label:'Sports City',   lat:25.0400, lng:55.2200},
-  {id:'ranches',     label:'Arabian Ranches', lat:25.0550, lng:55.2700},
-  {id:'furjan',      label:'Al Furjan',     lat:25.0300, lng:55.1500},
-  {id:'discovery',   label:'Discovery Gardens', lat:25.0400, lng:55.1400},
-  {id:'ibnbattuta',  label:'Ibn Battuta',   lat:25.0450, lng:55.1180},
-];
-ZONES.forEach(z=>{ const p=toAI(z.lat,z.lng); z.a=p.a; z.i=p.i; });
-const zoneById = id => ZONES.find(z=>z.id===id);
-function nearestZone(a,i){
-  let best=ZONES[0], bd=Infinity;
-  ZONES.forEach(z=>{ const d=Math.hypot(z.a-a, z.i-i); if(d<bd){bd=d; best=z;} });
-  return best;
-}
-// tier 0 always visible, 1 when zoomed in a bit, 2 when zoomed in close
-const LABELS = [
-  {t:'Arabian Gulf', a:7.5, i:-6.6, tier:0, sea:true},
-  {t:'The World', a:14.8, i:-8.6, tier:1, sea:true},
-  {t:'Dubai Creek', a:26.25, i:4.9, tier:2, sea:true},
-  ...['palm','marina','downtown','deira'].map(id=>({z:id, tier:0})),
-  ...['jlt','barsha','alquoz','jumeirah','businessbay','karama','burdubai','dubaihills','jvc','umsuqeim','festivalcity',
-      'mirdif','alkhawaneej','intlcity','siliconoasis','creekharbour','meydan','alqusais','ranches','alwarqa'].map(id=>({z:id, tier:1})),
-  ...['jbr','bluewaters','mediacity','citywalk','difc','lamer','alseef','aljaddaf','oudmetha','algarhoud','satwa','alnahda',
-      'almamzar','nadalsheba','d3','alsafa','alsufouh','barshaheights','dubaiharbour','jvt','motorcity','sportscity','furjan',
-      'discovery','ibnbattuta'].map(id=>({z:id, tier:2})),
-  {t:'DXB Airport', a:29.3, i:9.9, tier:1},
-  ...LANDMARKS.filter(l=>l.name).map(l=>({t:l.name, a:l.at[0], i:l.at[1], tier:2, lm:true})),
-].map(l=>{ if (l.z){ const z=zoneById(l.z); return {t:z.label, a:z.a, i:z.i+0.35, tier:l.tier, z:l.z}; } return l; });
-
-/* =========================================================
-   TERRAIN RASTER
-   ========================================================= */
-const W_SEA=0, W_SHALLOW=1, L_BEACH=2, L_SAND=3, L_DUNE=4, L_URBAN=5, L_PARK=6, W_CANAL=7, L_TARMAC=8, L_PALM=9;
-const TILE_COLORS = ['#58C8BF','#78D7CC','#F6DDA8','#EDC586','#E0AE6C','#EBD3A7','#8CC46B','#4DB6B3','#CEC7BD','#F3D89F'];
-const isWaterT = t => t===W_SEA || t===W_SHALLOW || t===W_CANAL;
-const tType = new Uint8Array(ROWS*COLS);
-const roadMask = new Uint8Array(ROWS*COLS);
-const reserved = new Uint8Array(ROWS*COLS);
-const inRect = (a,i,R)=> a>=R.a[0] && a<=R.a[1] && i>=R.i[0] && i<=R.i[1];
-
-function buildTerrain(){
-  for (let r=0;r<ROWS;r++) for (let c=0;c<COLS;c++){
-    const {a,i} = gridToAI(c+0.5, r+0.5);
-    const ci = coastIn(a);
-    let t = i < ci ? W_SEA : L_SAND;
-    if (t===W_SEA){
-      const pm = palmAt(a,i);
-      if (pm) t = L_PALM;
-      else {
-        for (const is of ISLANDS){
-          const hit = is.e ? (((a-is.e[0])/is.rx)**2 + ((i-is.e[1])/is.ry)**2 < 1)
-                           : (a>=is.r[0][0] && a<=is.r[0][1] && i>=is.r[1][0] && i<=is.r[1][1]);
-          if (hit){ t = is.t==='urban' ? L_URBAN : is.t==='sand' ? L_SAND : L_BEACH; break; }
-        }
-        if (t===W_SEA && a>11 && a<19 && i<-4 && i>-8.8){
-          for (const w of WORLD_ISLES){ if (Math.hypot(a-w.a, i-w.i) < w.r){ t=L_BEACH; break; } }
-        }
-      }
-    } else {
-      if (i-ci < 0.28) t = L_BEACH;
-      else if (vnoise(a*0.55+3, i*0.55+7)*0.65 + vnoise(a*1.3, i*1.3)*0.35 > 0.62) t = L_DUNE;
-      if (t!==L_BEACH){
-        if (DISTRICTS.some(d=>inRect(a,i,d))) t = L_URBAN;
-        if (PARKS.some(p=>inRect(a,i,p))) t = L_PARK;
-        if (inRect(a,i,AIRPORT)) t = L_TARMAC;
-      }
-      if (distLine(a,i,CREEK) < 0.21 || Math.hypot(a-LAGOON.c[0], i-LAGOON.c[1]) < LAGOON.r
-          || distLine(a,i,CANAL) < 0.12 || distLine(a,i,MARINA) < 0.14
-          || Math.hypot(a-BURJ_LAKE.c[0], i-BURJ_LAKE.c[1]) < BURJ_LAKE.r) t = W_CANAL;
-    }
-    tType[r*COLS+c] = t;
-    if (!isWaterT(t)){
-      for (const rd of ROADS){ if (distLine(a,i,rd.pts) < RD[rd.k].km+0.06){ roadMask[r*COLS+c]=1; break; } }
-    }
-  }
-  // shallow water: open sea within ~0.4 km of land
-  const R=2;
-  for (let r=0;r<ROWS;r++) for (let c=0;c<COLS;c++){
-    if (tType[r*COLS+c]!==W_SEA) continue;
-    let near=false;
-    for (let dr=-R;dr<=R && !near;dr++) for (let dc=-R;dc<=R;dc++){
-      const rr=r+dr, cc=c+dc;
-      if (rr<0||cc<0||rr>=ROWS||cc>=COLS) continue;
-      const t=tType[rr*COLS+cc];
-      if (!isWaterT(t)){ near=true; break; }
-    }
-    if (near) tType[r*COLS+c]=W_SHALLOW;
-  }
-}
-
-/* =========================================================
-   OBJECTS  (buildings, trees, boats, landmarks) — depth sorted
-   ========================================================= */
-const OBJECTS = [];
-const PAL = {
-  glass: ['#8FC3DB','#6FAACB','#A7D0E2','#7FB0C8','#9DBFD0','#B7C9D6','#E3CFA8'],
-  mid:   ['#EAD7B7','#E3C9A0','#F0E2C8','#D9BF96','#E8CDB0','#F2D9B5'],
-  low:   ['#F1E3C9','#E9D3AE','#F4E8D4','#E2C8A2'],
-  villa: ['#F7EEDC','#F2E4CB','#EFE0C6'],
-  ind:   ['#D8CFC2','#CFC3B1','#E0D8CC','#C8BCA8'],
-};
-const ROOFS = ['#D98C5F','#C9764E','#E3A071','#F7EEDC','#F7EEDC'];
-
-function tileWorld(c,r){ return proj(c+0.5, r+0.5); }
-function reserveAround(a,i,rad){
-  const g=aiToGrid(a,i), c0=Math.floor(g.gx), r0=Math.floor(g.gy);
-  for (let dr=-rad;dr<=rad;dr++) for (let dc=-rad;dc<=rad;dc++){
-    const r=r0+dr, c=c0+dc; if (r>=0&&c>=0&&r<ROWS&&c<COLS) reserved[r*COLS+c]=1;
-  }
-}
-
-function buildObjects(){
-  LANDMARKS.forEach(l=>{
-    const rad = l.k==='meydan' ? 4 : l.k==='mall'||l.k==='terminal'||l.k==='atlantis'||l.k==='burj'||l.k==='ibn' ? 2 : 1;
-    reserveAround(l.at[0], l.at[1], rad);
-    const g=aiToGrid(l.at[0], l.at[1]), p=proj(g.gx,g.gy);
-    OBJECTS.push({k:'lm', lm:l.k, x:p.x, y:p.y, d:g.gx+g.gy+0.9});
-  });
-
-  const addBox = (c,r,st,h,rng)=>{
-    const p = tileWorld(c,r), pal = PAL[st], base = pal[Math.floor(rng()*pal.length)];
-    const s = st==='villa' ? 0.28 : st==='ind' ? 0.4 : st==='glass' ? 0.3 : 0.34;
-    const sx = st==='ind' ? s : s - rng()*0.05, sy = st==='ind' ? s*0.8 : s - rng()*0.05;
-    const roof = st==='villa' ? ROOFS[Math.floor(rng()*ROOFS.length)] : null;
-    OBJECTS.push({k:'box', x:p.x, y:p.y, hx:sx, hy:sy, h, st, d:c+r+1,
-      opts:{ top:roof||shade(base,1.07), left:shade(base,0.9), right:shade(base,0.72),
-             floors: st==='glass'?5 : st==='villa'?0 : 4, mullion: st==='glass',
-             floorColor: st==='glass'?'rgba(255,255,255,0.3)':undefined }});
-  };
-  const addTree = (c,r,rng)=>{
-    const p = tileWorld(c,r);
-    OBJECTS.push({k:'tree', x:p.x+(rng()-0.5)*8, y:p.y+(rng()-0.5)*4, d:c+r+1.05});
-  };
-  const free = (c,r)=>{ const k=r*COLS+c; return !roadMask[k] && !reserved[k]; };
-
-  DISTRICTS.forEach((d,di)=>{
-    const rng = mulberry32(100+di);
-    for (let r=0;r<ROWS;r++) for (let c=0;c<COLS;c++){
-      const {a,i} = gridToAI(c+0.5,r+0.5);
-      if (!inRect(a,i,d)) continue;
-      const t = tType[r*COLS+c];
-      if (t!==L_URBAN || !free(c,r)) continue;
-      const roll = rng();
-      if (roll < d.p){
-        const h = d.h[0] + Math.pow(rng(),1.6)*(d.h[1]-d.h[0]);
-        addBox(c,r,d.st,h,rng);
-      } else if ((d.st==='villa' || d.st==='low') && roll < d.p+0.3) addTree(c,r,rng);
-    }
-  });
-
-  const rng = mulberry32(999);
-  for (let r=0;r<ROWS;r++) for (let c=0;c<COLS;c++){
-    const k=r*COLS+c, t=tType[k];
-    const {a,i} = gridToAI(c+0.5,r+0.5);
-    if (t===L_PALM && free(c,r)){
-      const trunk = distSeg(a,i, PALM.base[0],PALM.base[1], PALM.hub[0],PALM.hub[1]) < 0.2;
-      if (trunk){ if (rng()<0.6) addBox(c,r,'mid', 10+rng()*14, rng); }
-      else if (Math.hypot(a-ATLANTIS[0], i-ATLANTIS[1])>0.6){
-        const roll=rng(); if (roll<0.3) addBox(c,r,'villa',5+rng()*2,rng); else if (roll<0.5) addTree(c,r,rng);
-      }
-    } else if (t===L_PARK && !roadMask[k] && rng()<0.45) addTree(c,r,rng);
-    else if (t===L_URBAN && free(c,r) && !DISTRICTS.some(d=>inRect(a,i,d))){
-      // islands (Bluewaters, Dubai Harbour, Port Rashid)
-      const roll=rng(); if (roll<0.45) addBox(c,r, a>20?'ind':'mid', 8+rng()*16, rng);
-    } else if (t===L_BEACH && i>0 && rng()<0.07 && !roadMask[k]) addTree(c,r,rng);
-  }
-
-  // boats on the creek, the marina and off the Palm
-  const boatAt = (a,i,kind)=>{ const g=aiToGrid(a,i), p=proj(g.gx,g.gy); OBJECTS.push({k:'boat', kind, x:p.x, y:p.y, d:g.gx+g.gy+0.5}); };
-  [[0.18,'dhow'],[0.32,'abra'],[0.45,'dhow'],[0.6,'abra']].forEach(([f,kind])=>{
-    const seg = CREEK[Math.floor(f*(CREEK.length-1))], nxt = CREEK[Math.floor(f*(CREEK.length-1))+1];
-    boatAt((seg[0]+nxt[0])/2, (seg[1]+nxt[1])/2, kind);
-  });
-  boatAt(MARINA[1][0], MARINA[1][1], 'yacht'); boatAt(MARINA[3][0], MARINA[3][1], 'yacht');
-  boatAt(6.2,-1.8,'yacht'); boatAt(11.5,-2.4,'dhow'); boatAt(21.5,-2.2,'yacht'); boatAt(26.4,-1.6,'dhow');
-
-  OBJECTS.sort((p,q)=>p.d-q.d);
-}
-
-/* =========================================================
-   RENDERING
-   ========================================================= */
-const OUT = '#4A3B30';
-let LW = 0.8;   // outline width in world px (set per render)
-const up = (p,h)=>[p[0], p[1]-h];
-
-function polyPath(ctx, pts){
-  ctx.beginPath(); ctx.moveTo(pts[0][0],pts[0][1]);
-  for (let k=1;k<pts.length;k++) ctx.lineTo(pts[k][0],pts[k][1]);
-  ctx.closePath();
-}
-function face(ctx, pts, fill){ polyPath(ctx,pts); ctx.fillStyle=fill; ctx.fill(); ctx.stroke(); }
-
-// axis-aligned iso box centred on world point (cx,cy); hx/hy = half size in tiles along gx/gy
-function isoBox(ctx, cx, cy, hx, hy, z0, h, base, opts){
-  opts = opts||{};
-  const ax=TW/2*hx, ay=TH/2*hx, bx=-TW/2*hy, by=TH/2*hy;
-  const N=[cx-ax-bx, cy-ay-by-z0], E=[cx+ax-bx, cy+ay-by-z0], S=[cx+ax+bx, cy+ay+by-z0], W=[cx-ax+bx, cy-ay+by-z0];
-  const left=opts.left||shade(base,0.9), right=opts.right||shade(base,0.72), top=opts.top||shade(base,1.07);
-  face(ctx,[W,S,up(S,h),up(W,h)], left);
-  face(ctx,[S,E,up(E,h),up(S,h)], right);
-  if (opts.floors && h>9){
-    ctx.beginPath();
-    for (let z=opts.floors; z<h-3; z+=opts.floors){ ctx.moveTo(W[0],W[1]-z); ctx.lineTo(S[0],S[1]-z); ctx.lineTo(E[0],E[1]-z); }
-    ctx.save(); ctx.strokeStyle = opts.floorColor || 'rgba(60,40,25,0.16)'; ctx.lineWidth = LW*0.7; ctx.stroke(); ctx.restore();
-  }
-  if (opts.mullion && h>20){
-    ctx.save(); ctx.strokeStyle='rgba(255,255,255,0.45)'; ctx.lineWidth=LW*0.9; ctx.beginPath();
-    const ml=[(W[0]+S[0])/2,(W[1]+S[1])/2], mr=[(S[0]+E[0])/2,(S[1]+E[1])/2];
-    ctx.moveTo(ml[0],ml[1]-2); ctx.lineTo(ml[0],ml[1]-h+2); ctx.moveTo(mr[0],mr[1]-2); ctx.lineTo(mr[0],mr[1]-h+2);
-    ctx.stroke(); ctx.restore();
-  }
-  face(ctx,[up(N,h),up(E,h),up(S,h),up(W,h)], top);
-  return {N,E,S,W};
-}
-
-function drawGround(ctx, view){
-  const n = TILE_COLORS.length;
-  const tiles = Array.from({length:n}, ()=>new Path2D());
-  const faceL = Array.from({length:n}, ()=>new Path2D());
-  const faceR = Array.from({length:n}, ()=>new Path2D());
-  const waterGrid = new Path2D(), landGrid = new Path2D(), foam = new Path2D();
-  const hw=TW/2, hh=TH/2;
-  for (let r=0;r<ROWS;r++){
-    for (let c=0;c<COLS;c++){
-      const x=(c-r)*hw+WORLD.ox, y=(c+r)*hh+WORLD.oy;         // N corner
-      if (view && (x+hw<view.x0 || x-hw>view.x1 || y+TH+SLAB<view.y0 || y>view.y1)) continue;
-      const k=r*COLS+c, t=tType[k], water=isWaterT(t);
-      const p=tiles[t];
-      p.moveTo(x,y); p.lineTo(x+hw,y+hh); p.lineTo(x,y+TH); p.lineTo(x-hw,y+hh); p.closePath();
-      if (water){ waterGrid.moveTo(x-hw,y+hh); waterGrid.lineTo(x,y); waterGrid.lineTo(x+hw,y+hh); }
-      else if (t===L_URBAN || t===L_PARK || t===L_TARMAC){ landGrid.moveTo(x-hw,y+hh); landGrid.lineTo(x,y); landGrid.lineTo(x+hw,y+hh); }
-      // coastline foam on the land's back edges
-      if (!water){
-        if (c>0 && isWaterT(tType[k-1])){ foam.moveTo(x-hw,y+hh); foam.lineTo(x,y); }
-        if (r>0 && isWaterT(tType[k-COLS])){ foam.moveTo(x,y); foam.lineTo(x+hw,y+hh); }
-      }
-      // front faces: a lip where land meets water, the slab at the map's front edges
-      const dR = c===COLS-1 ? SLAB : (!water && isWaterT(tType[k+1]) ? LIP : 0);
-      if (dR){ const f=faceR[t]; f.moveTo(x,y+TH); f.lineTo(x+hw,y+hh); f.lineTo(x+hw,y+hh+dR); f.lineTo(x,y+TH+dR); f.closePath(); }
-      const dL = r===ROWS-1 ? SLAB : (!water && isWaterT(tType[k+COLS]) ? LIP : 0);
-      if (dL){ const f=faceL[t]; f.moveTo(x-hw,y+hh); f.lineTo(x,y+TH); f.lineTo(x,y+TH+dL); f.lineTo(x-hw,y+hh+dL); f.closePath(); }
-    }
-  }
-  for (let t=0;t<n;t++){ ctx.fillStyle=TILE_COLORS[t]; ctx.fill(tiles[t]); }
-  ctx.lineWidth=LW*0.6;
-  ctx.strokeStyle='rgba(255,255,255,0.42)'; ctx.stroke(waterGrid);
-  ctx.strokeStyle='rgba(110,80,50,0.14)'; ctx.stroke(landGrid);
-  ctx.lineWidth=LW*1.3; ctx.strokeStyle='rgba(255,255,255,0.85)'; ctx.stroke(foam);
-  ctx.lineWidth=LW*0.8; ctx.strokeStyle=OUT;
-  for (let t=0;t<n;t++){
-    ctx.fillStyle=shade(TILE_COLORS[t], isWaterT(t)?0.8:0.82); ctx.fill(faceL[t]); ctx.stroke(faceL[t]);
-    ctx.fillStyle=shade(TILE_COLORS[t], isWaterT(t)?0.66:0.66); ctx.fill(faceR[t]); ctx.stroke(faceR[t]);
-  }
-}
-
-let ROADS_W=null, MAP_CLIP=null, RUNWAYS_W=null;
-function prepRoads(){
-  ROADS_W = ROADS.map(r=>({k:r.k, pts:r.pts.map(([a,i])=>{ const p=aiToWorld(a,i); return [p.x,p.y]; })}));
-  const c=[proj(0,0),proj(COLS,0),proj(COLS,ROWS),proj(0,ROWS)];
-  MAP_CLIP = new Path2D(); MAP_CLIP.moveTo(c[0].x,c[0].y); c.slice(1).forEach(p=>MAP_CLIP.lineTo(p.x,p.y)); MAP_CLIP.closePath();
-  RUNWAYS_W = RUNWAYS.map(rw=>{
-    const q=(a,i)=>{ const p=aiToWorld(a,i); return [p.x,p.y]; };
-    return { poly:[q(rw.a-0.09,rw.i[0]),q(rw.a+0.09,rw.i[0]),q(rw.a+0.09,rw.i[1]),q(rw.a-0.09,rw.i[1])], line:[q(rw.a,rw.i[0]+0.1),q(rw.a,rw.i[1]-0.1)] };
+/* ---------- cluster list ---------- */
+function openClusterList(items){
+  openSheet(body=>{
+    body.innerHTML = `<div class="sheet-head"><div class="grow"><h2 class="h-md">${items.length} spots here</h2><span class="hand">zoom in to split them up</span></div></div>
+      <div class="stack">${items.map(i=>venueRowHTML(i.data)).join('')}</div>`;
+    body.querySelectorAll('[data-venue]').forEach(r=>r.addEventListener('click', ()=>{ back(); setTimeout(()=>go.place(r.dataset.venue), 60); }));
   });
 }
-function strokeLine(ctx, pts){ ctx.beginPath(); ctx.moveTo(pts[0][0],pts[0][1]); for(let k=1;k<pts.length;k++) ctx.lineTo(pts[k][0],pts[k][1]); ctx.stroke(); }
-function drawRoads(ctx){
-  ctx.save(); ctx.clip(MAP_CLIP);
-  ctx.lineCap='round'; ctx.lineJoin='round';
-  RUNWAYS_W.forEach(rw=>{ ctx.lineWidth=LW*0.8; ctx.strokeStyle=OUT; face(ctx, rw.poly, '#B7B0A6'); });
-  ctx.setLineDash([4,3]); ctx.strokeStyle='#FFFFFF'; ctx.lineWidth=0.9; RUNWAYS_W.forEach(rw=>strokeLine(ctx, rw.line)); ctx.setLineDash([]);
-  [2,1,0].forEach(k=>{ ctx.strokeStyle='#6C5E54'; ctx.lineWidth=RD[k].w+LW*2; ROADS_W.filter(r=>r.k===k).forEach(r=>strokeLine(ctx,r.pts)); });
-  [2,1,0].forEach(k=>{ ctx.strokeStyle= k===0 ? '#948A83' : '#A1968E'; ctx.lineWidth=RD[k].w; ROADS_W.filter(r=>r.k===k).forEach(r=>strokeLine(ctx,r.pts)); });
-  ctx.setLineDash([3,3]); ctx.strokeStyle='#FBF4E6'; ctx.lineWidth=0.6;
-  ROADS_W.filter(r=>r.k<2).forEach(r=>strokeLine(ctx,r.pts));
-  ctx.setLineDash([]);
-  ctx.restore();
-}
-
-/* ---------- landmarks ---------- */
-function drawLandmark(ctx, o){
-  const x=o.x, y=o.y;
-  switch(o.lm){
-    case 'burj': {
-      const tiers=[[0.62,30],[0.52,30],[0.43,28],[0.34,26],[0.26,24],[0.19,20],[0.13,18]];
-      let z=0;
-      isoBox(ctx,x,y,0.95,0.95,0,3,'#9BC98A');                              // plaza
-      z=3;
-      tiers.forEach(([s,h],k)=>{
-        isoBox(ctx,x,y,s,s,z,h,'#8CB9D2',{top:'#D6EAF3',left:'#9FC8DD',right:'#6897B6',mullion:true,floors:6,floorColor:'rgba(255,255,255,0.25)'});
-        z+=h;
-        if (k<tiers.length-1) isoBox(ctx,x,y,s*0.92,s*0.92,z,2.5,'#B98A5E');
-        z+=k<tiers.length-1?2.5:0;
-      });
-      ctx.save(); ctx.lineCap='round';
-      ctx.strokeStyle=OUT; ctx.lineWidth=2.8; ctx.beginPath(); ctx.moveTo(x,y-z); ctx.lineTo(x,y-z-46); ctx.stroke();
-      ctx.strokeStyle='#E6F1F6'; ctx.lineWidth=1.4; ctx.stroke(); ctx.restore();
-      break;
-    }
-    case 'mall': isoBox(ctx,x,y,1.3,0.9,0,9,'#F1E2C4',{floors:4}); isoBox(ctx,x-4,y-1,0.4,0.4,9,5,'#E7D3AE'); break;
-    case 'baa': {
-      ctx.save();
-      ctx.lineWidth=LW;
-      ctx.strokeStyle=OUT; ctx.fillStyle='#F8F5EE';
-      ctx.beginPath(); ctx.moveTo(x+5,y-2); ctx.quadraticCurveTo(x-24,y-38,x+3,y-80); ctx.lineTo(x+6,y-74); ctx.lineTo(x+6,y-2); ctx.closePath(); ctx.fill(); ctx.stroke();
-      ctx.strokeStyle='rgba(120,140,160,0.45)'; ctx.lineWidth=LW*0.6; ctx.beginPath();
-      for (let z=10; z<70; z+=7){ const w=Math.max(1,14-Math.abs(z-38)*0.35); ctx.moveTo(x+5,y-z); ctx.lineTo(x+5-w,y-z-2); }
-      ctx.stroke();
-      ctx.lineCap='round'; ctx.strokeStyle=OUT; ctx.lineWidth=3.4; ctx.beginPath(); ctx.moveTo(x+7,y-1); ctx.lineTo(x+7,y-88); ctx.stroke();
-      ctx.strokeStyle='#A9B5C0'; ctx.lineWidth=2; ctx.stroke();
-      ctx.fillStyle='#7FA38A'; ctx.strokeStyle=OUT; ctx.lineWidth=LW; ctx.beginPath(); ctx.ellipse(x-8,y-56,5,2.4,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
-      ctx.restore(); break;
-    }
-    case 'ain': {
-      const cy=y-36, R=30;
-      ctx.save(); ctx.lineCap='round';
-      ctx.strokeStyle=OUT; ctx.lineWidth=2.6; ctx.beginPath(); ctx.moveTo(x-8,y); ctx.lineTo(x,cy); ctx.lineTo(x+8,y); ctx.stroke();
-      ctx.strokeStyle='#D9DDE1'; ctx.lineWidth=1.4; ctx.stroke();
-      ctx.strokeStyle='rgba(74,59,48,0.55)'; ctx.lineWidth=0.5; ctx.beginPath();
-      for (let k=0;k<12;k++){ const t=k/12*Math.PI*2; ctx.moveTo(x,cy); ctx.lineTo(x+Math.cos(t)*R*0.38, cy+Math.sin(t)*R); } ctx.stroke();
-      ctx.strokeStyle=OUT; ctx.lineWidth=3.6; ctx.beginPath(); ctx.ellipse(x,cy,R*0.38,R,0,0,Math.PI*2); ctx.stroke();
-      ctx.strokeStyle='#F4F6F8'; ctx.lineWidth=2; ctx.stroke();
-      ctx.fillStyle='#E8B84B';
-      for (let k=0;k<16;k++){ const t=k/16*Math.PI*2; ctx.beginPath(); ctx.arc(x+Math.cos(t)*R*0.38, cy+Math.sin(t)*R, 1.1, 0, Math.PI*2); ctx.fill(); }
-      ctx.restore(); break;
-    }
-    case 'frame': {
-      const gold='#E2B544', o=0.5;
-      isoBox(ctx,x,y,0.9,0.5,0,2,'#9BC98A');
-      isoBox(ctx,x-TW/2*o,y-TH/2*o,0.13,0.13,2,48,gold,{floors:6});
-      isoBox(ctx,x+TW/2*o,y+TH/2*o,0.13,0.13,2,48,gold,{floors:6});
-      isoBox(ctx,x,y,o+0.13,0.13,44,7,gold);
-      break;
-    }
-    case 'motf': {
-      isoBox(ctx,x,y,0.55,0.55,0,4,'#8FC77A');
-      ctx.save(); ctx.lineWidth=LW; ctx.strokeStyle=OUT;
-      ctx.fillStyle='#D3D8DE'; ctx.beginPath(); ctx.ellipse(x,y-18,10,13,-0.35,0,Math.PI*2); ctx.fill(); ctx.stroke();
-      ctx.fillStyle='#8E99A5'; ctx.beginPath(); ctx.ellipse(x+1.5,y-19,4.2,7.2,-0.35,0,Math.PI*2); ctx.fill(); ctx.stroke();
-      ctx.strokeStyle='rgba(74,59,48,0.35)'; ctx.lineWidth=LW*0.5; ctx.beginPath(); ctx.moveTo(x-6,y-10); ctx.lineTo(x-3,y-26); ctx.moveTo(x+5,y-8); ctx.lineTo(x+8,y-24); ctx.stroke();
-      ctx.restore(); break;
-    }
-    case 'atlantis': {
-      const c='#E8A48A';
-      isoBox(ctx,x,y,1.6,0.45,0,13,c,{floors:4});
-      isoBox(ctx,x-TW/2*0.45,y-TH/2*0.45,0.25,0.3,13,20,c,{floors:4});
-      isoBox(ctx,x+TW/2*0.45,y+TH/2*0.45,0.25,0.3,13,20,c,{floors:4});
-      isoBox(ctx,x,y,0.7,0.3,31,6,'#F0BCA4');
-      break;
-    }
-    case 'moe': isoBox(ctx,x,y,1.1,0.55,0,11,'#E9DCC6',{top:'#F6FAFC',floors:4}); break;
-    case 'meydan': {
-      // racecourse: an oval dirt track round a green infield, grandstand along the front straight
-      const iso = (r,k)=>{ ctx.beginPath(); for (let t=0;t<=64;t++){ const a=t/64*Math.PI*2, gx=Math.cos(a)*r*1.5, gy=Math.sin(a)*r;
-        const px=x+(gx-gy)*TW/2, py=y+(gx+gy)*TH/2; t?ctx.lineTo(px,py):ctx.moveTo(px,py); } ctx.closePath(); ctx.fillStyle=k; ctx.fill(); ctx.stroke(); };
-      ctx.lineWidth=LW; ctx.strokeStyle=OUT;
-      iso(2.6,'#C99A63'); iso(2.1,'#8CC46B'); iso(1.3,'#7FB862');
-      isoBox(ctx, x-TW/2*2.95, y+TH/2*2.95, 2.2, 0.3, 0, 11, '#F2EEE6', {floors:4, top:'#DDE7EC'});   // just outside the track at gy=+2.95
-      break;
-    }
-    case 'ibn': isoBox(ctx,x,y,0.5,1.8,0,8,'#E9C99A',{floors:4, top:'#D9A36E'}); break;
-    case 'terminal':
-      isoBox(ctx,x,y,1.6,0.35,0,8,'#E5EBEE',{floors:4});
-      isoBox(ctx,x+30,y+6,0.12,0.12,0,28,'#E5EBEE'); isoBox(ctx,x+30,y+6,0.22,0.22,28,5,'#9FC0D6');
-      break;
-  }
-}
-function drawTree(ctx,o){
-  ctx.strokeStyle=OUT; ctx.lineWidth=LW;
-  ctx.beginPath(); ctx.moveTo(o.x,o.y); ctx.lineTo(o.x,o.y-3); ctx.stroke();
-  ctx.fillStyle='#6DB35A'; ctx.beginPath(); ctx.arc(o.x,o.y-5,2.7,0,Math.PI*2); ctx.fill(); ctx.stroke();
-  ctx.fillStyle='rgba(255,255,255,0.28)'; ctx.beginPath(); ctx.arc(o.x-0.9,o.y-6,1,0,Math.PI*2); ctx.fill();
-}
-function drawBoat(ctx,o){
-  const x=o.x, y=o.y; ctx.strokeStyle=OUT; ctx.lineWidth=LW;
-  if (o.kind==='yacht'){
-    face(ctx,[[x-6,y-1],[x+6,y-1],[x+4,y+2],[x-4,y+2]],'#FFFFFF'); face(ctx,[[x-2,y-4],[x+3,y-4],[x+3,y-1],[x-2,y-1]],'#D8E4EA');
-  } else {
-    face(ctx,[[x-6,y-1],[x+6,y-2],[x+4,y+2],[x-4,y+2]],'#A0683A');
-    if (o.kind==='dhow') face(ctx,[[x-1,y-2],[x-1,y-13],[x+6,y-3]],'#F5EBD6');
-    else face(ctx,[[x-3,y-4],[x+3,y-4],[x+3,y-1],[x-3,y-1]],'#E8C06A');
-  }
-}
-function drawObjects(ctx, view){
-  ctx.lineJoin='round';
-  for (const o of OBJECTS){
-    if (view && (o.x<view.x0-40 || o.x>view.x1+40 || o.y<view.y0-10 || o.y>view.y1+280)) continue;
-    ctx.strokeStyle=OUT; ctx.lineWidth=LW;
-    if (o.k==='box') isoBox(ctx,o.x,o.y,o.hx,o.hy,0,o.h,null,o.opts);
-    else if (o.k==='tree') drawTree(ctx,o);
-    else if (o.k==='boat') drawBoat(ctx,o);
-    else drawLandmark(ctx,o);
-  }
-}
-function drawScene(ctx, view){
-  ctx.lineJoin='round'; ctx.lineCap='butt';
-  drawGround(ctx, view);
-  drawRoads(ctx);
-  drawObjects(ctx, view);
-}
-
-/* =========================================================
-   STATE
-   ========================================================= */
-let places = loadPlaces();
-let activeCats = new Set(CATEGORIES.map(c=>c.id));
-let topRatedOnly = false;
-let statusFilter = 'all';
-let sortMode = 'recent';
-let searchQuery = '';
-let editingId = null;
-let pendingPhoto = null;
-let draft = null;             // {status, zone, lat, lng} while the form is open
-let picking = false;
-let lastDeleted = null;
-let highlightId = null;
-let newPinId = null;
-let meWorld = null;
-
-const cam = { x:0, y:0, s:1 };
-let baseFit = 0.2, MIN_S = 0.15;
-const MAX_S = 7;
-const reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-/* =========================================================
-   CANVAS + CACHE
-   ========================================================= */
-const wrap = document.getElementById('mapWrap');
-const canvas = document.getElementById('mapCanvas');
-const ctx = canvas.getContext('2d');
-let dpr = Math.min(window.devicePixelRatio||1, 2);
-let cache = null, cacheScale = 1;
-let viewW = 0, viewH = 0;
-let interacting = false;
-let rafPending = false;
-
-function buildCache(){
-  const maxPx = 9e6;
-  cacheScale = Math.min(1.7, Math.sqrt(maxPx/(WORLD.w*WORLD.h)));
-  cache = document.createElement('canvas');
-  cache.width = Math.round(WORLD.w*cacheScale); cache.height = Math.round(WORLD.h*cacheScale);
-  const c = cache.getContext('2d');
-  c.scale(cacheScale, cacheScale);
-  LW = 0.75;
-  drawScene(c, null);
-}
-
-function resizeCanvas(){
-  const r = wrap.getBoundingClientRect();
-  if (!r.width || !r.height) return false;
-  viewW = r.width; viewH = r.height;
-  dpr = Math.min(window.devicePixelRatio||1, 2);
-  canvas.width = Math.round(viewW*dpr); canvas.height = Math.round(viewH*dpr);
-  canvas.style.width = viewW+'px'; canvas.style.height = viewH+'px';
-  return true;
-}
-
-function requestRender(){ if (!rafPending){ rafPending=true; requestAnimationFrame(render); } }
-function render(){
-  rafPending = false;
-  if (!viewW || !cache) return;
-  ctx.setTransform(1,0,0,1,0,0);
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  ctx.setTransform(dpr*cam.s,0,0,dpr*cam.s,dpr*cam.x,dpr*cam.y);
-  const needCrisp = cam.s*dpr > cacheScale*1.15;
-  const visTiles = (viewW/cam.s)*(viewH/cam.s)/(TW*TH/2);
-  // while panning/zooming through busy views use the cached bitmap; redraw crisp once you let go
-  if (!needCrisp || (interacting && visTiles > 1100)){
-    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(cache, 0, 0, WORLD.w, WORLD.h);
-  } else {
-    LW = Math.max(0.22, Math.min(0.8, 1.05/cam.s));
-    drawScene(ctx, { x0:-cam.x/cam.s, y0:-cam.y/cam.s, x1:(viewW-cam.x)/cam.s, y1:(viewH-cam.y)/cam.s });
-  }
-  updateOverlay();
-}
-
-/* =========================================================
-   CAMERA
-   ========================================================= */
-function aiBounds(pts){
-  const w=pts.map(([a,i])=>aiToWorld(a,i)), xs=w.map(p=>p.x), ys=w.map(p=>p.y);
-  return { x0:Math.min(...xs), x1:Math.max(...xs), y0:Math.min(...ys)-60, y1:Math.max(...ys) };
-}
-// how far the camera may roam (all the land), and what "fit city" frames (palm crescent to the airport)
-const FRAME = aiBounds([[-5.6,-4.8],[35.8,-4.8],[35.8,21.2],[-5.6,21.2]]);
-const CORE  = aiBounds([[-2.4,-4.8],[31.8,-4.8],[31.8,9.9],[-2.4,9.9]]);
-function clampCam(){
-  cam.s = Math.max(MIN_S, Math.min(MAX_S, cam.s));
-  const cx=(viewW/2-cam.x)/cam.s, cy=(viewH/2-cam.y)/cam.s;
-  const ccx=Math.max(FRAME.x0, Math.min(FRAME.x1, cx)), ccy=Math.max(FRAME.y0, Math.min(FRAME.y1, cy));
-  cam.x = viewW/2 - ccx*cam.s; cam.y = viewH/2 - ccy*cam.s;
-}
-function setView(cx, cy, s){ cam.s=s; cam.x=viewW/2-cx*s; cam.y=viewH/2-cy*s; clampCam(); requestRender(); }
-function viewCenter(){ return { x:(viewW/2-cam.x)/cam.s, y:(viewH/2-cam.y)/cam.s }; }
-function fitScaleFor(b, pad){
-  pad = pad||{x:40,top:90,bottom:40};
-  return Math.min((viewW-pad.x*2)/Math.max(1,b.x1-b.x0), (viewH-pad.top-pad.bottom)/Math.max(1,b.y1-b.y0));
-}
-function computeBaseFit(){
-  // on narrow portrait screens let the far ends crop a little rather than shrink the city to a sliver
-  const narrow = viewW < 600;
-  const b = narrow ? {x0:CORE.x0+(CORE.x1-CORE.x0)*0.1, x1:CORE.x1-(CORE.x1-CORE.x0)*0.06, y0:CORE.y0, y1:CORE.y1} : CORE;
-  baseFit = fitScaleFor(b, {x:10, top:20, bottom:20});
-  MIN_S = Math.min(baseFit*0.8, fitScaleFor(FRAME, {x:10, top:20, bottom:20}));   // can zoom out to the whole map
-  return b;
-}
-function fitCity(animate){
-  const b = computeBaseFit();
-  const cx=(b.x0+b.x1)/2, cy=(b.y0+b.y1)/2;
-  animate ? flyTo(cx,cy,baseFit) : setView(cx,cy,baseFit);
-}
-function fitPlaces(list, animate){
-  const pts = list.map(p=>placeWorld(p));
-  if (!pts.length) return fitCity(animate);
-  const b = { x0:Math.min(...pts.map(p=>p.x)), x1:Math.max(...pts.map(p=>p.x)), y0:Math.min(...pts.map(p=>p.y)), y1:Math.max(...pts.map(p=>p.y)) };
-  const s = Math.max(baseFit, Math.min(2.2, fitScaleFor(b, {x:50, top:110, bottom:50})));
-  const cx=(b.x0+b.x1)/2, cy=(b.y0+b.y1)/2 - 20/s;
-  animate ? flyTo(cx,cy,s) : setView(cx,cy,s);
-}
-let flyAnim = null;
-function flyTo(cx, cy, s, dur){
-  s = Math.max(MIN_S, Math.min(MAX_S, s));
-  if (reduceMotion){ setView(cx,cy,s); return; }
-  dur = dur || 520;
-  const from = viewCenter(), s0 = cam.s, t0 = performance.now();
-  cancelAnimationFrame(flyAnim); stopInertia();
-  interacting = true;
-  const ease = t=>t<0.5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2;
-  const step = now=>{
-    const t = Math.min(1,(now-t0)/dur), e=ease(t);
-    const sc = Math.exp(Math.log(s0)+(Math.log(s)-Math.log(s0))*e);
-    cam.s = sc; cam.x = viewW/2-(from.x+(cx-from.x)*e)*sc; cam.y = viewH/2-(from.y+(cy-from.y)*e)*sc;
-    clampCam(); requestRender();
-    if (t<1) flyAnim = requestAnimationFrame(step); else { interacting=false; requestRender(); }
-  };
-  flyAnim = requestAnimationFrame(step);
-}
-function zoomAt(sx, sy, ns){
-  ns = Math.max(MIN_S, Math.min(MAX_S, ns));
-  const wx=(sx-cam.x)/cam.s, wy=(sy-cam.y)/cam.s;
-  cam.s=ns; cam.x=sx-wx*ns; cam.y=sy-wy*ns; clampCam(); requestRender();
-}
-
-/* =========================================================
-   GESTURES: pan (with momentum), pinch, wheel, double-tap
-   ========================================================= */
-let inertia = null;
-function stopInertia(){ if (inertia){ cancelAnimationFrame(inertia); inertia=null; interacting=false; } }
-(function initGestures(){
-  const pointers = new Map();
-  let downAt=null, dragged=false, lastDist=null, lastMid=null, vel={x:0,y:0}, lastMove=0, lastTap={t:0,x:0,y:0};
-  const SLOP=6;
-  const uiTarget = t => t.closest('.map-ctrl, .cluster-pop, .pick-actions, .empty-card');
-
-  wrap.addEventListener('pointerdown', e=>{
-    if (pointers.size===0) dragged=false;
-    if (uiTarget(e.target)) return;
-    stopInertia(); cancelAnimationFrame(flyAnim);
-    pointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
-    if (pointers.size===1){ downAt={x:e.clientX,y:e.clientY}; vel={x:0,y:0}; lastMove=performance.now(); }
-  });
-  wrap.addEventListener('pointermove', e=>{
-    if (!pointers.has(e.pointerId)) return;
-    const prev=pointers.get(e.pointerId), cur={x:e.clientX,y:e.clientY};
-    if (!dragged){
-      if (pointers.size===1 && Math.hypot(cur.x-downAt.x, cur.y-downAt.y) < SLOP) return;
-      dragged=true; interacting=true; hidePopover();
-    }
-    try{ wrap.setPointerCapture(e.pointerId); }catch(_){}
-    pointers.set(e.pointerId, cur);
-    if (pointers.size===1){
-      const now=performance.now(), dt=Math.max(1,now-lastMove);
-      cam.x += cur.x-prev.x; cam.y += cur.y-prev.y; clampCam(); requestRender();
-      vel = { x:0.8*(cur.x-prev.x)/dt*16 + 0.2*vel.x, y:0.8*(cur.y-prev.y)/dt*16 + 0.2*vel.y };
-      lastMove=now;
-    } else if (pointers.size===2){
-      const [p1,p2]=Array.from(pointers.values());
-      const d=Math.hypot(p1.x-p2.x,p1.y-p2.y), m={x:(p1.x+p2.x)/2, y:(p1.y+p2.y)/2};
-      if (lastDist){
-        const r=wrap.getBoundingClientRect();
-        cam.x += m.x-lastMid.x; cam.y += m.y-lastMid.y;
-        zoomAt(m.x-r.left, m.y-r.top, cam.s*d/lastDist);
-      }
-      lastDist=d; lastMid=m; vel={x:0,y:0};
-    }
-  });
-  function endPointer(e){
-    if (!pointers.has(e.pointerId)) return;
-    pointers.delete(e.pointerId);
-    if (pointers.size<2){ lastDist=null; lastMid=null; }
-    if (pointers.size===1){ const [p]=pointers.values(); downAt=p; lastMove=performance.now(); }
-    if (pointers.size===0){
-      if (dragged && performance.now()-lastMove < 60 && Math.hypot(vel.x,vel.y) > 1.2 && !reduceMotion){
-        const step=()=>{
-          vel.x*=0.93; vel.y*=0.93; cam.x+=vel.x; cam.y+=vel.y; clampCam(); requestRender();
-          if (Math.hypot(vel.x,vel.y) > 0.25) inertia=requestAnimationFrame(step); else { inertia=null; interacting=false; requestRender(); }
-        };
-        inertia=requestAnimationFrame(step);
-      } else { interacting=false; requestRender(); }
-      if (!dragged && e.type==='pointerup' && !e.target.closest('.pin, .map-label, .me')){
-        const now=performance.now();
-        if (now-lastTap.t < 300 && Math.hypot(e.clientX-lastTap.x, e.clientY-lastTap.y) < 30){
-          const r=wrap.getBoundingClientRect(), sx=e.clientX-r.left, sy=e.clientY-r.top;
-          const wx=(sx-cam.x)/cam.s, wy=(sy-cam.y)/cam.s, ns=Math.min(MAX_S, cam.s*2);
-          flyTo(wx - (sx-viewW/2)/ns, wy - (sy-viewH/2)/ns, ns, 320);
-          lastTap={t:0,x:0,y:0};
-        } else lastTap={t:now, x:e.clientX, y:e.clientY};
-      }
-    }
-  }
-  ['pointerup','pointercancel'].forEach(ev=>wrap.addEventListener(ev, endPointer));
-  wrap.addEventListener('pointerleave', e=>{ if (e.pointerType==='mouse') endPointer(e); });
-  wrap.addEventListener('click', e=>{ if (dragged){ e.stopPropagation(); e.preventDefault(); } }, true);
-
-  let wheelTimer=null;
-  wrap.addEventListener('wheel', e=>{
-    e.preventDefault(); stopInertia();
-    interacting=true; clearTimeout(wheelTimer); wheelTimer=setTimeout(()=>{ interacting=false; requestRender(); }, 160);
-    const r=wrap.getBoundingClientRect();
-    const dy = e.deltaMode===1 ? e.deltaY*16 : e.deltaY;
-    zoomAt(e.clientX-r.left, e.clientY-r.top, cam.s*Math.exp(-dy*0.0022));
-  }, {passive:false});
-
-  const zoomCenter = f=>{ const c=viewCenter(); flyTo(c.x, c.y, cam.s*f, 260); };
-  document.getElementById('zoomIn').addEventListener('click', ()=>zoomCenter(1.6));
-  document.getElementById('zoomOut').addEventListener('click', ()=>zoomCenter(1/1.6));
-  document.getElementById('btnFit').addEventListener('click', ()=>{
-    const vis = places.filter(matchesFilters);
-    vis.length ? fitPlaces(vis, true) : fitCity(true);
-  });
-  document.getElementById('btnLocate').addEventListener('click', locateMe);
-})();
-
-/* =========================================================
-   OVERLAY: labels, pins, clusters
-   ========================================================= */
-const labelsLayer = document.getElementById('labelsLayer');
-const pinsLayer = document.getElementById('pinsLayer');
-const labelEls = LABELS.map(l=>{
-  const el=document.createElement('div');
-  el.className='map-label'+(l.sea?' sea':'')+(l.lm?' lm':'')+(l.z?' area':'');
-  el.innerHTML = l.z ? `<span role="button" tabindex="-1">${l.t}<em class="cnt"></em></span>` : `<span>${l.t}</span>`;
-  const p=aiToWorld(l.a,l.i); el._wx=p.x; el._wy=p.y; el._tier=l.tier; el._z=l.z||null; el._n=0;
-  // area names with saved places are tappable: "Business Bay (3)" -> what's saved there
-  if (l.z) el.firstChild.addEventListener('click', e=>{ e.stopPropagation(); if (!picking && el._n) openArea(l.z); });
-  labelsLayer.appendChild(el); return el;
-});
-function updateAreaCounts(){
-  const counts={};
-  places.filter(matchesFilters).forEach(p=>{ counts[p.zone]=(counts[p.zone]||0)+1; });
-  labelEls.forEach(el=>{
-    if (!el._z) return;
-    const n=counts[el._z]||0;
-    if (n===el._n) return;
-    el._n=n; el._w=0;
-    el.querySelector('.cnt').textContent = n ? n : '';
-    el.classList.toggle('has-count', n>0);
-  });
-}
-
-const worldCache = new Map();
-function placeAI(p){
-  if (typeof p.lat==='number' && typeof p.lng==='number') return toAI(p.lat,p.lng);
-  const z = zoneById(p.zone) || zoneById('downtown');
-  const [oa,oi] = hashOffset(String(p.id), 0.8);   // spread places that only have an area
-  return { a:z.a+oa, i:z.i+oi };
-}
-function placeWorld(p){
-  const key = p.id+'|'+p.lat+'|'+p.lng+'|'+p.zone;
-  let w = worldCache.get(key);
-  if (!w){ const ai=placeAI(p); w=aiToWorld(ai.a,ai.i); worldCache.set(key,w); }
-  return w;
-}
-
-function matchesFilters(p){
-  const status = p.status||'been';
-  if (statusFilter!=='all' && status!==statusFilter) return false;
-  if (!(p.categories||[]).some(c=>activeCats.has(c))) return false;
-  if (topRatedOnly && (status==='want' || (p.rating||0)<4)) return false;
-  return true;
-}
-
-let clusters = [], clusterScale = -1, clustersDirty = true, pinEls = [];
-function computeClusters(){
-  const R = 44/cam.s;
-  const items = places.filter(matchesFilters).map(p=>({p, w:placeWorld(p)}));
-  items.sort((a,b)=>(b.p.rating||0)-(a.p.rating||0));   // best-rated place fronts each cluster
-  const out=[], used=new Uint8Array(items.length);
-  for (let k=0;k<items.length;k++){
-    if (used[k]) continue;
-    const g=[items[k]]; used[k]=1;
-    for (let j=k+1;j<items.length;j++){
-      if (used[j]) continue;
-      if (Math.hypot(items[k].w.x-items[j].w.x, items[k].w.y-items[j].w.y) < R){ g.push(items[j]); used[j]=1; }
-    }
-    const x=g.reduce((s,v)=>s+v.w.x,0)/g.length, y=g.reduce((s,v)=>s+v.w.y,0)/g.length;
-    out.push({x,y,items:g.map(v=>v.p)});
-  }
-  out.sort((a,b)=>a.y-b.y);
-  return out;
-}
-function photoStyle(p, cat){ return p.photo ? `background-image:url(${p.photo})` : `background:${cat?cat.color:'#ccc'}`; }
-function buildPins(){
-  pinsLayer.innerHTML='';
-  pinEls = clusters.map(cl=>{
-    const first=cl.items[0], cat=catById((first.categories||[])[0])||CATEGORIES[0];
-    const rot = ((hashStr(String(first.id))%1200)/100)-6;
-    const want = (first.status||'been')==='want';
-    const el=document.createElement('div');
-    el.className='pin'+(cl.items.length>1?' pin-cluster':'')+(want?' want':'')
-      +(cl.items.some(p=>p.id===highlightId)?' highlight':'')+(cl.items.some(p=>p.id===newPinId)?' pin-new':'');
-    el.innerHTML=`
-      <div class="pin-bob" style="animation-delay:${(Math.abs(rot)*0.1).toFixed(2)}s">
-        <div class="polaroid"${cl.items.length>1?` data-count="${cl.items.length}"`:''} style="transform:rotate(${rot.toFixed(1)}deg)">
-          <div class="tape"></div>
-          <div class="photo" style="${photoStyle(first,cat)}">${first.photo?'':iconSvg(cat.id,'#fff')}</div>
-          <div class="rating">${want?'to try':starLabel(first.rating,' ')}</div>
-        </div>
-        ${cl.items.length===1?`<div class="pin-name">${escapeHtml(first.name||'Untitled')}</div>`:''}
-      </div>`;
-    el.addEventListener('click', e=>{
-      e.stopPropagation();
-      if (picking) return;
-      cl.items.length===1 ? openDetail(first.id) : onClusterTap(cl, e);
-    });
-    el._cl=cl;
-    pinsLayer.appendChild(el);
-    return el;
-  });
-  newPinId=null;
-}
-function updateOverlay(){
-  if (clustersDirty || Math.abs(cam.s-clusterScale)/clusterScale > 0.04){
-    const next=computeClusters();
-    const sig=cl=>cl.map(c=>c.items.map(p=>p.id).join(',')).join('|');
-    const changed = clustersDirty || sig(next)!==sig(clusters);
-    clusters=next; clusterScale=cam.s; clustersDirty=false;
-    if (changed) buildPins(); else pinEls.forEach((el,k)=>{ el._cl=clusters[k]; });
-  }
-  const z = cam.s/baseFit;
-  // polaroids shrink a little when you're zoomed right out, full size from ~2x in
-  const pk = Math.max(0.72, Math.min(1, 0.72 + (z-1)*0.28));
-  pinsLayer.style.setProperty('--pin-k', pk.toFixed(3));
-  const boxes = [];   // screen rects already taken, so labels never sit under a pin or another label
-  const showNames = z>=3.2;
-  pinEls.forEach(el=>{
-    const cl=el._cl, sx=cl.x*cam.s+cam.x, sy=cl.y*cam.s+cam.y;
-    el.style.transform=`translate3d(${sx.toFixed(1)}px,${sy.toFixed(1)}px,0)`;
-    // the polaroid, plus the name tag hanging under single pins when names are showing
-    const named = showNames && cl.items.length===1;
-    boxes.push([sx-(named?58:30*pk), sy-72*pk, sx+(named?58:30*pk), sy+(named?28:6)]);
-  });
-  pinsLayer.classList.toggle('show-names', showNames);
-  // Areas with saved places come first and win: they show at every zoom, sit on top of
-  // the pins (just under their feet) and only give way to each other. Plain labels then
-  // fill in wherever there's room.
-  const chipBoxes=[], hit=(b,list)=>list.some(o=>b[0]<o[2] && b[2]>o[0] && b[1]<o[3] && b[3]>o[1]);
-  const pinBoxes=boxes;
-  labelOrder.forEach(el=>{
-    const chip = el._n>0;
-    let show = chip || el._tier===0 || (el._tier===1 && z>=1.7) || (el._tier===2 && z>=3.2);
-    const sx=el._wx*cam.s+cam.x;
-    let sy=el._wy*cam.s+cam.y + (chip?14:0);
-    if (show){
-      if (sx<-80 || sx>viewW+80 || sy<-20 || sy>viewH+20) show=false;
-      else {
-        if (!el._w){ el.classList.remove('hidden'); el._w=el.firstChild.offsetWidth||60; el._h=el.firstChild.offsetHeight||14; }
-        let b=[sx-el._w/2-2, sy-el._h/2-2, sx+el._w/2+2, sy+el._h/2+2];
-        // a chip never covers a pin or its name tag: drop it just below whatever it lands on
-        for (let k=0; chip && k<4; k++){
-          const o=pinBoxes.find(o=>b[0]<o[2] && b[2]>o[0] && b[1]<o[3] && b[3]>o[1]);
-          if (!o) break;
-          sy=o[3]+el._h/2+4; b=[sx-el._w/2-2, sy-el._h/2-2, sx+el._w/2+2, sy+el._h/2+2];
-        }
-        if (hit(b,chipBoxes) || (!chip && hit(b,pinBoxes))) show=false;
-        else chipBoxes.push(b);
-      }
-    }
-    el.classList.toggle('hidden', !show);
-    if (show) el.style.transform=`translate3d(${sx.toFixed(1)}px,${sy.toFixed(1)}px,0)`;
-  });
-  const me=document.getElementById('meDot');
-  if (meWorld && watchId!==null){ me.classList.remove('hidden'); me.style.transform=`translate3d(${(meWorld.x*cam.s+cam.x).toFixed(1)}px,${(meWorld.y*cam.s+cam.y).toFixed(1)}px,0)`; }
-}
-function refreshPins(){
-  clustersDirty=true;
-  updateAreaCounts();
-  // busiest areas claim their spot first
-  labelOrder = labelEls.slice().sort((a,b)=>(b._n-a._n) || (a._tier-b._tier));
-  requestRender();
-}
-let labelOrder = labelEls.slice();
-
-function onClusterTap(cl, evt){
-  const pts=cl.items.map(placeWorld);
-  const b={x0:Math.min(...pts.map(p=>p.x)), x1:Math.max(...pts.map(p=>p.x)), y0:Math.min(...pts.map(p=>p.y)), y1:Math.max(...pts.map(p=>p.y))};
-  const spread = Math.max(b.x1-b.x0, b.y1-b.y0);
-  const target = Math.min(MAX_S, fitScaleFor(b,{x:70,top:120,bottom:60}), 44/Math.max(0.01,spread)*2.2);
-  // zoom in if that would actually split the cluster; otherwise list what's in it
-  if (spread*MAX_S > 44 && target > cam.s*1.35) flyTo((b.x0+b.x1)/2, (b.y0+b.y1)/2 - 25/target, target);
-  else openClusterPopover(cl, evt);
-}
-function hidePopover(){ document.getElementById('clusterPop').classList.add('hidden'); }
-function openClusterPopover(cl, evt){
-  const pop=document.getElementById('clusterPop');
-  pop.innerHTML=cl.items.map(p=>{
-    const cat=catById((p.categories||[])[0])||CATEGORIES[0], want=(p.status||'been')==='want';
-    return `<button class="cluster-row" data-id="${p.id}">
-      <div class="thumb" style="${photoStyle(p,cat)}">${p.photo?'':iconSvg(cat.id,'#fff')}</div>
-      <div class="name">${escapeHtml(p.name||'Untitled')}</div>
-      <div class="rate">${want?'to try':starLabel(p.rating)}</div>
-    </button>`;
-  }).join('');
-  pop.querySelectorAll('.cluster-row').forEach(row=>row.addEventListener('click', ()=>{ hidePopover(); openDetail(row.dataset.id); }));
-  pop.classList.remove('hidden');
-  const r=wrap.getBoundingClientRect(), pw=pop.offsetWidth, ph=pop.offsetHeight;
-  const tx=evt.clientX-r.left, ty=evt.clientY-r.top;
-  let top=ty-ph-40; if (top<8) top=Math.min(ty+24, r.height-ph-8);
-  pop.style.left=Math.max(8,Math.min(tx-pw/2, r.width-pw-8))+'px';
-  pop.style.top=Math.max(8,top)+'px';
-}
-wrap.addEventListener('click', e=>{ if (!e.target.closest('.cluster-pop')) hidePopover(); });
-
-/* =========================================================
-   LOCATION
-   ========================================================= */
-function getPosition(){
-  return new Promise((res,rej)=>{
-    if (!navigator.geolocation) return rej(new Error('unsupported'));
-    navigator.geolocation.getCurrentPosition(p=>res(p.coords), rej, {enableHighAccuracy:true, timeout:10000, maximumAge:60000});
-  });
-}
-/* ---------- live location: you, as a little pixel person ---------- */
-const ME_PREF='dubai-bites-show-me';
-let watchId=null, meFirstFix=false, meFlyPending=false;
-function flyToMe(){ if (meWorld){ const s=Math.max(cam.s, baseFit*4); flyTo(meWorld.x, meWorld.y-24/s, s); } }
-function startTracking(fly){
-  const btn=document.getElementById('btnLocate');
-  if (watchId!==null){ if (fly) meWorld ? flyToMe() : (meFlyPending=true); return; }
-  if (!navigator.geolocation){ toast("This browser can't share your location."); return; }
-  btn.classList.add('busy'); meFirstFix=true; meFlyPending=!!fly;
-  watchId = navigator.geolocation.watchPosition(pos=>{
-    btn.classList.remove('busy'); btn.classList.add('on');
-    const ai=toAI(pos.coords.latitude, pos.coords.longitude);
-    if (!inMap(ai.a,ai.i)){
-      if (meFirstFix) toast("You're outside the map. Come back to Dubai!");
-      meWorld=null; document.getElementById('meDot').classList.add('hidden');
-    } else {
-      meWorld=aiToWorld(ai.a,ai.i);
-      if (meFlyPending){ meFlyPending=false; flyToMe(); }
-    }
-    meFirstFix=false;
-    try{ localStorage.setItem(ME_PREF,'1'); }catch(_){}
-    requestRender();
-  }, err=>{
-    btn.classList.remove('busy');
-    toast(err && err.code===1 ? 'Location permission is off for this site.' : "Couldn't get your location.");
-    stopTracking();
-  }, {enableHighAccuracy:true, maximumAge:10000, timeout:20000});
-}
-function stopTracking(){
-  if (watchId!==null) navigator.geolocation.clearWatch(watchId);
-  watchId=null; meWorld=null;
-  document.getElementById('meDot').classList.add('hidden');
-  document.getElementById('btnLocate').classList.remove('on','busy');
-  try{ localStorage.removeItem(ME_PREF); }catch(_){}
-  requestRender();
-}
-function locateMe(){ startTracking(true); }
-// if you turned it on before and the permission is still granted, pick up where you left off (no prompt)
-(function resumeTracking(){
-  let on=false; try{ on=localStorage.getItem(ME_PREF)==='1'; }catch(_){}
-  if (!on || !navigator.permissions) return;
-  navigator.permissions.query({name:'geolocation'}).then(st=>{ if (st.state==='granted') startTracking(false); }).catch(()=>{});
-})();
-
-/* ---------- avatar ---------- */
-const AV_KEY='dubai-bites-avatar-v1';
-const SKINS=['#FBE0C8','#F1C27D','#DDA46F','#B97A4C','#8D5A36','#5E3A22'];
-const HAIR_COLORS=['#1F1612','#4A2E1C','#8A5A2B','#D9B35B','#B8452B','#C9C4BD','#E7A1B0','#6FB7AE','#EADBC0'];
-const TOPS=['#E8B84B','#D9567A','#3FA69A','#4A7FC1','#F4F0E6','#5A8F4E','#C9622D','#3B2A1A'];
-const HAIRS=[['short','Short'],['long','Long'],['buzz','Buzz'],['bun','Bun'],['cap','Cap'],['hijab','Hijab'],['ghutra','Ghutra']];
-const OUTFITS=[['tee','Tee & jeans'],['kandura','Kandura'],['abaya','Abaya'],['dress','Dress']];
-let avatar = (function(){
-  const d={skin:1, hair:'short', hairColor:'#1F1612', outfit:'tee', top:'#E8B84B'};
-  try{ return {...d, ...(JSON.parse(localStorage.getItem(AV_KEY))||{})}; }catch(_){ return d; }
-})();
-function saveAvatar(){ try{ localStorage.setItem(AV_KEY, JSON.stringify(avatar)); }catch(_){} }
-
-// 10x16 sprite; letters are palette slots, '.' is empty. An outline is added round the edge.
-function spriteRows(av){
-  const R=[
-    '..........',
-    '...HHHH...',
-    '..HHHHHH..',
-    '..HSSSSH..',
-    '..SESSES..',
-    '..SSSSSS..',
-    '...SMMS...',
-    '..TTTTTT..',
-    '.TTTTTTTT.',
-    '.STTTTTTS.',
-    '.STTTTTTS.',
-    '..TTTTTT..',
-    '..PPPPPP..',
-    '..PP..PP..',
-    '..PP..PP..',
-    '..BB..BB..',
-  ];
-  const set=(r,s)=>{ R[r]=s; };
-  switch(av.hair){
-    case 'buzz': set(1,'..........'); set(2,'..HHHHHH..'); break;
-    case 'bun':  set(0,'....HH....'); break;
-    case 'long': set(3,'.HHSSSSHH.'); set(4,'.HSESSESH.'); set(5,'.HSSSSSSH.'); set(6,'.HHSMMSHH.'); set(7,'.HTTTTTTH.'); break;
-    case 'cap':  set(0,'...CCCC...'); set(1,'..CCCCCC..'); set(2,'..CCCCCCCC'); break;
-    case 'hijab':
-      set(1,'...HHHH...'); set(2,'..HHHHHH..'); set(3,'.HHSSSSHH.'); set(4,'.HSESSESH.');
-      set(5,'.HSSSSSSH.'); set(6,'.HHSMMSHH.'); set(7,'.HHHHHHHH.'); break;
-    case 'ghutra':
-      set(0,'...WWWW...'); set(1,'..AAAAAA..'); set(2,'.WWWWWWWW.'); set(3,'.WWSSSSWW.');
-      set(4,'.WSESSESW.'); set(5,'.WSSSSSSW.'); set(6,'.WWSMMSWW.'); set(7,'.WWTTTTWW.'); break;
-  }
-  const robe = c=>{ // long robe from shoulders to ankles, hands showing
-    for (let r=7;r<=14;r++) R[r]=R[r].replace(/[TP]/g,c);
-    set(9,'.S'+c.repeat(6)+'S.'); set(10,'.S'+c.repeat(6)+'S.'); set(13,'..'+c.repeat(6)+'..'); set(14,'..'+c.repeat(6)+'..');
-    if (av.hair==='ghutra') set(7,'.WW'+c.repeat(4)+'WW.');
-    if (av.hair==='hijab' || av.hair==='long') R[7]=R[7].replace(/T/g,c);
-  };
-  if (av.outfit==='kandura') robe('K');
-  else if (av.outfit==='abaya') robe('X');
-  else if (av.outfit==='dress'){ set(12,'.TTTTTTTT.'); set(13,'..SS..SS..'); set(14,'..SS..SS..'); }
-  return R;
-}
-function spriteSvg(av, px){
-  const rows=spriteRows(av), H=rows.length, W=rows[0].length;
-  const pal={ H:av.hairColor, S:SKINS[av.skin]||SKINS[1], E:'#2A1B10', M:'#B5534A', T:av.top, P:'#3C5A78', B:'#3B2A1A',
-              C:av.top, W:'#FBFAF5', A:'#1F1612', K:'#FBFAF5', X:'#231E1B' };
-  const filled=(x,y)=> y>=0 && y<H && x>=0 && x<W && rows[y][x]!=='.';
-  let out='';
-  for (let y=-1;y<=H;y++) for (let x=-1;x<=W;x++){
-    let fill=null;
-    if (filled(x,y)) fill=pal[rows[y][x]];
-    else if (filled(x-1,y)||filled(x+1,y)||filled(x,y-1)||filled(x,y+1)) fill='#3B2A1A';
-    if (fill) out+=`<rect x="${x+1}" y="${y+1}" width="1.02" height="1.02" fill="${fill}"/>`;
-  }
-  return `<svg viewBox="0 0 ${W+2} ${H+2}" width="${(W+2)*px}" height="${(H+2)*px}" shape-rendering="crispEdges" aria-hidden="true">${out}</svg>`;
-}
-function renderAvatar(){
-  document.getElementById('meSprite').innerHTML = spriteSvg(avatar, 3);
-  document.getElementById('mePreview').innerHTML = spriteSvg(avatar, 7);
-  const sw=(id, list, key)=>{
-    const el=document.getElementById(id);
-    el.innerHTML=list.map((c,k)=>{ const v=key==='skin'?k:c; return `<button type="button" class="sw${avatar[key]===v?' on':''}" style="background:${c}" data-v="${v}" aria-label="colour ${k+1}"></button>`; }).join('');
-    el.querySelectorAll('.sw').forEach(b=>b.addEventListener('click', ()=>{ avatar[key]= key==='skin'?parseInt(b.dataset.v,10):b.dataset.v; saveAvatar(); renderAvatar(); }));
-  };
-  const opts=(id, list, key)=>{
-    const el=document.getElementById(id);
-    el.innerHTML=list.map(([v,l])=>`<button type="button" class="opt${avatar[key]===v?' on':''}" data-v="${v}">${l}</button>`).join('');
-    el.querySelectorAll('.opt').forEach(b=>b.addEventListener('click', ()=>{ avatar[key]=b.dataset.v; saveAvatar(); renderAvatar(); }));
-  };
-  sw('avSkin', SKINS, 'skin'); sw('avHairColor', HAIR_COLORS, 'hairColor'); sw('avShirt', TOPS, 'top');
-  opts('avHair', HAIRS, 'hair'); opts('avOutfit', OUTFITS, 'outfit');
-  document.getElementById('avShirtField').classList.toggle('hidden', avatar.outfit==='kandura' || avatar.outfit==='abaya');
-}
-document.getElementById('meSprite').addEventListener('click', e=>{ e.stopPropagation(); if (!picking) openSheet('sheetMe'); });
-document.getElementById('meStop').addEventListener('click', ()=>{ stopTracking(); closeSheets(); toast("You're hidden. Tap ◎ to show yourself again."); });
-
-/* =========================================================
-   FILTERS
-   ========================================================= */
-function renderFilters(){
-  const grid=document.getElementById('filterCats');
-  grid.innerHTML=CATEGORIES.map(c=>`<button class="chip ${activeCats.has(c.id)?'':'off'}" data-cat="${c.id}">
-      <span class="dot" style="background:${c.color}">${iconSvg(c.id,'#fff')}</span>${c.label}</button>`).join('');
-  grid.querySelectorAll('[data-cat]').forEach(btn=>btn.addEventListener('click', ()=>{
-    const id=btn.dataset.cat; activeCats.has(id)?activeCats.delete(id):activeCats.add(id);
-    filtersChanged();
-  }));
-  document.getElementById('chipTopRated').classList.toggle('off', !topRatedOnly);
-  document.querySelectorAll('#filterStatus button').forEach(b=>b.classList.toggle('on', b.dataset.v===statusFilter));
-  const filtered = topRatedOnly || statusFilter!=='all' || activeCats.size<CATEGORIES.length;
-  document.getElementById('btnFilter').classList.toggle('filtered', filtered);
-}
-function filtersChanged(){ renderFilters(); refreshPins(); renderList(); }
-document.getElementById('chipTopRated').addEventListener('click', ()=>{ topRatedOnly=!topRatedOnly; filtersChanged(); });
-document.querySelectorAll('#filterStatus button').forEach(b=>b.addEventListener('click', ()=>{ statusFilter=b.dataset.v; filtersChanged(); }));
-document.getElementById('filterReset').addEventListener('click', ()=>{
-  activeCats=new Set(CATEGORIES.map(c=>c.id)); topRatedOnly=false; statusFilter='all'; filtersChanged();
-});
-
-/* =========================================================
-   LIST
-   ========================================================= */
-function fmtDate(d){
-  if (!d) return '';
-  const dt=new Date(d+'T00:00:00');
-  return isNaN(dt) ? d : dt.toLocaleDateString(undefined,{month:'short', day:'numeric', year:'numeric'});
-}
-function todayLocal(){
-  const d=new Date();
-  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-}
-function escapeHtml(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
-
-function renderList(){
-  const body=document.getElementById('listBody');
-  const q=searchQuery.trim().toLowerCase();
-  let visible=places.filter(matchesFilters).filter(p=>{
-    if (!q) return true;
-    const z=zoneById(p.zone);
-    return [(p.name||''),(p.notes||''),(z?z.label:'')].join(' ').toLowerCase().includes(q);
-  });
-  if (sortMode==='rating') visible.sort((a,b)=>(b.rating||0)-(a.rating||0));
-  else if (sortMode==='name') visible.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
-  else visible.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
-
-  const been=visible.filter(p=>(p.status||'been')==='been'), rated=been.filter(p=>p.rating);
-  const avg = rated.length ? (rated.reduce((s,p)=>s+p.rating,0)/rated.length).toFixed(1) : null;
-  document.getElementById('listCount').textContent =
-    `${visible.length} place${visible.length!==1?'s':''}` + (avg?` · avg ★ ${avg}`:'') + (visible.length-been.length?` · ${visible.length-been.length} to try`:'');
-  if (!visible.length){
-    body.innerHTML=`<div class="list-empty">${places.length ? 'Nothing matches.' : 'No places yet. Tap + to add your first.'}</div>`;
-    return;
-  }
-  body.innerHTML=visible.map(p=>rowHtml(p)).join('');
-  body.querySelectorAll('.place-row').forEach(row=>row.addEventListener('click', ()=>openDetail(row.dataset.id)));
-}
-function rowHtml(p, hideArea){
-  const z=zoneById(p.zone), cats=p.categories||[], cat0=catById(cats[0]), want=(p.status||'been')==='want';
-  const when = want ? '' : (p.dateVisited ? fmtDate(p.dateVisited) : '');   // "to try" already has its own tag
-  const meta = hideArea ? when : [z?z.label:'', when].filter(Boolean).join(' · ');
-  return `<button class="place-row${want?' want':''}" data-id="${p.id}">
-    <div class="place-thumb" style="${photoStyle(p,cat0)}">${p.photo?'':iconSvg(cats[0]||'coffee','#fff')}</div>
-    <div class="place-info">
-      <div class="name">${escapeHtml(p.name||'Untitled')}</div>
-      <div class="meta">${escapeHtml(meta)}</div>
-    </div>
-    <div class="place-cats">${cats.slice(0,3).map(c=>{const cat=catById(c); return cat?`<span class="mini" style="background:${cat.color}">${iconSvg(c,'#fff')}</span>`:'';}).join('')}</div>
-    <div class="place-rating">${want?'<span class="tag-want">to try</span>':p.rating?starLabel(p.rating,' '):'<span class="tag-want">unrated</span>'}</div>
+function venueRowHTML(sum){
+  const v=sum.v, z=MAP.zoneById(v.zone);
+  return `<button class="person-row" data-venue="${v.id}" style="text-align:left;width:100%">
+    ${stampHTML(sum.state==='cluster'?'visited':sum.state, {cat:M.primaryCat(v), rating:0})}
+    <span class="pr-main"><span class="pr-name trunc">${esc(v.name)}</span><span class="pr-sub">${esc(z?z.label:'')}${sum.visitorIds.length?` • ${plural(sum.visitorIds.length,'visitor')}`:''}</span></span>
+    ${sum.rating?ratingPill(sum.rating):''}
   </button>`;
 }
-function fmtRating(r){ r=r||0; return r%1 ? r.toFixed(1) : String(r); }
-function starLabel(r, sep){ return r ? '★'+(sep||'')+fmtRating(r) : 'unrated'; }
+go.venueRowHTML = venueRowHTML;
 
-/* ---------- area sheet: tap "Business Bay (3)" on the map ---------- */
-let areaZone=null;
-function openArea(zid){
-  const z=zoneById(zid); if(!z) return;
-  areaZone=zid;
-  const list=places.filter(p=>p.zone===zid && matchesFilters(p))
-    .sort((a,b)=>((a.status||'been')==='want')-((b.status||'been')==='want') || (b.rating||0)-(a.rating||0) || (a.name||'').localeCompare(b.name||''));
-  const been=list.filter(p=>(p.status||'been')==='been' && p.rating);
-  const avg=been.length ? (been.reduce((s,p)=>s+p.rating,0)/been.length).toFixed(1) : null;
-  const want=list.filter(p=>p.status==='want').length;
-  const filtered = topRatedOnly || statusFilter!=='all' || activeCats.size<CATEGORIES.length;
-  document.getElementById('areaTitle').textContent=z.label;
-  document.getElementById('areaMeta').textContent =
-    `${list.length} place${list.length!==1?'s':''}` + (avg?` · avg ★ ${avg}`:'') + (want?` · ${want} to try`:'') + (filtered?' · filters on':'');
-  const body=document.getElementById('areaList');
-  body.innerHTML = list.length ? list.map(p=>rowHtml(p,true)).join('') : `<div class="list-empty">Nothing saved here yet.</div>`;
-  body.querySelectorAll('.place-row').forEach(row=>row.addEventListener('click', ()=>openDetail(row.dataset.id, zid)));
-  body.scrollTop=0;
-  openSheet('sheetArea');
+/* ---------- area sheet (tap "Business Bay 3") ---------- */
+function openArea(zoneId){
+  const z=MAP.zoneById(zoneId); if (!z) return;
+  const inZone = S.venues().filter(v=>v.zone===zoneId).map(v=>M.venueSummary(v, scope()));
+  const lit = inZone.filter(s=>s.state!=='unlit' && M.passes(s, scope())).sort((a,b)=>PRIO[b.state]-PRIO[a.state] || b.rating-a.rating);
+  const unlit = inZone.filter(s=>s.state==='unlit');
+  openSheet(body=>{
+    body.innerHTML = `<div class="sheet-head"><div class="grow"><span class="eyebrow">${scope().mode==='me'?'Your':'Crew'} places in</span><h2 class="h-lg">${esc(z.label)}</h2><span class="hand">${plural(lit.length,'spot')} stamped${unlit.length?`, ${unlit.length} undiscovered`:''}</span></div></div>
+      <div class="stack">${lit.map(venueRowHTML).join('') || '<div class="empty"><span class="hand">Nothing stamped here yet</span></div>'}</div>
+      ${unlit.length?`<div class="eyebrow mt24">Undiscovered nearby</div><div class="stack mt12">${unlit.slice(0,30).map(venueRowHTML).join('')}</div>`:''}
+      <div class="sheet-foot btn-grid"><button class="btn btn-soft" id="aShow">${icon('map')}Show on map</button><button class="btn btn-gold" id="aAdd">${icon('add')}Log here</button></div>`;
+    body.querySelectorAll('[data-venue]').forEach(r=>r.addEventListener('click', ()=>{ back(); setTimeout(()=>go.place(r.dataset.venue), 60); }));
+    body.querySelector('#aShow').onclick=()=>{ back(); switchView('map'); const pts=lit.map(s=>MAP.placeWorld(s.v)); pts.length?MAP.fitPoints(pts,true):MAP.flyToWorld(MAP.placeWorld({id:'z',zone:zoneId})); };
+    body.querySelector('#aAdd').onclick=()=>{ back(); go.log({zone:zoneId}); };
+  });
 }
-document.getElementById('areaShow').addEventListener('click', ()=>{
-  const list=places.filter(p=>p.zone===areaZone && matchesFilters(p));
-  closeSheets(); switchView('map');
-  list.length ? fitPlaces(list,true) : (()=>{ const z=zoneById(areaZone), w=aiToWorld(z.a,z.i); flyTo(w.x,w.y,baseFit*4); })();
-});
-document.getElementById('areaAdd').addEventListener('click', ()=>openForm(null,{zone:areaZone}));
-document.getElementById('sortSelect').addEventListener('change', e=>{ sortMode=e.target.value; renderList(); });
-document.getElementById('searchInput').addEventListener('input', e=>{ searchQuery=e.target.value; renderList(); });
-
-/* ---------- backup ---------- */
-document.getElementById('btnExport').addEventListener('click', ()=>{
-  const blob=new Blob([JSON.stringify({app:'dubai-bites', version:1, exportedAt:new Date().toISOString(), places},null,1)],{type:'application/json'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`dubai-bites-${todayLocal()}.json`;
-  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
-  toast(`Exported ${places.length} place${places.length!==1?'s':''}`);
-});
-document.getElementById('importFile').addEventListener('change', e=>{
-  const file=e.target.files[0]; if(!file) return;
-  const reader=new FileReader();
-  reader.onload=()=>{
-    try{
-      const data=JSON.parse(reader.result), list=Array.isArray(data)?data:data.places;
-      if (!Array.isArray(list)) throw new Error('bad file');
-      const seen=new Set(places.map(p=>(p.name||'')+'|'+p.createdAt));
-      let added=0;
-      list.slice().reverse().forEach(p=>{
-        if (!p || !p.name || seen.has(p.name+'|'+p.createdAt)) return;
-        const {id, ...rest}=p; upsertPlace(rest); added++;
-      });
-      refreshPins(); renderList();
-      toast(added ? `Imported ${added} place${added!==1?'s':''}` : 'Nothing new in that backup');
-    }catch(err){ toast("That file doesn't look like a Dubai Bites backup."); }
-    e.target.value='';
-  };
-  reader.readAsText(file);
-});
+go.area = openArea;
 
 /* =========================================================
-   DETAIL
+   FILTER SHEET (Me/Crew, members, categories, status, privacy)
    ========================================================= */
-function starsHtml(r){
-  let o='';
-  for (let k=1;k<=5;k++) o+=`<span class="${k<=r?'':(k-0.5===r?'half':'off')}">★</span>`;
-  return r ? o+`<b class="stars-num">${fmtRating(r)}</b>` : '<span class="unrated">Not rated yet</span>';
-}
-function mapsUrl(p){
-  const z=zoneById(p.zone);
-  const q = typeof p.lat==='number' ? `${p.lat.toFixed(6)},${p.lng.toFixed(6)}` : `${p.name}, ${z?z.label:''}, Dubai`;
-  return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(q);
-}
-function openDetail(id, fromZone){
-  const p=places.find(x=>x.id===id); if(!p) return;
-  editingId=id;
-  // opened from an area sheet: offer a way back to it
-  const back=document.getElementById('detailBack'), fz=fromZone&&zoneById(fromZone);
-  back.classList.toggle('hidden', !fz);
-  back.textContent = fz ? '‹ '+fz.label : '';
-  back.onclick = fz ? ()=>openArea(fromZone) : null;
-  const z=zoneById(p.zone), cats=p.categories||[], want=(p.status||'been')==='want';
-  document.getElementById('detailTitle').textContent=p.name||'Untitled';
-  document.getElementById('detailBody').innerHTML=`
-    ${p.photo?`<div class="detail-photo" style="background-image:url(${p.photo})"></div>`:''}
-    <div class="detail-cats">
-      ${want?'<span class="badge badge-want">Want to try</span>':''}
-      ${cats.map(c=>{const cat=catById(c); return cat?`<span class="badge" style="background:${cat.color}"><span class="dot">${iconSvg(c,'#fff')}</span>${cat.label}</span>`:'';}).join('')}
-    </div>
-    <div class="detail-row">📍 <b>${z?z.label:'Dubai'}</b>${typeof p.lat==='number'?' <span class="exact">· exact spot</span>':''}</div>
-    ${!want && p.dateVisited?`<div class="detail-row">📅 ${fmtDate(p.dateVisited)}</div>`:''}
-    ${!want?`<div class="detail-row">Rating <div class="detail-stars">${starsHtml(p.rating||0)}</div></div>`:''}
-    ${p.notes?`<div class="detail-notes">${escapeHtml(p.notes)}</div>`:''}
-    <div class="detail-actions">
-      <button class="btn btn-ghost btn-sm" id="detailShow">Show on map</button>
-      <a class="btn btn-ghost btn-sm" href="${mapsUrl(p)}" target="_blank" rel="noopener">Directions ↗</a>
-    </div>`;
-  document.getElementById('detailShow').addEventListener('click', ()=>showOnMap(id));
-  openSheet('sheetDetail');
-}
-function showOnMap(id){
-  const p=places.find(x=>x.id===id); if(!p) return;
-  closeSheets(); switchView('map');
-  if (!matchesFilters(p)){ activeCats=new Set(CATEGORIES.map(c=>c.id)); topRatedOnly=false; statusFilter='all'; renderFilters(); }
-  highlightId=id; refreshPins();
-  const w=placeWorld(p), s=separatingScale(p, baseFit*4.5);
-  flyTo(w.x, w.y-30/s, s);
-  setTimeout(()=>{ highlightId=null; refreshPins(); }, 2600);
-}
-// zoom at which this place's pin no longer clusters with its nearest neighbour
-function separatingScale(p, atLeast){
-  const w=placeWorld(p);
-  let dmin=Infinity;
-  places.forEach(q=>{ if (q.id!==p.id && matchesFilters(q)){ const v=placeWorld(q); dmin=Math.min(dmin, Math.hypot(v.x-w.x, v.y-w.y)); } });
-  return Math.min(MAX_S, Math.max(cam.s, atLeast, dmin<Infinity ? 48/Math.max(dmin,0.1) : 0));
-}
-document.getElementById('detailDelete').addEventListener('click', ()=>{
-  const p=places.find(x=>x.id===editingId); if(!p) return;
-  lastDeleted=p;
-  removePlace(p.id);
-  closeSheets(); refreshPins(); renderList();
-  toast(`Deleted “${p.name||'Untitled'}”`, 'Undo', ()=>{
-    if (!lastDeleted) return;
-    const {id, ...rest}=lastDeleted; upsertPlace(rest); lastDeleted=null;
-    refreshPins(); renderList();
-  });
-});
-document.getElementById('detailEdit').addEventListener('click', ()=>{ if(editingId) openForm(editingId); });
-
-/* =========================================================
-   FORM
-   ========================================================= */
-function buildFormStatics(){
-  document.getElementById('fZone').innerHTML = ZONES.slice().sort((a,b)=>a.label.localeCompare(b.label))
-    .map(z=>`<option value="${z.id}">${z.label}</option>`).join('');
-  const grid=document.getElementById('fCats');
-  grid.innerHTML=CATEGORIES.map(c=>`
-    <button type="button" class="cat-pick" data-cat="${c.id}">
-      <span class="dot" style="background:${c.color}">${iconSvg(c.id,'#fff')}</span><span>${c.label}</span>
-    </button>`).join('');
-  grid.querySelectorAll('.cat-pick').forEach(btn=>btn.addEventListener('click', ()=>btn.classList.toggle('on')));
-  document.querySelectorAll('#fStars button').forEach(btn=>btn.addEventListener('click', e=>{
-    // left half of a star = half a star
-    const r=btn.getBoundingClientRect(), half = e.clientX && (e.clientX-r.left) < r.width/2;
-    const v=parseInt(btn.dataset.v,10) - (half?0.5:0), cur=parseFloat(document.getElementById('fStars').dataset.value||'0');
-    setStars(v===cur ? 0 : v);   // tap the same value again to clear
-  }));
-  document.querySelectorAll('#fStatus button').forEach(b=>b.addEventListener('click', ()=>{ draft.status=b.dataset.v; syncStatus(); }));
-  document.getElementById('fZone').addEventListener('change', e=>{ draft.zone=e.target.value; draft.lat=null; draft.lng=null; syncLocation(); });
-}
-function setStars(v){
-  const row=document.getElementById('fStars');
-  row.dataset.value=v;
-  row.querySelectorAll('button').forEach(b=>{
-    const k=parseInt(b.dataset.v,10);
-    b.classList.toggle('on', k<=v); b.classList.toggle('half', k-0.5===v);
-  });
-  document.getElementById('fStarsVal').textContent = v ? fmtRating(v) : 'Tap left half for ½';
-}
-function syncStatus(){
-  document.querySelectorAll('#fStatus button').forEach(b=>b.classList.toggle('on', b.dataset.v===draft.status));
-  document.getElementById('sheetForm').classList.toggle('status-want', draft.status==='want');
-}
-function syncLocation(){
-  const z=zoneById(draft.zone);
-  document.getElementById('fZone').value=draft.zone;
-  document.getElementById('fLocText').textContent = typeof draft.lat==='number' ? 'Exact spot pinned' : `Somewhere in ${z?z.label:'Dubai'}`;
-  document.getElementById('fLocText').classList.toggle('exact', typeof draft.lat==='number');
-}
-function openForm(id, opts){
-  editingId=id||null; pendingPhoto=null;
-  const p=id?places.find(x=>x.id===id):null;
-  draft = { status:p?(p.status||'been'):((opts&&opts.status)||'been'), zone:p?p.zone:(opts&&opts.zone)||'downtown',
-            lat:p&&typeof p.lat==='number'?p.lat:null, lng:p&&typeof p.lng==='number'?p.lng:null };
-  if (!p && opts && typeof opts.lat==='number'){ draft.lat=opts.lat; draft.lng=opts.lng; }
-  document.getElementById('formTitle').textContent=id?'Edit place':'Add place';
-  document.querySelector('#sheetForm .sheet-body').scrollTop=0;
-  const fName=document.getElementById('fName'); fName.classList.remove('invalid');
-  fName.value=p?(p.name||''):'';
-  document.getElementById('fDate').value=p?(p.dateVisited||todayLocal()):todayLocal();
-  document.getElementById('fNotes').value=p?(p.notes||''):'';
-  document.getElementById('fPhoto').value='';
-  document.querySelectorAll('#fCats .cat-pick').forEach(b=>b.classList.toggle('on', p?(p.categories||[]).includes(b.dataset.cat):false));
-  const rating=p?(p.rating||0):0;
-  setStars(rating);
-  setPhotoPreview(p&&p.photo);
-  syncStatus(); syncLocation();
-  openSheet('sheetForm');
-}
-function setPhotoPreview(src){
-  const drop=document.getElementById('fPhotoDrop'), label=document.getElementById('fPhotoLabel');
-  drop.querySelectorAll('img').forEach(i=>i.remove());
-  drop.classList.toggle('has-img', !!src);
-  if (src){ const img=document.createElement('img'); img.src=src; img.alt=''; drop.appendChild(img); }
-  label.style.display=src?'none':'block';
-}
-document.getElementById('fPhoto').addEventListener('change', e=>{
-  const file=e.target.files[0]; if(!file) return;
-  const reader=new FileReader();
-  reader.onload=ev=>{
-    const img=new Image();
-    img.onload=()=>{
-      const maxW=600, scale=Math.min(1, maxW/img.width);
-      const w=Math.round(img.width*scale), h=Math.round(img.height*scale);
-      const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
-      cv.getContext('2d').drawImage(img,0,0,w,h);
-      pendingPhoto=cv.toDataURL('image/jpeg',0.7);
-      setPhotoPreview(pendingPhoto);
+function openFilters(){
+  const sc=scope();
+  const draft = { mode:sc.mode, members:sc.members?new Set(sc.members):null, cats:sc.cats?new Set(sc.cats):null, privacy:sc.privacy, status:{...sc.status} };
+  const members=S.crewMembers();
+  openSheet((body)=>{
+    const paint=()=>{
+      const n = M.mapModel({...draft}).filter(s=>s.state!=='unlit').length;
+      body.innerHTML = `
+      <div class="sheet-head"><span class="round-btn" style="width:44px;height:44px;box-shadow:none;background:var(--gold-fixed)">${icon('filter_list')}</span>
+        <div class="grow"><h2 class="h-md">Filter Scrapbook</h2><span class="hand">refine street discoveries</span></div>
+        <button class="btn btn-ghost btn-sm" data-f="clear">Clear all</button></div>
+      <div class="eyebrow">1. View mode</div>
+      <div class="seg seg-white mt8" data-f="mode"><button data-v="me" class="${draft.mode==='me'?'on':''}">${icon('person')}Me Mode</button><button data-v="crew" class="${draft.mode==='crew'?'on':''}">${icon('groups')}Crew View</button></div>
+      ${members.length>1?`<div class="row between mt24"><span class="eyebrow">2. Members</span><span class="hand">${members.length-1} friends in ${esc(APP.city)}</span></div>
+      <div class="chip-scroll mt8" data-f="members"><button class="person-chip${!draft.members?' on':''}" data-m="all">${icon('done_all')}Select all</button>${members.map(u=>`<button class="person-chip${draft.members&&draft.members.has(u.id)?' on':''}" data-m="${u.id}">${avatarHTML(u,30)}${esc(u.id===S.me().id?'You':u.name||u.handle)}</button>`).join('')}</div>`:''}
+      <div class="eyebrow mt24">${members.length>1?3:2}. Categories</div>
+      <div class="chip-wrap mt12" data-f="cats">${CATEGORIES.map(c=>catChip(c.id, !draft.cats || draft.cats.has(c.id))).join('')}</div>
+      <div class="eyebrow mt24">${members.length>1?4:3}. Visit status</div>
+      <div class="btn-grid mt12" data-f="status">
+        <button class="radio-card${draft.status.been?' on':''}" data-s="been"><span class="rc-head">${icon('verified')}Been here<span class="grow"></span>${draft.status.been?icon('check_box','',true):icon('check_box_outline_blank')}</span><p style="margin-left:0">★★★★☆ <span class="hand">rated</span></p></button>
+        <button class="radio-card${draft.status.want?' on':''}" data-s="want"><span class="rc-head">${icon('bookmark')}Want to try<span class="grow"></span>${draft.status.want?icon('check_box','',true):icon('check_box_outline_blank')}</span><p style="margin-left:0"><span class="tag">To try ribbon</span></p></button>
+      </div>
+      <div class="eyebrow mt24">${members.length>1?5:4}. Privacy scope</div>
+      <div class="opt-grid mt12" style="grid-template-columns:1fr 1fr 1fr" data-f="privacy">
+        ${[['shared','Shared only','public'],['private','Private only','lock'],['all','All places','layers']].map(([v,l,ic])=>`<button class="opt-card${draft.privacy===v?' on':''}" data-p="${v}" style="flex-direction:column;justify-content:center;gap:6px;padding:12px 6px;font-family:var(--f-mono);font-size:12px;text-align:center">${icon(ic)}${l}</button>`).join('')}
+      </div>
+      <div class="sheet-foot"><button class="btn btn-gold btn-block" data-f="apply">${icon('check_circle')}Apply filters (${plural(n,'place')})</button></div>`;
     };
-    img.onerror=()=>toast("Couldn't read that image.");
-    img.src=ev.target.result;
-  };
-  reader.readAsDataURL(file);
-});
-document.getElementById('fPhotoRemove').addEventListener('click', e=>{
-  e.preventDefault(); e.stopPropagation();
-  pendingPhoto=''; setPhotoPreview(null); document.getElementById('fPhoto').value='';
-});
-document.getElementById('fUseLoc').addEventListener('click', async ()=>{
-  const btn=document.getElementById('fUseLoc'); btn.classList.add('busy');
-  try{
-    const c=await getPosition(), ai=toAI(c.latitude,c.longitude);
-    if (!inMap(ai.a,ai.i)){ toast("You're outside the map area."); return; }
-    draft.lat=c.latitude; draft.lng=c.longitude; draft.zone=nearestZone(ai.a,ai.i).id; syncLocation();
-    toast('Pinned to where you are');
-  }catch(e){ toast(e && e.code===1 ? 'Location permission is off for this site.' : "Couldn't get your location."); }
-  finally{ btn.classList.remove('busy'); }
-});
-document.getElementById('fPickMap').addEventListener('click', ()=>startPick());
-
-document.getElementById('formSave').addEventListener('click', ()=>{
-  const fName=document.getElementById('fName'), name=fName.value.trim();
-  if (!name){
-    fName.classList.add('invalid'); fName.focus();
-    fName.addEventListener('input', ()=>fName.classList.remove('invalid'), {once:true});
-    return;
-  }
-  const cats=Array.from(document.querySelectorAll('#fCats .cat-pick.on')).map(b=>b.dataset.cat);
-  if (!cats.length){ toast('Pick at least one category'); document.getElementById('fCats').scrollIntoView({block:'center', behavior:'smooth'}); return; }
-  const want = draft.status==='want';
-  const data = {
-    name, zone:draft.zone, status:draft.status, categories:cats,
-    rating: want ? 0 : parseFloat(document.getElementById('fStars').dataset.value||'0'),
-    dateVisited: want ? '' : (document.getElementById('fDate').value || todayLocal()),
-    notes: document.getElementById('fNotes').value.trim(),
-    lat: draft.lat, lng: draft.lng,
-  };
-  if (pendingPhoto!==null) data.photo = pendingPhoto || null;
-  const wasNew = !editingId;
-  upsertPlace(data, editingId);
-  const savedId = wasNew ? places[0].id : editingId;
-  closeSheets();
-  if (!matchesFilters(places.find(p=>p.id===savedId))){ activeCats=new Set(CATEGORIES.map(c=>c.id)); topRatedOnly=false; statusFilter='all'; renderFilters(); }
-  renderList(); updateEmpty();
-  if (wasNew){
-    newPinId=savedId; switchView('map'); refreshPins();
-    const w=placeWorld(places[0]), s=separatingScale(places[0], baseFit*3.5);
-    flyTo(w.x, w.y-30/s, s);
-    toast('Pinned! 📌');
-  } else { refreshPins(); toast('Saved'); }
-});
-
-/* ---------- pick location on the map ---------- */
-function startPick(){
-  picking=true;
-  document.body.classList.add('picking');
-  document.getElementById('overlay').classList.remove('open');
-  document.getElementById('sheetForm').classList.remove('open');
-  switchView('map', true);
-  const ai = typeof draft.lat==='number' ? toAI(draft.lat,draft.lng) : (()=>{ const z=zoneById(draft.zone); return {a:z.a,i:z.i}; })();
-  const w=aiToWorld(ai.a,ai.i), s=Math.max(cam.s, baseFit*4);
-  // the marker's tip sits at the view centre
-  flyTo(w.x, w.y, s);
+    paint();
+    body.addEventListener('click', e=>{
+      const t=e.target.closest('button'); if (!t) return;
+      const f=t.closest('[data-f]')?.dataset.f || t.dataset.f;
+      if (f==='clear'){ draft.members=null; draft.cats=null; draft.privacy='all'; draft.status={been:true,want:true}; }
+      else if (f==='mode' && t.dataset.v){ draft.mode=t.dataset.v; }
+      else if (f==='members'){ const id=t.dataset.m; if (id==='all') draft.members=null; else { draft.members=draft.members?new Set(draft.members):new Set(); draft.members.has(id)?draft.members.delete(id):draft.members.add(id); if (!draft.members.size) draft.members=null; } }
+      else if (f==='cats' && t.dataset.cat){ const id=t.dataset.cat; const s=draft.cats?new Set(draft.cats):new Set(CATEGORIES.map(c=>c.id)); s.has(id)?s.delete(id):s.add(id); draft.cats = s.size===CATEGORIES.length?null:s; }
+      else if (f==='status' && t.dataset.s){ draft.status[t.dataset.s]=!draft.status[t.dataset.s]; if (!draft.status.been && !draft.status.want) draft.status[t.dataset.s==='been'?'want':'been']=true; }
+      else if (f==='privacy' && t.dataset.p){ draft.privacy=t.dataset.p; }
+      else if (f==='apply'){ Object.assign(scope(), draft); saveScope(); back(); rebuild(); return; }
+      else return;
+      const st=body.scrollTop; paint(); body.scrollTop=st;
+    });
+  });
 }
-function endPick(confirmIt){
-  if (confirmIt){
-    const c=viewCenter(), ai=worldToAI(c.x,c.y), ll=toLatLng(ai.a,ai.i);
-    draft.lat=ll.lat; draft.lng=ll.lng; draft.zone=nearestZone(ai.a,ai.i).id;
-    syncLocation();
-  }
-  picking=false; document.body.classList.remove('picking');
-  openSheet('sheetForm');
-}
-document.getElementById('pickConfirm').addEventListener('click', ()=>endPick(true));
-document.getElementById('pickCancel').addEventListener('click', ()=>endPick(false));
+$('#btnFilter').addEventListener('click', openFilters);
+go.filters = openFilters;
 
 /* =========================================================
-   SHEETS / VIEWS / TOAST
+   LIST VIEW (feed)
    ========================================================= */
-function openSheet(id){
-  document.querySelectorAll('.sheet.open').forEach(s=>{ if(s.id!==id) s.classList.remove('open'); });
-  hidePopover();
-  document.getElementById('overlay').classList.add('open');
-  const sh=document.getElementById(id); sh.style.transform=''; sh.classList.add('open');
+let listQuery='', listSort='recent', listCat=null;
+function renderList(){
+  const el=$('#listView'); const sc=scope(); const crew=S.myCrew();
+  const meCount = M.mapModel({...sc, mode:'me', members:null}).filter(s=>s.state!=='unlit').length;
+  const crewCount = M.mapModel({...sc, mode:'crew'}).filter(s=>s.state!=='unlit').length;
+  let items = modelCache.filter(s=>s.state!=='unlit');
+  const byCat={}; items.forEach(s=>(s.v.categories||[]).forEach(c=>byCat[c]=(byCat[c]||0)+1));
+  if (listCat) items = items.filter(s=>(s.v.categories||[]).includes(listCat));
+  const q=listQuery.trim().toLowerCase();
+  if (q) items = items.filter(s=>{ const z=MAP.zoneById(s.v.zone); return [s.v.name, z?z.label:'', ...s.entries.map(e=>e.notes||'')].join(' ').toLowerCase().includes(q); });
+  const lastTs = s=>Math.max(0,...s.entries.map(e=>e.createdAt));
+  if (listSort==='rating') items.sort((a,b)=>b.rating-a.rating);
+  else if (listSort==='name') items.sort((a,b)=>a.v.name.localeCompare(b.v.name));
+  else if (listSort==='visits') items.sort((a,b)=>b.visitCount-a.visitCount);
+  else items.sort((a,b)=>lastTs(b)-lastTs(a));
+  const cats = Object.keys(byCat).sort((a,b)=>byCat[b]-byCat[a]);
+  const hidden = sc.mode==='crew' ? 0 : M.mapModel({...sc, privacy:'all', cats:null, status:{been:true,want:true}}).filter(s=>s.state!=='unlit').length - meCount;
+  const unlitCount = modelCache.filter(s=>s.state==='unlit').length;
+  el.innerHTML = `<div class="list-inner">
+    <div class="search-row"><label class="search">${icon('search')}<input id="lq" type="search" placeholder="Search ${items.length} spots…" value="${esc(listQuery)}" aria-label="Search"></label>
+      <button class="sq-btn${isFiltered()?' filtered':''}" id="lFilter" aria-label="Filters">${icon('tune')}</button></div>
+    <div class="seg mt12" id="lMode"><button data-v="me" class="${sc.mode==='me'?'on':''}">Me <em>${meCount}</em></button><button data-v="crew" class="${sc.mode==='crew'?'on':''}">Crew <em>${crewCount}</em></button></div>
+    <div class="chip-scroll mt12" id="lCats">
+      <button class="person-chip${!listCat?' on':''}" data-c="" style="padding-left:16px">All <em>${modelCache.filter(s=>s.state!=='unlit').length}</em></button>
+      ${cats.map(c=>`<button class="person-chip${listCat===c?' on':''}" data-c="${c}" style="padding-left:8px"><span style="width:26px;height:26px;display:flex">${iconSvg(c, catById(c).color)}</span>${esc(catById(c).label)} <em>${byCat[c]}</em></button>`).join('')}
+    </div>
+    <div class="feed-head"><span class="hand">${sc.mode==='crew' && crew ? `${esc(crew.name)} shared feed` : 'Your scrapbook'}</span>
+      <select class="sort-sel" id="lSort" aria-label="Sort">${[['recent','Recent visits'],['rating','Top rated'],['visits','Most visited'],['name','A–Z']].map(([v,l])=>`<option value="${v}"${listSort===v?' selected':''}>${l}</option>`).join('')}</select></div>
+    ${items.map(feedCardHTML).join('') || `<div class="empty">${stampHTML('unlit',{cat:'coffee', big:true})}<h3 class="h-md">${q?'Nothing matches that':'No stamps yet'}</h3><p class="muted">${q?'Try another name, area or dish.':'Log your first bite with the + button, or tap an undiscovered spot on the map.'}</p></div>`}
+    ${items.length?`<div class="feed-end"><span class="tag soft">${icon('local_activity')}End of scrapbook page</span><span class="hand">${hidden>0?`${plural(hidden,'more entry','more entries')} hidden by your filters`:`${unlitCount} undiscovered spots still on the map`}</span></div>`:''}
+  </div>`;
+  const lq=el.querySelector('#lq');
+  lq.addEventListener('input', ()=>{ listQuery=lq.value; const pos=lq.selectionStart; renderList(); const n=$('#lq'); n.focus(); n.setSelectionRange(pos,pos); });
+  el.querySelector('#lFilter').onclick=openFilters;
+  el.querySelector('#lMode').addEventListener('click', e=>{ const b=e.target.closest('button'); if (!b) return; scope().mode=b.dataset.v; scope().members=null; saveScope(); rebuild(); });
+  el.querySelector('#lCats').addEventListener('click', e=>{ const b=e.target.closest('[data-c]'); if (!b) return; listCat=b.dataset.c||null; renderList(); });
+  el.querySelector('#lSort').onchange=e=>{ listSort=e.target.value; renderList(); };
+  el.querySelectorAll('[data-venue]').forEach(c=>c.addEventListener('click', ()=>go.place(c.dataset.venue)));
 }
-function closeSheets(){
-  document.getElementById('overlay').classList.remove('open');
-  document.querySelectorAll('.sheet').forEach(s=>{ s.classList.remove('open'); s.style.transform=''; });
-  editingId=null;
-}
-document.getElementById('overlay').addEventListener('click', closeSheets);
-document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click', closeSheets));
-document.addEventListener('keydown', e=>{
-  if (e.key!=='Escape') return;
-  if (picking) endPick(false); else closeSheets();
-  hidePopover();
-});
-// drag a sheet down by its handle/header to dismiss it
-document.querySelectorAll('.sheet').forEach(sh=>{
-  const grip=sh.querySelectorAll('.sheet-handle, .sheet-head');
-  let y0=null, dy=0;
-  grip.forEach(g=>{
-    g.addEventListener('pointerdown', e=>{ if (e.target.closest('button')) return; y0=e.clientY; dy=0; sh.style.transition='none'; g.setPointerCapture(e.pointerId); });
-    g.addEventListener('pointermove', e=>{ if (y0===null) return; dy=Math.max(0,e.clientY-y0); sh.style.transform=`translateY(${dy}px)`; });
-    const end=()=>{ if (y0===null) return; y0=null; sh.style.transition=''; if (dy>90) closeSheets(); else sh.style.transform=''; };
-    g.addEventListener('pointerup', end); g.addEventListener('pointercancel', end);
-  });
-});
-
-function switchView(v, keepSheets){
-  const map=v==='map';
-  document.getElementById('tabMap').classList.toggle('active', map);
-  document.getElementById('tabList').classList.toggle('active', !map);
-  wrap.classList.toggle('hidden-view', !map);
-  document.getElementById('listWrap').classList.toggle('active', !map);
-  if (map){ if (resizeCanvas()){ if (needsCenter) initialView(); requestRender(); } }
-  else renderList();
-}
-document.getElementById('tabMap').addEventListener('click', ()=>switchView('map'));
-document.getElementById('tabList').addEventListener('click', ()=>switchView('list'));
-document.getElementById('btnAdd').addEventListener('click', ()=>{
-  // new places start where you're looking on the map
-  let opts;
-  if (!wrap.classList.contains('hidden-view') && viewW){
-    const c=viewCenter(), ai=worldToAI(c.x,c.y);
-    if (cam.s > baseFit*2.2 && inMap(ai.a,ai.i)) opts={ zone:nearestZone(ai.a,ai.i).id };
+function feedCardHTML(sum){
+  const v=sum.v, cat=catById(M.primaryCat(v)), z=MAP.zoneById(v.zone);
+  const ph = S.photos({venueId:v.id}).filter(p=>scope().mode==='crew' || p.userId===S.me().id)[0];
+  const want = sum.state==='want';
+  const priv = sum.state==='private' || (sum.hasPrivate && !sum.others.length);
+  let quote='';
+  if (sum.noteEntry){
+    const u=S.user(sum.noteEntry.userId);
+    quote = `<div class="fc-quote"><span class="hand">${u.id===S.me().id?'':esc(u.name||u.handle)+': '}“${esc(sum.noteEntry.notes)}”</span>${sum.visitorIds.length?avatarStack(sum.visitorIds.map(S.user).filter(Boolean),24,3):''}</div>`;
+  } else if (want){
+    const ws=sum.wantIds.map(S.user).filter(Boolean);
+    const names = ws.map(u=>u.id===S.me().id?'you':u.name||u.handle);
+    quote = `<div class="fc-quote">${icon('favorite')}<span class="grow">Saved by ${esc(names.slice(0,2).join(' & '))}${names.length>2?` +${names.length-2}`:''}</span>${avatarStack(ws,24,3)}</div>`;
   }
-  openForm(null, opts);
-});
-document.getElementById('btnFilter').addEventListener('click', ()=>openSheet('sheetFilter'));
-document.getElementById('emptyAdd').addEventListener('click', ()=>openForm(null));
-
-let toastTimer=null;
-function toast(msg, action, fn){
-  const el=document.getElementById('toast');
-  document.getElementById('toastMsg').textContent=msg;
-  const btn=document.getElementById('toastAction');
-  btn.style.display=action?'':'none'; btn.textContent=action||'';
-  btn.onclick = action ? ()=>{ fn(); el.classList.remove('show'); } : null;
-  el.classList.add('show');
-  clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.remove('show'), action?5000:2200);
+  return `<button class="feed-card${priv?' private':''}" data-venue="${v.id}">
+    <span class="fc-thumb">${ph?`<img src="${esc(S.photoURL(ph))}" alt="" loading="lazy">`:iconSvg(cat.id, cat.color)}${priv?`<span class="fc-lock">${icon('lock','',true)}</span>`:(sum.rating?ratingPill(sum.rating):'')}</span>
+    <span class="fc-main">
+      <span class="fc-cat">${iconSvg(cat.id, cat.color)}${esc(cat.label)}${priv?` <span class="tag soft" style="margin-left:4px">${icon('lock')}Private</span>`:''}</span>
+      <span class="fc-name trunc" style="display:block;padding-right:18px">${esc(v.name)}</span>
+      <span class="fc-loc">${icon('location_on')}${esc(z?z.label:APP.city)}</span>
+      ${quote}
+    </span>
+    ${want?'<span class="fc-ribbon">TO TRY</span>':`<span class="fc-chev">${icon('chevron_right')}</span>`}
+  </button>`;
 }
-function updateEmpty(){ document.getElementById('emptyState').classList.toggle('hidden', places.length>0); }
+
+/* =========================================================
+   NAV
+   ========================================================= */
+function switchView(v){
+  state.view=v;
+  $$('#nav [data-tab]').forEach(b=>b.classList.toggle('on', b.dataset.tab===v));
+  $('#mapView').classList.toggle('active', v==='map');
+  $('#listView').classList.toggle('active', v==='list');
+  $('#listView').classList.toggle('list-view', true);
+  if (v==='map'){ MAP.resize(); } else renderList();
+  hidePeek();
+}
+go.switchView = switchView;
+$('#nav').addEventListener('click', e=>{
+  const b=e.target.closest('button'); if (!b) return;
+  if (b.id==='navLog') return go.log({});
+  const t=b.dataset.tab;
+  if (t==='map'||t==='list') switchView(t);
+  if (t==='crew') go.crew();
+  if (t==='shelf') go.shelf();
+});
+
+/* map controls */
+$('#zoomIn').onclick=()=>MAP.zoomBy(1.6);
+$('#zoomOut').onclick=()=>MAP.zoomBy(1/1.6);
+$('#btnFit').onclick=()=>{ const pts=modelCache.filter(s=>s.state!=='unlit').map(s=>MAP.placeWorld(s.v)); pts.length?MAP.fitPoints(pts,true):MAP.fitCity(true); };
+$('#btnLocate').onclick=()=>MAP.startTracking(true);
+$('#locPill').onclick=()=>{ const z=MAP.viewZone(); if (z) openArea(z.id); else MAP.startTracking(true); };
+let locT=0;
+function onViewChange(){
+  const now=performance.now(); if (now-locT<250) return; locT=now;
+  const z=MAP.viewZone(); $('#locPillText').textContent = z && MAP.zoomRatio()>1.6 ? z.label : APP.city;
+}
+
+/* =========================================================
+   PROFILE (own design: settings are Phase 2)
+   ========================================================= */
+function openProfile(){
+  const me=S.me(); if (!me) return;
+  openSheet(body=>{
+    const paint=()=>{
+      const crew=S.myCrew();
+      body.innerHTML = `
+      <div class="row" style="gap:16px">${avatarHTML(me,72)}<div class="grow"><h2 class="h-lg">${esc(me.name||'@'+me.handle)}</h2><span class="mono muted">@${esc(me.handle)} • ${me.points||0} pts</span></div></div>
+      ${APP.previewMode?`<div class="note mt16">${icon('science')}<span><b>Preview mode.</b> Your account, crew and photos live on this phone until sign-in goes live. Export a backup to move them.</span></div>`:''}
+      <div class="stack mt20">
+        <button class="person-row" data-p="avatar">${icon('face')}<span class="pr-main"><span class="pr-name">Edit avatar</span><span class="pr-sub">Pixel you on the map</span></span>${icon('chevron_right')}</button>
+        <button class="person-row" data-p="handle">${icon('alternate_email')}<span class="pr-main"><span class="pr-name">Name & handle</span><span class="pr-sub">@${esc(me.handle)}</span></span>${icon('chevron_right')}</button>
+        <button class="person-row" data-p="crew">${icon('groups')}<span class="pr-main"><span class="pr-name">${crew?esc(crew.name):'Your crew'}</span><span class="pr-sub">${crew?plural(crew.memberIds.length,'member'):'Start or join a crew'}</span></span>${icon('chevron_right')}</button>
+        <div class="person-row">${icon('share')}<span class="pr-main"><span class="pr-name">Share new places with my crew</span><span class="pr-sub">Default for new logs. You can change any single place.</span></span>${toggleHTML('pShare', me.shareDefault!=='private','Share with crew by default')}</div>
+        <div class="person-row">${icon('my_location')}<span class="pr-main"><span class="pr-name">Show me on the map</span><span class="pr-sub">Only on this phone, never saved</span></span>${toggleHTML('pLoc', MAP.isTracking(),'Show my location')}</div>
+        ${APP.previewMode?`<div class="person-row">${icon('diversity_3')}<span class="pr-main"><span class="pr-name">Preview with a sample crew</span><span class="pr-sub">Adds Maya, Omar, Layla, Kabir & Noor with real-looking logs and photos</span></span>${toggleHTML('pDemo', S.demoOn(),'Sample crew')}</div>`:''}
+        <button class="person-row" data-p="tour">${icon('tour')}<span class="pr-main"><span class="pr-name">Replay the map tour</span></span>${icon('chevron_right')}</button>
+        ${S.legacyPlaces().length?`<button class="person-row" data-p="import">${icon('install_mobile')}<span class="pr-main"><span class="pr-name">Import from this phone</span><span class="pr-sub">${plural(S.legacyPlaces().length,'place')} from the old version</span></span>${icon('chevron_right')}</button>`:''}
+        <button class="person-row" data-p="export">${icon('download')}<span class="pr-main"><span class="pr-name">Export backup</span><span class="pr-sub">Your logs and photos as one file</span></span>${icon('chevron_right')}</button>
+        <label class="person-row" style="position:relative">${icon('upload')}<span class="pr-main"><span class="pr-name">Import backup</span></span>${icon('chevron_right')}<input type="file" accept="application/json,.json" id="pImport" style="position:absolute;inset:0;opacity:0"></label>
+        <button class="btn btn-danger btn-block mt8" data-p="signout">${icon('logout')}Sign out</button>
+      </div>`;
+      bindToggle(body.querySelector('#pShare'), on=>{ S.updateMe({shareDefault:on?'crew':'private'}); toast(on?'New places will be shared with your crew':'New places will stay private'); });
+      bindToggle(body.querySelector('#pLoc'), on=>{ on?MAP.startTracking(true):MAP.stopTracking(); });
+      const d=body.querySelector('#pDemo'); if (d) bindToggle(d, async on=>{ await S.setDemo(on); toast(on?'Sample crew added':'Sample crew removed'); paint(); });
+      body.querySelector('#pImport').addEventListener('change', async e=>{
+        const f=e.target.files[0]; if (!f) return;
+        try{ const n=await S.importBackup(JSON.parse(await f.text())); toast(`Imported ${plural(n,'log')}`); }catch(_){ toast("That file isn't a backup from this app"); }
+      });
+    };
+    paint();
+    body.addEventListener('click', async e=>{
+      const b=e.target.closest('[data-p]'); if (!b) return;
+      const p=b.dataset.p;
+      if (p==='avatar'){ back(); setTimeout(()=>go.editAvatar(), 60); }
+      if (p==='handle'){ back(); setTimeout(()=>go.editHandle(), 60); }
+      if (p==='crew'){ back(); setTimeout(()=>go.crew(), 60); }
+      if (p==='tour'){ back(); setTimeout(()=>go.coach(), 300); }
+      if (p==='import'){ back(); setTimeout(()=>go.importPhone(), 60); }
+      if (p==='export'){
+        toast('Preparing backup…');
+        const data=await S.exportBackup();
+        const blob=new Blob([JSON.stringify(data)],{type:'application/json'});
+        const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`${APP.name.replace(/\W+/g,'-').toLowerCase()}-backup.json`;
+        document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+      }
+      if (p==='signout'){ S.signOut(); back(); setTimeout(()=>go.onboarding(), 300); }
+    });
+  });
+}
+go.profile = openProfile;
+
+/* =========================================================
+   COACH MARKS (3 steps after onboarding)
+   ========================================================= */
+function coach(){
+  switchView('map');
+  const steps = [
+    { tag:'Venue diary pin', icon:'local_cafe', title:'Tap a stamp to see who visited', body:'Every postal stamp is a spot your crew discovered. Tap one to flip it open for tasting notes, photos and honest ratings.', target:()=>$('.stamp-anchor:not(.faint) .stamp') },
+    { tag:'Me / Crew', icon:'group', title:'Flip between you and your crew', body:'Me shows your own scrapbook, private spots included. Crew shows everything your friends have shared.', target:()=>$('#mapMode') },
+    { tag:'Log a bite', icon:'add_a_photo', title:'Stamp your first spot', body:'Tap + to log a place: rate it, add photos, and choose whether your crew can see it.', target:()=>$('#navLog') },
+  ];
+  let i=0;
+  const wrap=document.createElement('div'); wrap.className='coach';
+  const ring=document.createElement('div'); ring.className='coach-target';
+  document.body.append(wrap, ring);
+  const end=()=>{ wrap.remove(); ring.remove(); S.setFlag('coachDone'); };
+  const paint=()=>{
+    const s=steps[i];
+    wrap.innerHTML = `<div class="coach-card"><span class="tape"></span>
+      <div class="row between"><span class="tag rust">${icon(s.icon)}${s.tag}</span><span class="mono muted">0${i+1} / 0${steps.length}</span></div>
+      <h2>${s.title}</h2><p class="muted" style="font-size:15px">${s.body}</p>
+      <div class="coach-foot"><button class="link" data-c="skip">Skip quick tour</button><button class="btn btn-gold" data-c="next">${i<steps.length-1?`Next (${i+1}/${steps.length})`:'Let’s go'} ${icon('arrow_forward')}</button></div></div>
+      <p class="coach-tip">✎ Tip: tap anywhere outside to jump straight in.</p>`;
+    const t=s.target();
+    if (t){ const r=t.getBoundingClientRect(); Object.assign(ring.style,{left:(r.left-6)+'px',top:(r.top-6)+'px',width:(r.width+12)+'px',height:(r.height+12)+'px',display:'block'}); }
+    else ring.style.display='none';
+  };
+  wrap.addEventListener('click', e=>{
+    const b=e.target.closest('[data-c]');
+    if (!b){ if (!e.target.closest('.coach-card')) end(); return; }
+    if (b.dataset.c==='skip') return end();
+    i++; if (i>=steps.length) end(); else paint();
+  });
+  paint();
+}
+go.coach = coach;
 
 /* =========================================================
    BOOT
    ========================================================= */
-let needsCenter=true, lastW=0;
-function initialView(){
-  computeBaseFit();
-  const vis=places.filter(matchesFilters);
-  vis.length ? fitPlaces(vis,false) : fitCity(false);
-  // On a portrait phone the whole city is a thin diagonal strip; open closer in,
-  // on the middle of your places (or Downtown), and let "fit" show the rest.
-  if (viewW < 600 && cam.s < baseFit*1.9){
-    let cx, cy;
-    if (vis.length){ const pts=vis.map(placeWorld); cx=pts.reduce((s,p)=>s+p.x,0)/pts.length; cy=pts.reduce((s,p)=>s+p.y,0)/pts.length; }
-    else { const z=zoneById('downtown'), w=aiToWorld(z.a-2,z.i); cx=w.x; cy=w.y; }
-    setView(cx, cy, baseFit*1.9);
+async function boot(){
+  if (new URLSearchParams(location.search).has('still')) document.documentElement.classList.add('still');
+  applyBrand();
+  await S.init();
+  S.onChange(what=>{ if (what==='quota') toast('Storage is full on this phone. Export a backup and remove some photos.'); scheduleRebuild(); paintProfileButtons(); });
+  MAP.initMap({
+    wrap:$('#mapWrap'), canvas:$('#mapCanvas'), overlay:$('#mapOverlay'),
+    renderStamp,
+    initialPoints:()=>modelCache.filter(s=>s.state!=='unlit').map(s=>MAP.placeWorld(s.v)),
+    onStampTap:(item)=>showPeek(item.id),
+    onClusterList:(items)=>openClusterList(items),
+    onAreaTap:(z)=>openArea(z),
+    onMeTap:()=>go.editAvatar(),
+    onEmptyTap:()=>hidePeek(),
+    onDragStart:()=>hidePeek(),
+    onViewChange,
+    onLocation:(st)=>{
+      const b=$('#btnLocate');
+      b.classList.toggle('busy', st==='busy'); b.classList.toggle('on', st==='on');
+      if (st==='outside') toast("You're outside the map. Come back to Dubai!");
+      if (st==='denied') toast('Location permission is off for this site.');
+      if (st==='error') toast("Couldn't get your location.");
+    },
+  });
+  MAP.whenReady(()=>{ $('#mapLoading').classList.add('done'); });
+  paintMe();
+  const join = new URLSearchParams(location.search).get('join');
+  if (join){ state.pendingJoin = join.toUpperCase(); history.replaceState(null,'',location.pathname); }
+  if (!S.isOnboarded()) go.onboarding();
+  else {
+    rebuild();
+    if (state.pendingJoin) go.inviteLanding(state.pendingJoin);
+    else if (!S.flag('coachDone')) MAP.whenReady(()=>setTimeout(coach, 500));
   }
-  needsCenter=false; lastW=viewW;
 }
-// Starter list of real Dubai spots (saved as "want to try"). Added once per browser on
-// top of whatever is already saved; deleting one later doesn't bring it back.
-const SEED_FLAG='dubai-bites-seeded-v1';
-async function loadSeed(){
-  try{ if (localStorage.getItem(SEED_FLAG)) return; }catch(_){ return; }
-  try{
-    const res = await fetch('seed-places.json', {cache:'no-cache'});
-    if (!res.ok) return;
-    const seed = await res.json(), have = new Set(places.map(p=>p.id));
-    const add = seed.filter(p=>!have.has(p.id));
-    places.push(...add);
-    persistPlaces();
-    localStorage.setItem(SEED_FLAG, '1');
-    refreshPins(); renderList(); updateEmpty();
-    if (add.length) toast(`Added ${add.length} Dubai spots to try`);
-  }catch(_){ /* offline or blocked: just try again next visit */ }
-}
-
-buildFormStatics();
-renderAvatar();
-renderFilters();
-renderList();
-updateEmpty();
-loadSeed();
-// a timer, not rAF: rAF never fires in a background tab, and the city should be ready when you switch to it
-setTimeout(()=>{
-  buildTerrain(); buildObjects(); prepRoads(); buildCache();
-  document.getElementById('mapLoading').classList.add('done');
-  if (resizeCanvas()) initialView();
-  refreshPins();
-});
-new ResizeObserver(()=>{
-  if (!cache || wrap.classList.contains('hidden-view')) return;
-  if (!resizeCanvas()) return;
-  // only re-frame on width changes; height changes on phones are the URL bar / keyboard
-  if (needsCenter) initialView();
-  else if (Math.abs(viewW-lastW) > 40){ const c=viewCenter(); computeBaseFit(); setView(c.x,c.y,Math.max(cam.s,MIN_S)); lastW=viewW; }
-  clampCam(); requestRender();
-}).observe(wrap);
-document.addEventListener('visibilitychange', ()=>{ if (!document.hidden) requestRender(); });
-})();
+function paintMe(){ const me=S.me(); if (me) MAP.setMeSprite(spriteSvg({...DEFAULT_AVATAR, ...(me.avatar&&me.avatar.pixel||{})}, 3)); }
+go.paintMe = paintMe;
+go.afterOnboarding = ()=>{
+  paintMe(); rebuild();
+  MAP.whenReady(()=>{ MAP.fitCity(false); const pts=modelCache.filter(s=>s.state!=='unlit').map(s=>MAP.placeWorld(s.v)); if (pts.length) MAP.fitPoints(pts,false); });
+  if (state.pendingJoin){ const code=state.pendingJoin; state.pendingJoin=null; go.inviteLanding(code); }
+  else if (!S.flag('coachDone')) MAP.whenReady(()=>setTimeout(coach, 600));
+};
+boot();

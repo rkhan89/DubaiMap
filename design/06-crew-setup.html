@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_stack" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&amp;family=Nunito+Sans:wght@700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600&amp;family=Space+Mono:wght@400;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      colors: {
+        "on-primary-fixed": "#281900",
+        "on-surface-variant": "#504535",
+        "surface": "#fff8f5",
+        "inverse-surface": "#412c1c",
+        "surface-container": "#ffeadd",
+        "on-secondary": "#ffffff",
+        "on-tertiary-fixed-variant": "#314e21",
+        "primary-fixed-dim": "#fabc4d",
+        "inverse-primary": "#fabc4d",
+        "surface-container-low": "#fff1e9",
+        "inverse-on-surface": "#ffede3",
+        "tertiary": "#486636",
+        "on-primary-container": "#5e4000",
+        "surface-container-lowest": "#ffffff",
+        "on-secondary-fixed-variant": "#6c3a13",
+        "on-tertiary": "#ffffff",
+        "on-error": "#ffffff",
+        "secondary-fixed-dim": "#ffb688",
+        "on-tertiary-container": "#304d20",
+        "tertiary-container": "#9cbe85",
+        "secondary-container": "#feb383",
+        "on-primary-fixed-variant": "#604100",
+        "error-container": "#ffdad6",
+        "surface-variant": "#ffdcc4",
+        "on-surface": "#291709",
+        "on-secondary-fixed": "#311300",
+        "outline": "#827563",
+        "secondary-fixed": "#ffdbc7",
+        "secondary": "#895029",
+        "tertiary-fixed-dim": "#aed196",
+        "surface-dim": "#f6d3bc",
+        "primary-fixed": "#ffdead",
+        "surface-tint": "#7e5700",
+        "tertiary-fixed": "#c9edb0",
+        "surface-bright": "#fff8f5",
+        "on-tertiary-fixed": "#082100",
+        "on-secondary-container": "#78431c",
+        "on-primary": "#ffffff",
+        "on-background": "#291709",
+        "error": "#ba1a1a",
+        "outline-variant": "#d4c4b0",
+        "background": "#fff8f5",
+        "surface-container-high": "#ffe3d0",
+        "primary-container": "#e5a93c",
+        "primary": "#7e5700",
+        "surface-container-highest": "#ffdcc4",
+        "on-error-container": "#93000a"
+      },
+      borderRadius: {
+        "DEFAULT": "0.25rem",
+        "lg": "0.5rem",
+        "xl": "0.75rem",
+        "full": "9999px"
+      },
+      spacing: {
+        "space-md": "1rem",
+        "space-xs": "0.25rem",
+        "space-xl": "2rem",
+        "gutter": "1rem",
+        "space-sm": "0.5rem",
+        "margin": "1.25rem",
+        "space-lg": "1.5rem"
+      },
+      fontFamily: {
+        "body-md": ["Plus Jakarta Sans"],
+        "label-sm": ["Space Mono"],
+        "headline-sm": ["Nunito Sans"],
+        "headline-md": ["Nunito Sans"],
+        "label-lg": ["Plus Jakarta Sans"],
+        "body-lg": ["Plus Jakarta Sans"],
+        "headline-lg": ["Nunito Sans"],
+        "headline-xl-mobile": ["Nunito Sans"],
+        "headline-xl": ["Nunito Sans"],
+        "caption": ["Caveat"],
+        "label-md": ["Space Mono"],
+        "body-sm": ["Plus Jakarta Sans"]
+      },
+      fontSize: {
+        "body-md": ["14px", { "lineHeight": "21px", "fontWeight": "400" }],
+        "label-sm": ["10px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "400" }],
+        "headline-sm": ["18px", { "lineHeight": "24px", "fontWeight": "700" }],
+        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "700" }],
+        "label-lg": ["14px", { "lineHeight": "18px", "fontWeight": "600" }],
+        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "500" }],
+        "headline-lg": ["26px", { "lineHeight": "34px", "fontWeight": "700" }],
+        "headline-xl-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "800" }],
+        "headline-xl": ["34px", { "lineHeight": "42px", "fontWeight": "800" }],
+        "caption": ["18px", { "lineHeight": "22px", "fontWeight": "600" }],
+        "label-md": ["11px", { "lineHeight": "16px", "letterSpacing": "0.06em", "fontWeight": "700" }],
+        "body-sm": ["13px", { "lineHeight": "18px", "fontWeight": "400" }]
+      }
+    }
+  }
+}</script><style>@layer base{html,body{width:100%;margin:0;padding:0;}body{overscroll-behavior-y:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface text-on-surface font-body-md text-body-md min-h-screen flex flex-col antialiased selection:bg-primary-container selection:text-on-primary-container"><header class="fixed top-0 inset-x-0 z-50 bg-surface/85 backdrop-blur-xl pt-safe shadow-[0_1px_8px_rgba(41,23,9,0.04)]"><div class="h-16 px-margin flex items-center justify-between"><button aria-label="Go back" class="w-11 h-11 -ml-space-xs rounded-full flex items-center justify-center text-on-surface hover:bg-surface-container active:translate-y-px transition-all" onclick="history.back()" type="button"><span class="material-symbols-outlined text-[24px]">arrow_back</span></button><div class="flex flex-col items-center justify-center flex-1 px-space-xs"><h1 class="font-headline-sm text-headline-sm text-on-surface text-center tracking-tight truncate max-w-[200px]">Crew Setup Invitation</h1><div aria-label="Onboarding progress" class="flex items-center gap-1.5 mt-1"><span class="w-5 h-1.5 rounded-full bg-primary-container"></span><span class="w-1.5 h-1.5 rounded-full bg-surface-variant"></span><span class="w-1.5 h-1.5 rounded-full bg-surface-variant"></span><span class="w-1.5 h-1.5 rounded-full bg-surface-variant"></span></div></div><div class="flex items-center gap-space-xs -mr-space-xs"><button aria-label="Scrapbook options" class="w-11 h-11 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container active:translate-y-px transition-all" type="button"><span class="material-symbols-outlined text-[22px]">more_vert</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center ml-0.5"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex-1 flex flex-col relative w-full pt-16 bg-surface pb-safe"><div class="flex flex-col w-full pb-10">
+<!-- Step & Header Narrative -->
+<div class="px-margin pt-space-md flex flex-col">
+<div class="flex items-center justify-between">
+<span class="inline-flex items-center gap-1.5 px-space-sm py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-label-md text-label-md uppercase tracking-wider shadow-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-primary-container"></span>
+        Step 5 of 5 • Crew
+      </span>
+<span class="font-caption text-caption text-secondary transform -rotate-2 select-none">
+        Almost ready to feast! 🫖
+      </span>
+</div>
+<h2 class="mt-space-sm font-headline-xl-mobile text-headline-xl-mobile text-on-surface tracking-tight">
+      Set up your food crew
+    </h2>
+<p class="mt-1 font-body-md text-body-md text-on-surface-variant">
+      Scrapbook hidden spice dens in Deira and secret beach shacks together in one living logbook.
+    </p>
+</div>
+<!-- Segmented Tactile Switch -->
+<div class="px-margin mt-space-lg">
+<div class="bg-surface-container-low p-1.5 rounded-xl flex items-center shadow-[inset_0_2px_4px_rgba(41,23,9,0.06)] relative">
+<button class="flex-1 py-2.5 px-space-sm rounded-lg font-headline-sm text-headline-sm text-on-primary-container bg-primary-container shadow-[0_2px_0_#604100] active:translate-y-px transition-all flex items-center justify-center gap-2" id="tab-create-btn" onclick="switchCrewMode('create')" type="button">
+<span class="material-symbols-outlined text-[18px]">group_add</span>
+<span>Create Crew</span>
+</button>
+<button class="flex-1 py-2.5 px-space-sm rounded-lg font-headline-sm text-headline-sm text-on-surface-variant hover:text-on-surface active:translate-y-px transition-all flex items-center justify-center gap-2" id="tab-join-btn" onclick="switchCrewMode('join')" type="button">
+<span class="material-symbols-outlined text-[18px]">vpn_key</span>
+<span>Join Crew</span>
+</button>
+</div>
+</div>
+<!-- MODE 1: CREATE A CREW -->
+<div class="flex flex-col w-full px-margin mt-space-lg space-y-space-lg" id="mode-create">
+<!-- Crew Name Input Card -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-[0_4px_14px_rgba(74,51,25,0.06),0_1px_3px_rgba(74,51,25,0.04)] relative">
+<div class="flex items-center justify-between mb-1.5">
+<label class="font-label-md text-label-md text-secondary uppercase tracking-widest flex items-center gap-1.5" for="crew-name-input">
+<span class="material-symbols-outlined text-[14px]">local_cafe</span>
+          Crew Log Name
+        </label>
+<span class="font-caption text-caption text-primary transform rotate-1">Personalized Stamp</span>
+</div>
+<div class="relative flex items-center">
+<input class="w-full h-12 bg-surface-container-low text-on-surface font-headline-sm text-headline-sm px-space-md pr-11 rounded-lg focus:outline-none focus:bg-surface-container-lowest focus:shadow-[0_0_0_2px_#fabc4d] transition-all" id="crew-name-input" type="text" value="Karak Crew"/>
+<button aria-label="Edit crew name" class="absolute right-2.5 w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container active:scale-95 transition-transform" onclick="document.getElementById('crew-name-input').focus()" type="button">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+</div>
+<p class="mt-2 font-body-sm text-body-sm text-on-surface-variant">
+        This title adorns your communal polaroid book and map pins across Dubai.
+      </p>
+</div>
+<!-- Share Invite Link Box -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-[0_4px_14px_rgba(74,51,25,0.06),0_1px_3px_rgba(74,51,25,0.04)] flex flex-col relative overflow-hidden">
+<!-- Decorative postal tag edge -->
+<div class="flex items-center justify-between mb-2">
+<span class="font-label-md text-label-md text-secondary uppercase tracking-widest flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px]">send_time_extension</span>
+          Secret Invite Link
+        </span>
+<span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-container px-2 py-0.5 rounded-full">
+          Single-use / 48h
+        </span>
+</div>
+<div class="bg-surface-container-low rounded-lg p-2.5 flex items-center justify-between gap-2 shadow-[inset_0_1px_3px_rgba(41,23,9,0.04)]">
+<div class="flex items-center gap-2 min-w-0">
+<span class="material-symbols-outlined text-secondary text-[20px] shrink-0">link</span>
+<span class="font-label-sm text-label-sm text-on-surface truncate select-all" id="crew-link-text">
+            dubaibites.app/join/karak-804
+          </span>
+</div>
+<button class="shrink-0 px-3 py-1.5 rounded-md bg-secondary-fixed text-on-secondary-fixed font-label-md text-label-md shadow-[0_2px_0_#6c3a13] hover:bg-secondary-container active:translate-y-px transition-all flex items-center gap-1" id="copy-link-btn" onclick="copyInviteLink()" type="button">
+<span class="material-symbols-outlined text-[14px]" id="copy-icon">content_copy</span>
+<span id="copy-label">Copy</span>
+</button>
+</div>
+<div class="mt-4 pt-3 flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-tertiary text-[18px]">verified</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">AirDrop &amp; WhatsApp ready</span>
+</div>
+<span class="font-caption text-caption text-secondary transform -rotate-3">No app download needed!</span>
+</div>
+</div>
+<!-- Big Tactile Share Button -->
+<div>
+<button class="w-full py-4 px-space-lg rounded-xl bg-primary-container text-on-primary-container font-headline-sm text-headline-sm shadow-[0_3px_0_#5e4000] active:translate-y-[2px] active:shadow-[0_1px_0_#5e4000] transition-all flex items-center justify-center gap-3" onclick="triggerNativeShare()" type="button">
+<span class="material-symbols-outlined text-[24px]">share</span>
+<span>Invite Friends to Logbook</span>
+</button>
+<div class="hidden mt-2 p-2 rounded-lg bg-surface-container-highest text-on-surface font-body-sm text-body-sm text-center" id="share-toast">
+        🎉 Invite link ready for sharing with your dining partners!
+      </div>
+</div>
+</div>
+<!-- MODE 2: JOIN A CREW (Initially Hidden) -->
+<div class="hidden flex-col w-full px-margin mt-space-lg space-y-space-lg" id="mode-join">
+<!-- 6-character Code Entry Card -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-[0_4px_14px_rgba(74,51,25,0.06),0_1px_3px_rgba(74,51,25,0.04)]">
+<div class="flex items-center justify-between mb-1.5">
+<label class="font-label-md text-label-md text-secondary uppercase tracking-widest flex items-center gap-1.5" for="passcode-input">
+<span class="material-symbols-outlined text-[16px]">dialpad</span>
+          6-Character Passcode
+        </label>
+<button class="font-label-md text-label-md text-primary hover:underline flex items-center gap-1" onclick="pasteClipboardCode()" type="button">
+<span class="material-symbols-outlined text-[14px]">content_paste</span>
+          Paste Link / Code
+        </button>
+</div>
+<div class="mt-2">
+<input class="w-full h-14 bg-surface-container-low text-on-surface font-label-md text-center text-[22px] tracking-[0.25em] uppercase rounded-lg focus:outline-none focus:bg-surface-container-lowest focus:shadow-[0_0_0_2px_#fabc4d] transition-all" id="passcode-input" maxlength="7" placeholder="e.g. DXB-KRK" type="text" value="DXB-KRK"/>
+</div>
+<p class="mt-3 font-body-sm text-body-sm text-on-surface-variant text-center">
+        Enter the short code stamped onto your friend's napkin invitation or shared WhatsApp drop.
+      </p>
+<div class="mt-space-md">
+<button class="w-full py-3.5 px-space-md rounded-xl bg-secondary text-on-secondary font-headline-sm text-headline-sm shadow-[0_3px_0_#311300] active:translate-y-[2px] active:shadow-[0_1px_0_#311300] transition-all flex items-center justify-center gap-2" onclick="validateCode()" type="button">
+<span class="material-symbols-outlined text-[20px]">door_open</span>
+<span>Join Crew</span>
+</button>
+</div>
+</div>
+</div>
+<!-- SECTION 3: INVITE LINK LANDING PREVIEW CARD -->
+<div class="px-margin mt-space-xl">
+<div class="flex items-center justify-between mb-2">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-secondary text-[16px]">visibility</span>
+<span class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant">Preview for Recipients</span>
+</div>
+<span class="font-caption text-caption text-tertiary">Real-time RSVP card</span>
+</div>
+<!-- Polaroid-style communal card -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-[0_6px_20px_rgba(74,51,25,0.08),0_2px_6px_rgba(74,51,25,0.04)] relative">
+<!-- Washi tape corner effect -->
+<div class="absolute -top-2.5 left-1/2 -translate-x-1/2 w-20 h-5 bg-surface-variant/80 rounded-sm transform -rotate-1 shadow-sm pointer-events-none flex items-center justify-center">
+<span class="font-caption text-[11px] text-on-surface-variant tracking-widest uppercase opacity-75">DUBAI BITES</span>
+</div>
+<div class="pt-2 flex flex-col items-center text-center">
+<div class="w-12 h-12 rounded-full bg-primary-fixed flex items-center justify-center text-on-primary-fixed shadow-inner mb-2">
+<span class="material-symbols-outlined text-[26px]">restaurant</span>
+</div>
+<span class="font-caption text-caption text-secondary transform -rotate-1">Special Table Invitation</span>
+<h3 class="font-headline-md text-headline-md text-on-surface mt-0.5">
+          You're invited to Karak Crew
+        </h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1 max-w-[280px]">
+          Curating hidden gems from Al Satwa clay ovens to Jumeirah breakfast bakeries.
+        </p>
+</div>
+<!-- Member Roster & Capacity Pill -->
+<div class="mt-space-md pt-space-sm bg-surface-container-low rounded-lg p-3">
+<div class="flex items-center justify-between mb-2.5">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-tertiary text-[16px]">groups</span>
+<span class="font-label-md text-label-md text-on-surface">Member Roster</span>
+</div>
+<span class="font-label-md text-label-md px-2 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed">
+            6 of 15 members
+          </span>
+</div>
+<!-- 6 Avatars with Handles Grid -->
+<div class="grid grid-cols-3 gap-2.5 pt-1">
+<!-- Member 1 (You) -->
+<div class="flex items-center gap-2 bg-surface-container-lowest p-1.5 rounded-lg shadow-sm min-w-0">
+<div class="w-7 h-7 rounded-full bg-primary-container text-on-primary-container font-label-md text-label-md flex items-center justify-center shrink-0">
+              U
+            </div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md text-on-surface truncate">You</span>
+<span class="font-label-sm text-[9px] text-on-surface-variant truncate">@host</span>
+</div>
+</div>
+<!-- Member 2 (Maya) -->
+<div class="flex items-center gap-2 bg-surface-container-lowest p-1.5 rounded-lg shadow-sm min-w-0">
+<div class="w-7 h-7 rounded-full overflow-hidden shrink-0 bg-secondary-fixed">
+<img class="w-full h-full object-cover" data-alt="Close-up portrait avatar of Maya smiling in soft golden morning sunlight wearing a cream linen shirt, warm Dubai city vibe, documentary street photography style" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCQgTdAdruT4_fu_yRezpiWXI5-ANNSMs8FrVpRPdh1m1I0K-Mx1NeJndUNkoLB2WClNWnIAfvSGBlwQifrRX8SH0MNhP-j1gPc7idL9pZSu9dzMB2d1S1rYlbhVEW_TLOjei_wwSAFrm_1WQevtnLU8sTXUONvBAq2e1MJkb6AqmPUAbS0knYaOqlfs_r-cTeACjUK3DcaaR4nm-C7BDaxJG5h7Yi8C3gs4dypBEK3fUcPoD3RyVlSMQ"/>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md text-on-surface truncate">Maya</span>
+<span class="font-label-sm text-[9px] text-on-surface-variant truncate">@mayaf</span>
+</div>
+</div>
+<!-- Member 3 (Omar) -->
+<div class="flex items-center gap-2 bg-surface-container-lowest p-1.5 rounded-lg shadow-sm min-w-0">
+<div class="w-7 h-7 rounded-full overflow-hidden shrink-0 bg-tertiary-fixed">
+<img class="w-full h-full object-cover" data-alt="Portrait avatar of Omar wearing warm vintage spectacles in a lively cafe ambiance, warm earthy color palette, natural soft focus background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC0ZBV0YnmG6vK_sqmYOUwarz8SnRVZO20Q06up09_2dHrLgShPrzleOOLr34x9-px_BI8g-KcXk0Slwlx7hlht7jVe6elZqpEDIEVZkqBJdZ-ywSP1oAtXXCaIRjAvAwPu-j4qvTeqkxGLo2E51bYnCj0UrhiJbYGjUSMGjocHpaZn72_uO5_IskxI7ozABfH5uYlUJfqR3V2cUQe98OcLjtcfNQHCbHhklaF7Ap48xl9DyyQVMNU1yA"/>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md text-on-surface truncate">Omar</span>
+<span class="font-label-sm text-[9px] text-on-surface-variant truncate">@omardxb</span>
+</div>
+</div>
+<!-- Member 4 (Layla) -->
+<div class="flex items-center gap-2 bg-surface-container-lowest p-1.5 rounded-lg shadow-sm min-w-0">
+<div class="w-7 h-7 rounded-full overflow-hidden shrink-0 bg-secondary-container">
+<img class="w-full h-full object-cover" data-alt="Candid smiling portrait avatar of Layla holding a vintage iced tea glass, soft warm Dubai daylight, editorial food blogger aesthetic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAc8bnGOGzm2A5gxh341oMLb4m2r21YlnWCavJ-rQ_cSOIHobOqce4cUCAe_8Kq5RElOtPQdkhDOQA814fIKxUP_eFJhcHiT-6LS6hpC6XFNm4tEulhmJPuNlg1PPzfqcSa4SMG8R-MqN6y92qUbpvy2BH5WCMD85bvB22YVhAjSYaL2LQz0ACPDLxYe5kgV0c184ds_kX-OCSdqCa6GZwG1VzEhH4aD5W8dJQ9DE3X1HoI7Mbbk1rQeQ"/>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md text-on-surface truncate">Layla</span>
+<span class="font-label-sm text-[9px] text-on-surface-variant truncate">@layla.eats</span>
+</div>
+</div>
+<!-- Member 5 (Kabir) -->
+<div class="flex items-center gap-2 bg-surface-container-lowest p-1.5 rounded-lg shadow-sm min-w-0">
+<div class="w-7 h-7 rounded-full overflow-hidden shrink-0 bg-primary-fixed-dim">
+<img class="w-full h-full object-cover" data-alt="Warm studio style portrait of Kabir laughing outdoors by an old Dubai spice market, natural cinematic lighting, terracotta and sand tones" src="https://lh3.googleusercontent.com/aida-public/AB6AXuByI543L2RWpl0YS7rg3o1zz3M3JeeALCe_BDTNAHmlU2hAr377H9MWZOhshPiiwKwqm4v404YpGc6cI93N6c6HJc7WH3X9NEiLbyvch1OSf3aCVKPA2SWFSpfNGrIFGeF6ONqJssc_KbyX9Tjk8k_q9SefmIlBQGpnTTJ74M8T2-3XGUbGCafjzditYLwjR44Mj4EZxey-Z34S_CzXiFNo4CaesE7gYfTU6WoUBOT__UuHyjusCevEMQ"/>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md text-on-surface truncate">Kabir</span>
+<span class="font-label-sm text-[9px] text-on-surface-variant truncate">@kabirb</span>
+</div>
+</div>
+<!-- Member 6 (Noor) -->
+<div class="flex items-center gap-2 bg-surface-container-lowest p-1.5 rounded-lg shadow-sm min-w-0">
+<div class="w-7 h-7 rounded-full overflow-hidden shrink-0 bg-surface-container-high">
+<img class="w-full h-full object-cover" data-alt="Close-up headshot avatar of Noor in a cozy artisanal bakery setting, warm shadows, soft natural bokeh, organic textures" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA05At4btM0gZrLi5Ab2VbbyZKqemIfYI9Q1LX70Dh19z84IR2Bjoxw4uydvV1zrpj6TF0MQtf74OAEiSDTFTRqVWn98PiEp3KsLAUs7DCO89NaWzt2QjSAg8xFmRIorBoJwQ-bCRYKW-XPtgUZ7SpcRurY52IAbFybQXf22RlU3GglKnOeZTj0UpqJOAE0isFIAL7VRi128yFU4z56FBIV6v1wLKS4qs6Si9rl-J7FxWFULY87pQOfyw"/>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md text-on-surface truncate">Noor</span>
+<span class="font-label-sm text-[9px] text-on-surface-variant truncate">@noor_k</span>
+</div>
+</div>
+</div>
+<!-- Remaining open slot indicators -->
+<div class="mt-3 flex items-center justify-between text-on-surface-variant font-label-sm text-label-sm px-1">
+<span>9 vacant seats remaining</span>
+<div class="flex gap-1">
+<span class="w-2 h-2 rounded-full bg-surface-dim"></span>
+<span class="w-2 h-2 rounded-full bg-surface-dim"></span>
+<span class="w-2 h-2 rounded-full bg-surface-dim"></span>
+<span class="w-2 h-2 rounded-full bg-surface-dim"></span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- SECTION 4: STATE BADGES & ALERT PREVIEWS -->
+<div class="px-margin mt-space-lg space-y-space-sm">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-secondary text-[16px]">info</span>
+<span class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant">Live Status Previews</span>
+</div>
+<!-- Alert 1: Crew is full (15 of 15) -->
+<div class="rounded-xl bg-surface-container-high p-3 flex items-start gap-3 shadow-sm">
+<div class="w-8 h-8 rounded-full bg-secondary text-on-secondary flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px]">lock</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between">
+<span class="font-headline-sm text-headline-sm text-on-surface">Crew is full (15 of 15)</span>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container">
+            Capacity Reached
+          </span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
+          New join requests require an admin to archive inactive diners or split into an East/West Dubai chapter.
+        </p>
+</div>
+</div>
+<!-- Alert 2: Invalid code alert preview -->
+<div class="rounded-xl bg-error-container p-3 flex items-start gap-3 shadow-sm" id="invalid-code-alert">
+<div class="w-8 h-8 rounded-full bg-error text-on-error flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px]">error</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between">
+<span class="font-headline-sm text-headline-sm text-on-error-container">Invalid crew code</span>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded-full bg-surface-container-lowest text-on-error-container font-label-md">
+            Error #404
+          </span>
+</div>
+<p class="font-body-sm text-body-sm text-on-error-container mt-0.5">
+          Code <span class="font-label-sm uppercase font-bold tracking-wider">DXB-999</span> not found. Please double-check with your host or tap "Paste Link" above.
+        </p>
+</div>
+</div>
+</div>
+<!-- Bottom Action Bar / Skip or Continue -->
+<div class="px-margin mt-space-xl flex flex-col gap-2.5">
+<button class="w-full py-4 rounded-xl bg-primary text-on-primary font-headline-sm text-headline-sm shadow-[0_3px_0_#281900] active:translate-y-[2px] active:shadow-[0_1px_0_#281900] transition-all flex items-center justify-center gap-2" type="button">
+<span>Continue to Scrapbook</span>
+<span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+</button>
+<button class="py-2 text-center font-body-sm text-body-sm text-secondary hover:text-on-surface transition-colors" type="button">
+      I'll explore solo for now →
+    </button>
+</div>
+</div>
+<script>
+  function switchCrewMode(mode) {
+    const createBtn = document.getElementById('tab-create-btn');
+    const joinBtn = document.getElementById('tab-join-btn');
+    const createSec = document.getElementById('mode-create');
+    const joinSec = document.getElementById('mode-join');
+
+    if (mode === 'create') {
+      createBtn.className = 'flex-1 py-2.5 px-space-sm rounded-lg font-headline-sm text-headline-sm text-on-primary-container bg-primary-container shadow-[0_2px_0_#604100] active:translate-y-px transition-all flex items-center justify-center gap-2';
+      joinBtn.className = 'flex-1 py-2.5 px-space-sm rounded-lg font-headline-sm text-headline-sm text-on-surface-variant hover:text-on-surface active:translate-y-px transition-all flex items-center justify-center gap-2';
+      createSec.classList.remove('hidden');
+      createSec.classList.add('flex');
+      joinSec.classList.add('hidden');
+      joinSec.classList.remove('flex');
+    } else {
+      joinBtn.className = 'flex-1 py-2.5 px-space-sm rounded-lg font-headline-sm text-headline-sm text-on-primary-container bg-primary-container shadow-[0_2px_0_#604100] active:translate-y-px transition-all flex items-center justify-center gap-2';
+      createBtn.className = 'flex-1 py-2.5 px-space-sm rounded-lg font-headline-sm text-headline-sm text-on-surface-variant hover:text-on-surface active:translate-y-px transition-all flex items-center justify-center gap-2';
+      joinSec.classList.remove('hidden');
+      joinSec.classList.add('flex');
+      createSec.classList.add('hidden');
+      createSec.classList.remove('flex');
+    }
+  }
+
+  function copyInviteLink() {
+    const linkText = document.getElementById('crew-link-text').innerText.trim();
+    const copyLabel = document.getElementById('copy-label');
+    const copyIcon = document.getElementById('copy-icon');
+
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText('https://' + linkText);
+    }
+    copyLabel.innerText = 'Copied!';
+    copyIcon.innerText = 'done';
+    
+    setTimeout(() => {
+      copyLabel.innerText = 'Copy';
+      copyIcon.innerText = 'content_copy';
+    }, 2200);
+  }
+
+  function triggerNativeShare() {
+    const shareToast = document.getElementById('share-toast');
+    if (navigator.share) {
+      navigator.share({
+        title: 'Join Karak Crew on Dubai Bites',
+        text: 'Join our Dubai dining crew logbook!',
+        url: 'https://dubaibites.app/join/karak-804'
+      }).catch(() => {});
+    } else {
+      shareToast.classList.remove('hidden');
+      setTimeout(() => {
+        shareToast.classList.add('hidden');
+      }, 3500);
+    }
+  }
+
+  function pasteClipboardCode() {
+    const input = document.getElementById('passcode-input');
+    if (navigator.clipboard && navigator.clipboard.readText) {
+      navigator.clipboard.readText().then(text => {
+        if (text) {
+          input.value = text.slice(0, 7).toUpperCase();
+        }
+      }).catch(() => {
+        input.value = 'DXB-KRK';
+      });
+    } else {
+      input.value = 'DXB-KRK';
+    }
+  }
+
+  function validateCode() {
+    const code = document.getElementById('passcode-input').value.trim().toUpperCase();
+    const errorAlert = document.getElementById('invalid-code-alert');
+    if (code !== 'DXB-KRK') {
+      errorAlert.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      errorAlert.classList.add('animate-pulse');
+      setTimeout(() => errorAlert.classList.remove('animate-pulse'), 1500);
+    } else {
+      alert('Code verified! Connecting to Karak Crew...');
+    }
+  }
+</script></main></body></html>

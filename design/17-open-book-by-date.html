@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_stack" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&amp;family=Nunito+Sans:wght@700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600&amp;family=Space+Mono:wght@400;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;background-color:#fff8f5;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "on-error": "#ffffff", "on-secondary-fixed": "#311300", "tertiary-fixed": "#c9edb0", "surface-variant": "#ffdcc4", "on-surface": "#291709", "surface-tint": "#7e5700", "inverse-surface": "#412c1c", "on-secondary-container": "#78431c", "inverse-primary": "#fabc4d", "secondary-fixed-dim": "#ffb688", "background": "#fff8f5", "surface-dim": "#f6d3bc", "error": "#ba1a1a", "secondary": "#895029", "inverse-on-surface": "#ffede3", "primary-fixed": "#ffdead", "on-primary-container": "#5e4000", "secondary-container": "#feb383", "surface-container-highest": "#ffdcc4", "on-surface-variant": "#504535", "on-secondary-fixed-variant": "#6c3a13", "on-tertiary-fixed-variant": "#314e21", "on-tertiary": "#ffffff", "tertiary": "#486636", "secondary-fixed": "#ffdbc7", "primary-container": "#e5a93c", "on-primary-fixed": "#281900", "on-error-container": "#93000a", "surface-container": "#ffeadd", "on-secondary": "#ffffff", "surface-container-high": "#ffe3d0", "on-tertiary-container": "#304d20", "surface-bright": "#fff8f5", "on-background": "#291709", "surface-container-lowest": "#ffffff", "tertiary-container": "#9cbe85", "surface-container-low": "#fff1e9", "error-container": "#ffdad6", "tertiary-fixed-dim": "#aed196", "on-primary-fixed-variant": "#604100", "surface": "#fff8f5", "primary-fixed-dim": "#fabc4d", "on-tertiary-fixed": "#082100", "outline-variant": "#d4c4b0", "outline": "#827563", "primary": "#7e5700", "on-primary": "#ffffff" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "space-xs": "0.25rem", "space-xl": "2rem", "margin": "1.25rem", "gutter": "1rem", "space-lg": "1.5rem", "space-sm": "0.5rem", "space-md": "1rem" }, "fontFamily": { "body-sm": ["Plus Jakarta Sans"], "headline-lg": ["Nunito Sans"], "label-sm": ["Space Mono"], "caption": ["Caveat"], "headline-xl": ["Nunito Sans"], "headline-sm": ["Nunito Sans"], "label-md": ["Space Mono"], "headline-xl-mobile": ["Nunito Sans"], "headline-md": ["Nunito Sans"], "body-lg": ["Plus Jakarta Sans"], "body-md": ["Plus Jakarta Sans"], "label-lg": ["Plus Jakarta Sans"] }, "fontSize": { "body-sm": ["13px", { "lineHeight": "18px", "fontWeight": "400" }], "headline-lg": ["26px", { "lineHeight": "34px", "fontWeight": "700" }], "label-sm": ["10px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "400" }], "caption": ["18px", { "lineHeight": "22px", "fontWeight": "600" }], "headline-xl": ["34px", { "lineHeight": "42px", "fontWeight": "800" }], "headline-sm": ["18px", { "lineHeight": "24px", "fontWeight": "700" }], "label-md": ["11px", { "lineHeight": "16px", "letterSpacing": "0.06em", "fontWeight": "700" }], "headline-xl-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "800" }], "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "700" }], "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "500" }], "body-md": ["14px", { "lineHeight": "21px", "fontWeight": "400" }], "label-lg": ["14px", { "lineHeight": "18px", "fontWeight": "600" }] } } } };</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface text-on-surface font-body-md text-body-md flex flex-col min-h-screen selection:bg-secondary-container selection:text-on-secondary-container"><header class="fixed top-0 w-full z-50 pt-safe bg-surface/85 backdrop-blur-xl shadow-[0_1px_8px_rgba(41,23,9,0.05)]"><div class="h-16 px-margin flex items-center justify-between"><div class="flex items-center gap-space-sm"><button aria-label="Go back" class="min-w-[44px] min-h-[44px] w-11 h-11 flex items-center justify-center rounded-full text-secondary hover:text-on-surface transition-colors" onclick="history.back()"><span class="material-symbols-outlined text-[24px]">arrow_back</span></button><div class="flex flex-col"><span class="font-caption text-caption text-secondary leading-none">Scrapbook Page</span><h1 class="font-headline-sm text-headline-sm text-on-surface leading-tight tracking-tight line-clamp-1">Open Book Viewer</h1></div></div><div class="flex items-center gap-space-xs"><button aria-label="Bookmark or Favorite" class="min-w-[44px] min-h-[44px] w-11 h-11 flex items-center justify-center rounded-full text-on-surface-variant hover:text-on-surface transition-colors"><span class="material-symbols-outlined text-[20px]">bookmark</span></button><button aria-label="Share memory" class="min-w-[44px] min-h-[44px] w-11 h-11 flex items-center justify-center rounded-full text-on-surface-variant hover:text-on-surface transition-colors"><span class="material-symbols-outlined text-[20px]">share</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center ml-space-xs"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex-1 flex flex-col relative w-full pt-16 pb-safe bg-surface px-margin"><div class="flex flex-col w-full relative pb-8">
+<!-- Top Segmented Filter Toggle -->
+<section class="w-full flex items-center justify-center mb-5">
+<div class="inline-flex p-1 rounded-full bg-surface-container shadow-inner">
+<button class="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-primary-container text-on-primary-container font-label-md text-label-md shadow-sm transition-transform active:scale-95" type="button">
+<span class="material-symbols-outlined text-[15px]" style="font-variation-settings: 'FILL' 1;">calendar_today</span>
+<span>By Date</span>
+</button>
+<button class="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-on-surface-variant font-label-md text-label-md hover:text-on-surface transition-colors" type="button">
+<span class="material-symbols-outlined text-[15px]">location_on</span>
+<span>By Place</span>
+</button>
+</div>
+</section>
+<!-- Physical Scrapbook Page Canvas -->
+<article class="relative w-full rounded-2xl bg-surface-container-lowest shadow-md overflow-hidden p-4 sm:p-5">
+<!-- Hanging Crimson Silk Ribbon -->
+<div class="absolute -top-1 left-9 w-6 h-14 bg-error rounded-b-sm shadow-md flex items-end justify-center pb-1 z-30 pointer-events-none">
+<div class="w-0 h-0 border-l-[12px] border-l-transparent border-r-[12px] border-r-transparent border-b-[8px] border-b-surface-container-lowest"></div>
+</div>
+<!-- Paper Deckle & Spine Shading (Left Gutter Gradient) -->
+<div class="absolute inset-y-0 left-0 w-3 bg-gradient-to-r from-surface-dim/40 to-transparent pointer-events-none z-20"></div>
+<!-- Right Page Shadow Edge -->
+<div class="absolute inset-y-0 right-0 w-2 bg-gradient-to-l from-surface-dim/30 to-transparent pointer-events-none z-20"></div>
+<!-- Page Header & Hand-inked Date -->
+<header class="pt-5 pl-14 pr-2 pb-4">
+<div class="flex items-center justify-between gap-2">
+<h2 class="font-caption text-caption text-secondary text-2xl tracking-wide select-none">
+          Saturday, 12 October
+        </h2>
+<!-- Vintage Weather Mood Stamp -->
+<div class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary-container/40 text-on-secondary-container font-label-sm text-label-sm shadow-xs select-none">
+<span class="material-symbols-outlined text-[13px] text-primary" style="font-variation-settings: 'FILL' 1;">wb_sunny</span>
+<span>Warm breeze in Al Quoz</span>
+</div>
+</div>
+<p class="font-label-sm text-label-sm text-outline mt-1 tracking-wider uppercase">
+        Dubai Arts District • 25.1434° N, 55.2281° E
+      </p>
+</header>
+<!-- Tactile Polaroid Mosaic Grid -->
+<div class="relative w-full py-2 flex flex-col gap-6">
+<!-- Polaroid 1: Trio Cafe Latte (Tilted -4deg) -->
+<div class="relative w-11/12 self-start transform -rotate-[4deg] transition-transform duration-300 hover:rotate-0 hover:z-20">
+<!-- Washi Tape (Translucent Strip Top-Left) -->
+<div class="absolute -top-3 left-6 w-16 h-6 bg-surface-variant/70 backdrop-blur-xs rounded-xs shadow-xs transform -rotate-6 z-20 pointer-events-none"></div>
+<div class="bg-surface-container-lowest p-3 rounded-lg shadow-md flex flex-col gap-2">
+<div class="relative w-full h-44 rounded overflow-hidden bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="Artisanal cardamom infused flat white with delicate tulip latte art served in a rustic hand-thrown ochre ceramic cup on a weathered wooden cafe table in Al Quoz Dubai, soft warm midday sunlight streaming across linen tablecloth." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBOlT3a3-18vXyPle_2w_8L1W-BARVo7YUKO4jj3HwBnXqw_FbtrTUcKYzcPXmE2An7PRyJvxUd9XPEkGN1gNeEe67P6NDqhLvwy_pflhCFwkzL9Q3oKy4lMrKBvy8IZgyn25ysNMrPXv0EXAiYrmEj0sQ9ng3RJ2mMDkFl1yputLACwe6oHOJRoHmkqtt-r3sWyj7X9G4yat9f5Yb8ZXTb_Utu3RxsF6S-OKEYMzQRLBmhlurJUerVOg"/>
+<span class="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-surface-container-lowest/90 backdrop-blur-xs text-on-surface font-label-sm text-label-sm shadow-xs">
+              09:42 AM
+            </span>
+</div>
+<div class="px-1 pt-1 pb-2 flex items-center justify-between">
+<p class="font-caption text-caption text-on-surface text-xl leading-none">
+              Creamy cardamom notes ~ Trio Cafe
+            </p>
+<span class="font-label-sm text-label-sm text-tertiary font-bold tracking-tight">★ 4.9</span>
+</div>
+</div>
+</div>
+<!-- Polaroid 2: Cardamom Bun (Tilted +5deg) -->
+<div class="relative w-10/12 self-end transform rotate-[5deg] transition-transform duration-300 hover:rotate-0 hover:z-20 -mt-2">
+<div class="bg-surface-container-lowest p-3 rounded-lg shadow-md flex flex-col gap-2">
+<div class="relative w-full h-40 rounded overflow-hidden bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="Golden braided Swedish cardamom bun studded with coarse pearl sugar and cracked cardamom seeds resting on crinkled brown baking parchment paper inside a chic Dubai bakery, warm honeyed lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDf3NsZoro0kLFQFTNMLu9rcEoGmht3qgSZ-8mC-Vi7X4t9da94aryWWa6tDrTbmQxITM8NEVWWrT6NTGjOJ1RFh8O0OwlnbOffE95WuwS27e4P8MWl2wMWqWAiGZFbHQbMWsf0SyepV9pIFeZKMOVpdOJRU3dZV_GJ17olzGVGTUnSR3yXHrfS3QQ4AlEWFgSlnfKFm84mmbVl_gg4uFAtxW6I0taBoeLSd1FC4loA5SQv6FgQtWpTPA"/>
+<div class="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-on-secondary/80 backdrop-blur-xs text-on-surface font-label-sm text-label-sm">
+              Baked fresh @ 10:15
+            </div>
+</div>
+<div class="px-1 pt-1 pb-1">
+<p class="font-caption text-caption text-secondary text-xl leading-none">
+              Fresh out of the hearth! Still steamy ✨
+            </p>
+</div>
+</div>
+<!-- Washi Tape (Translucent Strip Bottom-Right) -->
+<div class="absolute -bottom-2 right-4 w-14 h-5 bg-primary-fixed/80 backdrop-blur-xs rounded-xs shadow-xs transform rotate-3 z-20 pointer-events-none"></div>
+</div>
+<!-- Polaroid 3: Cafe Sunlit Corner (Private Memory, Tilted -2deg) -->
+<div class="relative w-10/12 self-start transform -rotate-[2deg] transition-transform duration-300 hover:rotate-0 hover:z-20 -mt-2">
+<!-- Washi Tape Top-Right -->
+<div class="absolute -top-3 right-8 w-16 h-5 bg-tertiary-fixed/70 backdrop-blur-xs rounded-xs shadow-xs transform rotate-6 z-20 pointer-events-none"></div>
+<div class="bg-surface-container-lowest p-3 rounded-lg shadow-md flex flex-col gap-2">
+<div class="relative w-full h-40 rounded overflow-hidden bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="Quiet sun-drenched industrial cafe interior in Dubai with lush potted fiddle leaf fig trees, raw concrete walls, open architecture books, and warm afternoon shadows casting patterns over a corner wooden table." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAEvvZmyEZIMUSOIPO4wGV9T-uQGKT1a-CmtCGngNWe1f5nxce0epoIN9uHi5XD19WzqjOB4jdfb3qo6aQVab5-YRG6qqKujMD1OwMK6YIalH-OHcvQHI7lclcolSNQ0OTG3oi8Vcn2OeXy9az8uCcQejKFoAep-tZVMiszhBr-E2-CBoAziXivsiPZr-FIoQnzzE_nfHV96VKREaB3Kwggu0maNIbzjx1WRwN5Ma9SLcoxd4QKdWgKww"/>
+<!-- Private Padlock Stamp -->
+<div class="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-dim/95 text-on-secondary-container shadow-xs">
+<span class="material-symbols-outlined text-[13px]" style="font-variation-settings: 'FILL' 1;">lock</span>
+<span class="font-label-sm text-label-sm font-bold">Only You</span>
+</div>
+</div>
+<div class="px-1 pt-1 pb-2 flex items-center justify-between">
+<p class="font-caption text-caption text-on-surface text-xl leading-none">
+              Maya's favorite study table
+            </p>
+<span class="material-symbols-outlined text-secondary text-[18px]">favorite</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Hand-annotated Sticky Memory Snippet -->
+<section class="mt-4 p-3.5 rounded-xl bg-surface-container-low shadow-inner">
+<div class="flex items-center gap-2 mb-1.5">
+<span class="material-symbols-outlined text-primary text-[18px]">edit_note</span>
+<span class="font-label-md text-label-md text-secondary uppercase tracking-wider">Tasting Notes</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+        Spoke with the roaster about their Yemeni batch. Cardamom syrup made in-house every morning with freshly crushed green pods. Will bring Tariq here next weekend!
+      </p>
+</section>
+<!-- Dog-Eared / Curled Page Peel Effect (Bottom-Right Corner) -->
+<aside aria-label="Next day preview" class="relative mt-8 pt-4">
+<div class="w-full flex items-center justify-between text-on-surface-variant font-label-md text-label-md pb-2">
+<button class="flex items-center gap-1 hover:text-primary transition-colors py-1" type="button">
+<span class="material-symbols-outlined text-[16px]">arrow_back</span>
+<span>11 Oct (Deira)</span>
+</button>
+<span class="font-label-sm text-label-sm text-outline">Page 42 of 188 • Vol. 1</span>
+<button class="flex items-center gap-1 hover:text-primary transition-colors py-1" type="button">
+<span>13 Oct (Jumeirah)</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+<!-- Bottom Right Page Fold Interactive Teaser -->
+<div class="relative w-full h-16 rounded-xl bg-surface-container-high p-3 flex items-center justify-between overflow-hidden shadow-xs cursor-pointer group">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg overflow-hidden bg-surface-container-highest shrink-0 shadow-xs">
+<img class="w-full h-full object-cover" data-alt="Close-up of golden saffron tea poured into transparent glass cup in Old Dubai waterfront creek." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBs-ZRp2nAE9ZyYgcyEXNuhmJZXUY9X7Q-uXtbDGC-01587CwysLiD7WRyeu3BwhTPfz3v7I2CyQODyO-ntE9fA1VLOlEv1daGHUPlxvfKp6dBDllJLydXHUOhwqrjJBXrZopR5XNu_p7y3a0dvoc6gT21-0teBi0AerPepybgWWGiALlSX0i7D5cea_h4IwM3JOgwCG80RDVElCxSBzOly095pl4ImYg6Bcadgaxy-yfHdt86dYW_mTA"/>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-sm text-label-sm text-primary font-bold uppercase">Next Entry Peeking</span>
+<span class="font-caption text-caption text-secondary text-lg truncate">Sunday morning chai at Al Seef</span>
+</div>
+</div>
+<!-- Curled Corner Fold Motif -->
+<div class="w-9 h-9 rounded-tl-xl bg-surface-dim flex items-center justify-center text-on-secondary-container shadow-sm group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[18px]">turn_slight_right</span>
+</div>
+</div>
+</aside>
+</article>
+<!-- Inset State: Single Photo Day Variant Preview -->
+<section class="mt-6 w-full rounded-2xl bg-surface-container p-4 shadow-sm flex flex-col gap-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[20px]">auto_stories</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Minimalist Page View</h3>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant font-label-sm text-label-sm">
+        Alternate Layout
+      </span>
+</div>
+<!-- 1 Large Polaroid & Extended Journal Note -->
+<div class="rounded-xl bg-surface-container-lowest p-3 shadow-md flex flex-col gap-3">
+<div class="relative w-full h-52 rounded-lg overflow-hidden bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="Wide scenic shot of an intimate outdoor courtyard dining table in Dubai under fairy lights, mezze platters with fresh mint, pomegranate molasses hummus, and toasted flatbread spread out gracefully." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCZYn24uq0OBm1bQRPVuVVM79TCDF5xbKkJS9pdUSuTxlqg29PlLdnwz43hnSNV7LO9HMfI2ndfz99f-Nx2_4bgXAGdXVff6n-xZDOj783kf9DO_7L_IjNKxlgoksHNzqVZ6MrMNKLnuEMTLxaOlEQsoXQ_zvhSLVVAg0B_r-4onqoB2MAw6q-FnqEFp2qMsN472RhjwUUJEyHDrGzgHcOgIoTHbEFwDPDpqJnmTKXuKK7tHeFITpx9Fg"/>
+<div class="absolute top-2 right-2 px-2.5 py-1 rounded-full bg-surface-container-lowest/90 backdrop-blur-xs font-label-sm text-label-sm text-on-surface">
+          Thursday, 3 Oct • Jumeirah
+        </div>
+</div>
+<div class="px-1 flex flex-col gap-1">
+<p class="font-caption text-caption text-secondary text-2xl leading-tight">
+          “Under the Bougainvillea trellis”
+        </p>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+          Dinner with the full crew after weeks of planning. The lamb shank melted off the bone, and the orange blossom lemonade was the highlight of the night. A quiet moment in the heart of the bustling coast.
+        </p>
+</div>
+<div class="flex items-center justify-between pt-2">
+<div class="flex items-center -space-x-1.5">
+<div class="w-6 h-6 rounded-full bg-primary-container text-on-primary-container font-label-sm text-label-sm flex items-center justify-center font-bold shadow-xs">M</div>
+<div class="w-6 h-6 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm flex items-center justify-center font-bold shadow-xs">T</div>
+<div class="w-6 h-6 rounded-full bg-tertiary-container text-on-tertiary-container font-label-sm text-label-sm flex items-center justify-center font-bold shadow-xs">K</div>
+</div>
+<button class="px-3 py-1.5 rounded-lg bg-surface-container-high text-on-surface font-label-sm text-label-sm font-bold flex items-center gap-1 hover:bg-surface-variant transition-colors" type="button">
+<span>Expand story</span>
+<span class="material-symbols-outlined text-[14px]">open_in_full</span>
+</button>
+</div>
+</div>
+</section>
+</div></main></body></html>

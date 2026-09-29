@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_stack" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&amp;family=Nunito+Sans:wght@700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600&amp;family=Space+Mono:wght@400;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;background-color:#fff8f5;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "on-error": "#ffffff", "on-secondary-fixed": "#311300", "tertiary-fixed": "#c9edb0", "surface-variant": "#ffdcc4", "on-surface": "#291709", "surface-tint": "#7e5700", "inverse-surface": "#412c1c", "on-secondary-container": "#78431c", "inverse-primary": "#fabc4d", "secondary-fixed-dim": "#ffb688", "background": "#fff8f5", "surface-dim": "#f6d3bc", "error": "#ba1a1a", "secondary": "#895029", "inverse-on-surface": "#ffede3", "primary-fixed": "#ffdead", "on-primary-container": "#5e4000", "secondary-container": "#feb383", "surface-container-highest": "#ffdcc4", "on-surface-variant": "#504535", "on-secondary-fixed-variant": "#6c3a13", "on-tertiary-fixed-variant": "#314e21", "on-tertiary": "#ffffff", "tertiary": "#486636", "secondary-fixed": "#ffdbc7", "primary-container": "#e5a93c", "on-primary-fixed": "#281900", "on-error-container": "#93000a", "surface-container": "#ffeadd", "on-secondary": "#ffffff", "surface-container-high": "#ffe3d0", "on-tertiary-container": "#304d20", "surface-bright": "#fff8f5", "on-background": "#291709", "surface-container-lowest": "#ffffff", "tertiary-container": "#9cbe85", "surface-container-low": "#fff1e9", "error-container": "#ffdad6", "tertiary-fixed-dim": "#aed196", "on-primary-fixed-variant": "#604100", "surface": "#fff8f5", "primary-fixed-dim": "#fabc4d", "on-tertiary-fixed": "#082100", "outline-variant": "#d4c4b0", "outline": "#827563", "primary": "#7e5700", "on-primary": "#ffffff" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "space-xs": "0.25rem", "space-xl": "2rem", "margin": "1.25rem", "gutter": "1rem", "space-lg": "1.5rem", "space-sm": "0.5rem", "space-md": "1rem" }, "fontFamily": { "body-sm": ["Plus Jakarta Sans"], "headline-lg": ["Nunito Sans"], "label-sm": ["Space Mono"], "caption": ["Caveat"], "headline-xl": ["Nunito Sans"], "headline-sm": ["Nunito Sans"], "label-md": ["Space Mono"], "headline-xl-mobile": ["Nunito Sans"], "headline-md": ["Nunito Sans"], "body-lg": ["Plus Jakarta Sans"], "body-md": ["Plus Jakarta Sans"], "label-lg": ["Plus Jakarta Sans"] }, "fontSize": { "body-sm": ["13px", { "lineHeight": "18px", "fontWeight": "400" }], "headline-lg": ["26px", { "lineHeight": "34px", "fontWeight": "700" }], "label-sm": ["10px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "400" }], "caption": ["18px", { "lineHeight": "22px", "fontWeight": "600" }], "headline-xl": ["34px", { "lineHeight": "42px", "fontWeight": "800" }], "headline-sm": ["18px", { "lineHeight": "24px", "fontWeight": "700" }], "label-md": ["11px", { "lineHeight": "16px", "letterSpacing": "0.06em", "fontWeight": "700" }], "headline-xl-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "800" }], "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "700" }], "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "500" }], "body-md": ["14px", { "lineHeight": "21px", "fontWeight": "400" }], "label-lg": ["14px", { "lineHeight": "18px", "fontWeight": "600" }] } } } };</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface text-on-surface font-body-md text-body-md flex flex-col min-h-screen selection:bg-secondary-container selection:text-on-secondary-container"><header class="fixed top-0 w-full z-50 pt-safe bg-surface/85 backdrop-blur-xl shadow-[0_1px_8px_rgba(41,23,9,0.05)]"><div class="h-16 px-margin flex items-center justify-between"><div class="flex items-center gap-space-sm"><button aria-label="Go back" class="min-w-[44px] min-h-[44px] w-11 h-11 flex items-center justify-center rounded-full text-secondary hover:text-on-surface transition-colors" onclick="history.back()"><span class="material-symbols-outlined text-[24px]">arrow_back</span></button><div class="flex flex-col"><span class="font-caption text-caption text-secondary leading-none">Scrapbook Page</span><h1 class="font-headline-sm text-headline-sm text-on-surface leading-tight tracking-tight line-clamp-1">Photo Detail Viewer</h1></div></div><div class="flex items-center gap-space-xs"><button aria-label="Bookmark or Favorite" class="min-w-[44px] min-h-[44px] w-11 h-11 flex items-center justify-center rounded-full text-on-surface-variant hover:text-on-surface transition-colors"><span class="material-symbols-outlined text-[20px]">bookmark</span></button><button aria-label="Share memory" class="min-w-[44px] min-h-[44px] w-11 h-11 flex items-center justify-center rounded-full text-on-surface-variant hover:text-on-surface transition-colors"><span class="material-symbols-outlined text-[20px]">share</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center ml-space-xs"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex-1 flex flex-col relative w-full pt-16 pb-safe bg-surface px-margin"><div class="flex flex-col w-full relative pb-space-xl">
+<!-- Interactive Viewport Stack -->
+<div class="flex flex-col w-full">
+<!-- Top Inspection Navigation Bar -->
+<div class="flex items-center justify-between px-space-md py-space-sm bg-surface-container-high rounded-full shadow-md mb-space-md">
+<button aria-label="Close photo viewer" class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface hover:bg-surface-container-highest transition-transform active:translate-y-0.5" id="close-modal-btn">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+<!-- Stamp-styled Counter -->
+<div class="flex items-center gap-space-xs px-space-md py-1 bg-surface-container-lowest rounded-full shadow-sm">
+<span class="material-symbols-outlined text-[14px] text-primary">photo_library</span>
+<span class="font-label-md text-label-md text-on-surface tracking-wider">4 OF 18</span>
+</div>
+<div class="flex items-center gap-space-xs">
+<button aria-label="Share photo" class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface hover:bg-surface-container-highest transition-transform active:translate-y-0.5" id="btn-share">
+<span class="material-symbols-outlined text-[18px]">ios_share</span>
+</button>
+<button aria-label="Favorite photo" class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface hover:bg-surface-container-highest transition-transform active:translate-y-0.5" id="btn-fav">
+<span class="material-symbols-outlined text-[18px] text-secondary" id="fav-icon">bookmark</span>
+</button>
+</div>
+</div>
+<!-- Polaroid Ephemera Frame -->
+<div class="relative flex flex-col bg-surface-container-lowest p-space-sm pt-space-md rounded-xl shadow-xl transition-all">
+<!-- Translucent Washi Masking Tape Accent -->
+<div class="absolute -top-3 left-1/2 -translate-x-1/2 w-28 h-6 bg-surface-container-highest/80 backdrop-blur-sm -rotate-1 rounded-sm shadow-sm flex items-center justify-center pointer-events-none z-10">
+<span class="font-label-sm text-label-sm text-on-surface-variant/60 tracking-widest uppercase">DUBAI MEMORY</span>
+</div>
+<!-- Main Foodie Photograph -->
+<div class="relative w-full aspect-[4/5] rounded-lg overflow-hidden bg-surface-container-low shadow-inner">
+<img class="w-full h-full object-cover select-none" data-alt="A warm, atmospheric top-down food shot of an iced Spanish latte in a textured glass showing rich condensed milk swirl layers, paired with a glazed golden cardamom brioche pastry dusted with crushed pistachios on a rustic sunlit dark walnut cafe table inside Trio Cafe Dubai, morning natural amber light and gentle linen napkins." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD7t3n-WgtfyABLymYbga4wCkPu9NRpZG_TQ_Ql25o6kKpNgj5iV4ZhN1-bxSRfqCgREn5FBbaTHBClKv2tQKxc6JSvBRaMomR-Qn-9iIHbcIqyy0-bYUUNkW8aH33FOlvtaY4AnD1EE5zByf2IXPfd6WDR2_gC1Auc5h5gm3wQ4YNehuUx7Xmo45ww6ZrJFr6SblYRFsmohGxc165__xFEP_yGYMK4EMCjVBNBqXzZB1ba2883aqV_kg"/>
+<!-- Subtle Vintage Film Watermark Stamp -->
+<div class="absolute bottom-3 right-3 bg-inverse-surface/65 backdrop-blur-md px-space-sm py-0.5 rounded-full flex items-center gap-1">
+<span class="material-symbols-outlined text-inverse-on-surface text-[12px]">camera</span>
+<span class="font-label-sm text-label-sm text-inverse-on-surface tracking-widest">35MM • DUBAI</span>
+</div>
+</div>
+<!-- Polaroid Bottom Shelf / Handwritten Memory Area -->
+<div class="pt-space-md pb-space-xs px-space-xs flex flex-col gap-space-sm">
+<!-- Editable Handwritten Caption -->
+<div class="flex items-start justify-between gap-space-sm group cursor-pointer bg-surface-container-low/50 hover:bg-surface-container-low p-space-sm rounded-lg transition-colors">
+<div class="flex-1">
+<p class="font-caption text-caption text-on-surface leading-tight" id="caption-text">
+              “Iced Spanish Latte &amp; warm cardamom brioche... best morning light ☕️✨”
+            </p>
+</div>
+<button aria-label="Edit caption" class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-secondary hover:text-on-surface transition-transform active:scale-95 shrink-0 mt-0.5" id="edit-caption-btn">
+<span class="material-symbols-outlined text-[16px]">edit</span>
+</button>
+</div>
+<!-- Meta Pills & Place Connection -->
+<div class="flex flex-wrap items-center justify-between gap-space-xs pt-space-xs">
+<!-- Linked Place Pill -->
+<button class="inline-flex items-center gap-1.5 px-space-sm py-1 bg-surface-container-high hover:bg-surface-container-highest rounded-full shadow-sm transition-transform active:translate-y-0.5">
+<span class="material-symbols-outlined text-[14px] text-primary">pin_drop</span>
+<span class="font-label-md text-label-md text-on-surface">Trio Cafe • Dubai Mall</span>
+<span class="material-symbols-outlined text-[14px] text-on-surface-variant">chevron_right</span>
+</button>
+<!-- Timestamp Stamp -->
+<div class="flex items-center gap-1 px-space-sm py-1 bg-surface-container-low rounded-full">
+<span class="material-symbols-outlined text-[12px] text-on-surface-variant">schedule</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">12 Oct 2024 • @you</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Tactile Control Actions Hub -->
+<div class="flex flex-col gap-space-sm mt-space-lg">
+<div class="grid grid-cols-2 gap-space-sm">
+<!-- Button 1: Privacy Toggle -->
+<button class="flex items-center justify-center gap-2 py-3 px-space-sm bg-surface-container-high hover:bg-surface-container-highest text-on-surface rounded-xl shadow-md transition-all active:translate-y-0.5" id="toggle-privacy-btn">
+<span class="material-symbols-outlined text-[18px] text-primary" id="privacy-icon">lock</span>
+<span class="font-label-lg text-label-lg text-on-surface" id="privacy-label">Private</span>
+</button>
+<!-- Button 2: Set as Photobook Cover -->
+<button class="flex items-center justify-center gap-2 py-3 px-space-sm bg-primary-container text-on-primary-fixed rounded-xl shadow-md transition-all active:translate-y-0.5" id="set-cover-btn">
+<span class="material-symbols-outlined text-[18px]">auto_stories</span>
+<span class="font-label-lg text-label-lg text-on-primary-fixed">Set as Cover</span>
+</button>
+</div>
+<!-- Button 3: Destructive Action Pill -->
+<button class="flex items-center justify-center gap-2 py-2.5 px-space-md bg-error-container text-on-error-container rounded-xl shadow-sm hover:opacity-95 transition-all active:translate-y-0.5" id="trigger-delete-btn">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+<span class="font-label-lg text-label-lg text-on-error-container">Delete Photo</span>
+</button>
+</div>
+<!-- Inset Confirmation Sheet Overlay Preview -->
+<div class="hidden mt-space-lg p-space-md bg-surface-container-highest rounded-2xl shadow-xl flex flex-col gap-space-md animate-fade-in" id="delete-modal-overlay">
+<div class="flex items-start gap-space-sm">
+<div class="w-10 h-10 rounded-full bg-error-container flex items-center justify-center shrink-0 text-error">
+<span class="material-symbols-outlined text-[20px]">warning</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface">Delete this photo?</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">
+            This will remove it from your photobook and the place page. Your visit note and coffee rating will stay preserved.
+          </p>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-space-sm pt-space-xs">
+<button class="py-2.5 px-space-md bg-surface-container-lowest text-on-surface rounded-xl shadow-sm hover:bg-surface-container transition-transform active:translate-y-0.5 text-center font-label-lg text-label-lg" id="cancel-delete-btn">
+          Cancel
+        </button>
+<button class="py-2.5 px-space-md bg-error text-on-error rounded-xl shadow-md hover:opacity-90 transition-transform active:translate-y-0.5 text-center font-label-lg text-label-lg" id="confirm-delete-btn">
+          Delete photo
+        </button>
+</div>
+</div>
+<!-- Toast Notification Indicator -->
+<div class="opacity-0 pointer-events-none transition-opacity duration-300 fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-space-md py-2 bg-inverse-surface text-inverse-on-surface rounded-full shadow-xl flex items-center gap-2" id="toast-pill">
+<span class="material-symbols-outlined text-[16px] text-tertiary-fixed">check_circle</span>
+<span class="font-body-sm text-body-sm" id="toast-text">Updated</span>
+</div>
+</div>
+</div>
+<script>
+  (function initPhotoViewer() {
+    const togglePrivacyBtn = document.getElementById('toggle-privacy-btn');
+    const privacyIcon = document.getElementById('privacy-icon');
+    const privacyLabel = document.getElementById('privacy-label');
+
+    const setCoverBtn = document.getElementById('set-cover-btn');
+    const triggerDeleteBtn = document.getElementById('trigger-delete-btn');
+    const deleteModal = document.getElementById('delete-modal-overlay');
+    const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
+    const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+
+    const favBtn = document.getElementById('btn-fav');
+    const favIcon = document.getElementById('fav-icon');
+    const editCaptionBtn = document.getElementById('edit-caption-btn');
+    const captionText = document.getElementById('caption-text');
+    const toastPill = document.getElementById('toast-pill');
+    const toastText = document.getElementById('toast-text');
+
+    function showToast(message) {
+      if (!toastPill || !toastText) return;
+      toastText.textContent = message;
+      toastPill.classList.remove('opacity-0', 'pointer-events-none');
+      toastPill.classList.add('opacity-100');
+      setTimeout(() => {
+        toastPill.classList.remove('opacity-100');
+        toastPill.classList.add('opacity-0', 'pointer-events-none');
+      }, 2400);
+    }
+
+    let isPrivate = true;
+    if (togglePrivacyBtn) {
+      togglePrivacyBtn.addEventListener('click', () => {
+        isPrivate = !isPrivate;
+        if (isPrivate) {
+          privacyIcon.textContent = 'lock';
+          privacyLabel.textContent = 'Private';
+          showToast('Photo visibility: Kept Private');
+        } else {
+          privacyIcon.textContent = 'group';
+          privacyLabel.textContent = 'Shared w/ Crew';
+          showToast('Shared with Karak Crew ✨');
+        }
+      });
+    }
+
+    if (setCoverBtn) {
+      setCoverBtn.addEventListener('click', () => {
+        showToast('Set as Dubai Photobook cover 📖');
+      });
+    }
+
+    let isBookmarked = true;
+    if (favBtn) {
+      favBtn.addEventListener('click', () => {
+        isBookmarked = !isBookmarked;
+        favIcon.style.fontVariationSettings = isBookmarked ? "'FILL' 1" : "'FILL' 0";
+        showToast(isBookmarked ? 'Saved to Bookmarks' : 'Removed from Bookmarks');
+      });
+    }
+
+    if (triggerDeleteBtn && deleteModal) {
+      triggerDeleteBtn.addEventListener('click', () => {
+        deleteModal.classList.remove('hidden');
+        deleteModal.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
+    }
+
+    if (cancelDeleteBtn && deleteModal) {
+      cancelDeleteBtn.addEventListener('click', () => {
+        deleteModal.classList.add('hidden');
+      });
+    }
+
+    if (confirmDeleteBtn && deleteModal) {
+      confirmDeleteBtn.addEventListener('click', () => {
+        deleteModal.classList.add('hidden');
+        showToast('Photo removed from album');
+      });
+    }
+
+    if (editCaptionBtn && captionText) {
+      editCaptionBtn.addEventListener('click', () => {
+        const current = captionText.textContent.trim().replace(/^“|”$/g, '');
+        const updated = prompt('Edit memory note:', current);
+        if (updated !== null && updated.trim().length > 0) {
+          captionText.textContent = `“${updated.trim()}”`;
+          showToast('Caption saved ✨');
+        }
+      });
+    }
+  })();
+</script></main></body></html>

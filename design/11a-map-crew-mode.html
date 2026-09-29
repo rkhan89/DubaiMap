@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_tab" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&amp;family=Nunito+Sans:wght@700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600&amp;family=Space+Mono:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "surface-dim": "#f6d3bc", "error": "#ba1a1a", "primary": "#7e5700", "on-tertiary": "#ffffff", "on-error-container": "#93000a", "on-error": "#ffffff", "on-background": "#291709", "inverse-surface": "#412c1c", "primary-container": "#e5a93c", "secondary-fixed-dim": "#ffb688", "secondary-fixed": "#ffdbc7", "surface-container-highest": "#ffdcc4", "secondary": "#895029", "background": "#fff8f5", "secondary-container": "#feb383", "surface-container": "#ffeadd", "on-surface-variant": "#504535", "tertiary-container": "#9cbe85", "tertiary-fixed-dim": "#aed196", "on-secondary-fixed": "#311300", "surface-container-lowest": "#ffffff", "on-surface": "#291709", "error-container": "#ffdad6", "inverse-on-surface": "#ffede3", "surface-tint": "#7e5700", "on-primary-fixed": "#281900", "surface": "#fff8f5", "outline": "#827563", "primary-fixed-dim": "#fabc4d", "surface-variant": "#ffdcc4", "surface-container-high": "#ffe3d0", "on-tertiary-container": "#304d20", "on-secondary-fixed-variant": "#6c3a13", "on-secondary-container": "#78431c", "surface-container-low": "#fff1e9", "tertiary-fixed": "#c9edb0", "outline-variant": "#d4c4b0", "on-primary": "#ffffff", "primary-fixed": "#ffdead", "tertiary": "#486636", "on-tertiary-fixed-variant": "#314e21", "inverse-primary": "#fabc4d", "on-tertiary-fixed": "#082100", "on-secondary": "#ffffff", "surface-bright": "#fff8f5", "on-primary-fixed-variant": "#604100", "on-primary-container": "#5e4000" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "space-sm": "0.5rem", "gutter": "1rem", "margin": "1.25rem", "space-md": "1rem", "space-xl": "2rem", "space-xs": "0.25rem", "space-lg": "1.5rem" }, "fontFamily": { "headline-lg": ["Nunito Sans"], "body-lg": ["Plus Jakarta Sans"], "headline-xl": ["Nunito Sans"], "body-sm": ["Plus Jakarta Sans"], "headline-xl-mobile": ["Nunito Sans"], "caption": ["Caveat"], "headline-sm": ["Nunito Sans"], "label-lg": ["Plus Jakarta Sans"], "headline-md": ["Nunito Sans"], "label-sm": ["Space Mono"], "label-md": ["Space Mono"], "body-md": ["Plus Jakarta Sans"] }, "fontSize": { "headline-lg": ["26px", { "lineHeight": "34px", "fontWeight": "700" }], "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "500" }], "headline-xl": ["34px", { "lineHeight": "42px", "fontWeight": "800" }], "body-sm": ["13px", { "lineHeight": "18px", "fontWeight": "400" }], "headline-xl-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "800" }], "caption": ["18px", { "lineHeight": "22px", "fontWeight": "600" }], "headline-sm": ["18px", { "lineHeight": "24px", "fontWeight": "700" }], "label-lg": ["14px", { "lineHeight": "18px", "fontWeight": "600" }], "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "700" }], "label-sm": ["10px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "400" }], "label-md": ["11px", { "lineHeight": "16px", "letterSpacing": "0.06em", "fontWeight": "700" }], "body-md": ["14px", { "lineHeight": "21px", "fontWeight": "400" }] } } } };</script><style>@layer base{html,body{width:100vw;margin:0;padding:0;background-color:#fff8f5;}body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style></head><body class="bg-surface text-on-surface font-body-md min-h-screen flex flex-col antialiased selection:bg-primary-container selection:text-on-primary-container"><header class="fixed top-0 w-full z-50 bg-surface/90 backdrop-blur-xl pt-safe shadow-[0_4px_16px_rgba(74,51,25,0.06)]"><div class="h-20 px-margin flex items-center justify-between"><div class="flex items-center gap-space-sm"><div class="w-10 h-10 rounded-xl bg-primary-container flex items-center justify-center shadow-[0_2px_0_#432818] rotate-[-2deg]"><span class="material-symbols-outlined text-on-primary-container text-[22px]">local_dining</span></div><div class="flex flex-col"><h1 class="font-headline-md text-headline-md text-on-surface leading-tight tracking-tight">Dubai Bites</h1><p class="font-caption text-caption text-secondary -mt-1">your scrapbook of the city</p></div></div><div class="flex items-center gap-space-sm"><button aria-label="Filter places" class="w-11 h-11 rounded-full bg-surface-container-low flex items-center justify-center text-on-surface shadow-[0_2px_0_#d4c4b0] active:translate-y-0.5 transition-all"><span class="material-symbols-outlined text-[22px]">tune</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-[0_1px_2px_rgba(41,23,9,0.2)]"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex-1 w-full bg-surface pt-20 pb-28"><div class="flex flex-col w-full relative select-none">
+<!-- Top Floating Social Controls & Filters (Sticky under App Shell Header) -->
+<div class="sticky top-0 z-30 flex flex-col gap-space-sm px-margin pt-space-xs pb-space-sm bg-gradient-to-b from-surface via-surface/95 to-transparent">
+<!-- Row 1: Mode Switcher & Area Indicator -->
+<div class="flex items-center justify-between gap-space-sm">
+<!-- Me / Crew Segmented Pill Toggle -->
+<div class="flex items-center p-1 bg-surface-container rounded-full shadow-[0_2px_0_#d4c4b0]">
+<button class="px-space-md py-1.5 rounded-full font-label-md text-label-md transition-all text-on-surface-variant flex items-center gap-1 active:scale-95" id="toggle-me">
+<span class="material-symbols-outlined text-[16px]">person</span>
+<span>ME</span>
+</button>
+<button class="px-space-md py-1.5 rounded-full font-label-md text-label-md bg-primary-container text-on-primary-container shadow-[0_2px_0_#432818] flex items-center gap-1 transition-all active:scale-95" id="toggle-crew">
+<span class="material-symbols-outlined text-[16px]">group</span>
+<span>CREW</span>
+<span class="w-2 h-2 rounded-full bg-tertiary ml-0.5 animate-pulse"></span>
+</button>
+</div>
+<!-- Quick Compass / Recenter Tag -->
+<div class="flex items-center gap-1 px-3 py-1.5 bg-surface-container-low rounded-full shadow-[0_2px_0_#d4c4b0]">
+<span class="material-symbols-outlined text-[16px] text-primary">near_me</span>
+<span class="font-label-md text-label-md text-on-surface uppercase tracking-wider">Downtown</span>
+</div>
+</div>
+<!-- Row 2: Crew Member Filter Chips (Horizontal Scroll) -->
+<div class="flex items-center gap-2 overflow-x-auto py-1 no-scrollbar -mx-margin px-margin">
+<!-- All Filter -->
+<button class="member-chip active flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary-container text-on-primary-container shadow-[0_2px_0_#432818] font-label-md text-label-md active:translate-y-0.5 transition-all">
+<span class="material-symbols-outlined text-[15px]">done_all</span>
+<span>ALL</span>
+<span class="px-1.5 py-0.2 rounded-full bg-surface text-on-surface text-[10px] font-bold">28</span>
+</button>
+<!-- You Chip -->
+<button class="member-chip flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-low text-on-surface shadow-[0_2px_0_#d4c4b0] font-label-md text-label-md active:translate-y-0.5 transition-all">
+<div class="w-5 h-5 rounded-full bg-primary text-on-primary flex items-center justify-center text-[10px] font-headline-sm">Y</div>
+<span>YOU</span>
+</button>
+<!-- Maya Chip with Activity Beacon -->
+<button class="member-chip relative flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-low text-on-surface shadow-[0_2px_0_#d4c4b0] font-label-md text-label-md active:translate-y-0.5 transition-all">
+<div class="relative w-5 h-5 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center text-[10px] font-headline-sm">
+          M
+          <span class="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-primary-container"></span>
+</div>
+<span>MAYA</span>
+</button>
+<!-- Omar Chip -->
+<button class="member-chip flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-low text-on-surface shadow-[0_2px_0_#d4c4b0] font-label-md text-label-md active:translate-y-0.5 transition-all">
+<div class="w-5 h-5 rounded-full bg-tertiary-container text-on-tertiary-container flex items-center justify-center text-[10px] font-headline-sm">O</div>
+<span>OMAR</span>
+</button>
+<!-- Layla Chip -->
+<button class="member-chip flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-low text-on-surface shadow-[0_2px_0_#d4c4b0] font-label-md text-label-md active:translate-y-0.5 transition-all">
+<div class="w-5 h-5 rounded-full bg-surface-dim text-on-surface flex items-center justify-center text-[10px] font-headline-sm">L</div>
+<span>LAYLA</span>
+</button>
+<!-- Kabir Chip -->
+<button class="member-chip flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-low text-on-surface shadow-[0_2px_0_#d4c4b0] font-label-md text-label-md active:translate-y-0.5 transition-all">
+<div class="w-5 h-5 rounded-full bg-surface-container-highest text-on-surface flex items-center justify-center text-[10px] font-headline-sm">K</div>
+<span>KABIR</span>
+</button>
+<!-- Noor Chip -->
+<button class="member-chip flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-low text-on-surface shadow-[0_2px_0_#d4c4b0] font-label-md text-label-md active:translate-y-0.5 transition-all">
+<div class="w-5 h-5 rounded-full bg-secondary-fixed text-on-secondary-fixed flex items-center justify-center text-[10px] font-headline-sm">N</div>
+<span>NOOR</span>
+</button>
+</div>
+<!-- Row 3: Tape-Styled Recent Crew Activity Pill -->
+<div class="relative mt-0.5">
+<!-- Washi tape corner decoration -->
+<div class="absolute -top-1.5 left-4 w-7 h-3 bg-secondary-fixed-dim/80 rotate-[-4deg] rounded-xs shadow-sm z-10 pointer-events-none"></div>
+<button class="w-full flex items-center justify-between px-3.5 py-2 bg-surface-container-lowest text-on-surface rounded-xl shadow-[0_3px_10px_rgba(74,51,25,0.08)] active:scale-[0.99] transition-all" id="activity-banner">
+<div class="flex items-center gap-2 min-w-0">
+<span class="w-2 h-2 rounded-full bg-tertiary flex-shrink-0"></span>
+<span class="text-body-sm font-body-sm truncate text-left">
+<span class="font-bold text-on-surface">Maya</span> pinned <span class="font-bold text-primary">Trio Cafe</span> in Jumeirah
+          </span>
+</div>
+<div class="flex items-center gap-1 text-on-surface-variant flex-shrink-0 ml-2">
+<span class="font-label-sm text-label-sm">12m</span>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</div>
+</button>
+</div>
+</div>
+<!-- Interactive Isometric Map Canvas Container -->
+<div class="relative w-full h-[620px] overflow-hidden bg-surface-dim">
+<!-- Dubai Isometric Pixel Art Canvas -->
+<div class="absolute inset-0 bg-cover bg-center transition-transform duration-300 scale-105" id="map-plane" style="background-image: url('https://lh3.googleusercontent.com/aida/AEtjO1VRoo9op-DqCWucohkuvBxIgC1dtwcua-7Ed72itRgjrtmS43X9_0sPU2fJ2VnPO-whUuNfK7On7LyXhc4VldmTq7K4C4uqRKhaVrY-v6BcRxQoz-XF9T70UuzuHhfjBdJrB41yFgBq0OcMVerz_-TR7D7kAnvh_LCRZ5Y0JyNkSoADmcMue_zwgDoiRwfYXCL2ZqKaidveTiznFvh5M9JxL1p6O1ir42E9Uke2j6opsuXu4XrS9HHDOxqj');">
+<!-- Area Badge: Jumeirah -->
+<div class="absolute top-[28%] left-[22%] -translate-x-1/2 -translate-y-1/2 z-10">
+<div class="px-2.5 py-1 rounded-full bg-surface/90 backdrop-blur-sm text-secondary shadow-[0_2px_4px_rgba(41,23,9,0.18)] flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+<span class="font-label-sm text-label-sm tracking-wider uppercase font-bold">Jumeirah</span>
+<span class="px-1.5 py-0.2 rounded-full bg-surface-container text-on-surface font-label-sm text-[9px] font-bold">39</span>
+</div>
+</div>
+<!-- Area Badge: Satwa -->
+<div class="absolute top-[52%] left-[44%] -translate-x-1/2 -translate-y-1/2 z-10">
+<div class="px-2.5 py-1 rounded-full bg-surface/90 backdrop-blur-sm text-secondary shadow-[0_2px_4px_rgba(41,23,9,0.18)] flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+<span class="font-label-sm text-label-sm tracking-wider uppercase font-bold">Satwa</span>
+<span class="px-1.5 py-0.2 rounded-full bg-surface-container text-on-surface font-label-sm text-[9px] font-bold">12</span>
+</div>
+</div>
+<!-- Area Badge: Al Quoz -->
+<div class="absolute top-[76%] left-[34%] -translate-x-1/2 -translate-y-1/2 z-10">
+<div class="px-2.5 py-1 rounded-full bg-surface/90 backdrop-blur-sm text-secondary shadow-[0_2px_4px_rgba(41,23,9,0.18)] flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+<span class="font-label-sm text-label-sm tracking-wider uppercase font-bold">Al Quoz</span>
+<span class="px-1.5 py-0.2 rounded-full bg-surface-container text-on-surface font-label-sm text-[9px] font-bold">18</span>
+</div>
+</div>
+<!-- PIN 1: Trio Cafe (Jumeirah - Selected Highlight) -->
+<div class="pin-card absolute top-[22%] left-[38%] z-20 cursor-pointer -translate-x-1/2 -translate-y-full group">
+<!-- Washi Tape Pin Attachment -->
+<div class="w-8 h-2.5 bg-secondary-fixed-dim/90 rotate-[-6deg] mx-auto -mb-1 shadow-sm rounded-xs"></div>
+<div class="bg-surface-container-lowest p-2 rounded-xl shadow-[0_6px_16px_rgba(41,23,9,0.22)] flex flex-col gap-1 w-44 transition-all group-active:scale-95">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<div class="w-7 h-7 rounded-lg bg-primary-container text-on-primary-container flex items-center justify-center shadow-[0_1px_0_#432818]">
+<span class="material-symbols-outlined text-[16px]">local_cafe</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface leading-none">Trio Cafe</span>
+<span class="font-caption text-caption text-secondary -mt-0.5">pistachio latte</span>
+</div>
+</div>
+<div class="flex items-center gap-0.5 bg-surface-container px-1.5 py-0.5 rounded-md">
+<span class="material-symbols-outlined text-[13px] text-primary" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="font-label-sm text-label-sm font-bold text-on-surface">4.8</span>
+</div>
+</div>
+<!-- Crew Stack -->
+<div class="flex items-center justify-between pt-1 border-t-0 bg-surface-container-low px-1.5 py-1 rounded-lg">
+<div class="flex items-center -space-x-1.5">
+<div class="w-4 h-4 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center text-[8px] font-bold">M</div>
+<div class="w-4 h-4 rounded-full bg-tertiary-container text-on-tertiary-container flex items-center justify-center text-[8px] font-bold">O</div>
+<div class="w-4 h-4 rounded-full bg-primary text-on-primary flex items-center justify-center text-[8px] font-bold">Y</div>
+</div>
+<span class="font-label-sm text-[9px] text-on-surface-variant uppercase">3 in Crew</span>
+</div>
+</div>
+<!-- Little Anchor Triangle -->
+<div class="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-surface-container-lowest mx-auto shadow-sm"></div>
+</div>
+<!-- PIN 2: Ravi Restaurant (Satwa - Crew Staple) -->
+<div class="pin-card absolute top-[45%] left-[54%] z-20 cursor-pointer -translate-x-1/2 -translate-y-full group">
+<div class="w-7 h-2 bg-primary-fixed/80 rotate-[3deg] mx-auto -mb-1 shadow-sm rounded-xs"></div>
+<div class="bg-surface-container-lowest p-2 rounded-xl shadow-[0_6px_16px_rgba(41,23,9,0.22)] flex flex-col gap-1 w-40 transition-all group-active:scale-95">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<div class="w-7 h-7 rounded-lg bg-secondary-container text-on-secondary-container flex items-center justify-center shadow-[0_1px_0_#432818]">
+<span class="material-symbols-outlined text-[16px]">restaurant</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface leading-none">Ravi</span>
+<span class="font-caption text-caption text-secondary -mt-0.5">butter chicken</span>
+</div>
+</div>
+<div class="flex items-center gap-0.5 bg-surface-container px-1.5 py-0.5 rounded-md">
+<span class="material-symbols-outlined text-[13px] text-primary" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="font-label-sm text-label-sm font-bold text-on-surface">4.9</span>
+</div>
+</div>
+<div class="flex items-center justify-between bg-surface-container-low px-1.5 py-1 rounded-lg">
+<div class="flex items-center -space-x-1.5">
+<div class="w-4 h-4 rounded-full bg-primary text-on-primary flex items-center justify-center text-[8px] font-bold">Y</div>
+<div class="w-4 h-4 rounded-full bg-surface-container-highest text-on-surface flex items-center justify-center text-[8px] font-bold">K</div>
+</div>
+<span class="font-label-sm text-[9px] text-tertiary font-bold uppercase">Visited 5x</span>
+</div>
+</div>
+<div class="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-surface-container-lowest mx-auto"></div>
+</div>
+<!-- PIN 3: Knot Bakehouse (Downtown - Wishlist Ribbon) -->
+<div class="pin-card absolute top-[36%] left-[78%] z-20 cursor-pointer -translate-x-1/2 -translate-y-full group">
+<div class="bg-surface-container-lowest p-2 rounded-xl shadow-[0_6px_16px_rgba(41,23,9,0.22)] flex flex-col gap-1 w-36 transition-all group-active:scale-95">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<div class="w-6 h-6 rounded-lg bg-surface-container-high text-on-surface flex items-center justify-center">
+<span class="material-symbols-outlined text-[15px]">bakery_dining</span>
+</div>
+<span class="font-headline-sm text-headline-sm text-on-surface leading-none truncate">Knot</span>
+</div>
+<span class="px-1.5 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-label-sm text-[8px] font-bold tracking-wider">TO TRY</span>
+</div>
+<p class="font-caption text-caption text-secondary -mt-0.5 truncate">Omar saved this</p>
+</div>
+<div class="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[7px] border-t-surface-container-lowest mx-auto"></div>
+</div>
+<!-- PIN 4: Koukh Al Shay (Deira/Satwa border - Karak Gem) -->
+<div class="pin-card absolute top-[62%] left-[64%] z-20 cursor-pointer -translate-x-1/2 -translate-y-full group">
+<div class="bg-surface-container-lowest px-2 py-1.5 rounded-xl shadow-[0_6px_16px_rgba(41,23,9,0.22)] flex items-center gap-2 transition-all group-active:scale-95">
+<div class="w-6 h-6 rounded-lg bg-tertiary-container text-on-tertiary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-[15px]">emoji_food_beverage</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface leading-none">Koukh Al Shay</span>
+<span class="font-label-sm text-[9px] text-secondary">AED 2 Karak • 4.7★</span>
+</div>
+</div>
+<div class="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[7px] border-t-surface-container-lowest mx-auto"></div>
+</div>
+<!-- PIN 5: Emmy Squared (Al Quoz) -->
+<div class="pin-card absolute top-[78%] left-[58%] z-20 cursor-pointer -translate-x-1/2 -translate-y-full group">
+<div class="bg-surface-container-lowest p-2 rounded-xl shadow-[0_6px_16px_rgba(41,23,9,0.22)] flex flex-col gap-1 w-36 transition-all group-active:scale-95">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<div class="w-6 h-6 rounded-lg bg-primary-container text-on-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-[15px]">local_pizza</span>
+</div>
+<span class="font-headline-sm text-headline-sm text-on-surface leading-none truncate">Emmy Sq.</span>
+</div>
+<span class="px-1.5 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-label-sm text-[8px] font-bold tracking-wider">TO TRY</span>
+</div>
+<p class="font-caption text-caption text-secondary -mt-0.5">Detroit style slice</p>
+</div>
+<div class="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[7px] border-t-surface-container-lowest mx-auto"></div>
+</div>
+</div>
+<!-- Floating Map Controls Overlay (Right Rail) -->
+<div class="absolute right-margin top-4 flex flex-col gap-space-xs z-30">
+<!-- Zoom In Button -->
+<button aria-label="Zoom in" class="w-11 h-11 rounded-xl bg-surface-container-lowest text-on-surface shadow-[0_3px_0_#d4c4b0] active:translate-y-0.5 flex items-center justify-center transition-all" id="btn-zoom-in">
+<span class="material-symbols-outlined text-[20px]">add</span>
+</button>
+<!-- Zoom Out Button -->
+<button aria-label="Zoom out" class="w-11 h-11 rounded-xl bg-surface-container-lowest text-on-surface shadow-[0_3px_0_#d4c4b0] active:translate-y-0.5 flex items-center justify-center transition-all" id="btn-zoom-out">
+<span class="material-symbols-outlined text-[20px]">remove</span>
+</button>
+<!-- Re-center on You Button -->
+<button aria-label="Center on my location" class="w-11 h-11 rounded-xl bg-surface-container-lowest text-primary shadow-[0_3px_0_#d4c4b0] active:translate-y-0.5 flex items-center justify-center transition-all mt-2" id="btn-recenter">
+<span class="material-symbols-outlined text-[20px]">my_location</span>
+</button>
+</div>
+<!-- Bottom Left Map Stamp Info Drawer Prompt -->
+<div class="absolute left-margin bottom-4 z-30">
+<div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface/95 backdrop-blur-md shadow-[0_3px_10px_rgba(41,23,9,0.15)] text-on-surface">
+<span class="material-symbols-outlined text-[16px] text-tertiary">groups</span>
+<span class="font-label-sm text-label-sm font-bold">Crew: Old Dubai Bites</span>
+<span class="w-1.5 h-1.5 rounded-full bg-on-surface-variant/40"></span>
+<span class="font-label-sm text-label-sm text-secondary">6 active</span>
+</div>
+</div>
+</div>
+<!-- Bottom Drawer Slide-up: Detailed Selected Bite (Scrapbook Card) -->
+<div class="w-full px-margin pt-space-md pb-space-sm bg-surface flex flex-col gap-space-sm shadow-[0_-8px_24px_rgba(51,32,17,0.12)] -mt-3 z-30 rounded-t-2xl" id="place-preview-sheet">
+<!-- Bottom sheet drag handle indicator -->
+<div class="w-10 h-1 bg-outline-variant/60 rounded-full mx-auto -mt-1 mb-1"></div>
+<div class="flex items-start justify-between">
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm font-bold uppercase">Crew Favorite</span>
+<span class="font-caption text-caption text-secondary">Added by Maya 2d ago</span>
+</div>
+<h2 class="font-headline-md text-headline-md text-on-surface mt-0.5">Trio Cafe &amp; Specialty Roasters</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[16px] text-primary">location_on</span>
+          Al Wasl Road, Jumeirah 2 • Open till 11 PM
+        </p>
+</div>
+<!-- Quick Stamp Score -->
+<div class="flex flex-col items-center justify-center p-2 rounded-xl bg-surface-container-high shadow-[0_2px_0_#d4c4b0]">
+<span class="font-label-md text-label-md text-primary font-bold leading-none">4.8</span>
+<div class="flex text-primary text-[10px] mt-0.5">
+<span class="material-symbols-outlined text-[12px]" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+</div>
+</div>
+<!-- Crew Notes Fragment -->
+<div class="p-space-sm bg-surface-container-low rounded-xl flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-headline-sm text-headline-sm">M</div>
+<p class="font-body-sm text-body-sm text-on-surface italic">"Get the iced Spanish latte with oat milk, best morning table."</p>
+</div>
+<button class="px-3 py-1.5 rounded-lg bg-surface-container-highest text-on-surface font-label-md text-label-md shadow-[0_1px_0_#d4c4b0] active:scale-95 transition-all flex-shrink-0">
+        View (4)
+      </button>
+</div>
+<!-- Primary Action Bar inside Preview -->
+<div class="grid grid-cols-2 gap-space-sm mt-1">
+<button class="flex items-center justify-center gap-1.5 py-2.5 px-space-md rounded-xl bg-surface-container text-on-surface font-headline-sm text-headline-sm shadow-[0_2px_0_#d4c4b0] active:translate-y-0.5 transition-all">
+<span class="material-symbols-outlined text-[18px]">directions</span>
+<span>Route</span>
+</button>
+<button class="flex items-center justify-center gap-1.5 py-2.5 px-space-md rounded-xl bg-primary-container text-on-primary-container font-headline-sm text-headline-sm shadow-[0_2px_0_#432818] active:translate-y-0.5 transition-all">
+<span class="material-symbols-outlined text-[18px]">add_a_photo</span>
+<span>Add Bite</span>
+</button>
+</div>
+</div>
+</div>
+<script>
+  // Interactive micro-behaviors for Map & Crew filters
+  const toggleMe = document.getElementById('toggle-me');
+  const toggleCrew = document.getElementById('toggle-crew');
+  const memberChips = document.querySelectorAll('.member-chip');
+  const mapPlane = document.getElementById('map-plane');
+  const zoomIn = document.getElementById('btn-zoom-in');
+  const zoomOut = document.getElementById('btn-zoom-out');
+  const recenter = document.getElementById('btn-recenter');
+  const pinCards = document.querySelectorAll('.pin-card');
+
+  let currentZoom = 1.05;
+
+  if (toggleMe && toggleCrew) {
+    toggleMe.addEventListener('click', () => {
+      toggleMe.classList.add('bg-primary-container', 'text-on-primary-container', 'shadow-[0_2px_0_#432818]');
+      toggleMe.classList.remove('text-on-surface-variant');
+      toggleCrew.classList.remove('bg-primary-container', 'text-on-primary-container', 'shadow-[0_2px_0_#432818]');
+      toggleCrew.classList.add('text-on-surface-variant');
+    });
+
+    toggleCrew.addEventListener('click', () => {
+      toggleCrew.classList.add('bg-primary-container', 'text-on-primary-container', 'shadow-[0_2px_0_#432818]');
+      toggleCrew.classList.remove('text-on-surface-variant');
+      toggleMe.classList.remove('bg-primary-container', 'text-on-primary-container', 'shadow-[0_2px_0_#432818]');
+      toggleMe.classList.add('text-on-surface-variant');
+    });
+  }
+
+  // Filter chips selection
+  memberChips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      memberChips.forEach(c => {
+        c.classList.remove('bg-primary-container', 'text-on-primary-container', 'shadow-[0_2px_0_#432818]');
+        c.classList.add('bg-surface-container-low', 'text-on-surface', 'shadow-[0_2px_0_#d4c4b0]');
+      });
+      chip.classList.remove('bg-surface-container-low', 'text-on-surface', 'shadow-[0_2px_0_#d4c4b0]');
+      chip.classList.add('bg-primary-container', 'text-on-primary-container', 'shadow-[0_2px_0_#432818]');
+    });
+  });
+
+  // Map Zoom Controls
+  if (zoomIn && mapPlane) {
+    zoomIn.addEventListener('click', () => {
+      if (currentZoom < 1.45) {
+        currentZoom += 0.15;
+        mapPlane.style.transform = `scale(${currentZoom})`;
+      }
+    });
+  }
+
+  if (zoomOut && mapPlane) {
+    zoomOut.addEventListener('click', () => {
+      if (currentZoom > 0.9) {
+        currentZoom -= 0.15;
+        mapPlane.style.transform = `scale(${currentZoom})`;
+      }
+    });
+  }
+
+  if (recenter && mapPlane) {
+    recenter.addEventListener('click', () => {
+      currentZoom = 1.05;
+      mapPlane.style.transform = `scale(${currentZoom}) translate(0px, 0px)`;
+    });
+  }
+
+  // Pin Card micro-press feedback
+  pinCards.forEach(pin => {
+    pin.addEventListener('click', () => {
+      pinCards.forEach(p => p.classList.remove('ring-2', 'ring-primary'));
+      pin.classList.add('scale-105');
+      setTimeout(() => pin.classList.remove('scale-105'), 200);
+    });
+  });
+</script></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface/90 backdrop-blur-xl shadow-[0_-4px_20px_rgba(51,32,17,0.08)]" data-active-classes="text-primary font-bold"><div class="h-20 px-gutter flex items-center justify-around relative"><a aria-current="page" class="flex flex-col items-center justify-center w-20 h-14 transition-colors text-primary font-bold" data-path="explore-map" href="#"><span class="material-symbols-outlined text-[24px]">map</span><span class="font-label-sm text-label-sm uppercase tracking-wider mt-1">Map</span></a><div class="relative -top-5"><a aria-label="Log a bite" class="w-14 h-14 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center shadow-[0_4px_0_#432818] active:translate-y-1 active:shadow-[0_2px_0_#432818] transition-all transform hover:scale-105" data-path="log-entry" href="#"><span class="material-symbols-outlined text-[30px] font-bold">add</span></a></div><a class="flex flex-col items-center justify-center w-20 h-14 text-on-surface-variant transition-colors" data-path="places-list" href="#"><span class="material-symbols-outlined text-[24px]">format_list_bulleted</span><span class="font-label-sm text-label-sm uppercase tracking-wider mt-1">List</span></a></div></nav></body></html>
