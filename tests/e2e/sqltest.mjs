@@ -1,0 +1,72 @@
+import { PGlite } from '@electric-sql/pglite';
+import { citext } from '@electric-sql/pglite/contrib/citext';
+import fs from 'fs';
+const db = new PGlite({ extensions:{ citext } });
+const ok = (m)=>console.log('ok  ', m), bad = (m)=>{ console.log('FAIL', m); process.exitCode = 1; };
+// Supabase stand-ins
+await db.exec(`
+  create role authenticated; create role anon;
+  create schema auth; create table auth.users(id uuid primary key, email text);
+  create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub', true),'')::uuid $$;
+  create schema storage;
+  create table storage.buckets(id text primary key, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]);
+  create table storage.objects(id uuid default gen_random_uuid() primary key, bucket_id text, name text);
+  alter table storage.objects enable row level security;
+  create function storage.foldername(name text) returns text[] language sql immutable as $$ select (string_to_array(name,'/'))[1:array_length(string_to_array(name,'/'),1)-1] $$;
+  create publication supabase_realtime;
+`);
+const sql = fs.readFileSync(new URL('../../supabase/migrations/0001_koko.sql', import.meta.url),'utf8');
+try{ await db.exec(sql); ok('migration runs'); } catch(e){ bad('migration: '+e.message); process.exit(1); }
+// Supabase grants table access to the API roles; policies do the rest
+await db.exec(`grant usage on schema public, storage, auth to authenticated; grant all on all tables in schema public to authenticated; grant all on storage.objects to authenticated;`);
+const A='00000000-0000-0000-0000-00000000000a', B='00000000-0000-0000-0000-00000000000b', C='00000000-0000-0000-0000-00000000000c';
+await db.exec(`insert into auth.users values ('${A}','a@x'),('${B}','b@x'),('${C}','c@x');`);
+const as = async (u, q, params)=>{ await db.exec(`reset role; select set_config('request.jwt.claim.sub','${u}',false); set role authenticated;`); return db.query(q, params); };
+const expectErr = async (label, u, q)=>{ try{ await as(u, q); bad(label+' (should have been refused)'); }catch(e){ ok(label+' → refused'); } };
+const count = async (u, q)=> (await as(u, q)).rows.length;
+
+(await count(A, `select * from profiles`))===1 ? ok('trigger made a profile, A sees only self') : bad('profiles');
+await as(A, `update profiles set handle='alice', name='Alice' where id=auth.uid()`);
+(await as(B, `select handle_available('alice') as a`)).rows[0].a===false ? ok('handle taken check') : bad('handle_available');
+const crew = (await as(A, `select * from create_crew('Karak Crew','chai')`)).rows[0];
+/^KARAK\d\d$/.test(crew.code) ? ok('create_crew code '+crew.code) : bad('code '+crew.code);
+(await as(C, `select crew_preview($1) as p`, [crew.code])).rows[0].p.count===1 ? ok('invite preview works for an outsider') : bad('preview');
+(await as(B, `select join_crew($1) as r`, [crew.code])).rows[0].r==='ok' ? ok('B joins with the code') : bad('join');
+(await as(C, `select join_crew('NOPE12') as r`)).rows[0].r==='invalid' ? ok('bad code → invalid') : bad('invalid');
+await as(A, `insert into venues(id,name,zone) values ('v1','Ravi','satwa')`);
+await as(A, `insert into entries(id,venue_id,kind,rating,private) values ('e1','v1','visit',4.5,false),('e2','v1','visit',3,true)`);
+(await count(B, `select * from entries`))===1 ? ok('crewmate sees the shared visit, not the private one') : bad('B entries');
+(await count(C, `select * from entries`))===0 ? ok('outsider sees nothing') : bad('C entries');
+(await count(C, `select * from venues`))===0 ? ok('outsider sees no places') : bad('C venues');
+(await count(B, `select * from venues`))===1 ? ok('crewmate sees the place') : bad('B venues');
+(await count(B, `select * from profiles`))===2 ? ok('crewmates see each other') : bad('B profiles');
+await expectErr('B writes a visit as A', B, `insert into entries(id,venue_id,user_id,kind) values ('e3','v1','${A}','visit')`);
+(await as(B, `update entries set notes='hacked' where id='e1' returning id`)).rows.length===0 ? ok('B cannot edit A\'s visit') : bad('edit other');
+(await as(B, `delete from entries where id='e1' returning id`)).rows.length===0 ? ok('B cannot delete A\'s visit') : bad('delete other');
+await as(A, `insert into photos(id,venue_id,entry_id,path,private) values ('p1','v1','e1','${A}/p1.jpg',false),('p2','v1','e2','${A}/p2.jpg',true)`);
+await as(A, `insert into storage.objects(bucket_id,name) values ('photos','${A}/p1.jpg'),('photos','${A}/p2.jpg')`);
+(await count(B, `select * from storage.objects`))===1 ? ok('crewmate can open the shared photo file only') : bad('B storage');
+(await count(C, `select * from storage.objects`))===0 ? ok('outsider can open no photo files') : bad('C storage');
+await expectErr('B uploads into A\'s folder', B, `insert into storage.objects(bucket_id,name) values ('photos','${A}/evil.jpg')`);
+(await as(B, `select toggle_bookmark('p1') as b`)).rows[0].b===true ? ok('crewmate bookmarks a shared photo') : bad('bookmark');
+(await as(C, `select toggle_bookmark('p1') as b`)).rows[0].b===false ? ok('outsider cannot bookmark') : bad('C bookmark');
+await as(A, `insert into events(id,crew_id,venue_id,starts_at,rsvps) values ('ev1','${crew.id}','v1','2026-10-02T21:30','{}')`);
+await as(B, `select rsvp('ev1','going')`);
+(await as(A, `select rsvps from events where id='ev1'`)).rows[0].rsvps[B]==='going' ? ok('RSVP recorded') : bad('rsvp');
+(await count(C, `select * from events`))===0 ? ok('outsider sees no plans') : bad('C events');
+await as(A, `insert into books(id,crew_id,kind,title) values ('crewbook-x','${crew.id}','crew','Karak Crew Scrapbook')`);
+(await as(B, `update books set pages='{"2026-09-30":{"layout":"grid"}}' where id='crewbook-x' returning id`)).rows.length===1 ? ok('crewmate edits a crew book page') : bad('crew book');
+await expectErr('second crew book for the same crew', B, `insert into books(id,crew_id,kind) values ('crewbook-y','${crew.id}','crew')`);
+await expectErr('B joins nothing but writes a crew', B, `insert into crews(name,code,owner_id) values ('x','ABCD12','${B}')`);
+(await as(B, `delete from crew_members where user_id='${A}' returning user_id`)).rows.length===0 ? ok('non-owner cannot remove members') : bad('remove');
+await as(B, `select leave_crew()`);
+(await count(B, `select * from entries`))===0 ? ok('after leaving, B no longer sees A\'s visits') : bad('leave');
+await as(A, `select leave_crew()`);
+(await as(A, `select count(*)::int as n from crews`)).rows[0].n===0 ? ok('last one out: crew deleted') : bad('crew delete');
+// 15 member cap
+const ids = Array.from({length:16}, (_,i)=>'10000000-0000-0000-0000-'+String(i).padStart(12,'0'));
+await db.exec(`reset role; insert into auth.users(id,email) select unnest(array[${ids.map(i=>`'${i}'::uuid`).join(',')}]), 'x';`);
+const c2 = (await as(ids[0], `select * from create_crew('Big','')`)).rows[0];
+let last; for (let i=1;i<16;i++) last = (await as(ids[i], `select join_crew($1) as r`, [c2.code])).rows[0].r;
+last==='full' ? ok('the 16th person is refused: crew full') : bad('cap: '+last);
+console.log(process.exitCode ? '\nSOME CHECKS FAILED' : '\nall checks passed');

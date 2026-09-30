@@ -68,3 +68,29 @@ must use it, and `tests/branding.test.mjs` fails if they drift.
   puppeteer-core): `cd tests/e2e && npm install`, then e.g. `node shot.mjs tour 390 light`
   or `BASE=https://dubai-bites-pi.vercel.app/ node shot.mjs e2e 360 dark`. Screenshots land in
   `tests/e2e/shots/` (ignored by git).
+
+## Accounts and sync (Supabase)
+Project: `crvadsjnqnxlkqzpywva` (URL and publishable key in `config.js`; the publishable key is
+meant to be public). **Never commit the secret key.**
+
+- `supabase/migrations/0001_koko.sql` creates everything: tables, row level security (a private
+  visit or photo is visible to its owner only; everything else to the owner's crew), the crew /
+  RSVP / bookmark functions, the private `photos` storage bucket and realtime. Run it once in the
+  Supabase SQL editor.
+- `cloud.js` talks to Supabase: sign-in (6-digit email code, Google), loading what you can see,
+  an outbox that queues writes while offline, signed photo links, live crew updates.
+- `store.js` keeps the in-memory records the screens read and pushes every change through
+  `cloud.js`. Add `?local` to the address to run without Supabase (the tests do).
+- The sample crew only ever exists on the phone that switched it on.
+
+Dashboard settings the app relies on:
+1. Authentication → URL Configuration: Site URL `https://dubai-bites-pi.vercel.app`; redirect
+   URLs `https://dubai-bites-pi.vercel.app/**`, `http://localhost:5174/**`.
+2. Authentication → Emails: the Magic Link and Confirm signup templates include `{{ .Token }}`
+   (the 6-digit code the app asks for).
+3. Authentication → SMTP: a custom sender (e.g. Resend). Supabase's built-in email only sends to
+   your own team's addresses and a few an hour.
+4. Google: see SPEC.md, Accounts.
+
+Tests: `node sqltest.mjs` (in `tests/e2e`) runs the migration in PGlite and checks the privacy
+rules; `SUPABASE_SECRET=… node cloud.mjs` runs two real accounts end to end and deletes them.

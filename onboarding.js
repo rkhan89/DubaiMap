@@ -30,13 +30,14 @@ function welcome(){
     </div>
     <div class="or-rule mt20">${icon('restaurant')}</div>
     <p class="center muted mt12" style="font-size:15px">By continuing, you agree to our Terms. Location is only used when stamping and bookmarking a bite.</p>
-    ${APP.previewMode?`<p class="center mono mt16" style="font-size:11px;color:var(--outline)">PREVIEW • accounts stay on this phone for now</p>`:''}
+    ${!S.cloud?`<p class="center mono mt16" style="font-size:11px;color:var(--outline)">PREVIEW • accounts stay on this phone for now</p>`:''}
   </div>`;
   $('#screens').prepend(root);   // always underneath the step screens
-  root.querySelector('#wGoogle').onclick=()=>{
-    S.signIn({provider:'google'});
-    if (APP.previewMode) toast('Google sign-in switches on with accounts. Setting you up on this phone.');
-    handleStep();
+  root.querySelector('#wGoogle').onclick=async()=>{
+    if (!S.cloud){ S.signIn({provider:'google'}); toast('Google sign-in switches on with accounts. Setting you up on this phone.'); handleStep(); return; }
+    // off to Google and back; the app picks up the session on return
+    try{ await S.signInGoogle(); }
+    catch(e){ toast(/provider is not enabled|Unsupported provider/i.test(e.message||'') ? 'Google sign-in isn’t switched on yet. Use email for now.' : 'Couldn’t reach Google. Try again, or use email.'); }
   };
   root.querySelector('#wEmail').onclick=emailStep;
 }
@@ -53,13 +54,21 @@ function emailStep(){
       <button class="btn btn-gold btn-block mt24" id="eGo">Send my code ${icon('arrow_forward')}</button>
     </div>`;
     const inp=el.querySelector('#eIn'); setTimeout(()=>inp.focus(), 300);
-    const go2=()=>{ const v=inp.value.trim(); if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)){ el.querySelector('#eErr').hidden=false; return; } codeStep(v); };
+    const btn=el.querySelector('#eGo');
+    const go2=async()=>{
+      const v=inp.value.trim(); if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)){ el.querySelector('#eErr').hidden=false; return; }
+      if (!S.cloud) return codeStep(v);
+      btn.disabled=true; btn.innerHTML='Sending…';
+      try{ await S.sendCode(v); codeStep(v); }
+      catch(e){ toast(/rate|seconds|too many/i.test(e.message||'') ? 'Too many codes just now. Wait a minute and try again.' : 'Couldn’t send the code. Check your connection and try again.'); }
+      finally{ btn.disabled=false; btn.innerHTML=`Send my code ${icon('arrow_forward')}`; }
+    };
     el.querySelector('#eGo').onclick=go2; inp.addEventListener('keydown', e=>{ if (e.key==='Enter') go2(); });
   });
 }
 function codeStep(email){
   openScreen(el=>{
-    const pending = state.pendingJoin && S.findCrewByCode(state.pendingJoin);
+    let pending = null;
     el.innerHTML = topbar({title:'Check your email', eyebrow:'Scrapbook onboarding', profile:false}) + `<div class="screen-body">
       <div class="row between mt8"><span class="airmail">${icon('mail')}AIR MAIL // DXB-${new Date().getFullYear()}</span><span class="post-stamp">${icon('verified')}DUBAI</span></div>
       <h1 class="h-xl mt16">Check your email ✨ <span class="hand" style="display:block;margin-top:6px">Almost there!</span></h1>
@@ -68,12 +77,13 @@ function codeStep(email){
         <div class="code-box" style="padding:0;background:none"><span class="clip"></span>${Array.from({length:6},(_,i)=>`<input inputmode="numeric" maxlength="1" aria-label="Digit ${i+1}" data-i="${i}">`).join('')}</div>
         <div class="row between mt16"><span class="row muted" style="gap:8px">${icon('schedule')}Resend code in <span class="tag soft" id="cT">0:40</span></span><button class="mono" id="cResend" style="color:var(--outline-v);font-weight:700;letter-spacing:.08em" disabled>Send again</button></div>
       </div>
-      ${pending?`<div class="card mt16 row">${icon('menu_book')}<div class="grow"><span class="eyebrow">Scrapbook locked</span><div><b>${esc(pending.name)}</b></div><span class="hand">crew memories waiting for you</span></div></div>`:''}
+      <div id="cPending"></div>
       <div id="cErr" class="alert mt16" hidden>${icon('priority_high')}<div><b>Wrong code entered</b>Double-check your inbox or spam folder, or tap resend above.</div></div>
-      ${APP.previewMode?`<div class="note mt16">${icon('science')}<span><b>Preview mode:</b> no email is actually sent yet. Enter any 6 digits.</span></div>`:''}
+      ${!S.cloud?`<div class="note mt16">${icon('science')}<span><b>Preview mode:</b> no email is actually sent yet. Enter any 6 digits.</span></div>`:`<p class="muted small mt12">No email? Check spam, or wait a minute and tap Send again. You can also tap the link in the email.</p>`}
       <button class="btn btn-gold btn-block mt24" id="vfyGo">Verify & Continue ${icon('arrow_forward')}</button>
       <p class="center mt16"><span class="hand">Having trouble?</span> <button class="hand link" data-act="back" style="font-size:19px">Change email address</button></p>
     </div>`;
+    if (state.pendingJoin) S.findCrewByCode(state.pendingJoin).then(p=>{ const box=el.querySelector('#cPending'); if (p && box) box.innerHTML=`<div class="card mt16 row">${icon('menu_book')}<div class="grow"><span class="eyebrow">Scrapbook locked</span><div><b>${esc(p.name)}</b></div><span class="hand">crew memories waiting for you</span></div></div>`; });
     const ins=[...el.querySelectorAll('.code-box input')];
     ins.forEach((inp,i)=>{
       inp.addEventListener('input', ()=>{ inp.value=inp.value.replace(/\D/g,'').slice(-1); el.querySelector('#cErr').hidden=true; if (inp.value && ins[i+1]) ins[i+1].focus(); if (ins.every(x=>x.value)) verify(); });
@@ -82,13 +92,24 @@ function codeStep(email){
     });
     setTimeout(()=>ins[0].focus(), 300);
     let t=40; const timer=setInterval(()=>{ t--; const tt=el.querySelector('#cT'); if (!tt){ clearInterval(timer); return; } tt.textContent=`0:${String(Math.max(0,t)).padStart(2,'0')}`; if (t<=0){ clearInterval(timer); const r=el.querySelector('#cResend'); r.disabled=false; r.style.color='var(--rust)'; } }, 1000);
-    el.querySelector('#cResend').onclick=()=>{ toast(APP.previewMode?'Preview mode: nothing to resend, any 6 digits work':'Code sent again'); };
-    function verify(){
+    el.querySelector('#cResend').onclick=async()=>{
+      if (!S.cloud) return toast('Preview mode: nothing to resend, any 6 digits work');
+      try{ await S.sendCode(email); toast('Code sent again'); }catch(_){ toast('Wait a minute before asking for another code'); }
+    };
+    let checking=false;
+    async function verify(){
       const code=ins.map(x=>x.value).join('');
       if (code.length<6){ el.querySelector('#cErr').hidden=false; return; }
-      // Preview mode: any 6 digits. With accounts this checks the code with the server.
-      S.signIn({email, provider:'email'});
-      handleStep();
+      if (!S.cloud){ S.signIn({email, provider:'email'}); handleStep(); return; }
+      if (checking) return; checking=true;
+      const b=el.querySelector('#vfyGo'); b.disabled=true; b.innerHTML='Checking…';
+      try{
+        await S.verifyCode(email, code);
+        // someone coming back on a new phone goes straight in
+        if (S.isOnboarded()) finish(); else handleStep();
+      }catch(e){
+        el.querySelector('#cErr').hidden=false; ins.forEach(x=>x.value=''); ins[0].focus();
+      }finally{ checking=false; b.disabled=false; b.innerHTML=`Verify & Continue ${icon('arrow_forward')}`; }
     }
     el.querySelector("#vfyGo").onclick=verify;
   });
@@ -133,7 +154,16 @@ function handleStep(opts){
         st==='short' ? `<span class="tag rust" style="font-size:12px;padding:6px 12px">too short</span>` : `<span class="tag red" style="font-size:12px;padding:6px 12px">letters, numbers &amp; _ only</span>`;
       btn.disabled = st!=='ok';
     };
-    inp.addEventListener('input', check); check();
+    let askT=null, asked='';
+    const askServer=()=>{
+      clearTimeout(askT); const h=inp.value;
+      if (!S.cloud || S.handleStatus(h)!=='ok' || h===(me.handle||'')) return;
+      btn.disabled=true;
+      askT=setTimeout(async()=>{ asked=h; const free=await S.handleAvailable(h); if (inp.value!==asked) return;
+        if (!free){ box.classList.remove('valid'); el.querySelector('#rUniq').className='bad'; msg.innerHTML=`<span class="tag red" style="font-size:12px;padding:6px 12px">@${esc(h)} is taken</span>`; btn.disabled=true; }
+        else btn.disabled=false; }, 350);
+    };
+    inp.addEventListener('input', ()=>{ check(); askServer(); }); check(); askServer();
     setTimeout(()=>inp.focus(), 300);
     btn.onclick=()=>{
       const h=inp.value, name=el.querySelector('#nIn').value.trim();
@@ -267,6 +297,6 @@ function importStep(fromOnboarding){
 go.importPhone = ()=>importStep(false);
 
 go.onboarding = ()=>{
-  if (S.me() && !S.isOnboarded() && S.me().handle){ welcome(); handleStep(); return; }
+  if (S.me() && !S.isOnboarded()){ welcome(); handleStep(); return; }
   welcome();
 };

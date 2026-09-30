@@ -25,7 +25,8 @@ page.on('pageerror', e=>errors.push('pageerror: '+e.message));
 page.on('console', m=>{ if (m.type()==='error') errors.push('console: '+m.text()); });
 page.on('requestfailed', r=>errors.push('failed: '+r.url()));
 
-const q = (extra)=> BASE + '?still' + (EXTRA?'&'+EXTRA:'') + (extra?'&'+extra:'');
+// ?local keeps the app on this device (no Supabase) unless CLOUD=1
+const q = (extra)=> BASE + '?still' + (process.env.CLOUD ? '' : '&local') + (EXTRA?'&'+EXTRA:'') + (extra?'&'+extra:'');
 const sleep = ms=>new Promise(r=>setTimeout(r,ms));
 const h = {
   page, width, THEME, sleep, extra: EXTRA,

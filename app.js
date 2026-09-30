@@ -388,7 +388,7 @@ async function boot(){
   document.addEventListener('visibilitychange', ()=>{ if (!document.hidden) tickShow(); });
   applyBrand();
   await S.init();
-  S.onChange(what=>{ if (what==='quota') toast('Storage is full on this phone. Export a backup and remove some photos.'); scheduleRebuild(); paintProfileButtons(); });
+  S.onChange(what=>{ if (what==='quota') toast('Storage is full on this phone. Export a backup and remove some photos.'); if (what==='sync-error') toast('One change couldn’t be saved to your account, so it was undone.'); scheduleRebuild(); paintProfileButtons(); });
   MAP.initMap({
     wrap:$('#mapWrap'), canvas:$('#mapCanvas'), overlay:$('#mapOverlay'),
     renderStamp,

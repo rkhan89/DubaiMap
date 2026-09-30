@@ -3,5 +3,8 @@
   "private": true,
   "type": "module",
   "description": "Scripted click-throughs and screenshots for Koko (headless Chrome).",
-  "dependencies": { "puppeteer-core": "^23.0.0" }
+  "dependencies": {
+    "puppeteer-core": "^23.0.0",
+    "@electric-sql/pglite": "^0.3.0"
+  }
 }

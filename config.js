@@ -15,7 +15,10 @@ export const APP = {
   crewMax: 15,            // you + 14 friends
   photoLimit: 300,        // per person, across all their logs
   photosPerLog: 10,
-  // No accounts backend yet: sign-in, crews and photos live on this device only.
-  // When Supabase is connected this flips to false and store.js talks to the server.
-  previewMode: true,
+  // Accounts, crews and photos live in Supabase (store.js + cloud.js). The publishable key is
+  // meant to be public: what anyone can read or write is decided by the database's row level
+  // security (supabase/migrations). Never put the secret key here.
+  supabase: { url:'https://crvadsjnqnxlkqzpywva.supabase.co', key:'sb_publishable_9I39ztDfQcQ9dRkTIK392g_zP6HJsVg' },
+  // the sample crew (Maya, Omar…) can be switched on in Settings; it only ever exists on that phone
+  sampleCrew: true,
 };

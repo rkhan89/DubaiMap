@@ -55,7 +55,8 @@ function crewSetup(opts){
           <div class="input-wrap mt12"><input class="input" id="jCode" autocapitalize="characters" placeholder="E.G. KARAK7" value="${esc(joinCode)}" style="padding-left:16px;font-family:var(--f-mono);letter-spacing:.12em;font-size:18px"><span class="trail ms">key</span></div>
           <button class="btn btn-soft btn-block mt12" id="jGo">Join their crew ${icon('arrow_forward')}</button>
         </div>
-        ${err==='invalid'?`<div class="alert mt16">${icon('priority_high')}<div class="grow"><div class="row between"><b>Invalid crew code</b><span class="tag red" style="background:var(--card)">Error #404</span></div>Code <b class="mono">${esc(joinCode.toUpperCase())}</b> not found. Please double-check with your host or paste their link.${APP.previewMode?'<br><br><b>Preview mode:</b> only crews made on this phone can be joined until accounts go live.':''}</div></div>`:''}
+        ${err==='invalid'?`<div class="alert mt16">${icon('priority_high')}<div class="grow"><div class="row between"><b>Invalid crew code</b><span class="tag red" style="background:var(--card)">Error #404</span></div>Code <b class="mono">${esc(joinCode.toUpperCase())}</b> not found. Please double-check with your host or paste their link.${!S.cloud?'<br><br><b>Preview mode:</b> only crews made on this phone can be joined until accounts go live.':''}</div></div>`:''}
+        ${err==='offline'?`<div class="alert warn mt16">${icon('wifi_off')}<div class="grow"><b>You're offline</b>Joining a crew needs a connection. Try again in a moment.</div></div>`:''}
         ${err==='full'?`<div class="alert warn mt16">${icon('lock')}<div class="grow"><div class="row between"><b>Crew is full (${APP.crewMax} of ${APP.crewMax})</b><span class="tag rust">Capacity reached</span></div>New joins need the owner to make room first.</div></div>`:''}`}
         <button class="btn btn-dark btn-block mt32" id="cGo">${opts.onboarding?'Continue to Scrapbook':'Done'} ${icon('arrow_forward')}</button>
         ${opts.onboarding?`<button class="btn btn-ghost btn-block mt8" id="cSolo">I'll explore solo for now →</button>`:''}
@@ -63,25 +64,32 @@ function crewSetup(opts){
       bindSeg(el, 'ctab', v=>{ tab=v; err=null; paint(); });
       const nm=el.querySelector('#cName');
       if (nm) nm.addEventListener('input', ()=>{ name=nm.value; const lb=el.querySelector('.link-box span'); if (!S.myCrew()) lb.textContent=APP.inviteUrl((name.toUpperCase().replace(/[^A-Z]/g,'').slice(0,5)||'CREW')+'··').replace(/^https?:\/\//,''); el.querySelector('.invite-card h2').textContent=`You're invited to ${name.trim()||'Your Crew'}`; });
-      const ensure=()=>{
+      let making=null;
+      const ensure=async()=>{
         let c=S.myCrew();
-        if (!c){ if (!name.trim()){ toast('Give your crew a name first'); el.querySelector('#cName')?.focus(); return null; } c=S.createCrew({name}); }
+        if (!c){
+          if (!name.trim()){ toast('Give your crew a name first'); el.querySelector('#cName')?.focus(); return null; }
+          try{ c = await (making = making || S.createCrew({name})); }catch(e){ making=null; toast('Couldn’t create the crew. Check your connection and try again.'); return null; }
+        }
         else if (name.trim() && name.trim()!==c.name) S.updateCrew({name:name.trim()});
         return S.myCrew();
       };
-      const cp=el.querySelector('#cCopy'); if (cp) cp.onclick=()=>{ const c=ensure(); if (c){ copy(APP.inviteUrl(c.code), 'Invite link copied'); paint(); } };
-      const inv=el.querySelector('#cInvite'); if (inv) inv.onclick=async()=>{ const c=ensure(); if (c){ await sendInvite(c); paint(); } };
+      const cp=el.querySelector('#cCopy'); if (cp) cp.onclick=async()=>{ const c=await ensure(); if (c){ copy(APP.inviteUrl(c.code), 'Invite link copied'); paint(); } };
+      const inv=el.querySelector('#cInvite'); if (inv) inv.onclick=async()=>{ const c=await ensure(); if (c){ await sendInvite(c); paint(); } };
       const jc=el.querySelector('#jCode'); if (jc) jc.addEventListener('input', ()=>{ joinCode=jc.value; });
       const jg=el.querySelector('#jGo'); if (jg) jg.onclick=()=>doJoin();
-      const doJoin=()=>{
-        const r=S.joinCrew(joinCode);
+      const doJoin=async()=>{
+        const r=await S.joinCrew(joinCode);
         if (r.error){ err=r.error; paint(); return false; }
-        state.pendingJoin=null; toast(`Welcome to ${r.crew.name}!`); go.refresh(); done(); return true;
+        state.pendingJoin=null; toast(`Welcome to ${r.crew?.name||'the crew'}!`); go.refresh(); done(); return true;
       };
       const done=()=>{ if (opts.onboarding) go.finishOnboarding(); else { back(); go.refresh(); } };
-      el.querySelector('#cGo').onclick=()=>{
-        if (tab==='create'){ if (name.trim()){ ensure(); go.refresh(); } done(); }
-        else { if (joinCode.trim()) doJoin(); else done(); }
+      el.querySelector('#cGo').onclick=async()=>{
+        const b=el.querySelector('#cGo'); b.disabled=true;
+        try{
+          if (tab==='create'){ if (name.trim()){ if (!await ensure()) return; go.refresh(); } done(); }
+          else { if (joinCode.trim()) await doJoin(); else done(); }
+        } finally { b.disabled=false; }
       };
       const solo=el.querySelector('#cSolo'); if (solo) solo.onclick=()=>go.finishOnboarding();
     };
@@ -140,7 +148,7 @@ function crewScreen(){
           body.innerHTML = `<h2 class="h-md">Leave ${esc(crew.name)}?</h2><p class="muted mt8">Your places stay in your scrapbook. You'll stop seeing the crew's pins, and they'll stop seeing yours.</p>
             <div class="btn-grid mt20"><button class="btn btn-soft" data-x="no">Stay</button><button class="btn btn-danger" data-x="yes">Leave</button></div>`;
           body.querySelector('[data-x="no"]').onclick=()=>back();
-          body.querySelector('[data-x="yes"]').onclick=()=>{ S.leaveCrew(); back(); toast(`You left ${crew.name}`); go.refresh(); setTimeout(paint, 300); };
+          body.querySelector('[data-x="yes"]').onclick=async()=>{ try{ await S.leaveCrew(); }catch(_){ return toast('You’re offline. Try again in a moment.'); } back(); toast(`You left ${crew.name}`); go.refresh(); setTimeout(paint, 300); };
         });
       };
     };
@@ -164,14 +172,15 @@ function crewScreen(){
           <div id="soErr"></div>
           <button class="btn btn-soft btn-block mt12" id="soJoin">Join their crew ${icon('arrow_forward')}</button>
         </div>
-        ${APP.previewMode?`<button class="btn btn-ghost btn-block mt12" id="soDemo">${icon('diversity_3')}Preview with a sample crew</button>`:''}
+        ${APP.sampleCrew?`<button class="btn btn-ghost btn-block mt12" id="soDemo">${icon('diversity_3')}Preview with a sample crew</button>`:''}
         <p class="row center mt16 muted" style="justify-content:center">${icon('eco')} You can always explore solo and invite friends whenever you're ready.</p>
       </div>`;
       el.querySelector('#soInvite').onclick=()=>{ const c=S.myCrew(); c ? sendInvite(c) : crewSetup({tab:'create'}); };
       const sc=el.querySelector('#soCopy'); if (sc) sc.onclick=()=>copy(crew.code, 'Crew code copied');
-      el.querySelector('#soJoin').onclick=()=>{
-        const r=S.joinCrew(el.querySelector('#soCode').value);
-        if (r.error){ el.querySelector('#soErr').innerHTML = r.error==='full' ? `<div class="alert warn mt12">${icon('lock')}<div><b>Crew is full</b>They've reached ${APP.crewMax} members.</div></div>` : `<div class="alert mt12">${icon('priority_high')}<div><b>Invalid crew code</b>That code isn't a crew${APP.previewMode?' on this phone yet (accounts aren’t live)':''}.</div></div>`; return; }
+      el.querySelector('#soJoin').onclick=async()=>{
+        const r=await S.joinCrew(el.querySelector('#soCode').value);
+        if (r.error==='offline'){ el.querySelector('#soErr').innerHTML = `<div class="alert warn mt12">${icon('wifi_off')}<div><b>You're offline</b>Joining needs a connection.</div></div>`; return; }
+        if (r.error){ el.querySelector('#soErr').innerHTML = r.error==='full' ? `<div class="alert warn mt12">${icon('lock')}<div><b>Crew is full</b>They've reached ${APP.crewMax} members.</div></div>` : `<div class="alert mt12">${icon('priority_high')}<div><b>Invalid crew code</b>That code isn't a crew${!S.cloud?' on this phone yet (accounts aren’t live)':''}.</div></div>`; return; }
         toast(`Welcome to ${r.crew.name}!`); go.refresh(); paint();
       };
       const d=el.querySelector('#soDemo'); if (d) d.onclick=async()=>{ await S.setDemo(true); toast('Sample crew added'); go.refresh(); paint(); };
@@ -201,15 +210,16 @@ function memberMenu(u, owner, after){
       </div>`;
     body.querySelector('[data-x="profile"]').onclick=()=>{ back(); setTimeout(()=>go.profile(u.id), 60); };
     body.querySelector('[data-x="map"]').onclick=()=>{ closeAll(); state.scope.mode='crew'; state.scope.members=new Set([u.id]); go.switchView('map'); go.refresh(); };
-    const r=body.querySelector('[data-x="remove"]'); if (r) r.onclick=()=>{ S.removeMember(u.id); back(); toast(`${u.name||u.handle} removed`); go.refresh(); after(); };
+    const r=body.querySelector('[data-x="remove"]'); if (r) r.onclick=async()=>{ try{ await S.removeMember(u.id); }catch(_){ return toast('You’re offline. Try again in a moment.'); } back(); toast(`${u.name||u.handle} removed`); go.refresh(); after(); };
   });
 }
 
 /* ---------- invite link landing (?join=CODE) ---------- */
-go.inviteLanding = (code)=>{
-  const crew=S.findCrewByCode(code);
+go.inviteLanding = async (code)=>{
+  const crew = await S.findCrewByCode(code);
   openScreen(el=>{
-    const members = crew ? S.crewMembers(crew) : [];
+    const members = crew ? crew.members : [];
+    const count = crew ? (crew.count ?? members.length) : 0;
     el.innerHTML = topbar({title:'Crew invitation', center:true}) + `<div class="screen-body">
       <div class="invite-card mt24"><span class="tag rust" style="position:absolute;top:-10px;left:50%;transform:translateX(-50%)">${esc(APP.name)}</span>
         <div style="width:64px;height:64px;border-radius:50%;background:var(--gold-fixed);margin:6px auto 0;display:flex;align-items:center;justify-content:center">${icon('restaurant','',true)}</div>
@@ -217,19 +227,21 @@ go.inviteLanding = (code)=>{
         <h2 class="h-lg">You're invited to ${esc(crew?crew.name:'a food crew')}</h2>
         ${crew&&crew.tagline?`<p class="muted mt8">${esc(crew.tagline)}</p>`:''}
         <div class="card-peach mt16" style="text-align:left">
-          <div class="row between"><span class="eyebrow">${icon('groups')} Member roster</span><span class="tag green">${crew?members.length:'?'} of ${APP.crewMax} members</span></div>
+          <div class="row between"><span class="eyebrow">${icon('groups')} Member roster</span><span class="tag green">${crew?count:'?'} of ${APP.crewMax} members</span></div>
           ${crew?`<div class="roster mt12">${members.slice(0,6).map(u=>`<div class="rs">${avatarHTML(u,30)}<div style="min-width:0"><b>${esc(u.id===S.me().id?'You':u.name||u.handle)}</b><small>@${esc(u.handle)}</small></div></div>`).join('')}</div>`:`<p class="mono mt12" style="font-size:13px">Code <b>${esc(code)}</b></p>`}
         </div>
       </div>
-      ${!crew&&APP.previewMode?`<div class="note mt16">${icon('science')}<span><b>Preview mode:</b> joining a crew made on someone else's phone needs accounts, which aren't live yet. Save this code and join once they are.</span></div>`:''}
+      ${!crew&&!S.cloud?`<div class="note mt16">${icon('science')}<span><b>Preview mode:</b> joining a crew made on someone else's phone needs accounts, which aren't live yet. Save this code and join once they are.</span></div>`:''}
+      ${!crew&&S.cloud?`<div class="alert mt16">${icon('priority_high')}<div><b>That invite doesn't work</b>The code <b class="mono">${esc(code)}</b> isn't a crew. Ask for a fresh link.</div></div>`:''}
       <button class="btn btn-gold btn-block mt24" id="ilJoin" ${crew?'':'disabled'}>${icon('group_add')}Join ${esc(crew?crew.name:'crew')}</button>
       <button class="btn btn-ghost btn-block mt8" data-act="back">Maybe later</button>
     </div>`;
-    el.querySelector('#ilJoin').onclick=()=>{
-      const r=S.joinCrew(code);
+    el.querySelector('#ilJoin').onclick=async()=>{
+      const r=await S.joinCrew(code);
       if (r.error==='full') return toast('That crew is full');
+      if (r.error==='offline') return toast('You’re offline. Try again in a moment.');
       if (r.error) return toast('That code has expired or is wrong');
-      toast(`Welcome to ${r.crew.name}!`); back(); go.refresh();
+      toast(`Welcome to ${r.crew?.name||crew.name}!`); back(); go.refresh();
     };
   });
 };

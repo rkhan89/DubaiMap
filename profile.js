@@ -93,7 +93,7 @@ function settingsScreen(){
       const row = (ic, name, sub, right, attrs)=>`<div class="person-row"${attrs||''}>${icon(ic)}<span class="pr-main"><span class="pr-name">${name}</span>${sub?`<span class="pr-sub">${sub}</span>`:''}</span>${right||''}</div>`;
       const link = (ic, name, sub, key)=>`<button class="person-row" data-go="${key}">${icon(ic)}<span class="pr-main"><span class="pr-name">${name}</span>${sub?`<span class="pr-sub">${sub}</span>`:''}</span>${icon('chevron_right')}</button>`;
       el.innerHTML = topbar({title:'Settings', eyebrow:'Your scrapbook', profile:false}) + `<div class="screen-body">
-        ${APP.previewMode?`<div class="note mt16">${icon('science')}<span><b>Preview mode.</b> Your account, crew and photos live on this phone until sign-in goes live. Export a backup to move them.</span></div>`:''}
+        ${!S.cloud?`<div class="note mt16">${icon('science')}<span><b>Preview mode.</b> Your account, crew and photos live on this phone until sign-in goes live. Export a backup to move them.</span></div>`:''}
         <div class="eyebrow mt24">Account</div><div class="stack mt8">
           ${link('face','Edit avatar','Pixel you on the map','avatar')}
           ${link('alternate_email','Name & handle','@'+esc(me.handle),'handle')}
@@ -116,7 +116,7 @@ function settingsScreen(){
         </div>
         <div class="eyebrow mt24">Crew</div><div class="stack mt8">
           ${link('groups', crew?esc(crew.name):'Your crew', crew?plural(crew.memberIds.length,'member'):'Start or join a crew', 'crew')}
-          ${APP.previewMode?row('diversity_3','Preview with a sample crew','Adds Maya, Omar, Layla, Kabir & Noor with real-looking logs and photos', toggleHTML('sDemo', S.demoOn(),'Sample crew')):''}
+          ${APP.sampleCrew?row('diversity_3','Preview with a sample crew','Adds Maya, Omar, Layla, Kabir & Noor with real-looking logs and photos, on this phone only', toggleHTML('sDemo', S.demoOn(),'Sample crew')):''}
         </div>
         <div class="eyebrow mt24">Your data</div><div class="stack mt8">
           ${link('download','Export backup','Your logs and photos as one file','export')}
@@ -153,7 +153,7 @@ function settingsScreen(){
           document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
         }
       });
-      el.querySelector('#sOut').onclick = ()=>{ S.signOut(); go.closeAll(); setTimeout(()=>go.onboarding(), 300); };
+      el.querySelector('#sOut').onclick = async ()=>{ await S.signOut(); go.closeAll(); setTimeout(()=>{ go.refresh(); go.onboarding(); }, 300); };
     };
     paint();
   });
