@@ -63,7 +63,7 @@ The production address lives in `APP.siteUrl` (`config.js`); the `og:` tags in `
 must use it, and `tests/branding.test.mjs` fails if they drift.
 
 ## Tests
-- `node --test tests/` runs the unit tests (light-show schedule, branding files and links).
+- `node --test tests/shows.test.mjs tests/branding.test.mjs` runs the unit tests (light-show schedule, branding files and links).
 - `tests/e2e/` has the scripted click-throughs used for every release (headless Chrome via
   puppeteer-core): `cd tests/e2e && npm install`, then e.g. `node shot.mjs tour 390 light`
   or `BASE=https://dubai-bites-pi.vercel.app/ node shot.mjs e2e 360 dark`. Screenshots land in
