@@ -97,10 +97,11 @@ First show 7:00 pm (blue), last 11:00 pm (blue), last multicolour 10:45 pm: 17 s
 Clock-driven with no server, so opening the app mid-show picks up at the right point. It's
 recomputed every second and on return from the background. The colour wash runs up the tower
 inside its silhouette; it shows by day too, more subtly. Under reduced motion it's a static colour.
-Outside a show the tower looks normal. The schedule is one config object in (timezone, start, end, minute marks with types, duration, plus an overrides list for Ramadan, Eid,
+Outside a show the tower looks normal. The schedule is one config object in `shows.js`
+(timezone, start, end, minute marks with types, duration, plus an overrides list for Ramadan, Eid,
 National Day and New Year's Eve, empty and off by default). Profile has a toggle to turn shows
-off.  sets the app's clock for testing; unit tests are in
- (run ).
+off. `?now=2026-09-30T19:00:20+04:00` sets the app's clock for testing; unit tests are in
+`tests/shows.test.mjs` (run `node --test tests/shows.test.mjs`).
 
 ## Coach marks (frame 7)
 Four steps after onboarding: tap a stamp; Me / Crew and the filter; the bell for crew news;
