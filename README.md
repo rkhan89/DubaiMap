@@ -22,6 +22,7 @@ Plain HTML/CSS/JS (ES modules), no build step. Live: https://dubai-bites-pi.verc
 | `demo.js`, `demo/` | Optional sample crew for preview mode (toggle in your profile). |
 | `theme.js` | Light / Dark / Auto: resolves to `data-theme` on `<html>`. |
 | `synth.js` | Development only: `?synthetic=500` adds test places in memory. |
+| `shows.js` | Burj Khalifa light-show schedule and clock (`?now=` to test); tests in `tests/` (`node --test tests/shows.test.mjs`). |
 | `SPEC.md` | The living product spec. |
 | `design/` | The Stitch reference screens (not deployed). |
 

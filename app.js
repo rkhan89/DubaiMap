@@ -8,6 +8,7 @@ import { avatarHTML, avatarStack, spriteSvg, DEFAULT_AVATAR } from './avatar.js'
 import { $, $$, icon, toast, openSheet, back, stampHTML, catChip, seg, bindSeg, toggleHTML, bindToggle, ratingPill } from './ui.js';
 import { go, state } from './go.js';
 import { applyTheme, onTheme, themePref, setThemePref } from './theme.js';
+import { showState, now } from './shows.js';
 import './onboarding.js';
 import './crew.js';
 import './place.js';
@@ -368,6 +369,7 @@ function openProfile(){
         <button class="person-row" data-p="crew">${icon('groups')}<span class="pr-main"><span class="pr-name">${crew?esc(crew.name):'Your crew'}</span><span class="pr-sub">${crew?plural(crew.memberIds.length,'member'):'Start or join a crew'}</span></span>${icon('chevron_right')}</button>
         <div class="person-row">${icon('share')}<span class="pr-main"><span class="pr-name">Share new places with my crew</span><span class="pr-sub">Default for new logs. You can change any single place.</span></span>${toggleHTML('pShare', me.shareDefault!=='private','Share with crew by default')}</div>
         <div class="person-row" style="flex-wrap:wrap">${icon('contrast')}<span class="pr-main"><span class="pr-name">Appearance</span><span class="pr-sub">Auto follows your phone</span></span>${seg('theme', [['light','Light'],['dark','Dark'],['auto','Auto']], themePref())}</div>
+        <div class="person-row">${icon('celebration')}<span class="pr-main"><span class="pr-name">Burj Khalifa light shows</span><span class="pr-sub">7 to 11 pm, every 15 minutes, on the map</span></span>${toggleHTML('pShows', showsOn(),'Burj Khalifa light shows')}</div>
         <div class="person-row">${icon('my_location')}<span class="pr-main"><span class="pr-name">Show me on the map</span><span class="pr-sub">Only on this phone, never saved</span></span>${toggleHTML('pLoc', MAP.isTracking(),'Show my location')}</div>
         ${APP.previewMode?`<div class="person-row">${icon('diversity_3')}<span class="pr-main"><span class="pr-name">Preview with a sample crew</span><span class="pr-sub">Adds Maya, Omar, Layla, Kabir & Noor with real-looking logs and photos</span></span>${toggleHTML('pDemo', S.demoOn(),'Sample crew')}</div>`:''}
         <button class="person-row" data-p="tour">${icon('tour')}<span class="pr-main"><span class="pr-name">Replay the map tour</span></span>${icon('chevron_right')}</button>
@@ -378,6 +380,7 @@ function openProfile(){
       </div>`;
       bindToggle(body.querySelector('#pShare'), on=>{ S.updateMe({shareDefault:on?'crew':'private'}); toast(on?'New places will be shared with your crew':'New places will stay private'); });
       bindSeg(body, 'theme', v=>setThemePref(v));
+      bindToggle(body.querySelector('#pShows'), on=>{ try{ localStorage.setItem(SHOWS_KEY, on?'1':'0'); }catch(_){} tickShow(); });
       bindToggle(body.querySelector('#pLoc'), on=>{ on?MAP.startTracking(true):MAP.stopTracking(); });
       const d=body.querySelector('#pDemo'); if (d) bindToggle(d, async on=>{ await S.setDemo(on); toast(on?'Sample crew added':'Sample crew removed'); paint(); });
       body.querySelector('#pImport').addEventListener('change', async e=>{
@@ -449,8 +452,10 @@ go.coach = coach;
    ========================================================= */
 async function boot(){
   if (new URLSearchParams(location.search).has('still')) document.documentElement.classList.add('still');
-  onTheme(t=>MAP.setTheme(t));
+  onTheme(t=>{ MAP.setTheme(t); tickShow(); });
   MAP.setTheme(applyTheme());
+  setInterval(tickShow, 1000);
+  document.addEventListener('visibilitychange', ()=>{ if (!document.hidden) tickShow(); });
   applyBrand();
   await S.init();
   S.onChange(what=>{ if (what==='quota') toast('Storage is full on this phone. Export a backup and remove some photos.'); scheduleRebuild(); paintProfileButtons(); });
@@ -483,6 +488,10 @@ async function boot(){
     else if (!S.flag('coachDone')) MAP.whenReady(()=>setTimeout(coach, 500));
   }
 }
+/* Burj Khalifa light shows (schedule in shows.js), recomputed from the clock every second */
+const SHOWS_KEY='bites-shows';
+const showsOn = ()=>{ try{ return localStorage.getItem(SHOWS_KEY)!=='0'; }catch(_){ return true; } };
+function tickShow(){ MAP.setShow(showsOn() ? showState(now()) : null); }
 function paintMe(){ const me=S.me(); if (me) MAP.setMeSprite(spriteSvg({...DEFAULT_AVATAR, ...(me.avatar&&me.avatar.pixel||{})}, 3)); }
 go.paintMe = paintMe;
 go.afterOnboarding = ()=>{

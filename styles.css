@@ -813,3 +813,12 @@ html{overflow:hidden;}
 :root[data-theme="dark"] .map-dot i{opacity:.72;}
 .map-wrap.moving .map-twinkle{visibility:hidden;}
 .person-row{text-align:left;}
+.map-cars{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .4s;}
+.map-cars.on{opacity:1;}
+/* Burj Khalifa light shows: the wash runs up the tower; fades are a CSS opacity transition */
+.fx-burj{display:block;opacity:0;transition:opacity 1s linear;visibility:hidden;}
+.fx-burj.on{visibility:visible;}
+.fx-burj .wash{animation:washup 6s linear infinite;}
+.map-wrap.night .fx-burj{mix-blend-mode:screen;}
+@keyframes washup{from{transform:translateY(0);}to{transform:translateY(-130px);}}
+@media (prefers-reduced-motion: reduce){ .fx-burj .wash{animation:none;} }

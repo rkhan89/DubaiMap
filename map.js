@@ -570,88 +570,58 @@ function drawRoads(ctx){
    On its round island off Umm Suqeim, joined to the shore by a curved causeway.
    A white sail with vertical ribs: one straight edge (the braced mast spine, needle on
    top) and one billowing edge; a helipad disc projecting near the top and the Skyview
-   bar cantilevered a little below it. Three candidate drawings, picked with ?baa=A|B|C
-   while we choose; geometry is in world px around the island's centre (x,y). */
-const BAA_VARIANT = (()=>{ try{ const v=new URLSearchParams(location.search).get('baa'); return /^[ABC]$/.test(v) ? v : 'A'; }catch(_){ return 'A'; } })();
+   bar cantilevered a little below it. Geometry is in world px around the island's centre. */
 function isoDisc(ctx, x, y, rx, ry, h, top, side){
   ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI); ctx.lineTo(x-rx, y-h); ctx.ellipse(x, y-h, rx, ry, 0, Math.PI, 0, true); ctx.closePath();
   ctx.fillStyle=C(side||shade(top,0.78)); ctx.fill(); ctx.stroke();
   ctx.beginPath(); ctx.ellipse(x, y-h, rx, ry, 0, 0, Math.PI*2); ctx.fillStyle=C(top); ctx.fill(); ctx.stroke();
 }
-// cubic point
 const cub = (p0,p1,p2,p3,t)=>{ const u=1-t; return [u*u*u*p0[0]+3*u*u*t*p1[0]+3*u*t*t*p2[0]+t*t*t*p3[0], u*u*u*p0[1]+3*u*u*t*p1[1]+3*u*t*t*p2[1]+t*t*t*p3[1]]; };
-// the sail outline for a variant, as points relative to the island centre (shared by the canvas and the night glow)
-function baaGeom(v){
-  const k = v==='C' ? 1.14 : 1;
-  const H = 92*k, spineB = [6*k,-3], spineT = [5*k,-H+2], tip = [3*k,-H];
-  const b0 = [-2*k,-3], c1 = v==='C' ? [-34*k,-26*k] : [-30*k,-28*k], c2 = v==='C' ? [-26*k,-74*k] : [-23*k,-72*k];
-  const edge = []; for (let t=0;t<=1.0001;t+=1/24) edge.push(cub(b0,c1,c2,tip,t));
-  return { k, H, spineB, spineT, tip, b0, c1, c2, edge, heli:[-13*k, -H+15*k], bar:H-27*k };
-}
+// the sail outline as points relative to the island centre (shared by the canvas and the night glow)
+const BAA = (()=>{
+  const H = 92, spineB = [6,-3], spineT = [5,-H+2], tip = [3,-H];
+  const edge = []; for (let t=0;t<=1.0001;t+=1/24) edge.push(cub([-2,-3],[-30,-28],[-23,-72],tip,t));
+  return { H, spineB, spineT, tip, edge, heli:[-13,-H+15], bar:H-27 };
+})();
 function drawBAA(ctx, x, y){
-  const v = BAA_VARIANT, g = baaGeom(v), P = p=>[x+p[0], y+p[1]];
+  const g = BAA, P = p=>[x+p[0], y+p[1]];
+  const spineAt = t=>[g.spineB[0]+(g.spineT[0]-g.spineB[0])*t, g.spineB[1]+(g.spineT[1]-g.spineB[1])*t];
   ctx.save(); ctx.lineJoin='round'; ctx.lineCap='round';
   ctx.strokeStyle=C(OUT); ctx.lineWidth=LW;
-  isoDisc(ctx, x+1, y, 10*g.k, 5*g.k, 2.5, '#F1ECE1');                       // the island's plinth
-  if (v==='B'){
-    // voxel sail: stacked slabs whose depth follows the sail's billow, off a square spine
-    const N=13, fh=(g.H-6)/N;
-    for (let s=0;s<N;s++){
-      const t=(s+0.5)/N, w=0.1+0.62*Math.pow(Math.sin(Math.PI*Math.min(1,t*1.08)),0.75)*(1-t*0.35);
-      isoBox(ctx, x+2-TW/2*w, y-TH/2*w, w, 0.34, 3+s*fh, fh+0.2, '#F7F6F2', {top:'#FFFFFF', left:'#EEF1F3', right:'#D5DDE3'});
-    }
-    isoBox(ctx, x+4, y+1, 0.16, 0.2, 0, g.H+2, '#D9E0E6', {floors:5});
-  } else {
-    // sail body, then its shaded inner band along the spine
-    ctx.beginPath(); ctx.moveTo(...P(g.spineB)); g.edge.forEach(p=>ctx.lineTo(...P(p))); ctx.lineTo(...P(g.spineT)); ctx.closePath();
-    ctx.fillStyle=C(v==='C' ? '#FFFFFF' : '#FAF8F3'); ctx.fill(); ctx.stroke();
-    const band = g.edge.map((p,i)=>{ const t=i/(g.edge.length-1), s=[g.spineB[0]+(g.spineT[0]-g.spineB[0])*t, g.spineB[1]+(g.spineT[1]-g.spineB[1])*t]; return [s[0]+(p[0]-s[0])*0.28, s[1]+(p[1]-s[1])*0.28]; });
-    ctx.beginPath(); ctx.moveTo(...P(g.spineB)); band.forEach(p=>ctx.lineTo(...P(p))); ctx.lineTo(...P(g.spineT)); ctx.closePath();
-    ctx.fillStyle=C(v==='C' ? '#DCE4EB' : '#E7ECEF'); ctx.fill();
-    // vertical ribs following the billow
-    ctx.strokeStyle=C('rgba(110,130,150,0.55)'); ctx.lineWidth=LW*0.55;
-    (v==='C' ? [0.45,0.72] : [0.2,0.4,0.6,0.8]).forEach(f=>{
-      ctx.beginPath();
-      g.edge.forEach((p,i)=>{ const t=i/(g.edge.length-1), s=[g.spineB[0]+(g.spineT[0]-g.spineB[0])*t, g.spineB[1]+(g.spineT[1]-g.spineB[1])*t];
-        const q=[s[0]+(p[0]-s[0])*f, s[1]+(p[1]-s[1])*f]; i ? ctx.lineTo(...P(q)) : ctx.moveTo(...P(q)); });
-      ctx.stroke();
-    });
-    // the braced mast: two rails with X bracing
-    const r0=g.spineB[0], r1=g.spineB[0]+(v==='C'?4.5:3.5), top=g.spineT[1]-3;
-    ctx.fillStyle=C(v==='C' ? '#9FB1C1' : '#E3E8EC'); ctx.strokeStyle=C(OUT); ctx.lineWidth=LW;
-    ctx.beginPath(); ctx.moveTo(x+r0,y-2); ctx.lineTo(x+r1,y-2); ctx.lineTo(x+r1-1,y+top); ctx.lineTo(x+r0-1,y+top); ctx.closePath(); ctx.fill(); ctx.stroke();
-    ctx.strokeStyle=C(v==='C' ? '#FFFFFF' : '#8FA0AF'); ctx.lineWidth=LW*0.6; ctx.beginPath();
-    for (let z=-4; z>top+4; z-=7){ ctx.moveTo(x+r0,y+z); ctx.lineTo(x+r1-1,y+z-7); ctx.moveTo(x+r1,y+z); ctx.lineTo(x+r0-1,y+z-7); }
-    ctx.stroke();
-  }
+  isoDisc(ctx, x+1, y, 10, 5, 2.5, '#F1ECE1');                              // the island's plinth
+  // sail body, then its shaded inner band along the spine
+  ctx.beginPath(); ctx.moveTo(...P(g.spineB)); g.edge.forEach(p=>ctx.lineTo(...P(p))); ctx.lineTo(...P(g.spineT)); ctx.closePath();
+  ctx.fillStyle=C('#FAF8F3'); ctx.fill(); ctx.stroke();
+  const lerpTo = f => g.edge.map((p,i)=>{ const s=spineAt(i/(g.edge.length-1)); return [s[0]+(p[0]-s[0])*f, s[1]+(p[1]-s[1])*f]; });
+  ctx.beginPath(); ctx.moveTo(...P(g.spineB)); lerpTo(0.28).forEach(p=>ctx.lineTo(...P(p))); ctx.lineTo(...P(g.spineT)); ctx.closePath();
+  ctx.fillStyle=C('#E7ECEF'); ctx.fill();
+  // vertical ribs following the billow
+  ctx.strokeStyle=C('rgba(110,130,150,0.55)'); ctx.lineWidth=LW*0.55;
+  [0.2,0.4,0.6,0.8].forEach(f=>{ ctx.beginPath(); lerpTo(f).forEach((q,i)=>i ? ctx.lineTo(...P(q)) : ctx.moveTo(...P(q))); ctx.stroke(); });
+  // the braced mast: two rails with X bracing
+  const r0=g.spineB[0], r1=r0+3.5, top=g.spineT[1]-3;
+  ctx.fillStyle=C('#E3E8EC'); ctx.strokeStyle=C(OUT); ctx.lineWidth=LW;
+  ctx.beginPath(); ctx.moveTo(x+r0,y-2); ctx.lineTo(x+r1,y-2); ctx.lineTo(x+r1-1,y+top); ctx.lineTo(x+r0-1,y+top); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle=C('#8FA0AF'); ctx.lineWidth=LW*0.6; ctx.beginPath();
+  for (let z=-4; z>top+4; z-=7){ ctx.moveTo(x+r0,y+z); ctx.lineTo(x+r1-1,y+z-7); ctx.moveTo(x+r1,y+z); ctx.lineTo(x+r0-1,y+z-7); }
+  ctx.stroke();
   // needle
-  const nx = x+g.spineB[0]+1.5, ny = y-g.H-2;
-  ctx.strokeStyle=C(OUT); ctx.lineWidth=2.2; ctx.beginPath(); ctx.moveTo(nx,ny+2); ctx.lineTo(nx,ny-18*g.k); ctx.stroke();
+  const nx = x+r0+1.5, ny = y-g.H-2;
+  ctx.strokeStyle=C(OUT); ctx.lineWidth=2.2; ctx.beginPath(); ctx.moveTo(nx,ny+2); ctx.lineTo(nx,ny-18); ctx.stroke();
   ctx.strokeStyle=C('#E6ECF0'); ctx.lineWidth=1; ctx.stroke();
   // Skyview bar: cantilevered off the mast, a little below the helipad
   ctx.strokeStyle=C(OUT); ctx.lineWidth=LW;
-  isoBox(ctx, x+g.spineB[0]+TW/2*0.75, y+TH/2*0.75, 0.75, 0.2, g.bar, 4*g.k, '#E8EDF1', {top:'#F5F8FA', right:'#C6D1DA'});
+  isoBox(ctx, x+r0+TW/2*0.75, y+TH/2*0.75, 0.75, 0.2, g.bar, 4, '#E8EDF1', {top:'#F5F8FA', right:'#C6D1DA'});
   // helipad disc on its strut
-  const [hx,hy] = [x+g.heli[0], y+g.heli[1]];
-  ctx.strokeStyle=C(OUT); ctx.lineWidth=LW*1.2; ctx.beginPath(); ctx.moveTo(hx+6*g.k, hy+3); ctx.lineTo(hx+1, hy+1); ctx.stroke();
+  const hx = x+g.heli[0], hy = y+g.heli[1];
+  ctx.lineWidth=LW*1.2; ctx.beginPath(); ctx.moveTo(hx+6, hy+3); ctx.lineTo(hx+1, hy+1); ctx.stroke();
   ctx.lineWidth=LW;
-  isoDisc(ctx, hx, hy, (v==='C'?9:7)*g.k, (v==='C'?4.2:3.3)*g.k, 1.4, '#D5DDE2');
-  ctx.strokeStyle=C(v==='C' ? '#E5A93C' : '#FFFFFF'); ctx.lineWidth=LW*0.7; ctx.beginPath(); ctx.ellipse(hx, hy-1.4, (v==='C'?6:4.6)*g.k, (v==='C'?2.8:2.2)*g.k, 0, 0, Math.PI*2); ctx.stroke();
+  isoDisc(ctx, hx, hy, 7, 3.3, 1.4, '#D5DDE2');
+  ctx.strokeStyle=C('#FFFFFF'); ctx.lineWidth=LW*0.7; ctx.beginPath(); ctx.ellipse(hx, hy-1.4, 4.6, 2.2, 0, 0, Math.PI*2); ctx.stroke();
   ctx.restore();
 }
 // night glow outline (SVG path in local coords) for the overlay
-function baaGlowPath(){
-  const g = baaGeom(BAA_VARIANT);
-  if (BAA_VARIANT==='B'){
-    // trace the left edge of the stacked slabs (their W corners), then back down the spine
-    const N=13, fh=(g.H-6)/N, pts=[[6,-3]];
-    for (let s=0;s<N;s++){ const t=(s+0.5)/N, w=0.1+0.62*Math.pow(Math.sin(Math.PI*Math.min(1,t*1.08)),0.75)*(1-t*0.35);
-      const lx=2-TW*w-TW/2*0.34, ly=-TH*w+TH/2*0.34; pts.push([lx, ly-3-s*fh]); pts.push([lx, ly-3-(s+1)*fh]); }
-    pts.push([4,-g.H]); pts.push([6,-g.H]);
-    return 'M'+pts.map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join('L')+'Z';
-  }
-  return 'M'+[g.spineB, ...g.edge, g.spineT].map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join('L')+'Z';
-}
+function baaGlowPath(){ return 'M'+[BAA.spineB, ...BAA.edge, BAA.spineT].map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join('L')+'Z'; }
 
 /* ---------- landmarks ---------- */
 function drawLandmark(ctx, o){
@@ -804,10 +774,10 @@ function buildLights(){
       add(o.x, o.y-z-30, '#FFFFFF', 2, 1); add(o.x, o.y-z-46, '#FF3B30', 2, 2);
     } else if (o.k==='lm' && o.lm==='baa'){
       // helipad ring, the Skyview bar's windows, and a beacon on the needle
-      const g = baaGeom(BAA_VARIANT), hx = o.x+g.heli[0], hy = o.y+g.heli[1]-1.4;
-      for (let t=0;t<Math.PI*2;t+=Math.PI/5) add(hx+Math.cos(t)*6*g.k, hy+Math.sin(t)*2.6*g.k, '#FFF6D8', 2, 1);
+      const g = BAA, hx = o.x+g.heli[0], hy = o.y+g.heli[1]-1.4;
+      for (let t=0;t<Math.PI*2;t+=Math.PI/5) add(hx+Math.cos(t)*6, hy+Math.sin(t)*2.6, '#FFF6D8', 2, 1);
       for (let q=0;q<5;q++) add(o.x+g.spineB[0]+3+q*2.6, o.y-g.bar-2+q*1.3, '#FFD9A0', 0);
-      add(o.x+g.spineB[0]+1.5, o.y-g.H-2-18*g.k, '#FF3B30', 2, 2);
+      add(o.x+g.spineB[0]+1.5, o.y-g.H-2-18, '#FF3B30', 2, 2);
     } else if (o.k==='lm' && (o.lm==='frame' || o.lm==='ain' || o.lm==='atlantis' || o.lm==='terminal')){
       for (let k=0;k<10;k++) add(o.x+(rnd()-0.5)*18, o.y-4-rnd()*30, WARM[k%4], 0, twk(0.2));
     }
@@ -879,6 +849,137 @@ function buildLightBitmaps(){
   lightsBmp = { sc, a:mk(1), b:mk(2) };
 }
 
+
+/* =========================================================
+   CARS: little pixel cars driving the map's own roads
+   Sheikh Zayed Road is busiest, side roads quiet. Coloured cars by day, headlights and
+   taillights at night. They live on their own canvas under the stamps and labels,
+   never take taps, fade out when zoomed out, and only roads in view get cars (80 max).
+   The loop runs at ~30 fps and stops in the background, on low battery, when a
+   full screen covers the map, and under reduced motion (a static frame instead).
+   ========================================================= */
+const CAR_MAX = 80, CAR_COLORS = ['#E5533D','#F2B233','#3F7FD9','#F7F4EE','#34343C','#4FAE6B','#C7CED6','#8E5BD6','#E07BAA'];
+let carCanvas = null, carCtx = null, cars = [], carLoop = null, carLast = 0, lowPower = false, carRng = mulberry32(77);
+function prepCarRoads(){
+  ROADS_W.forEach((r,idx)=>{
+    let L = 0; r.cum = [0];
+    for (let k=1;k<r.pts.length;k++){ L += Math.hypot(r.pts[k][0]-r.pts[k-1][0], r.pts[k][1]-r.pts[k-1][1]); r.cum.push(L); }
+    r.len = L;
+    r.bb = { x0:Math.min(...r.pts.map(p=>p[0])), x1:Math.max(...r.pts.map(p=>p[0])), y0:Math.min(...r.pts.map(p=>p[1])), y1:Math.max(...r.pts.map(p=>p[1])) };
+    r.busy = idx===0 ? 7 : r.k===0 ? 3 : r.k===1 ? 1 : 0.35;        // index 0 is Sheikh Zayed Road
+    r.speed = r.k===0 ? 20 : r.k===1 ? 13 : 8;                     // world px per second
+  });
+  markHiddenRoad();
+}
+// Cars live on a layer above the city, so stretches of road that pass behind a building
+// (one standing in front of them) are worked out once here and cars aren't drawn there.
+const OCC_STEP = 1.5, LM_BOX = { burj:[20,240], baa:[30,115], frame:[16,56], ain:[24,70], atlantis:[30,40], motf:[12,34], terminal:[36,34], moe:[20,14], mall:[22,14], ibn:[16,12], meydan:[40,14] };
+function markHiddenRoad(){
+  const CELL = 32, grid = new Map(), key = (x,y)=>x+','+y;
+  for (const o of OBJECTS){
+    let hw, top, bot;
+    if (o.k==='box'){ hw = TW/2*(o.hx+o.hy); top = o.y - o.h - TH/2*(o.hx+o.hy); bot = o.y + TH/2*(o.hx+o.hy); }
+    else if (o.k==='lm' && LM_BOX[o.lm]){ hw = LM_BOX[o.lm][0]/2; top = o.y - LM_BOX[o.lm][1]; bot = o.y + 6; }
+    else continue;
+    const b = { x0:o.x-hw, x1:o.x+hw, y0:top, y1:bot, d:o.d };
+    for (let cx=Math.floor(b.x0/CELL); cx<=Math.floor(b.x1/CELL); cx++) for (let cy=Math.floor(b.y0/CELL); cy<=Math.floor(b.y1/CELL); cy++){
+      const k = key(cx,cy); if (!grid.has(k)) grid.set(k,[]); grid.get(k).push(b); }
+  }
+  ROADS_W.forEach(r=>{
+    const n = Math.ceil(r.len/OCC_STEP)+1; r.occ = new Uint8Array(n);
+    for (let i=0;i<n;i++){
+      const p = roadPoint(r, i*OCC_STEP), ai = worldToAI(p.x, p.y), g = aiToGrid(ai.a, ai.i), d = g.gx+g.gy;
+      const list = grid.get(key(Math.floor(p.x/CELL), Math.floor(p.y/CELL)));
+      if (list && list.some(b=>b.d > d+0.6 && p.x>b.x0 && p.x<b.x1 && p.y>b.y0 && p.y<b.y1)) r.occ[i] = 1;
+    }
+  });
+}
+function roadPoint(r, s){
+  let k = 1; while (k < r.cum.length-1 && r.cum[k] < s) k++;
+  const a = r.pts[k-1], b = r.pts[k], seg = r.cum[k]-r.cum[k-1] || 1, t = Math.max(0, Math.min(1, (s-r.cum[k-1])/seg));
+  return { x:a[0]+(b[0]-a[0])*t, y:a[1]+(b[1]-a[1])*t, dx:(b[0]-a[0])/seg, dy:(b[1]-a[1])/seg };
+}
+const inView = (x,y,v,m)=> x>v.x0-m && x<v.x1+m && y>v.y0-m && y<v.y1+m;
+function roadsInView(v){
+  return ROADS_W.filter(r=>r.bb.x1>v.x0 && r.bb.x0<v.x1 && r.bb.y1>v.y0 && r.bb.y0<v.y1).map(r=>{
+    // how much of this road is on screen, weighted by how busy it is
+    let on = 0; for (let k=1;k<r.pts.length;k++){ const [x,y]=r.pts[k]; if (inView(x,y,v,40)) on += r.cum[k]-r.cum[k-1]; }
+    return { r, w:Math.max(on, 1)*r.busy };
+  });
+}
+function spawnCar(list, v){
+  let tot = list.reduce((s,o)=>s+o.w, 0), pick = carRng()*tot, r = list[0].r;
+  for (const o of list){ pick -= o.w; if (pick <= 0){ r = o.r; break; } }
+  // start somewhere on the visible stretch if we can
+  let s = carRng()*r.len;
+  for (let tries=0; tries<6; tries++){ const p = roadPoint(r, s); if (inView(p.x,p.y,v,20)) break; s = carRng()*r.len; }
+  const dir = carRng()<0.5 ? 1 : -1;
+  return { r, s, dir, v:r.speed*(0.75+carRng()*0.5), lane:dir*RD[r.k].w*0.22, c:CAR_COLORS[Math.floor(carRng()*CAR_COLORS.length)] };
+}
+function carView(){ return { x0:-cam.x/cam.s, y0:-cam.y/cam.s, x1:(viewW-cam.x)/cam.s, y1:(viewH-cam.y)/cam.s }; }
+function carsWanted(){
+  const z = cam.s/baseFit;
+  return z >= LOD_MID && viewW > 0 && !document.hidden && !picking;
+}
+function updateCars(dt){
+  const v = carView(), list = roadsInView(v);
+  if (!list.length){ cars = []; return; }
+  const visLen = list.reduce((s,o)=>s+o.w/o.r.busy, 0);
+  const target = Math.min(CAR_MAX, Math.round(visLen/(22/Math.min(1.6, cam.s/baseFit/2))));
+  while (cars.length < target) cars.push(spawnCar(list, v));
+  if (cars.length > target) cars.length = target;
+  for (let k=0;k<cars.length;k++){
+    const c = cars[k];
+    c.s += c.dir*c.v*dt;
+    const p = c.s>=0 && c.s<=c.r.len ? roadPoint(c.r, c.s) : null;
+    if (!p || !inView(p.x,p.y,v,60)) cars[k] = spawnCar(list, v);
+  }
+}
+function drawCars(){
+  if (!carCtx) return;
+  carCtx.setTransform(1,0,0,1,0,0); carCtx.clearRect(0,0,carCanvas.width,carCanvas.height);
+  if (!carsWanted()) return;
+  carCtx.setTransform(dpr*cam.s,0,0,dpr*cam.s,dpr*cam.x,dpr*cam.y);
+  const L = 1.7, Wd = 0.8;                     // half length / half width in world px
+  for (const c of cars){
+    if (c.r.occ[Math.round(c.s/OCC_STEP)]) continue;       // behind a building
+    const p = roadPoint(c.r, c.s), dx = p.dx*c.dir, dy = p.dy*c.dir, nx = -dy, ny = dx;
+    const x = p.x + nx*c.lane*c.dir, y = p.y + ny*c.lane*c.dir;
+    const q = (a,b)=>[x+dx*a+nx*b, y+dy*a+ny*b];
+    const body = [q(L,Wd), q(L,-Wd), q(-L,-Wd), q(-L,Wd)];
+    carCtx.beginPath(); body.forEach((pt,i)=>i?carCtx.lineTo(pt[0],pt[1]):carCtx.moveTo(pt[0],pt[1])); carCtx.closePath();
+    carCtx.fillStyle = C(c.c); carCtx.fill();
+    if (cam.s > 1.2){ carCtx.lineWidth = 0.25; carCtx.strokeStyle = C(OUT); carCtx.stroke(); }
+    if (NIGHT){
+      // headlights ahead, taillights behind
+      carCtx.drawImage(glowSprite('#FFF1C9'), x+dx*(L+1.2)-1.6, y+dy*(L+1.2)-1.6, 3.2, 3.2);
+      carCtx.fillStyle = '#FF3B30'; const t = q(-L,0); carCtx.fillRect(t[0]-0.35, t[1]-0.35, 0.7, 0.7);
+    } else {
+      const r0 = q(0.5,0.55), r1 = q(-0.6,-0.55);   // roof
+      carCtx.fillStyle = 'rgba(255,255,255,0.45)'; carCtx.fillRect(Math.min(r0[0],r1[0]), Math.min(r0[1],r1[1]), Math.abs(r0[0]-r1[0])||0.6, Math.abs(r0[1]-r1[1])||0.6);
+    }
+  }
+}
+function coveredByScreen(){ return !!document.querySelector('#screens .screen.in'); }
+function carTick(t){
+  carLoop = null;
+  if (!carsWanted() || lowPower || reduceMotion || coveredByScreen()){ drawCars(); return; }
+  const dt = Math.min(0.1, (t-(carLast||t))/1000);
+  if (t - carLast >= 30){ carLast = t; updateCars(dt); drawCars(); }
+  carLoop = requestAnimationFrame(carTick);
+}
+function kickCars(){
+  if (!carCtx || !ROADS_W || !ROADS_W[0].cum) return;
+  carCanvas.classList.toggle('on', carsWanted());
+  if (carsWanted() && !cars.length) updateCars(0);
+  if (!carLoop && carsWanted() && !lowPower && !reduceMotion && !coveredByScreen()){ carLast = 0; carLoop = requestAnimationFrame(carTick); }
+  else if (!carLoop) drawCars();               // static frame (reduced motion, low battery, covered)
+}
+if (navigator.getBattery) navigator.getBattery().then(b=>{
+  const f = ()=>{ lowPower = !b.charging && b.level <= 0.2; kickCars(); };
+  f(); b.addEventListener('levelchange', f); b.addEventListener('chargingchange', f);
+}).catch(()=>{});
+
 /* =========================================================
    ENGINE: canvas, camera, gestures, overlay (stamps, area chips, you)
    The app hands the map a list of stamp items and a renderer; the map
@@ -914,7 +1015,7 @@ function resizeCanvas(){
   if (!r.width || !r.height) return false;
   viewW = r.width; viewH = r.height;
   dpr = Math.min(window.devicePixelRatio||1, 2);
-  [canvas, ...twinkles].forEach(cv=>{ cv.width = Math.round(viewW*dpr); cv.height = Math.round(viewH*dpr); cv.style.width = viewW+'px'; cv.style.height = viewH+'px'; });
+  [canvas, ...twinkles, carCanvas].forEach(cv=>{ cv.width = Math.round(viewW*dpr); cv.height = Math.round(viewH*dpr); cv.style.width = viewW+'px'; cv.style.height = viewH+'px'; });
   return true;
 }
 // lights sit dimmer at zoom levels where stamps and labels show, so they never compete
@@ -958,6 +1059,7 @@ function render(){
     drawScene(ctx, view);
   }
   if (NIGHT && LIGHTS) renderLights(view, fromCache);
+  drawCars(); kickCars();
   updateOverlay();
   if (opts.onViewChange) opts.onViewChange();
 }
@@ -1315,10 +1417,48 @@ function buildFx(){
   el.innerHTML = '<svg viewBox="-40 -120 60 124" width="60" height="124" aria-hidden="true"><path class="halo" d="'+d+'"/><path class="body" d="'+d+'"/></svg>';
   el._w = { x:w.x-40, y:w.y-120 };
   fxLayer.appendChild(el); fxEls.push(el);
+  buildBurjShow();
+}
+// Burj Khalifa light show: a colour wash that runs up the tower, clipped to its silhouette
+const BURJ_TIERS = [[0.62,30],[0.52,30],[0.43,28],[0.34,26],[0.26,24],[0.19,20],[0.13,18]];
+function burjSilhouette(){
+  const L = [], Rt = []; let z = 3;
+  BURJ_TIERS.forEach(([sz,h],k)=>{ L.push([-16*sz, -z], [-16*sz, -(z+h)]); Rt.push([16*sz, -z], [16*sz, -(z+h)]); z += h + (k<BURJ_TIERS.length-1 ? 2.5 : 0); });
+  const top = z, s0 = BURJ_TIERS[0][0];
+  const pts = [...L, [-1.3,-top], [0,-top-46], [1.3,-top], ...Rt.reverse(), [0, 8*s0-3]];
+  return 'M'+pts.map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join('L')+'Z';
+}
+let burjEl = null;
+function buildBurjShow(){
+  const b = LANDMARKS.find(l=>l.k==='burj'), w = aiToWorld(b.at[0], b.at[1]);
+  burjEl = document.createElement('div');
+  burjEl.className = 'fx fx-burj';
+  const stops = (list)=>list.map((c,i)=>'<stop offset="'+(i/(list.length-1)).toFixed(2)+'" stop-color="'+c+'"/>').join('');
+  burjEl.innerHTML = '<svg viewBox="-12 -250 24 262" width="24" height="262" aria-hidden="true"><defs>'
+    + '<clipPath id="burjClip"><path d="'+burjSilhouette()+'"/></clipPath>'
+    + '<linearGradient id="washBlue" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="130" spreadMethod="repeat">'+stops(['#0b3dff','#4fa3ff','#d9f1ff','#4fa3ff','#0b3dff'])+'</linearGradient>'
+    + '<linearGradient id="washMulti" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="130" spreadMethod="repeat">'+stops(['#ff3b6b','#ffb13b','#fff05a','#3bff9d','#3bb4ff','#b35bff','#ff3b6b'])+'</linearGradient>'
+    + '</defs><g clip-path="url(#burjClip)"><rect class="wash" x="-12" y="-250" width="24" height="520"/></g></svg>';
+  burjEl._w = { x:w.x-12, y:w.y-250 };
+  fxLayer.appendChild(burjEl); fxEls.push(burjEl);
+}
+// state from shows.js: { active, type, t, intensity }
+let showOn = false;
+function setShow(st){
+  if (!burjEl) return;
+  const on = !!(st && st.active);
+  if (on){
+    const rect = burjEl.querySelector('.wash');
+    rect.setAttribute('fill', st.type==='multi' ? 'url(#washMulti)' : 'url(#washBlue)');
+    if (!showOn) rect.style.animationDelay = (-(st.t % 6)).toFixed(2)+'s';   // opened mid-show: pick up where it is
+  }
+  burjEl.classList.toggle('on', on);
+  burjEl.style.opacity = on ? (st.intensity * (NIGHT ? 0.82 : 0.55)).toFixed(3) : '0';
+  if (on !== showOn){ showOn = on; requestRender(); }
 }
 function placeFx(){
-  if (!NIGHT) return;
   for (const el of fxEls){
+    if (el === burjEl ? !showOn : !NIGHT) continue;
     const sx = el._w.x*cam.s+cam.x, sy = el._w.y*cam.s+cam.y;
     el.style.transform = 'translate3d('+sx.toFixed(1)+'px,'+sy.toFixed(1)+'px,0) scale('+cam.s.toFixed(4)+')';
   }
@@ -1401,6 +1541,8 @@ function resumeTracking(){
 function initMap(o){
   opts = o; wrap = o.wrap; canvas = o.canvas; ctx = canvas.getContext('2d');
   twinkles = ['a','b'].map(k=>{ const c=document.createElement('canvas'); c.className='map-twinkle '+k; c.setAttribute('aria-hidden','true'); canvas.after(c); return c; });
+  carCanvas = document.createElement('canvas'); carCanvas.className='map-cars'; carCanvas.setAttribute('aria-hidden','true'); canvas.after(carCanvas); carCtx = carCanvas.getContext('2d');
+  setInterval(kickCars, 1500);   // resume after a full screen closes or the battery recovers
   wrap.classList.toggle('night', NIGHT);
   stampsLayer = document.createElement('div'); stampsLayer.className='stamps-layer';
   labelsLayer = document.createElement('div'); labelsLayer.className='labels-layer';
@@ -1421,7 +1563,7 @@ function initMap(o){
   document.addEventListener('visibilitychange', ()=>{ if (!document.hidden) requestRender(); });
   // a timer, not rAF: rAF never fires in a background tab, and the city should be ready when you switch to it
   setTimeout(()=>{
-    buildTerrain(); buildObjects(); prepRoads();
+    buildTerrain(); buildObjects(); prepRoads(); prepCarRoads();
     if (NIGHT) buildLights();
     buildCache();
     if (NIGHT) buildLightBitmaps();
@@ -1520,6 +1662,6 @@ function resize(){ if (cache && resizeCanvas()){ if (needsCenter) initialView();
 export {
   initMap, whenReady, setStamps, setAreaCounts, placeWorld, fitPoints, fitCity, flyToWorld, flyToSeparate,
   centerLatLng, viewZone, zoomRatio, setPicking, highlight, markDropped, setMeSprite, setSelected, startTracking,
-  stopTracking, isTracking, drawSnapshot, refresh, resize, visible, setTheme,
+  stopTracking, isTracking, drawSnapshot, refresh, resize, visible, setTheme, setShow,
   ZONES, zoneById, nearestZone, toAI, toLatLng, inMap, onLand,
 };

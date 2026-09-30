@@ -80,9 +80,27 @@ bitmap, so panning at night costs the same as by day. Lights dim at the zoom lev
 and labels show.
 
 **Landmarks.** Burj Khalifa, Burj Al Arab (on its island off Umm Suqeim, 25.1412 N 55.1853 E,
-with a curved causeway; design being chosen from variants A/B/C via `?baa=`), Ain Dubai, Dubai
+with a curved causeway; drawn as a ribbed sail on a braced mast with helipad and Skyview bar), Ain Dubai, Dubai
 Frame, Museum of the Future, Atlantis, Mall of the Emirates, Meydan, Ibn Battuta, DXB. At night
 the Burj Al Arab's sail glows with a slow colour shift, and its helipad and Skyview bar are lit.
+
+**Cars.** Small pixel cars drive the map's own roads: Sheikh Zayed Road busiest, side roads
+quiet. By day they're coloured; at night they're headlight and taillight dots. They sit under
+stamps and labels, never take taps, and are hidden where a road passes behind a building. They
+only appear from mid zoom, only on roads in view, 80 at most, at ~30 fps. They pause in the
+background, on low battery (≤20% and not charging), and while a full screen covers the map;
+under reduced motion they're a static frame.
+
+**Burj Khalifa light shows.** 7 pm to 11 pm Dubai time (Asia/Dubai, whatever the phone's zone):
+blue at :00 and :30, multicolour at :15 and :45, 60 seconds each, with a 1.5 s fade in and out.
+First show 7:00 pm (blue), last 11:00 pm (blue), last multicolour 10:45 pm: 17 shows a night.
+Clock-driven with no server, so opening the app mid-show picks up at the right point. It's
+recomputed every second and on return from the background. The colour wash runs up the tower
+inside its silhouette; it shows by day too, more subtly. Under reduced motion it's a static colour.
+Outside a show the tower looks normal. The schedule is one config object in (timezone, start, end, minute marks with types, duration, plus an overrides list for Ramadan, Eid,
+National Day and New Year's Eve, empty and off by default). Profile has a toggle to turn shows
+off.  sets the app's clock for testing; unit tests are in
+ (run ).
 
 ## Coach marks (frame 7)
 Four steps after onboarding: tap a stamp; Me / Crew and the filter; the bell for crew news;
