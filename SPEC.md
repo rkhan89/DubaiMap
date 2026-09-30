@@ -11,6 +11,7 @@ photos, and share a photobook. Private logs are visible to their owner only.
 
 ## Brand
 - Name, tagline and logo live in `config.js` (`APP.name`, `APP.tagline`, `APP.logo`) and `logo.svg`.
+- Logo: the Koko wordmark and icons from `brand-kit/` (see README, Branding), brown on light, cream on dark via the `--wordmark` token; the ring-and-dot pin is the loader.
 - Name: **Koko**. Tagline: "We were here" (header, welcome screen, recap card, shared places).
 - The live URL is still dubai-bites-pi.vercel.app (Vercel project name); rename it in Vercel if you want a new address.
 

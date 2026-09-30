@@ -5,15 +5,29 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Koko</title>
 <meta name="description" content="Koko: we were here. A shared food scrapbook map of Dubai for you and your crew.">
-<meta name="theme-color" content="#fff8f5">
-<script>/* theme before first paint (same rule as theme.js) */try{var p=localStorage.getItem("bites-theme"),d=p==="dark"||(p!=="light"&&matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.dataset.theme=d?"dark":"light";document.querySelector("meta[name=theme-color]").content=d?"#1b1612":"#fff8f5";}catch(e){document.documentElement.dataset.theme="light";}</script>
+<meta name="theme-color" content="#FFF4E8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1C1410" media="(prefers-color-scheme: dark)">
+<script>/* theme before first paint (same rule as theme.js) */try{var p=localStorage.getItem("bites-theme"),d=p==="dark"||(p!=="light"&&matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.dataset.theme=d?"dark":"light";if(p==="light"||p==="dark")document.querySelectorAll("meta[name=theme-color]").forEach(function(m){m.content=d?"#1C1410":"#FFF4E8";});}catch(e){document.documentElement.dataset.theme="light";}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="color-scheme" content="light dark">
-<link rel="icon" href="logo.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon-180.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<!-- link previews: absolute URLs on APP.siteUrl (config.js); tests/branding.test.mjs keeps them in step -->
+<meta property="og:title" content="Koko">
+<meta property="og:description" content="We were here. A shared food scrapbook map of Dubai for you and your crew.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://dubai-bites-pi.vercel.app/">
+<meta property="og:image" content="https://dubai-bites-pi.vercel.app/social/og-image-1200x630.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Koko">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://dubai-bites-pi.vercel.app/social/og-image-1200x630.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:opsz,wght@6..12,700;6..12,800;6..12,900&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=Silkscreen&display=swap" rel="stylesheet">
@@ -25,8 +39,7 @@
 
   <header class="app-header">
     <div class="brand">
-      <img class="brand-logo" src="logo.svg" alt="" width="44" height="44">
-      <div><h1 id="brandName"></h1><span class="hand" id="brandTag"></span></div>
+      <div><h1 class="brand-name"><span class="wordmark" id="brandName" role="img" aria-label="Koko"></span></h1><span class="hand" id="brandTag"></span></div>
     </div>
     <button class="icon-btn bell-btn" id="btnBell" aria-label="Crew activity"><span class="ms">notifications</span><i class="bell-dot" hidden></i></button>
     <button class="profile-btn" data-act="profile" aria-label="Your profile"></button>
@@ -59,7 +72,7 @@
             <button class="btn btn-gold" id="pickConfirm">Set location</button>
           </div>
         </div>
-        <div class="map-loading" id="mapLoading"><span>Building Dubai…</span></div>
+        <div class="map-loading" id="mapLoading"><span class="brand-pin" aria-hidden="true"></span><span>Building Dubai…</span></div>
       </div>
     </section>
 

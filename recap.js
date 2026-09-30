@@ -24,10 +24,9 @@ async function drawRecap(canvas, month){
   // dotted paper
   c.fillStyle = 'rgba(126,87,0,0.07)'; for (let x=30;x<W;x+=36) for (let y=30;y<H;y+=36){ c.beginPath(); c.arc(x,y,2.2,0,7); c.fill(); }
   // header
-  const logo = await loadImg(APP.logo);
-  if (logo) c.drawImage(logo, 72, 70, 96, 96);
-  c.fillStyle = INK; c.font = '900 44px "Nunito Sans"'; c.fillText(APP.name, 192, 118);
-  c.fillStyle = SOFT; c.font = '500 30px "Plus Jakarta Sans"'; c.fillText(APP.tagline + '  ·  ' + fmtMonth(month), 192, 158);
+  const mark = await loadImg(APP.brand.wordmark.light);            // 258 x 100: keep its proportions
+  if (mark) c.drawImage(mark, 72, 72, 72*2.58*0.9, 72*0.9);
+  c.fillStyle = SOFT; c.font = '500 30px "Plus Jakarta Sans"'; c.fillText(APP.tagline + '  ·  ' + fmtMonth(month), 72, 176);
   c.fillStyle = INK; c.font = '900 92px "Nunito Sans"'; c.fillText('My month', 72, 300); c.fillText('in bites', 72, 400);
   // stat tiles
   const tiles = [[s.places,'places'],[s.visits,'visits'],[s.areaCount,'areas'],[s.photos,'photos']];

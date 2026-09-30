@@ -2,7 +2,7 @@
 // on <html>; every colour in styles.css hangs off it. index.html sets it before first
 // paint with the same rule, so there's no flash.
 const KEY = 'bites-theme';
-const COLORS = { light:'#fff8f5', dark:'#1b1612' };   // browser / PWA chrome
+const COLORS = { light:'#FFF4E8', dark:'#1C1410' };   // browser / PWA chrome (brand cream / dark)
 const mq = window.matchMedia ? matchMedia('(prefers-color-scheme: dark)') : { matches:false, addEventListener(){} };
 const listeners = new Set();
 
@@ -11,7 +11,11 @@ export function resolvedTheme(){ const p = themePref(); return p==='auto' ? (mq.
 export function applyTheme(){
   const t = resolvedTheme();
   document.documentElement.dataset.theme = t;
-  document.querySelectorAll('meta[name="theme-color"]').forEach(m=>m.setAttribute('content', COLORS[t]));
+  // two metas (light / dark media). Auto: each keeps its own colour; a fixed choice sets both, so the bar matches the app
+  document.querySelectorAll('meta[name="theme-color"]').forEach(m=>{
+    const media = m.getAttribute('media')||'', own = media.includes('dark') ? COLORS.dark : COLORS.light;
+    m.setAttribute('content', themePref()==='auto' ? own : COLORS[t]);
+  });
   listeners.forEach(f=>{ try{ f(t); }catch(e){ console.error(e); } });
   return t;
 }

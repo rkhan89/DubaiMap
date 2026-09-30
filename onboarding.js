@@ -17,8 +17,7 @@ function welcome(){
   root=document.createElement('section');
   root.className='screen in'; root.style.transition='none';
   root.innerHTML = `<div class="welcome">
-    <div class="w-logo"><span class="tape"></span><img src="${APP.logo}" alt="" width="92" height="92"></div>
-    <h1>${esc(APP.name)}</h1>
+    <h1 class="w-brand"><span class="wordmark" role="img" aria-label="${esc(APP.name)}"></span></h1>
     <span class="hand">${esc(APP.tagline)}</span>
     <div class="w-stack">
       ${polaroidHTML({src:'demo/d04.jpg', caption:'morning ✨', rot:-6, cls:'p1'})}

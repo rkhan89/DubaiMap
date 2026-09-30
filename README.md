@@ -38,3 +38,33 @@ else works for real on one phone. Connecting Supabase means implementing `store.
 
 Run locally: `python -m http.server 5173` and open http://localhost:5173 (add `?still` to turn
 off animations for screenshots).
+
+## Branding
+The Koko logo files live in `brand-kit/` exactly as supplied (see `brand-kit/README.txt`).
+**Never recolour, stretch or redraw them.** If another size is needed, export it from the SVG,
+not from a PNG.
+
+| Use | File |
+|---|---|
+| Wordmark on light backgrounds (and on paper cards in either theme) | `brand-kit/brand/koko-wordmark-brown.svg` |
+| Wordmark on dark backgrounds, or on photos with a scrim | `brand-kit/brand/koko-wordmark-cream.svg` |
+| Loaders and small marks | `brand-kit/brand/koko-pin.svg` (on dark it sits on a cream disc) |
+| App icon | `brand-kit/brand/koko-icon.svg` / `koko-icon-dark.svg` |
+| Web / PWA icons | `icons/` (any, maskable, monochrome, Apple 180), favicons in the site root |
+| Link preview | `social/og-image-1200x630.png` |
+| Future native builds | `native-assets/` (Android adaptive layers, Play 512, App Store 1024), not wired in |
+
+In the app the wordmark is a CSS background switched by the `--wordmark` theme token
+(`data-theme`), so the right colour follows the theme without per-screen code; its box keeps
+the SVG's 258:100 proportions with at least the dot's height of clear space around it.
+
+Colours: gold `#E8A92B`, brown `#2B1A10`, cream `#FFF4E8`, dark `#1C1410`.
+The production address lives in `APP.siteUrl` (`config.js`); the `og:` tags in `index.html`
+must use it, and `tests/branding.test.mjs` fails if they drift.
+
+## Tests
+- `node --test tests/` runs the unit tests (light-show schedule, branding files and links).
+- `tests/e2e/` has the scripted click-throughs used for every release (headless Chrome via
+  puppeteer-core): `cd tests/e2e && npm install`, then e.g. `node shot.mjs tour 390 light`
+  or `BASE=https://dubai-bites-pi.vercel.app/ node shot.mjs e2e 360 dark`. Screenshots land in
+  `tests/e2e/shots/` (ignored by git).

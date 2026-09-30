@@ -15,7 +15,7 @@ export async function registerSW(){
 }
 async function notify(title, body, url){
   if (!('Notification' in window) || Notification.permission!=='granted') return;
-  const opts = { body, icon:'icon-192.png', badge:'icon-192.png', data:{ url: url||location.origin } };
+  const opts = { body, icon:'/icons/icon-192.png', badge:'/icons/icon-monochrome-512.png', data:{ url: url||location.origin } };
   try{ const r = reg || await navigator.serviceWorker?.getRegistration(); if (r){ await r.showNotification(title, opts); return; } }catch(_){}
   try{ new Notification(title, opts); }catch(_){}
 }

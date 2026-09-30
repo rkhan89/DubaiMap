@@ -32,7 +32,7 @@ function saveScope(){ try{ localStorage.setItem(scopeKey, JSON.stringify({mode:s
    ========================================================= */
 function applyBrand(){
   document.title = APP.name;
-  $('#brandName').textContent = APP.name;
+  $('#brandName').setAttribute('aria-label', APP.name);
   $('#brandTag').textContent = APP.tagline;
 }
 function paintProfileButtons(){

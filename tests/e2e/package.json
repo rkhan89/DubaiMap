@@ -1,0 +1,7 @@
+{
+  "name": "koko-e2e",
+  "private": true,
+  "type": "module",
+  "description": "Scripted click-throughs and screenshots for Koko (headless Chrome).",
+  "dependencies": { "puppeteer-core": "^23.0.0" }
+}
