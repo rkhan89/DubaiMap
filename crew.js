@@ -28,20 +28,20 @@ function crewSetup(opts){
         <div class="mt20">${seg('ctab', [['create','Create Crew','group_add'],['join','Join Crew','key']], tab)}</div>
         ${tab==='create' ? `
         <div class="card mt20">
-          <div class="field-label"><span class="eyebrow">${icon('local_cafe')} Crew log name</span><span class="hand">Personalized Stamp</span></div>
+          <div class="field-label"><span class="eyebrow">${icon('local_cafe')} Crew log name</span><span class="hand">Personalised stamp</span></div>
           <div class="input-wrap mt8"><input class="input" id="cName" maxlength="32" placeholder="e.g. Karak Crew" value="${esc(name)}" style="padding-left:16px;font-size:18px;font-weight:600"><span class="trail ms">edit</span></div>
           <p class="muted mt8">This title adorns your communal polaroid book and map pins across ${esc(APP.city)}.</p>
         </div>
         <div class="card mt16">
           <div class="row between"><span class="eyebrow" style="color:var(--rust)">${icon('link')} Secret invite link</span><span class="tag soft">Up to ${APP.crewMax}</span></div>
           <div class="link-box mt12">${icon('link')}<span>${esc(APP.inviteUrl(preview.code).replace(/^https?:\/\//,''))}</span><button class="btn btn-white btn-sm" id="cCopy">${icon('content_copy')}Copy</button></div>
-          <div class="row between mt12"><span class="row" style="gap:8px">${icon('verified')}<span>AirDrop &amp; WhatsApp ready</span></span><span class="hand" style="transform:rotate(-3deg)">No app download needed!</span></div>
+          <div class="row between mt12"><span class="row" style="gap:8px">${icon('verified')}<span>AirDrop &amp; WhatsApp ready</span></span><span class="hand">No app download needed!</span></div>
         </div>
         <button class="btn btn-gold btn-block mt20" id="cInvite">${icon('share')}Invite Friends to Logbook</button>
-        <div class="row between mt24"><span class="eyebrow">${icon('visibility')} Preview for recipients</span><span class="hand" style="color:var(--green)">Real-time RSVP card</span></div>
+        <div class="row between mt24"><span class="eyebrow">${icon('visibility')} Preview for recipients</span><span class="hand">Real-time RSVP card</span></div>
         <div class="invite-card mt12"><span class="tag rust" style="position:absolute;top:-10px;left:50%;transform:translateX(-50%)">${esc(APP.name)}</span>
           <div style="width:64px;height:64px;border-radius:50%;background:var(--gold-fixed);margin:6px auto 0;display:flex;align-items:center;justify-content:center">${icon('restaurant','', true)}</div>
-          <span class="hand mt8" style="display:block">Special Table Invitation</span>
+          <span class="hand mt8" style="display:block">Special table invitation</span>
           <h2 class="h-md">You're invited to ${esc(preview.name)}</h2>
           <div class="card-peach mt16" style="text-align:left">
             <div class="row between"><span class="eyebrow">${icon('groups')} Member roster</span><span class="tag green">1 of ${APP.crewMax} members</span></div>
@@ -55,7 +55,7 @@ function crewSetup(opts){
           <div class="input-wrap mt12"><input class="input" id="jCode" autocapitalize="characters" placeholder="E.G. KARAK7" value="${esc(joinCode)}" style="padding-left:16px;font-family:var(--f-mono);letter-spacing:.12em;font-size:18px"><span class="trail ms">key</span></div>
           <button class="btn btn-soft btn-block mt12" id="jGo">Join their crew ${icon('arrow_forward')}</button>
         </div>
-        ${err==='invalid'?`<div class="alert mt16">${icon('priority_high')}<div class="grow"><div class="row between"><b>Invalid crew code</b><span class="tag red" style="background:#fff">Error #404</span></div>Code <b class="mono">${esc(joinCode.toUpperCase())}</b> not found. Please double-check with your host or paste their link.${APP.previewMode?'<br><br><b>Preview mode:</b> only crews made on this phone can be joined until accounts go live.':''}</div></div>`:''}
+        ${err==='invalid'?`<div class="alert mt16">${icon('priority_high')}<div class="grow"><div class="row between"><b>Invalid crew code</b><span class="tag red" style="background:var(--card)">Error #404</span></div>Code <b class="mono">${esc(joinCode.toUpperCase())}</b> not found. Please double-check with your host or paste their link.${APP.previewMode?'<br><br><b>Preview mode:</b> only crews made on this phone can be joined until accounts go live.':''}</div></div>`:''}
         ${err==='full'?`<div class="alert warn mt16">${icon('lock')}<div class="grow"><div class="row between"><b>Crew is full (${APP.crewMax} of ${APP.crewMax})</b><span class="tag rust">Capacity reached</span></div>New joins need the owner to make room first.</div></div>`:''}`}
         <button class="btn btn-dark btn-block mt32" id="cGo">${opts.onboarding?'Continue to Scrapbook':'Done'} ${icon('arrow_forward')}</button>
         ${opts.onboarding?`<button class="btn btn-ghost btn-block mt8" id="cSolo">I'll explore solo for now →</button>`:''}
@@ -103,7 +103,7 @@ function crewScreen(){
         <div class="passport mt16"><span class="tape"></span>
           <div class="row" style="align-items:flex-start">
             <span class="pp-icon">${icon('local_cafe','',true)}</span>
-            <div class="grow"><div class="row" style="gap:8px"><span class="eyebrow" style="color:var(--rust)">Crew passport</span><span class="hand" style="color:var(--gold-deep)">Est. ${est}</span></div>
+            <div class="grow"><div class="row" style="gap:8px"><span class="eyebrow" style="color:var(--rust)">Crew passport</span><span class="hand">Est. ${est}</span></div>
               <div class="pp-code">CODE: <b>${esc(crew.code)}</b></div></div>
             <button class="btn btn-white btn-sm" id="cpCopy" style="border-radius:999px">${icon('content_copy')}COPY</button>
           </div>
@@ -143,10 +143,10 @@ function crewScreen(){
       const me=S.me();
       el.innerHTML = topbar({title:'Your Crew', eyebrow:'', center:true, profile:false, actions:`<span class="tag soft" style="width:48px;height:48px;border-radius:50%;justify-content:center;padding:0;font-size:13px">1/${APP.crewMax}</span>`}).replace('<span class="tb-eyebrow"></span>','<span class="eyebrow" style="color:var(--rust)">Food journal</span>') + `<div class="screen-body">
         <div class="solo-art mt24"><span class="label">solo table #01</span>
-          <div class="solo-card"><div class="inner">${avatarHTML(me,86)}<span class="mono" style="font-weight:700">YOU (CAPTAIN)</span><span class="hand" style="font-size:22px">table for one</span></div>
+          <div class="solo-card"><div class="inner">${avatarHTML(me,86)}<span class="mono" style="font-weight:700">YOU (CAPTAIN)</span><span class="hand">Table for one</span></div>
             <div class="row mt8" style="gap:6px;justify-content:center"><i style="width:9px;height:9px;border-radius:50%;background:var(--green);display:inline-block"></i><span class="mono muted" style="font-size:12px">Ready to share</span></div>
             <span class="cup"><span>${icon('coffee','',true)}</span></span></div>
-          <span class="tag rust" style="font-family:var(--f-hand);font-size:19px;text-transform:none;letter-spacing:0;padding:6px 16px">${icon('local_cafe')} Karak poured, waiting for the crew</span>
+          <span class="tag rust" style="font-family:var(--f-mono);font-size:12px;text-transform:none;letter-spacing:0;padding:6px 16px">${icon('local_cafe')} Karak poured, waiting for the crew</span>
         </div>
         <h1 class="h-xl center mt24">Your crew is just you for now</h1>
         <p class="muted center mt12" style="font-size:16px">${esc(APP.name)} is way more fun when you and your friends share the same map. Add up to ${APP.crewMax-1} friends to swap spots, leave reviews, and build your shared scrapbook.</p>
@@ -155,7 +155,7 @@ function crewScreen(){
         <div class="card-soft mt20">
           <div class="row">${icon('confirmation_number')}<b class="h-sm" style="font-family:var(--f-body)">Have an invite code from a friend?</b></div>
           <p class="muted mt8">Enter the crew code from your friend's napkin note or text.</p>
-          <div class="input-wrap mt12"><input class="input" id="soCode" autocapitalize="characters" placeholder="E.G. KARAK7" style="background:#fff;padding-left:16px;font-family:var(--f-mono);letter-spacing:.1em"><span class="trail ms">key</span></div>
+          <div class="input-wrap mt12"><input class="input" id="soCode" autocapitalize="characters" placeholder="E.G. KARAK7" style="background:var(--card);padding-left:16px;font-family:var(--f-mono);letter-spacing:.1em"><span class="trail ms">key</span></div>
           <div id="soErr"></div>
           <button class="btn btn-soft btn-block mt12" id="soJoin">Join their crew ${icon('arrow_forward')}</button>
         </div>
@@ -206,7 +206,7 @@ go.inviteLanding = (code)=>{
     el.innerHTML = topbar({title:'Crew invitation', center:true}) + `<div class="screen-body">
       <div class="invite-card mt24"><span class="tag rust" style="position:absolute;top:-10px;left:50%;transform:translateX(-50%)">${esc(APP.name)}</span>
         <div style="width:64px;height:64px;border-radius:50%;background:var(--gold-fixed);margin:6px auto 0;display:flex;align-items:center;justify-content:center">${icon('restaurant','',true)}</div>
-        <span class="hand mt8" style="display:block">Special Table Invitation</span>
+        <span class="hand mt8" style="display:block">Special table invitation</span>
         <h2 class="h-lg">You're invited to ${esc(crew?crew.name:'a food crew')}</h2>
         ${crew&&crew.tagline?`<p class="muted mt8">${esc(crew.tagline)}</p>`:''}
         <div class="card-peach mt16" style="text-align:left">

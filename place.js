@@ -49,7 +49,7 @@ function placeScreen(venueId){
           <div class="grow"><div class="row between"><b class="h-sm">${minePrivate?'Only you can see your log':(crew?`Shared with ${esc(crew.name)}`:'Shared with your crew')}</b><span class="hand">${minePrivate?'Private log':'Public log'}</span></div>
           <span class="muted small">${minePrivate?'Your notes & rating stay in your own scrapbook.':(crew?`All ${S.crewMembers().length} crew members can see your notes & rating`:'Your crew will see this once you have one')}</span></div>
           ${toggleHTML('pShare', !minePrivate, 'Share with crew')}</div>`:''}
-        <div class="row between mt24"><span class="row h-md" style="gap:8px"><i style="width:9px;height:9px;border-radius:50%;background:var(--gold-deep);display:inline-block"></i>Who's Been <span class="tag soft">${plural(visits.length,'visit')}</span></span>${sum.rating?`<span class="hand">Crew Avg <span style="color:var(--gold-deep)">★ ${fmtRating(sum.rating)}</span></span>`:''}</div>
+        <div class="row between mt24"><span class="row h-md" style="gap:8px"><i style="width:9px;height:9px;border-radius:50%;background:var(--gold-deep);display:inline-block"></i>Who's Been <span class="tag soft">${plural(visits.length,'visit')}</span></span>${sum.rating?`<span class="hand">Crew avg <span style="color:var(--gold-deep)">★ ${fmtRating(sum.rating)}</span></span>`:''}</div>
         <div class="stack mt12">${visits.map(e=>{
           const u=S.user(e.userId), isMe=u.id===me.id;
           return `<div class="review" ${isMe?`data-edit="${e.id}" style="cursor:pointer"`:''}>
@@ -182,7 +182,7 @@ function logFlow(opts){
     const paint=()=>{
       const crew=S.myCrew();
       const header = topbar({title: editing?'Edit Entry':'Log Entry', center:true, actions:`<button class="icon-btn" id="lMore" aria-label="More">${icon('more_vert')}</button>`});
-      const stepRow = `<div class="row between mt8"><span class="row" style="gap:6px"><i style="width:14px;height:14px;border-radius:50%;background:${venue?'var(--gold-deep)':'var(--gold)'};display:inline-block"></i><i style="width:46px;height:8px;border-radius:4px;background:var(--gold);display:inline-block"></i><i style="width:14px;height:14px;border-radius:50%;background:${venue?'var(--gold)':'var(--sc-highest)'};display:inline-block"></i></span><span class="hand">${venue?'Step 2: Details & Memories':'Step 1: Find the place'}</span></div>`;
+      const stepRow = `<div class="row between mt8"><span class="row" style="gap:6px"><i style="width:14px;height:14px;border-radius:50%;background:${venue?'var(--gold-deep)':'var(--gold)'};display:inline-block"></i><i style="width:46px;height:8px;border-radius:4px;background:var(--gold);display:inline-block"></i><i style="width:14px;height:14px;border-radius:50%;background:${venue?'var(--gold)':'var(--sc-highest)'};display:inline-block"></i></span><span class="hand">${venue?'Step 2: details and memories':'Step 1: find the place'}</span></div>`;
       if (!venue){
         const results = S.searchVenues(query, 10);
         el.innerHTML = header + `<div class="screen-body">${stepRow}
@@ -213,12 +213,12 @@ function logFlow(opts){
         <label class="search mt16">${icon('search')}<input value="${esc(venue.name)}" readonly aria-label="Place">${editing?'':`<button id="lChange" aria-label="Change place" class="icon-btn" style="width:34px;height:34px">${icon('check_circle')}</button>`}</label>
         ${others.length?`<div class="already mt12"><b>${esc(venue.name)} is already on the crew map!</b>
           <p class="muted mt4">Adding your visit will link your notes and photos to ${others.slice(0,2).map(u=>`<span class="hl">${esc(u.name||u.handle)}</span>`).join(' and ')}${others.length>2?` +${others.length-2}`:''}'s log.</p>
-          <div class="row mt8">${avatarStack(others,30,3)}<span class="hand" style="color:var(--green)">Visited ${lastOther?whenText(lastOther).toLowerCase().replace(/ •.*/,''):''}</span></div></div>`:''}
+          <div class="row mt8">${avatarStack(others,30,3)}<span class="hand">Visited ${lastOther?whenText(lastOther).toLowerCase().replace(/ •.*/,''):''}</span></div></div>`:''}
         <div class="card mt16" style="border-radius:var(--r-xl)">
           <div class="seg"><button data-k="visit" class="${d.kind==='visit'?'on':''}">Been here ✓</button><button data-k="want" class="${d.kind==='want'?'on':''}">Want to try 🔖</button></div>
           ${d.kind==='visit'?`<div class="row between mt20" style="align-items:flex-end;flex-wrap:wrap;gap:12px"><div><span class="eyebrow">Your stamp</span><div class="star-input mt8" id="lStars"></div></div>
             <div style="text-align:right"><span class="eyebrow">Logged on</span><label class="date-pill mt8">${icon('calendar_month')}<span id="lDateTxt">${d.date===todayISO()?'Today, ':''}${fmtDate(d.date,{day:'numeric',month:'short'})}</span><input type="date" id="lDate" value="${d.date}" max="${todayISO()}"></label></div></div>`:''}
-          <div class="field-label mt20"><span class="eyebrow">${d.kind==='visit'?'Gourmet notes':'Why you want to go'}</span><span class="hand" style="color:var(--gold-deep)">Add handwritten vibes</span></div>
+          <div class="field-label mt20"><span class="eyebrow">${d.kind==='visit'?'Gourmet notes':'Why you want to go'}</span><span class="hand">Add your own words</span></div>
           <textarea class="input mt8" id="lNotes" maxlength="400" placeholder="${d.kind==='visit'?'Tasting notes, hidden gems, dish recommendations…':'Who recommended it, what to order…'}">${esc(d.notes)}</textarea>
           <div class="row between mt20"><span class="eyebrow">Polaroid reel (${allPhotos})</span><span class="mono" style="color:var(--rust);font-weight:700;font-size:12px">${allPhotos}/${APP.photosPerLog}</span></div>
           <div class="reel mt12">

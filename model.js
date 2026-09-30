@@ -17,9 +17,9 @@ function inScope(e, scope, meId){
 }
 
 // Everything a stamp, list card or place sheet needs about one venue.
-export function venueSummary(v, scope){
+export function venueSummary(v, scope, pre){
   const me = S.me(); const meId = me && me.id;
-  const all = S.entries({venueId:v.id});                       // already privacy-filtered
+  const all = pre || S.entries({venueId:v.id});                // already privacy-filtered
   const es = all.filter(e=>inScope(e, scope, meId));
   const visits = es.filter(e=>e.kind==='visit'), wants = es.filter(e=>e.kind==='want');
   const mineV = visits.filter(e=>e.userId===meId), mineW = wants.filter(e=>e.userId===meId);
@@ -58,9 +58,11 @@ export function passes(sum, scope){
 
 // venues with at least one visible entry in scope, plus unlit catalogue venues
 export function mapModel(scope){
-  const out=[];
+  const out=[], byVenue=new Map();
+  // one pass over the entries instead of one per venue (keeps 500+ places fast)
+  for (const e of S.entries()){ if (!byVenue.has(e.venueId)) byVenue.set(e.venueId, []); byVenue.get(e.venueId).push(e); }
   for (const v of S.venues()){
-    const sum = venueSummary(v, scope);
+    const sum = venueSummary(v, scope, byVenue.get(v.id) || []);
     if (sum.state==='unlit'){
       if (!scope.cats || (v.categories||[]).some(c=>scope.cats.has(c))) out.push(sum);
     } else if (passes(sum, scope)) out.push(sum);

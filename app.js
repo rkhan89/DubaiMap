@@ -7,6 +7,7 @@ import { CATEGORIES, catById, iconSvg, esc, fmtRating, ago, agoLong, plural } fr
 import { avatarHTML, avatarStack, spriteSvg, DEFAULT_AVATAR } from './avatar.js';
 import { $, $$, icon, toast, openSheet, back, stampHTML, catChip, seg, bindSeg, toggleHTML, bindToggle, ratingPill } from './ui.js';
 import { go, state } from './go.js';
+import { applyTheme, onTheme, themePref, setThemePref } from './theme.js';
 import './onboarding.js';
 import './crew.js';
 import './place.js';
@@ -41,35 +42,22 @@ const PRIO = { crew:5, visited:4, private:3.5, want:3, unlit:0 };
 let modelCache = [];
 function stampItems(){
   modelCache = M.mapModel(scope());
-  return modelCache.map(sum=>({ id:sum.v.id, w:MAP.placeWorld(sum.v), prio:PRIO[sum.state] + (sum.rating||0)/10 + sum.visitorIds.length/100, faint:sum.state==='unlit', data:sum }));
+  return modelCache.map(sum=>({ id:sum.v.id, w:MAP.placeWorld(sum.v), prio:PRIO[sum.state] + (sum.rating||0)/10 + sum.visitorIds.length/100,
+    faint:sum.state==='unlit', zone:sum.v.zone, label:sum.v.name, rating:sum.rating, recent:sum.latest?sum.latest.createdAt:0, data:sum }));
 }
 function renderStamp(cl){
-  if (cl.items.length>1){
+  if (cl.kind==='area' || cl.items.length>1){
     const cats=[...new Set(cl.items.flatMap(i=>i.data.v.categories||[]))];
     return stampHTML('cluster', {count:cl.items.length, cats});
   }
   const sum=cl.items[0].data, v=sum.v, st=sum.state;
   const others = sum.visitorIds.map(S.user).filter(Boolean);
-  const html = stampHTML(st, {
+  return stampHTML(st, {
     cat:M.primaryCat(v),
     visits: st==='visited' ? (sum.myVisitCount||sum.visitCount) : 0,
     rating: st==='crew' ? sum.rating : (sum.myRating||sum.rating),
     avatars: st==='crew' ? avatarStack(others, 20, 2) : '',
   });
-  // close-up callout card
-  let line='', foot='';
-  if (st==='unlit'){ line = catById(M.primaryCat(v))?.label || ''; foot = 'Undiscovered'; }
-  else if (st==='want'){
-    const w = sum.wantIds.map(S.user).filter(Boolean);
-    line = w.length ? `${w[0].id===S.me()?.id?'You':w[0].name} saved this` : 'Want to try';
-    foot = `<span class="tag">To try</span>`;
-  } else {
-    line = sum.noteEntry ? sum.noteEntry.notes : (catById(M.primaryCat(v))?.label||'');
-    foot = st==='crew' ? `${avatarStack(others,18,3)}${sum.visitorIds.length} in crew` : `${sum.myVisitCount>1?`Visited ${sum.myVisitCount}x`:'Visited'}${st==='private'?' • only me':''}`;
-    if (sum.rating) foot += `<span style="margin-left:auto">★ ${fmtRating(sum.rating)}</span>`;
-  }
-  const card = `<div class="stamp-card"><span class="tape"></span><div class="sc-name">${esc(v.name)}</div><div class="sc-line">${esc(line)}</div><div class="sc-foot">${foot}</div></div>`;
-  return card + html;
 }
 function rebuild(){
   if (!S.me()) return;
@@ -79,29 +67,11 @@ function rebuild(){
   MAP.setStamps(stampItems());
   const counts={}; modelCache.forEach(s=>{ if (s.state!=='unlit') counts[s.v.zone]=(counts[s.v.zone]||0)+1; });
   MAP.setAreaCounts(counts);
-  // mode toggle
-  $('#mapMode').innerHTML = `<button data-v="me" class="${sc.mode==='me'?'on':''}">${icon('person')}Me</button><button data-v="crew" class="${sc.mode==='crew'?'on':''}">${icon('group')}Crew${crew&&members.length>1?' <i class="live"></i>':''}</button>`;
-  // member chips (crew mode)
-  const row=$('#memberRow');
-  if (sc.mode==='crew' && members.length>1){
-    const total = modelCache.filter(s=>s.state!=='unlit').length;
-    row.innerHTML = `<button class="person-chip${!sc.members?' on':''}" data-m="all"><span class="ms" style="font-size:18px">done_all</span>All <em>${total}</em></button>` +
-      members.map(u=>`<button class="person-chip${sc.members&&sc.members.has(u.id)?' on':''}" data-m="${u.id}">${avatarHTML(u,30)}${esc(u.id===S.me().id?'You':u.name||u.handle)}</button>`).join('');
-    row.hidden=false;
-  } else { row.innerHTML=''; row.hidden=true; }
-  // me-mode status line
-  if (sc.mode==='me'){
-    const mine = modelCache.filter(s=>s.state!=='unlit');
-    const priv = mine.filter(s=>s.hasPrivate).length;
-    $('#meNoteLine').innerHTML = `Showing your <b>&nbsp;${mine.length}&nbsp;</b> ${mine.length===1?'place':'places'}${priv?` (including ${priv} private ${icon('lock','',true).replace('class="ms"','class="ms" style="font-size:13px"')})`:''}`;
-  } else $('#meNoteLine').innerHTML='';
-  // ticker
-  paintTicker();
-  // crew bar
-  const cb=$('#crewBar');
-  if (crew){ cb.innerHTML = `${icon('groups')}<b>Crew: ${esc(crew.name)}</b><i></i><span>${members.length} ${members.length===1?'member':'active'}</span>`; }
-  else cb.innerHTML = `${icon('group_add')}<b>Crew of one</b><i></i><span>invite friends</span>`;
-  cb.hidden = false;
+  // mode toggle, with how many places each side shows
+  const meN = sc.mode==='me' ? modelCache.filter(s=>s.state!=='unlit').length : M.mapModel({...sc, mode:'me', members:null}).filter(s=>s.state!=='unlit').length;
+  const crewN = sc.mode==='crew' ? modelCache.filter(s=>s.state!=='unlit').length : M.mapModel({...sc, mode:'crew'}).filter(s=>s.state!=='unlit').length;
+  $('#mapMode').innerHTML = `<button data-v="me" class="${sc.mode==='me'?'on':''}">Me <em>${meN}</em></button><button data-v="crew" class="${sc.mode==='crew'?'on':''}">Crew <em>${crewN}</em></button>`;
+  paintBell();
   // filter dot
   const filtered = isFiltered();
   $('#btnFilter').classList.toggle('filtered', filtered);
@@ -117,36 +87,33 @@ $('#mapMode').addEventListener('click', e=>{
   const b=e.target.closest('button'); if (!b) return;
   scope().mode=b.dataset.v; scope().members=null; saveScope(); hidePeek(); rebuild();
 });
-$('#memberRow').addEventListener('click', e=>{
-  const b=e.target.closest('[data-m]'); if (!b) return;
-  const sc=scope(), id=b.dataset.m;
-  if (id==='all') sc.members=null;
-  else {
-    sc.members = sc.members ? new Set(sc.members) : new Set();
-    sc.members.has(id) ? sc.members.delete(id) : sc.members.add(id);
-    if (!sc.members.size) sc.members=null;
-  }
-  rebuild();
-});
-$('#crewBar').addEventListener('click', ()=>go.crew());
 
-/* ---------- ticker: latest crew activity ---------- */
-let tickIdx=0, tickTimer=null;
-function paintTicker(){
-  const t=$('#ticker');
-  if (scope().mode!=='crew' || S.crewMembers().length<2){ t.hidden=true; clearInterval(tickTimer); return; }
-  const acts = M.activity(8).filter(a=>a.u.id!==S.me().id);
-  if (!acts.length){ t.hidden=true; return; }
-  const show=()=>{
-    const a=acts[tickIdx%acts.length];
-    const verb = a.e.kind==='want' ? 'saved' : 'pinned';
-    const z=MAP.zoneById(a.v.zone);
-    t.innerHTML = `<span class="tape"></span><span class="tk-text"><b>${esc(a.u.name||a.u.handle)}</b> ${verb} <span class="hl">${esc(a.v.name)}</span>${z?` in ${esc(z.label)}`:''}</span><span class="tk-ago">${ago(a.e.createdAt)}</span>${icon('chevron_right')}`;
-    t.onclick=()=>go.place(a.v.id);
-  };
-  show(); t.hidden=false;
-  clearInterval(tickTimer); tickTimer=setInterval(()=>{ tickIdx++; show(); }, 5000);
+/* ---------- bell: recent crew activity (nothing about it lives on the map) ---------- */
+const SEEN_KEY='bites-activity-seen';
+const seenAt = ()=>{ try{ return +localStorage.getItem(SEEN_KEY)||0; }catch(_){ return 0; } };
+function crewActivity(){ const me=S.me(); return me ? M.activity(40).filter(a=>a.u.id!==me.id).slice(0,20) : []; }
+function paintBell(){
+  const acts=crewActivity(), fresh=acts.filter(a=>a.e.createdAt>seenAt()).length;
+  const dot=$('#btnBell .bell-dot'); dot.hidden = !fresh;
+  $('#btnBell').setAttribute('aria-label', fresh ? `Crew activity, ${fresh} new` : 'Crew activity');
 }
+function openActivity(){
+  const acts=crewActivity(), since=seenAt(), crew=S.myCrew();
+  try{ localStorage.setItem(SEEN_KEY, String(Date.now())); }catch(_){}
+  paintBell();
+  openSheet(body=>{
+    body.innerHTML = `<div class="sheet-head"><div class="grow"><h2 class="h-md">Crew activity</h2><span class="hand">${crew?esc(crew.name):'Your crew'}, newest first</span></div></div>
+      ${acts.length ? `<div class="act-list">${acts.map(a=>{
+        const z=MAP.zoneById(a.v.zone), verb=a.e.kind==='want'?'saved':'visited';
+        return `<button class="act-row${a.e.createdAt>since?' new':''}" data-venue="${a.v.id}">${avatarHTML(a.u,40)}
+          <span class="grow"><span class="act-text"><b>${esc(a.u.name||a.u.handle)}</b> ${verb} <b>${esc(a.v.name)}</b></span>
+          <span class="act-sub">${esc(z?z.label:APP.city)} • ${ago(a.e.createdAt)}${a.e.rating?` • ★ ${fmtRating(a.e.rating)}`:''}</span></span>${icon('chevron_right')}</button>`; }).join('')}</div>`
+        : `<div class="empty">${icon('notifications_none')}<p class="muted">${crew?'When your crew logs or saves a place, it shows up here.':'Start a crew and their new places will show up here.'}</p></div>`}`;
+    body.querySelectorAll('[data-venue]').forEach(r=>r.addEventListener('click', ()=>{ back(); setTimeout(()=>go.showOnMap(r.dataset.venue), 60); }));
+  });
+}
+$('#btnBell').addEventListener('click', openActivity);
+go.activity = openActivity;
 
 /* ---------- peek card ---------- */
 let peekId=null;
@@ -162,7 +129,7 @@ function showPeek(venueId){
   else if (sum.state==='private') tag = `<span class="tag dark">${icon('lock','',true)}Only me</span>`;
   else if (sum.state==='want') tag = '<span class="tag">To try</span>';
   else tag = '<span class="tag soft">Undiscovered</span>';
-  if (latest) by = `<span class="hand" style="font-size:19px">${sum.latest.kind==='want'?'Saved':'Added'} by ${esc(latest.id===S.me().id?'you':latest.name||latest.handle)} ${agoLong(sum.latest.createdAt)}</span>`;
+  if (latest) by = `<span class="hand">${sum.latest.kind==='want'?'Saved':'Added'} by ${esc(latest.id===S.me().id?'you':latest.name||latest.handle)} ${agoLong(sum.latest.createdAt)}</span>`;
   const q = sum.noteEntry;
   const qu = q && S.user(q.userId);
   const photos = S.photos({venueId});
@@ -179,8 +146,16 @@ function showPeek(venueId){
       <button class="btn btn-gold" data-pk="log">${icon('add_a_photo')}Add Bite</button>
     </div>`;
   const p=$('#peek'); p.hidden=false; requestAnimationFrame(()=>p.classList.add('in'));
+  MAP.setSelected(venueId);
 }
-function hidePeek(){ const p=$('#peek'); if (p.hidden) return; p.classList.remove('in'); peekId=null; setTimeout(()=>{ if (!p.classList.contains('in')) p.hidden=true; }, 280); }
+// fly to a place, select it and show its peek card
+go.showOnMap = (venueId)=>{
+  const v=S.venue(venueId); if (!v) return;
+  switchView('map');
+  MAP.flyToWorld(MAP.placeWorld(v), 3.6);
+  setTimeout(()=>showPeek(venueId), 350);
+};
+function hidePeek(){ const p=$('#peek'); MAP.setSelected(null); if (p.hidden) return; p.classList.remove('in'); peekId=null; setTimeout(()=>{ if (!p.classList.contains('in')) p.hidden=true; }, 280); }
 $('#peek').addEventListener('click', e=>{
   const b=e.target.closest('[data-pk]');
   const id=peekId;
@@ -199,7 +174,7 @@ $('#peek').addEventListener('click', e=>{
 /* ---------- cluster list ---------- */
 function openClusterList(items){
   openSheet(body=>{
-    body.innerHTML = `<div class="sheet-head"><div class="grow"><h2 class="h-md">${items.length} spots here</h2><span class="hand">zoom in to split them up</span></div></div>
+    body.innerHTML = `<div class="sheet-head"><div class="grow"><h2 class="h-md">${items.length} spots here</h2><span class="hand">Zoom in to split them up</span></div></div>
       <div class="stack">${items.map(i=>venueRowHTML(i.data)).join('')}</div>`;
     body.querySelectorAll('[data-venue]').forEach(r=>r.addEventListener('click', ()=>{ back(); setTimeout(()=>go.place(r.dataset.venue), 60); }));
   });
@@ -244,17 +219,17 @@ function openFilters(){
       const n = M.mapModel({...draft}).filter(s=>s.state!=='unlit').length;
       body.innerHTML = `
       <div class="sheet-head"><span class="round-btn" style="width:44px;height:44px;box-shadow:none;background:var(--gold-fixed)">${icon('filter_list')}</span>
-        <div class="grow"><h2 class="h-md">Filter Scrapbook</h2><span class="hand">refine street discoveries</span></div>
+        <div class="grow"><h2 class="h-md">Filter Scrapbook</h2><span class="hand">Refine street discoveries</span></div>
         <button class="btn btn-ghost btn-sm" data-f="clear">Clear all</button></div>
       <div class="eyebrow">1. View mode</div>
       <div class="seg seg-white mt8" data-f="mode"><button data-v="me" class="${draft.mode==='me'?'on':''}">${icon('person')}Me Mode</button><button data-v="crew" class="${draft.mode==='crew'?'on':''}">${icon('groups')}Crew View</button></div>
-      ${members.length>1?`<div class="row between mt24"><span class="eyebrow">2. Members</span><span class="hand">${members.length-1} friends in ${esc(APP.city)}</span></div>
-      <div class="chip-scroll mt8" data-f="members"><button class="person-chip${!draft.members?' on':''}" data-m="all">${icon('done_all')}Select all</button>${members.map(u=>`<button class="person-chip${draft.members&&draft.members.has(u.id)?' on':''}" data-m="${u.id}">${avatarHTML(u,30)}${esc(u.id===S.me().id?'You':u.name||u.handle)}</button>`).join('')}</div>`:''}
+      ${members.length>1?`<div class="row between mt24"><span class="eyebrow">2. Members</span><span class="hand">${draft.mode==='crew'?`${members.length-1} friends in ${esc(APP.city)}`:'Applies in Crew view'}</span></div>
+      <div class="chip-scroll mt8" data-f="members"><button class="person-chip${!draft.members?' on':''}" data-m="all">${icon('done_all')}All <em>${M.mapModel({...draft, mode:'crew', members:null}).filter(s=>s.state!=='unlit').length}</em></button>${members.map(u=>`<button class="person-chip${draft.members&&draft.members.has(u.id)?' on':''}" data-m="${u.id}">${avatarHTML(u,30)}${esc(u.id===S.me().id?'You':u.name||u.handle)}</button>`).join('')}</div>`:''}
       <div class="eyebrow mt24">${members.length>1?3:2}. Categories</div>
       <div class="chip-wrap mt12" data-f="cats">${CATEGORIES.map(c=>catChip(c.id, !draft.cats || draft.cats.has(c.id))).join('')}</div>
       <div class="eyebrow mt24">${members.length>1?4:3}. Visit status</div>
       <div class="btn-grid mt12" data-f="status">
-        <button class="radio-card${draft.status.been?' on':''}" data-s="been"><span class="rc-head">${icon('verified')}Been here<span class="grow"></span>${draft.status.been?icon('check_box','',true):icon('check_box_outline_blank')}</span><p style="margin-left:0">★★★★☆ <span class="hand">rated</span></p></button>
+        <button class="radio-card${draft.status.been?' on':''}" data-s="been"><span class="rc-head">${icon('verified')}Been here<span class="grow"></span>${draft.status.been?icon('check_box','',true):icon('check_box_outline_blank')}</span><p style="margin-left:0">★★★★☆ <span class="hand">Rated</span></p></button>
         <button class="radio-card${draft.status.want?' on':''}" data-s="want"><span class="rc-head">${icon('bookmark')}Want to try<span class="grow"></span>${draft.status.want?icon('check_box','',true):icon('check_box_outline_blank')}</span><p style="margin-left:0"><span class="tag">To try ribbon</span></p></button>
       </div>
       <div class="eyebrow mt24">${members.length>1?5:4}. Privacy scope</div>
@@ -373,16 +348,8 @@ $('#nav').addEventListener('click', e=>{
 });
 
 /* map controls */
-$('#zoomIn').onclick=()=>MAP.zoomBy(1.6);
-$('#zoomOut').onclick=()=>MAP.zoomBy(1/1.6);
 $('#btnFit').onclick=()=>{ const pts=modelCache.filter(s=>s.state!=='unlit').map(s=>MAP.placeWorld(s.v)); pts.length?MAP.fitPoints(pts,true):MAP.fitCity(true); };
 $('#btnLocate').onclick=()=>MAP.startTracking(true);
-$('#locPill').onclick=()=>{ const z=MAP.viewZone(); if (z) openArea(z.id); else MAP.startTracking(true); };
-let locT=0;
-function onViewChange(){
-  const now=performance.now(); if (now-locT<250) return; locT=now;
-  const z=MAP.viewZone(); $('#locPillText').textContent = z && MAP.zoomRatio()>1.6 ? z.label : APP.city;
-}
 
 /* =========================================================
    PROFILE (own design: settings are Phase 2)
@@ -400,6 +367,7 @@ function openProfile(){
         <button class="person-row" data-p="handle">${icon('alternate_email')}<span class="pr-main"><span class="pr-name">Name & handle</span><span class="pr-sub">@${esc(me.handle)}</span></span>${icon('chevron_right')}</button>
         <button class="person-row" data-p="crew">${icon('groups')}<span class="pr-main"><span class="pr-name">${crew?esc(crew.name):'Your crew'}</span><span class="pr-sub">${crew?plural(crew.memberIds.length,'member'):'Start or join a crew'}</span></span>${icon('chevron_right')}</button>
         <div class="person-row">${icon('share')}<span class="pr-main"><span class="pr-name">Share new places with my crew</span><span class="pr-sub">Default for new logs. You can change any single place.</span></span>${toggleHTML('pShare', me.shareDefault!=='private','Share with crew by default')}</div>
+        <div class="person-row" style="flex-wrap:wrap">${icon('contrast')}<span class="pr-main"><span class="pr-name">Appearance</span><span class="pr-sub">Auto follows your phone</span></span>${seg('theme', [['light','Light'],['dark','Dark'],['auto','Auto']], themePref())}</div>
         <div class="person-row">${icon('my_location')}<span class="pr-main"><span class="pr-name">Show me on the map</span><span class="pr-sub">Only on this phone, never saved</span></span>${toggleHTML('pLoc', MAP.isTracking(),'Show my location')}</div>
         ${APP.previewMode?`<div class="person-row">${icon('diversity_3')}<span class="pr-main"><span class="pr-name">Preview with a sample crew</span><span class="pr-sub">Adds Maya, Omar, Layla, Kabir & Noor with real-looking logs and photos</span></span>${toggleHTML('pDemo', S.demoOn(),'Sample crew')}</div>`:''}
         <button class="person-row" data-p="tour">${icon('tour')}<span class="pr-main"><span class="pr-name">Replay the map tour</span></span>${icon('chevron_right')}</button>
@@ -409,6 +377,7 @@ function openProfile(){
         <button class="btn btn-danger btn-block mt8" data-p="signout">${icon('logout')}Sign out</button>
       </div>`;
       bindToggle(body.querySelector('#pShare'), on=>{ S.updateMe({shareDefault:on?'crew':'private'}); toast(on?'New places will be shared with your crew':'New places will stay private'); });
+      bindSeg(body, 'theme', v=>setThemePref(v));
       bindToggle(body.querySelector('#pLoc'), on=>{ on?MAP.startTracking(true):MAP.stopTracking(); });
       const d=body.querySelector('#pDemo'); if (d) bindToggle(d, async on=>{ await S.setDemo(on); toast(on?'Sample crew added':'Sample crew removed'); paint(); });
       body.querySelector('#pImport').addEventListener('change', async e=>{
@@ -445,7 +414,8 @@ function coach(){
   switchView('map');
   const steps = [
     { tag:'Venue diary pin', icon:'local_cafe', title:'Tap a stamp to see who visited', body:'Every postal stamp is a spot your crew discovered. Tap one to flip it open for tasting notes, photos and honest ratings.', target:()=>$('.stamp-anchor:not(.faint) .stamp') },
-    { tag:'Me / Crew', icon:'group', title:'Flip between you and your crew', body:'Me shows your own scrapbook, private spots included. Crew shows everything your friends have shared.', target:()=>$('#mapMode') },
+    { tag:'Me / Crew', icon:'group', title:'Flip between you and your crew', body:'Me shows your own scrapbook, private spots included. Crew shows everything your friends have shared. Filter by friend or category with the slider button.', target:()=>$('.map-top') },
+    { tag:'Crew news', icon:'notifications', title:'New from your crew', body:'A dot on the bell means a friend logged or saved somewhere new. Tap it for the list; the map itself stays clean.', target:()=>$('#btnBell') },
     { tag:'Log a bite', icon:'add_a_photo', title:'Stamp your first spot', body:'Tap + to log a place: rate it, add photos, and choose whether your crew can see it.', target:()=>$('#navLog') },
   ];
   let i=0;
@@ -479,6 +449,8 @@ go.coach = coach;
    ========================================================= */
 async function boot(){
   if (new URLSearchParams(location.search).has('still')) document.documentElement.classList.add('still');
+  onTheme(t=>MAP.setTheme(t));
+  MAP.setTheme(applyTheme());
   applyBrand();
   await S.init();
   S.onChange(what=>{ if (what==='quota') toast('Storage is full on this phone. Export a backup and remove some photos.'); scheduleRebuild(); paintProfileButtons(); });
@@ -492,7 +464,6 @@ async function boot(){
     onMeTap:()=>go.editAvatar(),
     onEmptyTap:()=>hidePeek(),
     onDragStart:()=>hidePeek(),
-    onViewChange,
     onLocation:(st)=>{
       const b=$('#btnLocate');
       b.classList.toggle('busy', st==='busy'); b.classList.toggle('on', st==='on');

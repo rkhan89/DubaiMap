@@ -63,7 +63,7 @@ function codeStep(email){
     const pending = state.pendingJoin && S.findCrewByCode(state.pendingJoin);
     el.innerHTML = topbar({title:'Check your email', eyebrow:'Scrapbook onboarding', profile:false}) + `<div class="screen-body">
       <div class="row between mt8"><span class="airmail">${icon('mail')}AIR MAIL // DXB-${new Date().getFullYear()}</span><span class="post-stamp">${icon('verified')}DUBAI</span></div>
-      <h1 class="h-xl mt16">Check your email ✨ <span class="hand">almost there!</span></h1>
+      <h1 class="h-xl mt16">Check your email ✨ <span class="hand" style="display:block;margin-top:6px">Almost there!</span></h1>
       <p class="muted mt8" style="font-size:16px">We sent a 6-digit code to <span class="tag soft" style="font-size:14px;font-family:var(--f-body);text-transform:none;letter-spacing:0">${esc(email)}</span>. Enter it below to flip open your scrapbook.</p>
       <div class="card-peach mt24" style="padding:16px">
         <div class="code-box" style="padding:0;background:none"><span class="clip"></span>${Array.from({length:6},(_,i)=>`<input inputmode="numeric" maxlength="1" aria-label="Digit ${i+1}" data-i="${i}">`).join('')}</div>
@@ -73,7 +73,7 @@ function codeStep(email){
       <div id="cErr" class="alert mt16" hidden>${icon('priority_high')}<div><b>Wrong code entered</b>Double-check your inbox or spam folder, or tap resend above.</div></div>
       ${APP.previewMode?`<div class="note mt16">${icon('science')}<span><b>Preview mode:</b> no email is actually sent yet. Enter any 6 digits.</span></div>`:''}
       <button class="btn btn-gold btn-block mt24" id="vfyGo">Verify & Continue ${icon('arrow_forward')}</button>
-      <p class="center mt16"><span class="hand" style="color:var(--ink)">Having trouble?</span> <button class="hand link" data-act="back" style="font-size:19px">Change email address</button></p>
+      <p class="center mt16"><span class="hand">Having trouble?</span> <button class="hand link" data-act="back" style="font-size:19px">Change email address</button></p>
     </div>`;
     const ins=[...el.querySelectorAll('.code-box input')];
     ins.forEach((inp,i)=>{
@@ -101,7 +101,7 @@ function handleStep(opts){
   const me=S.me();
   openScreen(el=>{
     el.innerHTML = topbar({title: opts.edit?'Name & handle':'Scrapbook Onboarding', profile:false}) + `<div class="screen-body">
-      ${opts.edit?'':`<div class="row between mt8"><span class="row" style="gap:6px;min-width:0"><span class="step" style="background:none;padding:0">STEP 2 OF ${STEPS}</span><span class="hand trunc">crew registry</span></span>${bars(2)}</div>`}
+      ${opts.edit?'':`<div class="row between mt8"><span class="row" style="gap:6px;min-width:0"><span class="step" style="background:none;padding:0">STEP 2 OF ${STEPS}</span><span class="hand trunc">Crew registry</span></span>${bars(2)}</div>`}
       <h1 class="h-xl mt24">Pick your handle <span class="ms" style="color:var(--gold);font-size:30px">edit</span></h1>
       <p class="muted mt8" style="font-size:16px">This is how your food crew will tag you on visits and photos across ${esc(APP.city)}.</p>
       <div class="field-label mt24"><span class="eyebrow">Crew alias</span><span class="hand">letters, numbers &amp; underscores</span></div>
@@ -118,7 +118,7 @@ function handleStep(opts){
         <div class="row between mt12"><span class="hand">${esc(APP.city)} Food Diary · Vol. 01</span><span class="mono muted" style="font-size:12px">● verified alias</span></div>
       </div>
       <button class="btn btn-gold btn-block mt32" id="hGo" disabled>${opts.edit?'Save':'Next: Choose Avatar'} ${icon(opts.edit?'check':'arrow_forward')}</button>
-      <p class="center hand mt12" style="color:var(--ink)">You can always change your alias later in your profile.</p>
+      <p class="center hand mt12">You can always change your alias later in your profile.</p>
     </div>`;
     const inp=el.querySelector('#hIn'), box=el.querySelector('#hBox'), msg=el.querySelector('#hMsg'), btn=el.querySelector('#hGo');
     const check=()=>{
@@ -156,7 +156,7 @@ function avatarStep(opts){
       const robe = av.outfit==='kandura' || av.outfit==='abaya';
       el.innerHTML = topbar({title: opts.edit?'Your avatar':'Scrapbook Onboarding', profile:false}) + `<div class="screen-body">
         ${opts.edit?'':`<div class="row between mt8"><span class="step">STEP 3 OF ${STEPS}</span>${bars(3)}</div>`}
-        <div class="row mt20" style="align-items:flex-start"><h1 class="h-xl grow">Style your pixel avatar</h1><span class="hand" style="transform:rotate(-6deg);margin-top:6px">Pocket<br>friend!</span></div>
+        <div class="row mt20" style="align-items:flex-start"><h1 class="h-xl grow">Style your pixel avatar</h1><span class="hand" style="margin-top:6px">Pocket friend!</span></div>
         <p class="muted mt8" style="font-size:16px">Visible only to your crew on the map and scrapbook pages.</p>
         <div class="avatar-stage mt20"><span class="tape rose" style="left:40px"></span><span class="tape" style="right:40px;left:auto"></span>
           <div class="avatar-ring">${spriteSvg(av, 11)}</div>
@@ -172,7 +172,7 @@ function avatarStep(opts){
         <div class="opt-grid mt8" data-k="outfit">${OUTFITS.map(([v,l])=>`<button class="opt-card${av.outfit===v?' on':''}" data-v="${v}">${icon(v==='dress'?'checkroom':v==='abaya'?'woman':'apparel')}${l}<span class="radio"></span></button>`).join('')}</div>
         ${robe?'':`<div class="row between mt24"><h3 class="h-sm" style="font-family:var(--f-body)">Garment Tint</h3><span class="mono muted" style="font-size:12px">${TOPS.length} tones</span></div>
         <div class="swatches round mt8" data-k="top">${TOPS.map(c=>`<button class="sw${av.top===c?' on':''}" style="background:${c}" data-v="${c}" aria-label="Top colour"></button>`).join('')}</div>`}
-        <div class="card-peach mt24 row"><span style="background:#fff;border-radius:12px;padding:6px;box-shadow:var(--shadow-sm)">${spriteSvg(av,3)}</span><div class="grow"><b class="h-sm">Map Badge Preview</b><div class="hand">"Ready for Old Dubai karak runs!"</div></div>${icon('push_pin')}</div>
+        <div class="card-peach mt24 row"><span style="background:var(--card);border-radius:12px;padding:6px;box-shadow:var(--shadow-sm)">${spriteSvg(av,3)}</span><div class="grow"><b class="h-sm">Map Badge Preview</b><div class="hand">"Ready for Old Dubai karak runs!"</div></div>${icon('push_pin')}</div>
         <div class="note mt16">${icon('shield_lock')}<span>Your avatar is visible to your crew.</span></div>
         <button class="btn btn-gold btn-block mt24" id="aGo">${opts.edit?'Save avatar':'Next: Crew Sharing'} ${icon(opts.edit?'check':'arrow_forward')}</button>
         <p class="center hand mt12">You can re-dress your pocket avatar anytime</p>
@@ -204,19 +204,19 @@ function shareStep(){
         <h1 class="h-xl mt12">Share your places with your crew by default?</h1>
         <p class="muted mt8" style="font-size:16px">You can change any single place, or this default, at any time.</p>
         <div class="card mt24 row" style="text-align:left;position:relative"><span class="tape" style="right:40px;left:auto;top:-10px"></span>
-          <span style="width:64px;height:64px;border-radius:10px;overflow:hidden;flex:none;padding:5px;background:#fff;box-shadow:var(--shadow-sm)"><img src="demo/d47.jpg" alt="" style="width:100%;height:100%;object-fit:cover"></span>
-          <div class="grow"><span class="hand">Shared Pin Preview ${icon('stars')}</span><div class="h-sm">Al Ustad Special Kabab</div><span class="mono muted" style="font-size:12px">${icon('groups').replace('class="ms"','class="ms" style="font-size:15px"')} ${choice==='crew'?'Visible to your crew':'Only visible to you'}</span></div></div>
+          <span style="width:64px;height:64px;border-radius:10px;overflow:hidden;flex:none;padding:5px;background:var(--card);box-shadow:var(--shadow-sm)"><img src="demo/d47.jpg" alt="" style="width:100%;height:100%;object-fit:cover"></span>
+          <div class="grow"><span class="hand">Shared pin preview ${icon('stars')}</span><div class="h-sm">Al Ustad Special Kabab</div><span class="mono muted" style="font-size:12px">${icon('groups').replace('class="ms"','class="ms" style="font-size:15px"')} ${choice==='crew'?'Visible to your crew':'Only visible to you'}</span></div></div>
         <div class="stack mt20" style="text-align:left">
           <button class="choice${choice==='crew'?' on':''}" data-c="crew"><span class="ch-head"><span class="ch-dot">${icon('check')}</span><span class="ch-title">Share with my crew</span><span class="tag">Recommended</span></span>
             <p class="ch-body">Places you log appear on your crew's shared map. Perfect for building a culinary treasure map together.</p>
             <span class="ch-tags"><span class="tag green">${icon('map')}Auto-sync route</span><span class="tag rust">${icon('local_cafe')}Shared cafe badges</span></span></button>
           <button class="choice${choice==='private'?' on':''}" data-c="private"><span class="ch-head"><span class="ch-dot">${icon('check')}</span><span class="ch-title">${icon('lock')}Keep private</span></span>
             <p class="ch-body">Only you will see your stamps. You can share individual places later.</p>
-            <p class="ch-body hand" style="color:var(--ink);font-size:21px">Personal scrapbook mode</p></button>
+            <p class="ch-body hand">Personal scrapbook mode</p></button>
         </div>
         <div class="note mt20" style="border-radius:999px;justify-content:center;text-align:center">${icon('verified_user')}<span>Private places never show in crew totals, shared albums, or leaderboards.</span></div>
         <button class="btn btn-gold btn-block mt24" id="sGo">Continue to Crew Setup ${icon('arrow_forward')}</button>
-        <p class="center hand mt12" style="color:var(--ink)">✎ Change anytime in your profile</p>
+        <p class="center hand mt12">✎ Change anytime in your profile</p>
       </div>`;
       el.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{ choice=b.dataset.c; paint(); });
       el.querySelector('#sGo').onclick=()=>{ S.updateMe({shareDefault:choice}); go.crewSetup({onboarding:true}); };
@@ -256,7 +256,7 @@ function importStep(fromOnboarding){
           <div class="h-md mt8">${n} places added, ${list.length-n} skipped</div><span class="hand">Ready to paste into your personal food itinerary</span></div>
         <button class="btn btn-gold btn-block mt24" id="iGo" ${n?'':'disabled'}>${icon('library_add_check')}Import Selected (${n})</button>
         <button class="btn btn-white btn-block mt12" id="iSkip">${icon('close')}Skip for now</button>
-        <p class="center hand mt16" style="color:var(--ink)">Don't worry, you can easily delete or retag items later!</p>
+        <p class="center hand mt16">Don't worry, you can easily delete or retag items later!</p>
       </div>`;
       el.querySelectorAll('.import-row').forEach(r=>r.onclick=()=>{ sel.has(r.dataset.id)?sel.delete(r.dataset.id):sel.add(r.dataset.id); const st=el.scrollTop; paint(); el.scrollTop=st; });
       el.querySelector('#iGo').onclick=async()=>{ const n=await S.importLegacy([...sel]); toast(`${plural(n,'place')} added to your scrapbook`); fromOnboarding?finish():(back(), go.refresh()); };

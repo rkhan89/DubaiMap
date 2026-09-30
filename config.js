@@ -2,7 +2,7 @@
 // The logo is the single asset logo.svg (also used as the favicon).
 export const APP = {
   name: 'Dubai Bites',
-  tagline: 'your scrapbook of the city',
+  tagline: 'Your scrapbook of the city',
   logo: 'logo.svg',
   city: 'Dubai',
   // invite links look like <origin>/?join=CODE

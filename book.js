@@ -51,12 +51,12 @@ function shelf(){
       const spreadTitle = spreads.length ? 'Recent Bookmarked Spreads' : 'Fresh Spreads';
       if (!spreads.length) spreads = mine.concat(crewPs).slice(0,4);
       const members = crew ? S.crewMembers(crew) : [];
-      el.innerHTML = topbar({title:'Scrapbook Shelf', eyebrow:'Scrapbook & Notes', back:true, actions:`<button class="icon-btn" id="shNew" aria-label="Add photos">${icon('add_photo_alternate')}</button>`}) + `<div class="screen-body">
+      el.innerHTML = topbar({title:'Scrapbook Shelf', eyebrow:'Scrapbook and notes', back:true, actions:`<button class="icon-btn" id="shNew" aria-label="Add photos">${icon('add_photo_alternate')}</button>`}) + `<div class="screen-body">
         <div class="deck mt8">
           <div class="deck-head"><span class="ms" style="color:var(--gold-deep)">book_2</span><span class="eyebrow grow" style="color:var(--ink);font-size:13px">Vol. ${new Date().getFullYear()} Archival Deck</span>${topZ.length?`<span class="tag soft">${esc(topZ.join(' • '))}</span>`:''}</div>
-          ${spineHTML(personal, { kind:'Personal photobook', kicon:'auto_stories', corner:'Keeper Copy', hand: personal.byline || (topZ.length>1?`${topZ[1]} bites to ${topZ[0]} spice trails`:'Your city, one bite at a time'), meta:[`${icon('photo_library')}${plural(mine.length,'photo')}`, privateNotes?`gold:${icon('lock')}${plural(privateNotes,'private note')}`:''] })}
-          ${crewBook?spineHTML(crewBook, { kind:'Collaborative journal', kicon:'groups', corner:'Shared Trail', cornerCls:'green', hand: crew.tagline || `Shared spots across ${plural(members.length-1,'friend')}`, meta:[`${avatarStack(members,30,6)} ${members.length} members`, `${icon('share')}${crewPs.length} shared photos`], foot:'Shared entries only • no private logs' }):''}
-          ${!crewBook?`<button class="book-spine" id="shNoCrew" style="background:var(--sc-highest);color:var(--ink);box-shadow:none;border:2px dashed var(--outline-v)"><span class="rings" style="background:rgba(0,0,0,.05)"><i style="background:var(--outline-v)"></i><i style="background:var(--outline-v)"></i><i style="background:var(--outline-v)"></i></span><span class="grow"><span class="bs-kind">${icon('group_add')}Crew journal</span><h3 style="font-size:20px">Start a crew to share a book</h3><span class="hand" style="color:var(--rust)">Everyone's shared photos, one living logbook</span></span></button>`:''}
+          ${spineHTML(personal, { kind:'Personal photobook', kicon:'auto_stories', corner:'Keeper copy', hand: personal.byline || (topZ.length>1?`${topZ[1]} bites to ${topZ[0]} spice trails`:'Your city, one bite at a time'), meta:[`${icon('photo_library')}${plural(mine.length,'photo')}`, privateNotes?`gold:${icon('lock')}${plural(privateNotes,'private note')}`:''] })}
+          ${crewBook?spineHTML(crewBook, { kind:'Collaborative journal', kicon:'groups', corner:'Shared trail', cornerCls:'green', hand: crew.tagline || `Shared spots across ${plural(members.length-1,'friend')}`, meta:[`${avatarStack(members,30,6)} ${members.length} members`, `${icon('share')}${crewPs.length} shared photos`], foot:'Shared entries only, no private logs' }):''}
+          ${!crewBook?`<button class="book-spine" id="shNoCrew" style="background:var(--sc-highest);color:var(--ink);box-shadow:none;border:2px dashed var(--outline-v)"><span class="rings" style="background:rgba(0,0,0,.05)"><i style="background:var(--outline-v)"></i><i style="background:var(--outline-v)"></i><i style="background:var(--outline-v)"></i></span><span class="grow"><span class="bs-kind">${icon('group_add')}Crew journal</span><h3 style="font-size:20px">Start a crew to share a book</h3><span class="hand">Everyone's shared photos, one living logbook</span></span></button>`:''}
           ${albums.map(a=>spineHTML(a, { kind:'Custom album', kicon:'collections_bookmark', hand: a.byline || describeFilter(a.filter), meta:[`${icon('photo_library')}${plural(bookPhotos(a).length,'photo')}`] })).join('')}
         </div>
         ${spreads.length?`<div class="row between mt32"><span class="row h-md" style="gap:8px">${icon('bookmarks')}${spreadTitle}</span></div>
@@ -78,15 +78,15 @@ function shelf(){
 }
 function spineHTML(b, o){
   const cover = b.coverPhotoId && S.photo(b.coverPhotoId);
-  return `<button class="book-spine" data-book="${b.id}" style="background:${b.tint}${['#f2cfb4','#fdae7e','#e5a93c'].includes(b.tint)?';color:var(--ink)':''}">
+  return `<button class="book-spine" data-book="${b.id}" style="background:${b.tint}${['#f2cfb4','#fdae7e','#e5a93c'].includes(b.tint)?';color:var(--ink-on-light)':''}">
     ${o.corner?`<span class="corner ${o.cornerCls||''}">${esc(o.corner)}</span>`:''}
     <span class="rings"><i></i><i></i><i></i><i></i></span>
     <span class="grow" style="min-width:0">
       <span class="bs-kind">${icon(o.kicon)}${esc(o.kind)}</span>
       <h3 class="clamp2">${esc(b.title)}</h3>
-      <span class="hand" style="${['#f2cfb4','#fdae7e','#e5a93c'].includes(b.tint)?'color:var(--rust)':''}">${esc(o.hand||'')}</span>
+      <span class="hand">${esc(o.hand||'')}</span>
       <span class="bs-meta">${o.meta.filter(Boolean).map(m=>m.startsWith('gold:')?`<span class="bsm gold">${m.slice(5)}</span>`:`<span class="bsm">${m}</span>`).join('')}</span>
-      ${o.foot?`<span class="hand" style="display:block;font-size:16px;margin-top:8px">${esc(o.foot)}</span>`:''}
+      ${o.foot?`<span class="hand" style="display:block;margin-top:8px">${esc(o.foot)}</span>`:''}
     </span>
     <span class="bs-go">${cover?`<img src="${S.photoURL(cover)}" alt="" style="width:44px;height:44px;border-radius:50%;object-fit:cover">`:icon('arrow_forward')}</span>
   </button>`;
@@ -129,7 +129,7 @@ function coverHTML(b, count){
   const zs=Object.keys(zc).sort((a,c)=>zc[c]-zc[a]).slice(0,2);
   const z0=MAP.zoneById(zs[0]||'deira');
   const me=S.me(), crew=S.myCrew();
-  const by = b.byline || (b.kind==='crew'&&crew ? `${crew.name} • shared journal` : `Hand-picked by @${me.handle}${crew?` • ${crew.name}`:''}`);
+  const by = b.byline || (b.kind==='crew'&&crew ? `${crew.name} • shared journal` : `Picked by @${me.handle}${crew?` • ${crew.name}`:''}`);
   return `<div class="cover ${b.texture}" style="background-color:${b.tint};${light?'color:var(--ink)':''}">
     ${cover?`<span class="cv-photo" style="background-image:url('${S.photoURL(cover)}')"></span>`:''}
     <span class="cv-ed">${icon('local_cafe')}DXB ${b.kind==='crew'?'CREW':'SOUK'} ED.</span>
@@ -147,16 +147,16 @@ function coverScreen(bookId){
     const paint=()=>{
       const b={...b0, ...d};
       const count=bookPhotos(b0).length;
-      el.innerHTML = topbar({title:'Book Cover', eyebrow:'Scrapbook Page', actions:`<button class="icon-btn" id="cvOpen" aria-label="Open book">${icon('menu_book')}</button>`, profile:true}) + `<div class="screen-body">
+      el.innerHTML = topbar({title:'Book Cover', eyebrow:'Scrapbook page', actions:`<button class="icon-btn" id="cvOpen" aria-label="Open book">${icon('menu_book')}</button>`, profile:true}) + `<div class="screen-body">
         <div class="row between mt8"><span class="tag rust">${icon('menu_book')}Closed book preview</span><button class="btn btn-dark btn-sm" id="cvSave" style="border-radius:999px">${icon('check')}Save Cover</button></div>
-        <div class="card-peach mt16" style="padding:20px 18px 14px"><button id="cvTap" style="display:block;width:100%">${coverHTML(b, count)}</button><p class="center hand mt12" style="color:var(--ink)">☝ Tap book cover to open spread 📖</p></div>
+        <div class="card-peach mt16" style="padding:20px 18px 14px"><button id="cvTap" style="display:block;width:100%">${coverHTML(b, count)}</button><p class="center hand mt12">☝ Tap book cover to open spread 📖</p></div>
         <div class="panel mt16"><div class="panel-head">${icon('texture')}<h3>Material Texture</h3><span class="eyebrow" style="color:var(--rust)">${esc(TEXTURES.find(t=>t[0]===d.texture)[1])}</span></div>
           <div class="tex-grid">${TEXTURES.map(([v,l,ic])=>`<button class="tex${d.texture===v?' on':''}" data-tex="${v}"><span class="t-ico">${icon(ic)}</span>${l}</button>`).join('')}</div></div>
         <div class="panel mt16"><div class="panel-head">${icon('palette')}<h3>Cover Tint Palette</h3></div>
           <div class="row" style="justify-content:space-between">${TINTS.map(c=>`<button class="sw${d.tint===c?' on':''}" data-tint="${c}" style="background:${c};width:50px;height:50px" aria-label="Tint"></button>`).join('')}</div></div>
         <div class="panel mt16"><div class="panel-head"><span class="ms">title</span><h3>Title &amp; Spine Tagline</h3></div>
-          <label class="row" style="background:#fff;border-radius:12px;padding:0 14px;height:56px"><input id="cvT" maxlength="36" value="${esc(d.title)}" style="flex:1;border:0;outline:0;font-family:var(--f-head);font-weight:800;font-size:19px;min-width:0"><span class="eyebrow">Title</span></label>
-          <label class="row mt8" style="background:#fff;border-radius:12px;padding:0 14px;height:50px"><input id="cvB" maxlength="50" value="${esc(d.byline)}" placeholder="Hand-picked by @${esc(S.me().handle)}" style="flex:1;border:0;outline:0;font-size:15px;min-width:0"><span class="eyebrow">Byline</span></label></div>
+          <label class="row" style="background:var(--card);border-radius:12px;padding:0 14px;height:56px"><input id="cvT" maxlength="36" value="${esc(d.title)}" style="flex:1;border:0;outline:0;font-family:var(--f-head);font-weight:800;font-size:19px;min-width:0"><span class="eyebrow">Title</span></label>
+          <label class="row mt8" style="background:var(--card);border-radius:12px;padding:0 14px;height:50px"><input id="cvB" maxlength="50" value="${esc(d.byline)}" placeholder="Picked by @${esc(S.me().handle)}" style="flex:1;border:0;outline:0;font-size:15px;min-width:0"><span class="eyebrow">Byline</span></label></div>
         <div class="panel mt16"><div class="panel-head">${icon('verified')}<h3>Cover Enamel Pin</h3><span class="mono muted" style="font-size:11px">Tap to pin</span></div>
           <div class="chip-scroll" style="margin:0 -16px;padding:2px 16px 8px">${CATEGORIES.map(c=>`<button class="enamel${d.pin===c.id?' on':''}" data-pin="${c.id}"><span class="e-ico">${iconSvg(c.id, d.pin===c.id?'#fff':c.color)}</span>${esc(c.label)}</button>`).join('')}</div></div>
         <button class="btn btn-gold btn-block mt24" id="cvPrev">${icon('menu_book')}Preview Open Book ${icon('arrow_forward')}</button>
@@ -194,15 +194,15 @@ function openBook(bookId, opts){
       const me=S.me();
       const ps=bookPhotos(b, filter);
       const nf=filterCount(filter);
-      const head = topbar({title:b.title, eyebrow:'Scrapbook Page', actions:`<button class="icon-btn" id="bkCover" aria-label="Customise cover">${icon('palette')}</button><button class="icon-btn" id="bkShare" aria-label="Share">${icon('share')}</button>`}) +
+      const head = topbar({title:b.title, eyebrow:'Scrapbook page', actions:`<button class="icon-btn" id="bkCover" aria-label="Customise cover">${icon('palette')}</button><button class="icon-btn" id="bkShare" aria-label="Share">${icon('share')}</button>`}) +
         `<div class="screen-body"><div class="row mt8" style="gap:10px"><div class="grow">${seg('bmode',[['date','By Date','calendar_month'],['place','By Place','location_on']],mode)}</div><button class="sq-btn${nf?' filtered':''}" id="bkFilter" aria-label="Filter photos" style="width:48px;height:48px">${icon('tune')}</button></div>`;
       let body='';
       const hasPrivate = b.kind!=='crew' && ps.some(p=>p.private);
       if (hasPrivate && page===0) body += `<div class="privacy-banner mt16">${icon('shield_lock')}<span><b>Private photos are only visible to you.</b> They never appear on the crew map, feed, or shared memory book.</span></div>`;
       if (!ps.length){
         body += b.kind==='crew'
-          ? `<div class="card-soft mt16 center" style="padding:30px 18px"><div style="position:relative;width:170px;margin:0 auto"><div style="background:var(--sc-highest);border-radius:12px;padding:14px;transform:rotate(-4deg)"><div style="background:#fff;border-radius:6px;padding:10px;transform:rotate(6deg);box-shadow:var(--shadow-sm)"><div style="background:var(--sc-high);height:70px;border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--rust)">${icon('camera')}</div></div></div><span style="position:absolute;left:-10px;bottom:-12px;width:44px;height:44px;border-radius:50%;background:#fff;box-shadow:var(--shadow-sm);display:flex;align-items:center;justify-content:center;color:var(--gold)">${icon('restaurant','',true)}</span></div>
-             <h3 class="h-lg mt24">No shared photos yet</h3><p class="muted mt8">When you or someone in <b style="color:var(--rust)">${esc(S.myCrew()?.name||'your crew')}</b> logs a food trail and chooses <span class="hand" style="color:var(--ink)">"Share with crew"</span>, they'll paste onto these pages automatically!</p>
+          ? `<div class="card-soft mt16 center" style="padding:30px 18px"><div style="position:relative;width:170px;margin:0 auto"><div style="background:var(--sc-highest);border-radius:12px;padding:14px;transform:rotate(-4deg)"><div style="background:var(--card);border-radius:6px;padding:10px;transform:rotate(6deg);box-shadow:var(--shadow-sm)"><div style="background:var(--sc-high);height:70px;border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--rust)">${icon('camera')}</div></div></div><span style="position:absolute;left:-10px;bottom:-12px;width:44px;height:44px;border-radius:50%;background:var(--card);box-shadow:var(--shadow-sm);display:flex;align-items:center;justify-content:center;color:var(--gold)">${icon('restaurant','',true)}</span></div>
+             <h3 class="h-lg mt24">No shared photos yet</h3><p class="muted mt8">When you or someone in <b style="color:var(--rust)">${esc(S.myCrew()?.name||'your crew')}</b> logs a food trail and chooses <span class="hand">"Share with crew"</span>, they'll paste onto these pages automatically!</p>
              <button class="btn btn-gold btn-block mt20" id="bkAdd">${icon('add_a_photo')}Add the first crew photo</button><p class="hand mt12">${icon('map')} Pin your favourite Deira street stall</p></div>`
           : `<div class="card-soft mt16 center" style="padding:30px 18px"><h3 class="h-lg">${nf?'No photos match these filters':'This book is waiting for its first photo'}</h3><p class="muted mt8">${nf?'Try widening the time range or categories.':'Add photos when you log a place, or import from your camera roll.'}</p><button class="btn btn-gold btn-block mt20" id="bkAdd">${icon('add_a_photo')}${nf?'Add photos':'Add photos'}</button></div>`;
       } else if (mode==='date') body += datePage(ps);
@@ -236,7 +236,7 @@ function openBook(bookId, opts){
       const nextPs = next ? ps.filter(p=>p.date===next) : [];
       const areaOf = d=>{ const v=S.venue(ps.find(p=>p.date===d)?.venueId); return v?zoneLabel(v.zone):''; };
       return `<div class="page mt16"><span class="bookmark"></span>
-        <div class="row between page-date" style="align-items:flex-start"><div><span class="hand">${esc(fmtDay(day))}</span><div class="page-geo">${esc((z?z.label:APP.city).toUpperCase())}${z?` • ${z.lat.toFixed(4)}° N, ${z.lng.toFixed(4)}° E`:''}</div></div>
+        <div class="row between page-date" style="align-items:flex-start"><div><span class="cap">${esc(fmtDay(day))}</span><div class="page-geo">${esc((z?z.label:APP.city).toUpperCase())}${z?` • ${z.lat.toFixed(4)}° N, ${z.lng.toFixed(4)}° E`:''}</div></div>
           ${vs.length?`<span class="page-weather">${icon('wb_sunny')}${esc(vs.length>1?`${vs.length} stops`:`Out in ${z?z.label:APP.city}`)}</span>`:''}</div>
         ${dps.map((p,i)=>{
           const v=S.venue(p.venueId), e=p.entryId&&S.entry(p.entryId), u=S.user(p.userId);
@@ -250,7 +250,7 @@ function openBook(bookId, opts){
         <div class="page-nav"><button data-page="${page+1}" ${prev?'':'disabled'}>${icon('arrow_back')}<span>${prev?esc(fmtDate(prev,{day:'numeric',month:'short'})):''}<br><span class="muted">${prev?'('+esc(areaOf(prev))+')':''}</span></span></button>
           <span class="pn-mid">Page ${page+1} of ${days.length} • Vol. 1</span>
           <button data-page="${page-1}" ${next?'':'disabled'} style="text-align:right"><span>${next?esc(fmtDate(next,{day:'numeric',month:'short'})):''}<br><span class="muted">${next?'('+esc(areaOf(next))+')':''}</span></span>${icon('arrow_forward')}</button></div>
-        ${next?`<button class="peeking" data-page="${page-1}"><img src="${esc(S.photoURL(nextPs[0]))}" alt=""><span class="grow"><span class="eyebrow" style="color:var(--gold-deep)">Next entry peeking</span><span class="hand" style="display:block;color:var(--ink)">${esc(fmtDay(next).split(',')[0])} at ${esc(S.venue(nextPs[0].venueId)?.name||'')}</span></span>${icon('north_east')}</button>`:''}
+        ${next?`<button class="peeking" data-page="${page-1}"><img src="${esc(S.photoURL(nextPs[0]))}" alt=""><span class="grow"><span class="eyebrow" style="color:var(--gold-deep)">Next entry peeking</span><span class="hand" style="display:block">${esc(fmtDay(next).split(',')[0])} at ${esc(S.venue(nextPs[0].venueId)?.name||'')}</span></span>${icon('north_east')}</button>`:''}
       </div>`;
     };
     const placePage=(ps, b)=>{
@@ -280,7 +280,7 @@ function openBook(bookId, opts){
       </div>`;
     };
     // tactile loading state while the first photos decode
-    el.innerHTML = topbar({title:b.title, eyebrow:'Scrapbook Page'}) + `<div class="screen-body">${skeleton()}</div>`;
+    el.innerHTML = topbar({title:b.title, eyebrow:'Scrapbook page'}) + `<div class="screen-body">${skeleton()}</div>`;
     const first=bookPhotos(b).slice(0,3).map(p=>new Promise(r=>{ const i=new Image(); i.onload=i.onerror=r; i.src=S.photoURL(p); }));
     Promise.race([Promise.all(first), new Promise(r=>setTimeout(r,900))]).then(()=>{ if (el.isConnected) paint(); });
   });
@@ -305,14 +305,14 @@ function bookFilters(b, current, apply){
       body.innerHTML = `<div class="sheet-head"><div class="grow"><h2 class="h-lg">Filter Photobook <span class="hand">Al-Daftar</span></h2><p class="muted">Refine memories across ${esc(APP.city)} pages</p></div><button class="btn btn-ghost btn-sm mono" data-x="clear" style="font-size:13px;letter-spacing:.08em">CLEAR<br>ALL</button></div>
         <div class="row between mt8"><span class="eyebrow" style="color:var(--ink)">${icon('calendar_month')} Time range / month</span></div>
         <div class="month-row mt12"><button class="month-chip${!d.months.length?' on':''}" data-month="">All Time</button>${months.map(m=>`<button class="month-chip${d.months.includes(m)?' on':''}" data-month="${m}">${d.months.includes(m)?icon('check'):''}${esc(fmtMonth(m))}</button>`).join('')}</div>
-        <div class="row between mt20"><span class="eyebrow" style="color:var(--ink)">${icon('local_cafe')} Category (taste &amp; mood)</span>${d.cats.length?`<span class="tag" style="background:var(--rust);color:#fff;text-transform:none">${d.cats.length} Selected</span>`:''}</div>
+        <div class="row between mt20"><span class="eyebrow" style="color:var(--ink)">${icon('local_cafe')} Category (taste &amp; mood)</span>${d.cats.length?`<span class="tag" style="background:var(--rust);color:var(--on-deep);text-transform:none">${d.cats.length} Selected</span>`:''}</div>
         <div class="cat-grid5 mt12">${CATEGORIES.map(c=>`<button class="cat-cell${d.cats.includes(c.id)?' on':''}" data-cat="${c.id}"><span class="cc">${iconSvg(c.id, d.cats.includes(c.id)?'#fff':c.color)}</span><span>${esc(c.label)}</span></button>`).join('')}</div>
         <div class="row between mt20"><span class="eyebrow" style="color:var(--ink)">${icon('location_on')} Places &amp; spots</span></div>
         <label class="search mt12">${icon('search')}<input id="bfQ" placeholder="Search a place" value="${esc(q)}"></label>
         <div class="chip-scroll mt12">${d.venues.map(id=>`<button class="person-chip on" data-venue-x="${id}" style="padding-left:14px;background:var(--rust-soft);box-shadow:0 3px 0 var(--rust)">${icon('location_on')}${esc(S.venue(id)?.name||'')}${icon('close')}</button>`).join('')}${(q?vHits.map(v=>v.id):topVenues).filter(id=>!d.venues.includes(id)).map(id=>`<button class="person-chip" data-venue-add="${id}" style="padding-left:14px">${esc(S.venue(id)?.name||'')}</button>`).join('')}</div>
         ${people.length>1?`<div class="row between mt20"><span class="eyebrow" style="color:var(--ink)">${icon('group')} Crew members (shared book)</span></div><p class="muted small mt4">Filters photos by who took or uploaded them</p>
         <div class="chip-scroll mt12"><button class="person-chip${!d.members.length?' on':''}" data-mem="">${icon('groups')}Everyone</button>${people.map(u=>`<button class="person-chip${d.members.includes(u.id)?' on':''}" data-mem="${u.id}">${avatarHTML(u,30)}@${esc(u.id===S.me().id?'you':u.handle)}${d.members.includes(u.id)?icon('check_circle'):''}</button>`).join('')}</div>`:''}
-        ${!b||b.kind!=='crew'?`<div class="row between mt20"><span class="eyebrow" style="color:var(--ink)">${icon('visibility')} Privacy scope</span><span class="hand">Scrapbook Access</span></div>
+        ${!b||b.kind!=='crew'?`<div class="row between mt20"><span class="eyebrow" style="color:var(--ink)">${icon('visibility')} Privacy scope</span><span class="hand">Scrapbook access</span></div>
         <div class="mt12">${seg('priv',[['all','All Photos','photo_library'],['shared','Shared Only','groups'],['private','Private Only','lock']],d.privacy)}</div>`:''}
         <div class="sheet-foot"><button class="btn btn-gold btn-block" data-x="apply">${icon('menu_book')}${b?`Show ${plural(n,'Photo')} (Apply)`:`Use ${plural(n,'photo')}`}</button><p class="center hand mt8">Matching ${plural(nV,'place')} in your scrapbook</p></div>`;
       const qi=body.querySelector('#bfQ'); qi.oninput=()=>{ q=qi.value; const pos=qi.selectionStart; keep(); const n2=body.querySelector('#bfQ'); n2.focus(); n2.setSelectionRange(pos,pos); };
@@ -347,12 +347,12 @@ function viewer(ids, index){
       const p=S.photo(ids[i]); if (!p){ back(); return; }
       const me=S.me(), mine=p.userId===me.id, v=S.venue(p.venueId), u=S.user(p.userId);
       const bm=(p.bookmarkedBy||[]).includes(me.id);
-      el.innerHTML = topbar({title:'Photo Detail Viewer', eyebrow:'Scrapbook Page', actions:''}) + `<div class="screen-body">
+      el.innerHTML = topbar({title:'Photo Detail Viewer', eyebrow:'Scrapbook page', actions:''}) + `<div class="screen-body">
         <div class="viewer-bar"><button class="icon-btn" data-act="back" aria-label="Close">${icon('close')}</button><span class="count"><span>${icon('photo_library')}${i+1} OF ${ids.length}</span></span>
           <button class="icon-btn" id="vShare" aria-label="Share">${icon('ios_share')}</button><button class="icon-btn" id="vBm" aria-label="Bookmark">${icon(bm?'bookmark':'bookmark_border','',bm)}</button></div>
         <div class="viewer-card mt16"><span class="tape-label">${esc(APP.city.toUpperCase())} MEMORY</span>
           <div class="viewer-img" id="vImg"><img src="${esc(S.photoURL(p))}" alt="${esc(p.caption||'')}"><span class="pol-badge">${icon('camera')}${esc(zoneLabel(v?.zone).toUpperCase())}</span>${p.private?`<span class="pol-badge tr">${icon('lock')}Only me</span>`:''}</div>
-          <div class="caption-box">${mine?`<input id="vCap" value="${esc(p.caption||'')}" placeholder="Write a caption…" maxlength="60"><button class="icon-btn" style="background:var(--rust-fixed);width:40px;height:40px" id="vCapBtn" aria-label="Edit caption">${icon('edit')}</button>`:`<span class="hand">${esc(p.caption?`“${p.caption}”`:'')}</span>`}</div>
+          <div class="caption-box">${mine?`<input id="vCap" value="${esc(p.caption||'')}" placeholder="Write a caption…" maxlength="60"><button class="icon-btn" style="background:var(--rust-fixed);width:40px;height:40px" id="vCapBtn" aria-label="Edit caption">${icon('edit')}</button>`:`<span class="cap">${esc(p.caption||'')}</span>`}</div>
           ${v?`<button class="meta-chip" id="vPlace">${icon('location_on')}<b>${esc(v.name)}</b> • ${esc(zoneLabel(v.zone))}${icon('chevron_right')}</button><br>`:''}
           <span class="meta-chip dim">${icon('schedule')}${esc(fmtDate(p.date))} • @${esc(u?(u.id===me.id?'you':u.handle):'')}</span>
         </div>
@@ -417,27 +417,27 @@ function addPhotos(opts){
       const room = APP.photoLimit - S.myPhotoCount();
       const visitsHere = venue ? S.entries({venueId:venue.id, userId:me.id, kind:'visit'}).length : 0;
       const hits = q ? S.searchVenues(q, 5) : [];
-      el.innerHTML = topbar({title:'Add Scrapbook Memory', eyebrow:'Scrapbook & Notes', actions:''}) + `<div class="screen-body">
+      el.innerHTML = topbar({title:'Add Scrapbook Memory', eyebrow:'Scrapbook and notes', actions:''}) + `<div class="screen-body">
         <div class="row between mt8"><button class="row btn-ghost" data-act="back" style="gap:4px;color:var(--ink-2)">${icon('close')}Cancel</button>
-          <div class="center"><span class="hand">Memory Entry</span><div class="h-sm">Add to Photobook</div></div>
+          <div class="center"><span class="hand">Memory entry</span><div class="h-sm">Add to Photobook</div></div>
           <button class="btn btn-gold btn-sm" id="apNext" style="border-radius:999px" ${sel.length&&venue?'':'disabled'}>Next <span class="tag soft" style="background:rgba(255,255,255,.5)">${sel.length}</span></button></div>
         <div class="stepper mt16"><span class="${step>=1?'on':''}"><i>1</i>Photos</span><b></b><span class="${step>=2?'on':''}"><i>2</i>Place</span><b></b><span class="${step>=3?'on':''}"><i>3</i>Review</span></div>
         <div class="row between mt24"><span class="row h-md" style="gap:8px">${icon('photo_library')}1. Selected Photos <span class="tag">${sel.length} of ${picked.length}</span></span><button class="hand" id="apPick">${picked.length?'Reselect roll ›':'Choose ›'}</button></div>
-        ${picked.length?`<div class="sel-grid mt12">${picked.map((p,i)=>`<div style="position:relative" data-toggle="${i}">${p.on?`<span class="tick" style="position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;z-index:3">${icon('check')}</span>`:''}${polaroidHTML({src:p.url, id:'s'+i, tape:false, rot:0, badge:`<span class="pol-badge" style="left:6px;bottom:6px">${esc(p.time)}</span>`, sub:`<input data-cap="${i}" value="${esc(p.caption)}" placeholder="caption" maxlength="40" style="width:100%;border:0;background:none;font-family:var(--f-hand);font-size:17px;text-align:center;outline:none">`, cls:p.on?'':'dim'})}</div>`).join('')}</div>`
+        ${picked.length?`<div class="sel-grid mt12">${picked.map((p,i)=>`<div style="position:relative" data-toggle="${i}">${p.on?`<span class="tick" style="position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;z-index:3">${icon('check')}</span>`:''}${polaroidHTML({src:p.url, id:'s'+i, tape:false, rot:0, badge:`<span class="pol-badge" style="left:6px;bottom:6px">${esc(p.time)}</span>`, sub:`<input data-cap="${i}" value="${esc(p.caption)}" placeholder="caption" maxlength="40" style="width:100%;border:0;background:none;font-family:var(--f-mono);font-size:12px;text-align:center;outline:none">`, cls:p.on?'':'dim'})}</div>`).join('')}</div>`
           : `<label class="add-photo mt12" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;height:150px;border:2px dashed var(--outline-v);border-radius:16px;background:var(--sc-low);color:var(--rust)">${icon('add_photo_alternate')}<b>Choose photos from your roll</b><span class="muted small">Up to ${Math.min(24, room)} at a time</span></label>`}
         <div class="row between mt24"><span class="row h-md" style="gap:8px">${icon('storefront')}2. Choose Place</span>${venue&&typeof venue.lat==='number'?'<span class="mono" style="color:var(--green);font-size:12px;font-weight:700">● EXACT SPOT</span>':''}</div>
-        ${venue?`<div class="card mt12"><div class="row" style="background:var(--sc);border-radius:14px;padding:12px">${`<span class="stamp st-visited"><span class="st-paper"><span class="st-ico">${iconSvg(M.primaryCat(venue),'#7e5700')}</span></span></span>`}<div class="grow"><b class="h-sm">${esc(venue.name)} ${icon('verified')}</b><div class="muted small">${esc(zoneLabel(venue.zone))}</div><span class="tag rust mt4">${esc(catById(M.primaryCat(venue)).label)}</span></div><span style="width:40px;height:40px;border-radius:50%;background:var(--gold-deep);color:#fff;display:flex;align-items:center;justify-content:center">${icon('check')}</span></div>
+        ${venue?`<div class="card mt12"><div class="row" style="background:var(--sc);border-radius:14px;padding:12px">${`<span class="stamp st-visited"><span class="st-paper"><span class="st-ico">${iconSvg(M.primaryCat(venue),'#7e5700')}</span></span></span>`}<div class="grow"><b class="h-sm">${esc(venue.name)} ${icon('verified')}</b><div class="muted small">${esc(zoneLabel(venue.zone))}</div><span class="tag rust mt4">${esc(catById(M.primaryCat(venue)).label)}</span></div><span style="width:40px;height:40px;border-radius:50%;background:var(--gold-deep);color:var(--on-deep);display:flex;align-items:center;justify-content:center">${icon('check')}</span></div>
             <div class="row between mt8"><span class="hand">Not the right branch?</span><button class="mono" id="apChange" style="color:var(--gold-deep);font-weight:700;font-size:12px">Change location</button></div></div>`
           : `<label class="search mt12">${icon('search')}<input id="apQ" placeholder="Search a place" value="${esc(q)}" autocomplete="off"></label>
             <div class="stack mt12">${hits.map(v=>`<button class="search-result" data-v="${v.id}"><span class="sr-ico">${iconSvg(M.primaryCat(v), catById(M.primaryCat(v)).color)}</span><span class="grow"><b>${esc(v.name)}</b><span class="muted small" style="display:block">${esc(zoneLabel(v.zone))}</span></span>${icon('chevron_right')}</button>`).join('')}</div>`}
         ${venue?`<div class="card-peach mt20" style="border-radius:var(--r-xl)"><div class="row" style="align-items:flex-start"><span style="width:44px;height:44px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;flex:none;box-shadow:0 3px 0 var(--gold-deep)">${icon('push_pin')}</span><div><b class="h-md">This adds a visit to ${esc(venue.name)}</b><p class="muted">Have you been there today or collecting notes for next time?</p></div></div>
           <div class="stack mt16"><button class="radio-card${kind==='visit'?' on':''}" data-kind="visit"><span class="rc-head"><span class="dot"></span>Been here ${icon('verified')}<span class="grow"></span><span class="tag">Visit #${visitsHere+1}</span></span><p>Adds visit #${visitsHere+1} to your log with today's date <span class="mono">(${esc(fmtDate(todayISO()))})</span>.</p></button>
           <button class="radio-card${kind==='want'?' on':''}" data-kind="want"><span class="rc-head"><span class="dot"></span>Want to try ${icon('bookmark')}<span class="grow"></span><span class="tag soft">Wishlist</span></span><p>Saves photos as inspiration for an upcoming visit or tasting route.</p></button></div></div>
-        <div class="card mt20" style="border-radius:var(--r-xl)"><div class="row"><span style="width:52px;height:52px;border-radius:14px;background:var(--green-fixed);color:var(--green);display:flex;align-items:center;justify-content:center">${icon('groups','',true)}</span><div class="grow"><span class="hand">Crew Photobook</span><div class="h-md">${crew?`Share with ${esc(crew.name)}`:'Share with your crew'}</div></div>${toggleHTML('apShare', !priv, 'Share with crew')}</div>
+        <div class="card mt20" style="border-radius:var(--r-xl)"><div class="row"><span style="width:52px;height:52px;border-radius:14px;background:var(--green-fixed);color:var(--green);display:flex;align-items:center;justify-content:center">${icon('groups','',true)}</span><div class="grow"><span class="hand">Crew photobook</span><div class="h-md">${crew?`Share with ${esc(crew.name)}`:'Share with your crew'}</div></div>${toggleHTML('apShare', !priv, 'Share with crew')}</div>
           <p class="row muted mt12" style="gap:8px;align-items:flex-start">${icon('lock')}Turn off to keep strictly private in “My Book” archive.</p>
           ${members.length?`<div class="row mt12" style="background:var(--sc-low);border-radius:12px;padding:8px 12px">${avatarStack(members,28,3)}<span class="mono small" style="font-size:12px">Visible to ${esc(members.slice(0,2).map(u=>u.name).join(', '))}${members.length>2?` & ${members.length-2} others`:''}</span></div>`:''}</div>`:''}
         <button class="btn btn-gold btn-block mt24" id="apGo" style="min-height:64px" ${sel.length&&venue?'':'disabled'}>${icon('menu_book')}${sel.length?`Add ${plural(sel.length,'Photo')} to ${esc(venue?venue.name:'a place')}${venue?' Chapter':''}`:'Add photos'}</button>
-        <p class="center hand mt12" style="color:var(--ink)">Memory will be stamped in your ${esc(APP.name)} Shelf</p>
+        <p class="center hand mt12">Memory will be stamped in your ${esc(APP.name)} Shelf</p>
       </div>`;
       const keep=fn=>{ const s=el.scrollTop; fn(); el.scrollTop=s; };
       el.querySelector('#apPick')?.addEventListener('click', ()=>input.click());

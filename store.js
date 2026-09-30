@@ -33,8 +33,9 @@ function load(){
   try{ const d=JSON.parse(localStorage.getItem(KEY)); if (d && d.version===2) return {...fresh(), ...d}; }catch(_){}
   return fresh();
 }
-let saveTimer=null, dirty=false;
+let saveTimer=null, dirty=false, volatile=false;   // volatile: synthetic test data loaded, never write
 function save(what){
+  if (volatile){ emit(what||'data'); return; }
   clearTimeout(saveTimer); dirty=true;
   saveTimer = setTimeout(()=>{
     dirty=false;
@@ -44,7 +45,7 @@ function save(what){
   emit(what||'data');
 }
 // write any pending change before the page goes away (only if one is pending)
-export function flush(){ clearTimeout(saveTimer); if (!dirty) return; dirty=false; try{ localStorage.setItem(KEY, JSON.stringify(db)); }catch(_){} }
+export function flush(){ clearTimeout(saveTimer); if (!dirty || volatile) return; dirty=false; try{ localStorage.setItem(KEY, JSON.stringify(db)); }catch(_){} }
 window.addEventListener('pagehide', flush);
 
 /* =========================================================
@@ -90,6 +91,9 @@ export async function init(){
       db.flags.venuesSeeded = true; save('venues');
     }catch(_){ /* offline on first run: try again next time */ }
   }
+  // development: ?synthetic=500 adds that many places in memory only
+  const syn = +new URLSearchParams(location.search).get('synthetic');
+  if (syn > 0 && me()){ volatile = true; const { synthesize } = await import('./synth.js'); synthesize(db, Math.min(syn, 2000), { meId:db.meId, circle:circleIds() }); }
   // load photo files into object URLs
   const ids = Object.values(db.photos).filter(p=>p.src==='idb').map(p=>p.id);
   if (ids.length){

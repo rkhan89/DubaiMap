@@ -20,6 +20,9 @@ Plain HTML/CSS/JS (ES modules), no build step. Live: https://dubai-bites-pi.verc
 | `ui.js`, `avatar.js`, `data.js` | Shared components, pixel avatars, categories + helpers. |
 | `seed-places.json` | The 100 starter venues. |
 | `demo.js`, `demo/` | Optional sample crew for preview mode (toggle in your profile). |
+| `theme.js` | Light / Dark / Auto: resolves to `data-theme` on `<html>`. |
+| `synth.js` | Development only: `?synthetic=500` adds test places in memory. |
+| `SPEC.md` | The living product spec. |
 | `design/` | The Stitch reference screens (not deployed). |
 
 ## Preview mode

@@ -114,6 +114,8 @@ function palmAt(a,i){
   return 0;
 }
 const ATLANTIS = [PALM.hub[0], PALM.hub[1]-PALM.cr];
+// roughly: is this lat/lng on dry land (used by the synthetic test data)
+function onLand(lat,lng){ const {a,i}=toAI(lat,lng); if (!inMap(a,i)) return false; if (palmAt(a,i)) return true; return i > coastIn(a)+0.3 && distLine(a,i,CREEK) > 0.35 && distLine(a,i,MARINA) > 0.2; }
 
 const ISLANDS = [
   {e:G(25.0806,55.1205), rx:0.42, ry:0.3, t:'urban'},     // Bluewaters
@@ -202,7 +204,7 @@ const ROADS = [
   {k:1, pts:[[30.6,0.8],[30.6,5.4]]},
   {k:2, pts:[[10.5,1.6],[24.3,1.5]]},                                                                 // Al Wasl Rd
   {k:2, pts:[[3.5,0.85],[3.56,-1.05]]},                                                                // Palm trunk
-  {k:2, pts:[[8.87,-0.05],[8.87,0.95]]},                                                               // Burj Al Arab bridge
+  {k:2, pts:(()=>{ const [a0,i0]=G(25.1412,55.1853), o=[]; for (let t=0;t<=1.001;t+=0.125){ const u=1-t; o.push([u*u*(a0+0.1)+2*u*t*(a0+0.5)+t*t*9.25, u*u*(i0+0.11)+2*u*t*(i0+0.24)+t*t*0.95]); } return o; })()}, // Burj Al Arab: curved causeway
   {k:2, pts:[G(25.0806,55.1205),[-0.1,0.2]]},                                                         // Bluewaters bridge
   {k:2, pts:[[18.6,-0.6],[18.6,0.8]]},                                                                 // Jumeirah Bay bridge
 ];
@@ -286,20 +288,6 @@ function nearestZone(a,i){
   ZONES.forEach(z=>{ const d=Math.hypot(z.a-a, z.i-i); if(d<bd){bd=d; best=z;} });
   return best;
 }
-// tier 0 always visible, 1 when zoomed in a bit, 2 when zoomed in close
-const LABELS = [
-  {t:'Arabian Gulf', a:7.5, i:-6.6, tier:0, sea:true},
-  {t:'The World', a:14.8, i:-8.6, tier:1, sea:true},
-  {t:'Dubai Creek', a:26.25, i:4.9, tier:2, sea:true},
-  ...['palm','marina','downtown','deira'].map(id=>({z:id, tier:0})),
-  ...['jlt','barsha','alquoz','jumeirah','businessbay','karama','burdubai','dubaihills','jvc','umsuqeim','festivalcity',
-      'mirdif','alkhawaneej','intlcity','siliconoasis','creekharbour','meydan','alqusais','ranches','alwarqa'].map(id=>({z:id, tier:1})),
-  ...['jbr','bluewaters','mediacity','citywalk','difc','lamer','alseef','aljaddaf','oudmetha','algarhoud','satwa','alnahda',
-      'almamzar','nadalsheba','d3','alsafa','alsufouh','barshaheights','dubaiharbour','jvt','motorcity','sportscity','furjan',
-      'discovery','ibnbattuta'].map(id=>({z:id, tier:2})),
-  {t:'DXB Airport', a:29.3, i:9.9, tier:1},
-  ...LANDMARKS.filter(l=>l.name).map(l=>({t:l.name, a:l.at[0], i:l.at[1], tier:2, lm:true})),
-].map(l=>{ if (l.z){ const z=zoneById(l.z); return {t:z.label, a:z.a, i:z.i+0.35, tier:l.tier, z:l.z}; } return l; });
 
 /* =========================================================
    TERRAIN RASTER
@@ -446,7 +434,7 @@ function buildObjects(){
     boatAt((seg[0]+nxt[0])/2, (seg[1]+nxt[1])/2, kind);
   });
   boatAt(MARINA[1][0], MARINA[1][1], 'yacht'); boatAt(MARINA[3][0], MARINA[3][1], 'yacht');
-  boatAt(6.2,-1.8,'yacht'); boatAt(11.5,-2.4,'dhow'); boatAt(21.5,-2.2,'yacht'); boatAt(26.4,-1.6,'dhow');
+  boatAt(6.2,-1.8,'yacht'); boatAt(13.2,-2.0,'dhow'); boatAt(21.5,-2.2,'yacht'); boatAt(26.4,-1.6,'dhow');
 
   OBJECTS.sort((p,q)=>p.d-q.d);
 }
@@ -458,12 +446,36 @@ const OUT = '#4A3B30';
 let LW = 0.8;   // outline width in world px (set per render)
 const up = (p,h)=>[p[0], p[1]-h];
 
+/* ---------- night palette: deep navy sea, dusky blue-grey land and roads ---------- */
+let NIGHT = false;
+const TILE_NIGHT = ['#0B1830','#112442','#394052','#333A4B','#2E3446','#2A3041','#1E322D','#0F223D','#252A36','#394052'];
+const NIGHT_FIXED = {
+  '#4A3B30':'#070B16', '#FFFFFF':'#4B5368', '#FBF4E6':'rgba(255,214,150,0.26)',
+  'rgba(255,255,255,0.42)':'rgba(120,160,230,0.08)', 'rgba(110,80,50,0.14)':'rgba(0,0,0,0.22)', 'rgba(255,255,255,0.85)':'rgba(130,170,240,0.26)',
+  'rgba(60,40,25,0.16)':'rgba(0,0,0,0.22)', 'rgba(255,255,255,0.45)':'rgba(150,180,230,0.08)', 'rgba(255,255,255,0.3)':'rgba(150,180,230,0.07)',
+  'rgba(255,255,255,0.25)':'rgba(150,180,230,0.07)', 'rgba(255,255,255,0.28)':'rgba(255,255,255,0.04)', 'rgba(74,59,48,0.55)':'rgba(0,0,0,0.5)',
+  'rgba(74,59,48,0.35)':'rgba(0,0,0,0.4)', 'rgba(120,140,160,0.45)':'rgba(0,0,0,0.3)',
+};
+const nightCache = new Map();
+// every colour the renderer uses goes through C(): identity by day, a dusky night version after dark
+function C(col){
+  if (!NIGHT || typeof col!=='string') return col;
+  let v = nightCache.get(col); if (v) return v;
+  if (NIGHT_FIXED[col]) v = NIGHT_FIXED[col];
+  else if (col[0]==='#' && col.length===7){
+    const n=parseInt(col.slice(1),16), r=n>>16&255, g=n>>8&255, b=n&255, l=(0.299*r+0.587*g+0.114*b)/255;
+    const ch=x=>Math.max(0,Math.min(255,Math.round(x))).toString(16).padStart(2,'0');
+    v = '#'+ch(r*0.12+20+l*30)+ch(g*0.14+26+l*32)+ch(b*0.2+42+l*40);
+  } else v = col;
+  nightCache.set(col, v); return v;
+}
+
 function polyPath(ctx, pts){
   ctx.beginPath(); ctx.moveTo(pts[0][0],pts[0][1]);
   for (let k=1;k<pts.length;k++) ctx.lineTo(pts[k][0],pts[k][1]);
   ctx.closePath();
 }
-function face(ctx, pts, fill){ polyPath(ctx,pts); ctx.fillStyle=fill; ctx.fill(); ctx.stroke(); }
+function face(ctx, pts, fill){ polyPath(ctx,pts); ctx.fillStyle=C(fill); ctx.fill(); ctx.stroke(); }
 
 // axis-aligned iso box centred on world point (cx,cy); hx/hy = half size in tiles along gx/gy
 function isoBox(ctx, cx, cy, hx, hy, z0, h, base, opts){
@@ -476,10 +488,10 @@ function isoBox(ctx, cx, cy, hx, hy, z0, h, base, opts){
   if (opts.floors && h>9){
     ctx.beginPath();
     for (let z=opts.floors; z<h-3; z+=opts.floors){ ctx.moveTo(W[0],W[1]-z); ctx.lineTo(S[0],S[1]-z); ctx.lineTo(E[0],E[1]-z); }
-    ctx.save(); ctx.strokeStyle = opts.floorColor || 'rgba(60,40,25,0.16)'; ctx.lineWidth = LW*0.7; ctx.stroke(); ctx.restore();
+    ctx.save(); ctx.strokeStyle=C(opts.floorColor || 'rgba(60,40,25,0.16)'); ctx.lineWidth = LW*0.7; ctx.stroke(); ctx.restore();
   }
   if (opts.mullion && h>20){
-    ctx.save(); ctx.strokeStyle='rgba(255,255,255,0.45)'; ctx.lineWidth=LW*0.9; ctx.beginPath();
+    ctx.save(); ctx.strokeStyle=C('rgba(255,255,255,0.45)'); ctx.lineWidth=LW*0.9; ctx.beginPath();
     const ml=[(W[0]+S[0])/2,(W[1]+S[1])/2], mr=[(S[0]+E[0])/2,(S[1]+E[1])/2];
     ctx.moveTo(ml[0],ml[1]-2); ctx.lineTo(ml[0],ml[1]-h+2); ctx.moveTo(mr[0],mr[1]-2); ctx.lineTo(mr[0],mr[1]-h+2);
     ctx.stroke(); ctx.restore();
@@ -516,15 +528,16 @@ function drawGround(ctx, view){
       if (dL){ const f=faceL[t]; f.moveTo(x-hw,y+hh); f.lineTo(x,y+TH); f.lineTo(x,y+TH+dL); f.lineTo(x-hw,y+hh+dL); f.closePath(); }
     }
   }
-  for (let t=0;t<n;t++){ ctx.fillStyle=TILE_COLORS[t]; ctx.fill(tiles[t]); }
+  const TC = NIGHT ? TILE_NIGHT : TILE_COLORS;
+  for (let t=0;t<n;t++){ ctx.fillStyle=TC[t]; ctx.fill(tiles[t]); }
   ctx.lineWidth=LW*0.6;
-  ctx.strokeStyle='rgba(255,255,255,0.42)'; ctx.stroke(waterGrid);
-  ctx.strokeStyle='rgba(110,80,50,0.14)'; ctx.stroke(landGrid);
-  ctx.lineWidth=LW*1.3; ctx.strokeStyle='rgba(255,255,255,0.85)'; ctx.stroke(foam);
-  ctx.lineWidth=LW*0.8; ctx.strokeStyle=OUT;
+  ctx.strokeStyle=C('rgba(255,255,255,0.42)'); ctx.stroke(waterGrid);
+  ctx.strokeStyle=C('rgba(110,80,50,0.14)'); ctx.stroke(landGrid);
+  ctx.lineWidth=LW*1.3; ctx.strokeStyle=C('rgba(255,255,255,0.85)'); ctx.stroke(foam);
+  ctx.lineWidth=LW*0.8; ctx.strokeStyle=C(OUT);
   for (let t=0;t<n;t++){
-    ctx.fillStyle=shade(TILE_COLORS[t], isWaterT(t)?0.8:0.82); ctx.fill(faceL[t]); ctx.stroke(faceL[t]);
-    ctx.fillStyle=shade(TILE_COLORS[t], isWaterT(t)?0.66:0.66); ctx.fill(faceR[t]); ctx.stroke(faceR[t]);
+    ctx.fillStyle=shade(TC[t], isWaterT(t)?0.8:0.82); ctx.fill(faceL[t]); ctx.stroke(faceL[t]);
+    ctx.fillStyle=shade(TC[t], 0.66); ctx.fill(faceR[t]); ctx.stroke(faceR[t]);
   }
 }
 
@@ -542,14 +555,102 @@ function strokeLine(ctx, pts){ ctx.beginPath(); ctx.moveTo(pts[0][0],pts[0][1]);
 function drawRoads(ctx){
   ctx.save(); ctx.clip(MAP_CLIP);
   ctx.lineCap='round'; ctx.lineJoin='round';
-  RUNWAYS_W.forEach(rw=>{ ctx.lineWidth=LW*0.8; ctx.strokeStyle=OUT; face(ctx, rw.poly, '#B7B0A6'); });
-  ctx.setLineDash([4,3]); ctx.strokeStyle='#FFFFFF'; ctx.lineWidth=0.9; RUNWAYS_W.forEach(rw=>strokeLine(ctx, rw.line)); ctx.setLineDash([]);
-  [2,1,0].forEach(k=>{ ctx.strokeStyle='#6C5E54'; ctx.lineWidth=RD[k].w+LW*2; ROADS_W.filter(r=>r.k===k).forEach(r=>strokeLine(ctx,r.pts)); });
-  [2,1,0].forEach(k=>{ ctx.strokeStyle= k===0 ? '#948A83' : '#A1968E'; ctx.lineWidth=RD[k].w; ROADS_W.filter(r=>r.k===k).forEach(r=>strokeLine(ctx,r.pts)); });
-  ctx.setLineDash([3,3]); ctx.strokeStyle='#FBF4E6'; ctx.lineWidth=0.6;
+  RUNWAYS_W.forEach(rw=>{ ctx.lineWidth=LW*0.8; ctx.strokeStyle=C(OUT); face(ctx, rw.poly, '#B7B0A6'); });
+  ctx.setLineDash([4,3]); ctx.strokeStyle=C('#FFFFFF'); ctx.lineWidth=0.9; RUNWAYS_W.forEach(rw=>strokeLine(ctx, rw.line)); ctx.setLineDash([]);
+  [2,1,0].forEach(k=>{ ctx.strokeStyle=C('#6C5E54'); ctx.lineWidth=RD[k].w+LW*2; ROADS_W.filter(r=>r.k===k).forEach(r=>strokeLine(ctx,r.pts)); });
+  [2,1,0].forEach(k=>{ ctx.strokeStyle=C(k===0 ? '#948A83' : '#A1968E'); ctx.lineWidth=RD[k].w; ROADS_W.filter(r=>r.k===k).forEach(r=>strokeLine(ctx,r.pts)); });
+  ctx.setLineDash([3,3]); ctx.strokeStyle=C('#FBF4E6'); ctx.lineWidth=0.6;
   ROADS_W.filter(r=>r.k<2).forEach(r=>strokeLine(ctx,r.pts));
   ctx.setLineDash([]);
   ctx.restore();
+}
+
+
+/* ---------- Burj Al Arab ----------
+   On its round island off Umm Suqeim, joined to the shore by a curved causeway.
+   A white sail with vertical ribs: one straight edge (the braced mast spine, needle on
+   top) and one billowing edge; a helipad disc projecting near the top and the Skyview
+   bar cantilevered a little below it. Three candidate drawings, picked with ?baa=A|B|C
+   while we choose; geometry is in world px around the island's centre (x,y). */
+const BAA_VARIANT = (()=>{ try{ const v=new URLSearchParams(location.search).get('baa'); return /^[ABC]$/.test(v) ? v : 'A'; }catch(_){ return 'A'; } })();
+function isoDisc(ctx, x, y, rx, ry, h, top, side){
+  ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI); ctx.lineTo(x-rx, y-h); ctx.ellipse(x, y-h, rx, ry, 0, Math.PI, 0, true); ctx.closePath();
+  ctx.fillStyle=C(side||shade(top,0.78)); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(x, y-h, rx, ry, 0, 0, Math.PI*2); ctx.fillStyle=C(top); ctx.fill(); ctx.stroke();
+}
+// cubic point
+const cub = (p0,p1,p2,p3,t)=>{ const u=1-t; return [u*u*u*p0[0]+3*u*u*t*p1[0]+3*u*t*t*p2[0]+t*t*t*p3[0], u*u*u*p0[1]+3*u*u*t*p1[1]+3*u*t*t*p2[1]+t*t*t*p3[1]]; };
+// the sail outline for a variant, as points relative to the island centre (shared by the canvas and the night glow)
+function baaGeom(v){
+  const k = v==='C' ? 1.14 : 1;
+  const H = 92*k, spineB = [6*k,-3], spineT = [5*k,-H+2], tip = [3*k,-H];
+  const b0 = [-2*k,-3], c1 = v==='C' ? [-34*k,-26*k] : [-30*k,-28*k], c2 = v==='C' ? [-26*k,-74*k] : [-23*k,-72*k];
+  const edge = []; for (let t=0;t<=1.0001;t+=1/24) edge.push(cub(b0,c1,c2,tip,t));
+  return { k, H, spineB, spineT, tip, b0, c1, c2, edge, heli:[-13*k, -H+15*k], bar:H-27*k };
+}
+function drawBAA(ctx, x, y){
+  const v = BAA_VARIANT, g = baaGeom(v), P = p=>[x+p[0], y+p[1]];
+  ctx.save(); ctx.lineJoin='round'; ctx.lineCap='round';
+  ctx.strokeStyle=C(OUT); ctx.lineWidth=LW;
+  isoDisc(ctx, x+1, y, 10*g.k, 5*g.k, 2.5, '#F1ECE1');                       // the island's plinth
+  if (v==='B'){
+    // voxel sail: stacked slabs whose depth follows the sail's billow, off a square spine
+    const N=13, fh=(g.H-6)/N;
+    for (let s=0;s<N;s++){
+      const t=(s+0.5)/N, w=0.1+0.62*Math.pow(Math.sin(Math.PI*Math.min(1,t*1.08)),0.75)*(1-t*0.35);
+      isoBox(ctx, x+2-TW/2*w, y-TH/2*w, w, 0.34, 3+s*fh, fh+0.2, '#F7F6F2', {top:'#FFFFFF', left:'#EEF1F3', right:'#D5DDE3'});
+    }
+    isoBox(ctx, x+4, y+1, 0.16, 0.2, 0, g.H+2, '#D9E0E6', {floors:5});
+  } else {
+    // sail body, then its shaded inner band along the spine
+    ctx.beginPath(); ctx.moveTo(...P(g.spineB)); g.edge.forEach(p=>ctx.lineTo(...P(p))); ctx.lineTo(...P(g.spineT)); ctx.closePath();
+    ctx.fillStyle=C(v==='C' ? '#FFFFFF' : '#FAF8F3'); ctx.fill(); ctx.stroke();
+    const band = g.edge.map((p,i)=>{ const t=i/(g.edge.length-1), s=[g.spineB[0]+(g.spineT[0]-g.spineB[0])*t, g.spineB[1]+(g.spineT[1]-g.spineB[1])*t]; return [s[0]+(p[0]-s[0])*0.28, s[1]+(p[1]-s[1])*0.28]; });
+    ctx.beginPath(); ctx.moveTo(...P(g.spineB)); band.forEach(p=>ctx.lineTo(...P(p))); ctx.lineTo(...P(g.spineT)); ctx.closePath();
+    ctx.fillStyle=C(v==='C' ? '#DCE4EB' : '#E7ECEF'); ctx.fill();
+    // vertical ribs following the billow
+    ctx.strokeStyle=C('rgba(110,130,150,0.55)'); ctx.lineWidth=LW*0.55;
+    (v==='C' ? [0.45,0.72] : [0.2,0.4,0.6,0.8]).forEach(f=>{
+      ctx.beginPath();
+      g.edge.forEach((p,i)=>{ const t=i/(g.edge.length-1), s=[g.spineB[0]+(g.spineT[0]-g.spineB[0])*t, g.spineB[1]+(g.spineT[1]-g.spineB[1])*t];
+        const q=[s[0]+(p[0]-s[0])*f, s[1]+(p[1]-s[1])*f]; i ? ctx.lineTo(...P(q)) : ctx.moveTo(...P(q)); });
+      ctx.stroke();
+    });
+    // the braced mast: two rails with X bracing
+    const r0=g.spineB[0], r1=g.spineB[0]+(v==='C'?4.5:3.5), top=g.spineT[1]-3;
+    ctx.fillStyle=C(v==='C' ? '#9FB1C1' : '#E3E8EC'); ctx.strokeStyle=C(OUT); ctx.lineWidth=LW;
+    ctx.beginPath(); ctx.moveTo(x+r0,y-2); ctx.lineTo(x+r1,y-2); ctx.lineTo(x+r1-1,y+top); ctx.lineTo(x+r0-1,y+top); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle=C(v==='C' ? '#FFFFFF' : '#8FA0AF'); ctx.lineWidth=LW*0.6; ctx.beginPath();
+    for (let z=-4; z>top+4; z-=7){ ctx.moveTo(x+r0,y+z); ctx.lineTo(x+r1-1,y+z-7); ctx.moveTo(x+r1,y+z); ctx.lineTo(x+r0-1,y+z-7); }
+    ctx.stroke();
+  }
+  // needle
+  const nx = x+g.spineB[0]+1.5, ny = y-g.H-2;
+  ctx.strokeStyle=C(OUT); ctx.lineWidth=2.2; ctx.beginPath(); ctx.moveTo(nx,ny+2); ctx.lineTo(nx,ny-18*g.k); ctx.stroke();
+  ctx.strokeStyle=C('#E6ECF0'); ctx.lineWidth=1; ctx.stroke();
+  // Skyview bar: cantilevered off the mast, a little below the helipad
+  ctx.strokeStyle=C(OUT); ctx.lineWidth=LW;
+  isoBox(ctx, x+g.spineB[0]+TW/2*0.75, y+TH/2*0.75, 0.75, 0.2, g.bar, 4*g.k, '#E8EDF1', {top:'#F5F8FA', right:'#C6D1DA'});
+  // helipad disc on its strut
+  const [hx,hy] = [x+g.heli[0], y+g.heli[1]];
+  ctx.strokeStyle=C(OUT); ctx.lineWidth=LW*1.2; ctx.beginPath(); ctx.moveTo(hx+6*g.k, hy+3); ctx.lineTo(hx+1, hy+1); ctx.stroke();
+  ctx.lineWidth=LW;
+  isoDisc(ctx, hx, hy, (v==='C'?9:7)*g.k, (v==='C'?4.2:3.3)*g.k, 1.4, '#D5DDE2');
+  ctx.strokeStyle=C(v==='C' ? '#E5A93C' : '#FFFFFF'); ctx.lineWidth=LW*0.7; ctx.beginPath(); ctx.ellipse(hx, hy-1.4, (v==='C'?6:4.6)*g.k, (v==='C'?2.8:2.2)*g.k, 0, 0, Math.PI*2); ctx.stroke();
+  ctx.restore();
+}
+// night glow outline (SVG path in local coords) for the overlay
+function baaGlowPath(){
+  const g = baaGeom(BAA_VARIANT);
+  if (BAA_VARIANT==='B'){
+    // trace the left edge of the stacked slabs (their W corners), then back down the spine
+    const N=13, fh=(g.H-6)/N, pts=[[6,-3]];
+    for (let s=0;s<N;s++){ const t=(s+0.5)/N, w=0.1+0.62*Math.pow(Math.sin(Math.PI*Math.min(1,t*1.08)),0.75)*(1-t*0.35);
+      const lx=2-TW*w-TW/2*0.34, ly=-TH*w+TH/2*0.34; pts.push([lx, ly-3-s*fh]); pts.push([lx, ly-3-(s+1)*fh]); }
+    pts.push([4,-g.H]); pts.push([6,-g.H]);
+    return 'M'+pts.map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join('L')+'Z';
+  }
+  return 'M'+[g.spineB, ...g.edge, g.spineT].map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join('L')+'Z';
 }
 
 /* ---------- landmarks ---------- */
@@ -568,34 +669,22 @@ function drawLandmark(ctx, o){
         z+=k<tiers.length-1?2.5:0;
       });
       ctx.save(); ctx.lineCap='round';
-      ctx.strokeStyle=OUT; ctx.lineWidth=2.8; ctx.beginPath(); ctx.moveTo(x,y-z); ctx.lineTo(x,y-z-46); ctx.stroke();
-      ctx.strokeStyle='#E6F1F6'; ctx.lineWidth=1.4; ctx.stroke(); ctx.restore();
+      ctx.strokeStyle=C(OUT); ctx.lineWidth=2.8; ctx.beginPath(); ctx.moveTo(x,y-z); ctx.lineTo(x,y-z-46); ctx.stroke();
+      ctx.strokeStyle=C('#E6F1F6'); ctx.lineWidth=1.4; ctx.stroke(); ctx.restore();
       break;
     }
     case 'mall': isoBox(ctx,x,y,1.3,0.9,0,9,'#F1E2C4',{floors:4}); isoBox(ctx,x-4,y-1,0.4,0.4,9,5,'#E7D3AE'); break;
-    case 'baa': {
-      ctx.save();
-      ctx.lineWidth=LW;
-      ctx.strokeStyle=OUT; ctx.fillStyle='#F8F5EE';
-      ctx.beginPath(); ctx.moveTo(x+5,y-2); ctx.quadraticCurveTo(x-24,y-38,x+3,y-80); ctx.lineTo(x+6,y-74); ctx.lineTo(x+6,y-2); ctx.closePath(); ctx.fill(); ctx.stroke();
-      ctx.strokeStyle='rgba(120,140,160,0.45)'; ctx.lineWidth=LW*0.6; ctx.beginPath();
-      for (let z=10; z<70; z+=7){ const w=Math.max(1,14-Math.abs(z-38)*0.35); ctx.moveTo(x+5,y-z); ctx.lineTo(x+5-w,y-z-2); }
-      ctx.stroke();
-      ctx.lineCap='round'; ctx.strokeStyle=OUT; ctx.lineWidth=3.4; ctx.beginPath(); ctx.moveTo(x+7,y-1); ctx.lineTo(x+7,y-88); ctx.stroke();
-      ctx.strokeStyle='#A9B5C0'; ctx.lineWidth=2; ctx.stroke();
-      ctx.fillStyle='#7FA38A'; ctx.strokeStyle=OUT; ctx.lineWidth=LW; ctx.beginPath(); ctx.ellipse(x-8,y-56,5,2.4,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
-      ctx.restore(); break;
-    }
+    case 'baa': drawBAA(ctx, x, y); break;
     case 'ain': {
       const cy=y-36, R=30;
       ctx.save(); ctx.lineCap='round';
-      ctx.strokeStyle=OUT; ctx.lineWidth=2.6; ctx.beginPath(); ctx.moveTo(x-8,y); ctx.lineTo(x,cy); ctx.lineTo(x+8,y); ctx.stroke();
-      ctx.strokeStyle='#D9DDE1'; ctx.lineWidth=1.4; ctx.stroke();
-      ctx.strokeStyle='rgba(74,59,48,0.55)'; ctx.lineWidth=0.5; ctx.beginPath();
+      ctx.strokeStyle=C(OUT); ctx.lineWidth=2.6; ctx.beginPath(); ctx.moveTo(x-8,y); ctx.lineTo(x,cy); ctx.lineTo(x+8,y); ctx.stroke();
+      ctx.strokeStyle=C('#D9DDE1'); ctx.lineWidth=1.4; ctx.stroke();
+      ctx.strokeStyle=C('rgba(74,59,48,0.55)'); ctx.lineWidth=0.5; ctx.beginPath();
       for (let k=0;k<12;k++){ const t=k/12*Math.PI*2; ctx.moveTo(x,cy); ctx.lineTo(x+Math.cos(t)*R*0.38, cy+Math.sin(t)*R); } ctx.stroke();
-      ctx.strokeStyle=OUT; ctx.lineWidth=3.6; ctx.beginPath(); ctx.ellipse(x,cy,R*0.38,R,0,0,Math.PI*2); ctx.stroke();
-      ctx.strokeStyle='#F4F6F8'; ctx.lineWidth=2; ctx.stroke();
-      ctx.fillStyle='#E8B84B';
+      ctx.strokeStyle=C(OUT); ctx.lineWidth=3.6; ctx.beginPath(); ctx.ellipse(x,cy,R*0.38,R,0,0,Math.PI*2); ctx.stroke();
+      ctx.strokeStyle=C('#F4F6F8'); ctx.lineWidth=2; ctx.stroke();
+      ctx.fillStyle=C('#E8B84B');
       for (let k=0;k<16;k++){ const t=k/16*Math.PI*2; ctx.beginPath(); ctx.arc(x+Math.cos(t)*R*0.38, cy+Math.sin(t)*R, 1.1, 0, Math.PI*2); ctx.fill(); }
       ctx.restore(); break;
     }
@@ -609,10 +698,10 @@ function drawLandmark(ctx, o){
     }
     case 'motf': {
       isoBox(ctx,x,y,0.55,0.55,0,4,'#8FC77A');
-      ctx.save(); ctx.lineWidth=LW; ctx.strokeStyle=OUT;
-      ctx.fillStyle='#D3D8DE'; ctx.beginPath(); ctx.ellipse(x,y-18,10,13,-0.35,0,Math.PI*2); ctx.fill(); ctx.stroke();
-      ctx.fillStyle='#8E99A5'; ctx.beginPath(); ctx.ellipse(x+1.5,y-19,4.2,7.2,-0.35,0,Math.PI*2); ctx.fill(); ctx.stroke();
-      ctx.strokeStyle='rgba(74,59,48,0.35)'; ctx.lineWidth=LW*0.5; ctx.beginPath(); ctx.moveTo(x-6,y-10); ctx.lineTo(x-3,y-26); ctx.moveTo(x+5,y-8); ctx.lineTo(x+8,y-24); ctx.stroke();
+      ctx.save(); ctx.lineWidth=LW; ctx.strokeStyle=C(OUT);
+      ctx.fillStyle=C('#D3D8DE'); ctx.beginPath(); ctx.ellipse(x,y-18,10,13,-0.35,0,Math.PI*2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=C('#8E99A5'); ctx.beginPath(); ctx.ellipse(x+1.5,y-19,4.2,7.2,-0.35,0,Math.PI*2); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle=C('rgba(74,59,48,0.35)'); ctx.lineWidth=LW*0.5; ctx.beginPath(); ctx.moveTo(x-6,y-10); ctx.lineTo(x-3,y-26); ctx.moveTo(x+5,y-8); ctx.lineTo(x+8,y-24); ctx.stroke();
       ctx.restore(); break;
     }
     case 'atlantis': {
@@ -627,8 +716,8 @@ function drawLandmark(ctx, o){
     case 'meydan': {
       // racecourse: an oval dirt track round a green infield, grandstand along the front straight
       const iso = (r,k)=>{ ctx.beginPath(); for (let t=0;t<=64;t++){ const a=t/64*Math.PI*2, gx=Math.cos(a)*r*1.5, gy=Math.sin(a)*r;
-        const px=x+(gx-gy)*TW/2, py=y+(gx+gy)*TH/2; t?ctx.lineTo(px,py):ctx.moveTo(px,py); } ctx.closePath(); ctx.fillStyle=k; ctx.fill(); ctx.stroke(); };
-      ctx.lineWidth=LW; ctx.strokeStyle=OUT;
+        const px=x+(gx-gy)*TW/2, py=y+(gx+gy)*TH/2; t?ctx.lineTo(px,py):ctx.moveTo(px,py); } ctx.closePath(); ctx.fillStyle=C(k); ctx.fill(); ctx.stroke(); };
+      ctx.lineWidth=LW; ctx.strokeStyle=C(OUT);
       iso(2.6,'#C99A63'); iso(2.1,'#8CC46B'); iso(1.3,'#7FB862');
       isoBox(ctx, x-TW/2*2.95, y+TH/2*2.95, 2.2, 0.3, 0, 11, '#F2EEE6', {floors:4, top:'#DDE7EC'});   // just outside the track at gy=+2.95
       break;
@@ -641,13 +730,13 @@ function drawLandmark(ctx, o){
   }
 }
 function drawTree(ctx,o){
-  ctx.strokeStyle=OUT; ctx.lineWidth=LW;
+  ctx.strokeStyle=C(OUT); ctx.lineWidth=LW;
   ctx.beginPath(); ctx.moveTo(o.x,o.y); ctx.lineTo(o.x,o.y-3); ctx.stroke();
-  ctx.fillStyle='#6DB35A'; ctx.beginPath(); ctx.arc(o.x,o.y-5,2.7,0,Math.PI*2); ctx.fill(); ctx.stroke();
-  ctx.fillStyle='rgba(255,255,255,0.28)'; ctx.beginPath(); ctx.arc(o.x-0.9,o.y-6,1,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle=C('#6DB35A'); ctx.beginPath(); ctx.arc(o.x,o.y-5,2.7,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle=C('rgba(255,255,255,0.28)'); ctx.beginPath(); ctx.arc(o.x-0.9,o.y-6,1,0,Math.PI*2); ctx.fill();
 }
 function drawBoat(ctx,o){
-  const x=o.x, y=o.y; ctx.strokeStyle=OUT; ctx.lineWidth=LW;
+  const x=o.x, y=o.y; ctx.strokeStyle=C(OUT); ctx.lineWidth=LW;
   if (o.kind==='yacht'){
     face(ctx,[[x-6,y-1],[x+6,y-1],[x+4,y+2],[x-4,y+2]],'#FFFFFF'); face(ctx,[[x-2,y-4],[x+3,y-4],[x+3,y-1],[x-2,y-1]],'#D8E4EA');
   } else {
@@ -660,7 +749,7 @@ function drawObjects(ctx, view){
   ctx.lineJoin='round';
   for (const o of OBJECTS){
     if (view && (o.x<view.x0-40 || o.x>view.x1+40 || o.y<view.y0-10 || o.y>view.y1+280)) continue;
-    ctx.strokeStyle=OUT; ctx.lineWidth=LW;
+    ctx.strokeStyle=C(OUT); ctx.lineWidth=LW;
     if (o.k==='box') isoBox(ctx,o.x,o.y,o.hx,o.hy,0,o.h,null,o.opts);
     else if (o.k==='tree') drawTree(ctx,o);
     else if (o.k==='boat') drawBoat(ctx,o);
@@ -675,6 +764,121 @@ function drawScene(ctx, view){
 }
 
 
+
+/* =========================================================
+   CITY LIGHTS (night only)
+   Generated once from the city itself: lit windows on the towers (mostly warm,
+   some cool, irregular), streetlights along the roads, DXB runway lights, the Palm
+   crescent, boats, and the Burj Khalifa's spire. Drawn from pre-rendered bitmaps
+   when zoomed out; culled dots when zoomed in. A small subset twinkles: those
+   live on two extra canvases whose opacity CSS animates, so twinkling costs no JS.
+   ========================================================= */
+let LIGHTS = null, lightsBmp = null;
+const WARM = ['#FFD27A','#FFC56B','#FFE0A3','#FFB85C'], COOL = ['#E4EEFF','#CFE0FF'];
+function buildLights(){
+  const L = [], rnd = mulberry32(4242);
+  // k: 0 window, 1 streetlight, 2 accent (runway, boats, beacons); tw: 0 steady, 1 or 2 twinkle group
+  const add = (x,y,c,k,tw)=>L.push({x,y,c,k,tw:tw||0});
+  const twk = p => rnd()<p ? (rnd()<0.5?1:2) : 0;
+  const faceLights = (A,B,h,p,step,cols,z0)=>{
+    for (let z=z0||2.4; z<h-1.2; z+=step) for (let q=0;q<cols;q++){
+      if (rnd()>p) continue;
+      const u = (q+0.5)/cols*0.8+0.1+(rnd()-0.5)*0.05;
+      add(A[0]+(B[0]-A[0])*u, A[1]+(B[1]-A[1])*u-z, rnd()<0.15 ? COOL[rnd()<0.5?0:1] : WARM[Math.floor(rnd()*4)], 0, twk(0.1));
+    }
+  };
+  const corners = (x,y,hx,hy)=>{ const ax=TW/2*hx, ay=TH/2*hx, bx=-TW/2*hy, by=TH/2*hy;
+    return { W:[x-ax+bx,y-ay+by], S:[x+ax+bx,y+ay+by], E:[x+ax-bx,y+ay-by] }; };
+  for (const o of OBJECTS){
+    if (o.k==='box'){
+      const {W,S,E} = corners(o.x,o.y,o.hx,o.hy), st=o.st;
+      if (st==='villa'){ if (rnd()<0.65){ const u=0.3+rnd()*0.4; add(W[0]+(S[0]-W[0])*u, W[1]+(S[1]-W[1])*u-2.3, WARM[Math.floor(rnd()*4)], 0, twk(0.08)); } continue; }
+      const p = st==='glass'?0.4 : st==='mid'?0.32 : st==='low'?0.28 : 0.1, cols = st==='glass'?3:2, step = st==='glass'?3.4:3.2;
+      faceLights(W,S,o.h,p,step,cols); faceLights(S,E,o.h,p*0.8,step,cols);
+    } else if (o.k==='boat'){ add(o.x-3,o.y-2,'#FFE9B8',2); add(o.x+3,o.y-2, rnd()<0.5?'#FF6B5E':'#7CFFB2',2,1); }
+    else if (o.k==='lm' && o.lm==='burj'){
+      // the tower's lit column, then the spire: a white strobe and a red beacon at the tip
+      const tiers=[[0.62,30],[0.52,30],[0.43,28],[0.34,26],[0.26,24],[0.19,20],[0.13,18]];
+      let z=3;
+      tiers.forEach(([s,h])=>{ const {W,S,E}=corners(o.x,o.y,s,s); for (let zz=z+2; zz<z+h-1; zz+=2.6){ [[W,S],[S,E]].forEach(([A,B])=>{ for (let q=0;q<2;q++){ if (rnd()<0.55){ const u=0.3+q*0.4; add(A[0]+(B[0]-A[0])*u, A[1]+(B[1]-A[1])*u-zz, COOL[q], 0, twk(0.06)); } } }); } z+=h+2.5; });
+      add(o.x, o.y-z-30, '#FFFFFF', 2, 1); add(o.x, o.y-z-46, '#FF3B30', 2, 2);
+    } else if (o.k==='lm' && o.lm==='baa'){
+      // helipad ring, the Skyview bar's windows, and a beacon on the needle
+      const g = baaGeom(BAA_VARIANT), hx = o.x+g.heli[0], hy = o.y+g.heli[1]-1.4;
+      for (let t=0;t<Math.PI*2;t+=Math.PI/5) add(hx+Math.cos(t)*6*g.k, hy+Math.sin(t)*2.6*g.k, '#FFF6D8', 2, 1);
+      for (let q=0;q<5;q++) add(o.x+g.spineB[0]+3+q*2.6, o.y-g.bar-2+q*1.3, '#FFD9A0', 0);
+      add(o.x+g.spineB[0]+1.5, o.y-g.H-2-18*g.k, '#FF3B30', 2, 2);
+    } else if (o.k==='lm' && (o.lm==='frame' || o.lm==='ain' || o.lm==='atlantis' || o.lm==='terminal')){
+      for (let k=0;k<10;k++) add(o.x+(rnd()-0.5)*18, o.y-4-rnd()*30, WARM[k%4], 0, twk(0.2));
+    }
+  }
+  // streetlights: brighter amber on the highways, warm white elsewhere, alternating sides
+  for (const r of ROADS_W){
+    const gap = r.k===0?5.5:r.k===1?7:9, off = RD[r.k].w/2+0.5, col = r.k===0?'#FFB257':'#FFDDA6';
+    let carry = 0, side = 1;
+    for (let k=1;k<r.pts.length;k++){
+      const [x0,y0]=r.pts[k-1], [x1,y1]=r.pts[k], len=Math.hypot(x1-x0,y1-y0); if (!len) continue;
+      const nx=-(y1-y0)/len, ny=(x1-x0)/len;
+      for (let d=gap-carry; d<len; d+=gap){ const t=d/len; side=-side; add(x0+(x1-x0)*t+nx*off*side, y0+(y1-y0)*t+ny*off*side, col, 1); }
+      carry = (carry+len)%gap;
+    }
+  }
+  // DXB: blue edge lights and a warm centre line on both runways
+  RUNWAYS.forEach(rw=>{ for (let i=rw.i[0]; i<=rw.i[1]; i+=0.1){
+    [-0.09,0.09].forEach(da=>{ const p=aiToWorld(rw.a+da,i); add(p.x,p.y,'#8FCBFF',2); });
+    const c=aiToWorld(rw.a,i+0.05); add(c.x,c.y,'#FFF1C4',2, i%0.4<0.1?1:0);
+  }});
+  // the Palm: lights along both edges of the crescent and down each frond
+  for (let th=-PALM.crSpan; th<=PALM.crSpan; th+=0.03) [PALM.cr-PALM.crW-0.02, PALM.cr+PALM.crW+0.02].forEach(r=>{
+    const p=aiToWorld(PALM.hub[0]+Math.sin(th)*r, PALM.hub[1]-Math.cos(th)*r); add(p.x,p.y,'#FFD58A',1, twk(0.15)); });
+  const fstep=(2*PALM.span)/(PALM.fronds-1);
+  for (let f=0; f<PALM.fronds; f++){ const th=-PALM.span+f*fstep;
+    for (let r=PALM.fr0+0.25; r<PALM.fr1; r+=0.2){ const p=aiToWorld(PALM.hub[0]+Math.sin(th)*r, PALM.hub[1]-Math.cos(th)*r); add(p.x,p.y,'#FFE3AD',1, twk(0.12)); } }
+  // boats moored in the marina
+  for (let k=1;k<MARINA.length;k++) for (let t=0.15;t<1;t+=0.3){
+    const a=MARINA[k-1][0]+(MARINA[k][0]-MARINA[k-1][0])*t, i=MARINA[k-1][1]+(MARINA[k][1]-MARINA[k-1][1])*t, p=aiToWorld(a,i);
+    add(p.x-1.5,p.y,'#FFF4D6',2); add(p.x+1.5,p.y-0.5, rnd()<0.5?'#FF6B5E':'#7CFFB2',2, rnd()<0.5?1:2);
+  }
+  LIGHTS = L;
+}
+const glowCache = new Map();
+function glowSprite(col){
+  let g = glowCache.get(col); if (g) return g;
+  g = document.createElement('canvas'); g.width = g.height = 32;
+  const c = g.getContext('2d'), grd = c.createRadialGradient(16,16,0,16,16,16);
+  grd.addColorStop(0, col); grd.addColorStop(0.18, col); grd.addColorStop(0.35, col+'66'); grd.addColorStop(1, col+'00');
+  c.fillStyle = grd; c.fillRect(0,0,32,32);
+  glowCache.set(col, g); return g;
+}
+// px = device pixels per world px, so dots stay visible when zoomed out
+const LCELL = 96;
+let LIGHT_GRID = null;
+function lightsIn(view){
+  if (!view) return LIGHTS;
+  if (!LIGHT_GRID){
+    LIGHT_GRID = new Map();
+    for (const l of LIGHTS){ const k = Math.floor(l.x/LCELL)+','+Math.floor(l.y/LCELL); if (!LIGHT_GRID.has(k)) LIGHT_GRID.set(k,[]); LIGHT_GRID.get(k).push(l); }
+  }
+  const out = [];
+  for (let cx=Math.floor((view.x0-4)/LCELL); cx<=Math.floor((view.x1+4)/LCELL); cx++)
+    for (let cy=Math.floor((view.y0-4)/LCELL); cy<=Math.floor((view.y1+4)/LCELL); cy++){ const c = LIGHT_GRID.get(cx+','+cy); if (c) out.push(c); }
+  return out.flat();
+}
+function drawLights(ctx, view, tw, px){
+  const win = Math.max(0.8, 1.3/px), gl = Math.max(3.2, 5/px);
+  for (const l of lightsIn(view)){
+    if (l.tw !== tw) continue;
+    if (l.k===0){ ctx.fillStyle = l.c; ctx.fillRect(l.x-win/2, l.y-win*0.6, win, win*1.2); }
+    else { const r = l.k===2 ? gl*0.8 : gl; ctx.drawImage(glowSprite(l.c), l.x-r, l.y-r, r*2, r*2); }
+  }
+}
+function buildLightBitmaps(){
+  const sc = Math.min(1, cacheScale*0.75), mk = tw=>{
+    const cv = document.createElement('canvas'); cv.width = Math.round(WORLD.w*sc); cv.height = Math.round(WORLD.h*sc);
+    const c = cv.getContext('2d'); c.scale(sc, sc); drawLights(c, null, tw, sc); return cv; };
+  lightsBmp = { sc, a:mk(1), b:mk(2) };
+}
+
 /* =========================================================
    ENGINE: canvas, camera, gestures, overlay (stamps, area chips, you)
    The app hands the map a list of stamp items and a renderer; the map
@@ -685,7 +889,7 @@ let baseFit = 0.2, MIN_S = 0.15;
 const MAX_S = 7;
 const reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-let wrap, canvas, ctx, stampsLayer, labelsLayer, meEl;
+let wrap, canvas, ctx, stampsLayer, labelsLayer, fxLayer, meEl, twinkles = [], fxEls = [];
 let opts = {};
 let dpr = Math.min(window.devicePixelRatio||1, 2);
 let cache = null, cacheScale = 1;
@@ -702,15 +906,37 @@ function buildCache(){
   c.scale(cacheScale, cacheScale);
   LW = 0.75;
   drawScene(c, null);
+  // at night the steady city lights are baked in, so panning costs the same as by day
+  if (NIGHT && LIGHTS){ c.globalAlpha = 0.85; drawLights(c, null, 0, cacheScale); c.globalAlpha = 1; }
 }
 function resizeCanvas(){
   const r = wrap.getBoundingClientRect();
   if (!r.width || !r.height) return false;
   viewW = r.width; viewH = r.height;
   dpr = Math.min(window.devicePixelRatio||1, 2);
-  canvas.width = Math.round(viewW*dpr); canvas.height = Math.round(viewH*dpr);
-  canvas.style.width = viewW+'px'; canvas.style.height = viewH+'px';
+  [canvas, ...twinkles].forEach(cv=>{ cv.width = Math.round(viewW*dpr); cv.height = Math.round(viewH*dpr); cv.style.width = viewW+'px'; cv.style.height = viewH+'px'; });
   return true;
+}
+// lights sit dimmer at zoom levels where stamps and labels show, so they never compete
+function blitLights(c, bmp, view){
+  const sc = lightsBmp.sc, x0 = Math.max(0, view.x0), y0 = Math.max(0, view.y0), x1 = Math.min(WORLD.w, view.x1), y1 = Math.min(WORLD.h, view.y1);
+  if (x1<=x0 || y1<=y0) return;
+  c.drawImage(bmp, x0*sc, y0*sc, (x1-x0)*sc, (y1-y0)*sc, x0, y0, x1-x0, y1-y0);
+}
+let twinklePaused = false;
+function renderLights(view, fromCache){
+  const z = cam.s/baseFit, a = z < LOD_MID ? 1 : z < LOD_NEAR ? 0.78 : 0.6, px = cam.s*dpr;
+  // steady lights come baked into the cached city; close up they're drawn crisp (and dimmer, under the stamps)
+  if (!fromCache){ ctx.globalAlpha = a; drawLights(ctx, view, 0, px); ctx.globalAlpha = 1; }
+  // twinkling pauses while the map moves (nobody sees it mid-pan) and resumes when it settles
+  if (interacting){ if (!twinklePaused){ twinklePaused = true; wrap.classList.add('moving'); } return; }
+  if (twinklePaused){ twinklePaused = false; wrap.classList.remove('moving'); }
+  twinkles.forEach((tc,k)=>{
+    const c = tc.getContext('2d');
+    c.setTransform(1,0,0,1,0,0); c.clearRect(0,0,tc.width,tc.height);
+    c.setTransform(dpr*cam.s,0,0,dpr*cam.s,dpr*cam.x,dpr*cam.y); c.globalAlpha = a;
+    if (px <= lightsBmp.sc*1.6) blitLights(c, k ? lightsBmp.b : lightsBmp.a, view); else drawLights(c, view, k+1, px);
+  });
 }
 function requestRender(){ if (!rafPending){ rafPending=true; requestAnimationFrame(render); } }
 function render(){
@@ -721,14 +947,17 @@ function render(){
   ctx.setTransform(dpr*cam.s,0,0,dpr*cam.s,dpr*cam.x,dpr*cam.y);
   const needCrisp = cam.s*dpr > cacheScale*1.15;
   const visTiles = (viewW/cam.s)*(viewH/cam.s)/(TW*TH/2);
+  const view = { x0:-cam.x/cam.s, y0:-cam.y/cam.s, x1:(viewW-cam.x)/cam.s, y1:(viewH-cam.y)/cam.s };
   // while panning/zooming through busy views use the cached bitmap; redraw crisp once you let go
-  if (!needCrisp || (interacting && visTiles > 1100)){
+  const fromCache = !needCrisp || (interacting && visTiles > 1100);
+  if (fromCache){
     ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(cache, 0, 0, WORLD.w, WORLD.h);
   } else {
     LW = Math.max(0.22, Math.min(0.8, 1.05/cam.s));
-    drawScene(ctx, { x0:-cam.x/cam.s, y0:-cam.y/cam.s, x1:(viewW-cam.x)/cam.s, y1:(viewH-cam.y)/cam.s });
+    drawScene(ctx, view);
   }
+  if (NIGHT && LIGHTS) renderLights(view, fromCache);
   updateOverlay();
   if (opts.onViewChange) opts.onViewChange();
 }
@@ -854,7 +1083,7 @@ function initGestures(){
         };
         inertia=requestAnimationFrame(step);
       } else { interacting=false; requestRender(); }
-      if (!dragged && e.type==='pointerup' && !e.target.closest('.stamp, .map-label, .me')){
+      if (!dragged && e.type==='pointerup' && !e.target.closest('.stamp-anchor, .map-dot, .map-label, .me')){
         const now=performance.now();
         if (now-lastTap.t < 300 && Math.hypot(e.clientX-lastTap.x, e.clientY-lastTap.y) < 30){
           const r=wrap.getBoundingClientRect(), sx=e.clientX-r.left, sy=e.clientY-r.top;
@@ -884,153 +1113,247 @@ function initGestures(){
   }, {passive:false});
 }
 
-/* ---------- overlay: area chips ---------- */
-let labelEls = [], labelOrder = [];
-function buildLabels(){
-  labelEls = LABELS.map(l=>{
-    const el=document.createElement('div');
-    el.className='map-label'+(l.sea?' sea':'')+(l.lm?' lm':'')+(l.z?' area':'');
-    el.innerHTML = l.z ? `<span role="button" tabindex="-1"><i class="dot"></i>${l.t}<em class="cnt"></em></span>` : `<span>${l.t}</span>`;
-    const p=aiToWorld(l.a,l.i); el._wx=p.x; el._wy=p.y; el._tier=l.tier; el._z=l.z||null; el._n=0;
-    if (l.z) el.firstChild.addEventListener('click', e=>{ e.stopPropagation(); if (!picking && el._n && opts.onAreaTap) opts.onAreaTap(l.z); });
-    labelsLayer.appendChild(el); return el;
-  });
-  labelOrder = labelEls.slice();
-}
-function setAreaCounts(counts){
-  labelEls.forEach(el=>{
-    if (!el._z) return;
-    const n=counts[el._z]||0;
-    if (n===el._n) return;
-    el._n=n; el._w=0;
-    el.querySelector('.cnt').textContent = n ? n : '';
-    el.classList.toggle('has-count', n>0);
-  });
-  // busiest areas claim their spot first
-  labelOrder = labelEls.slice().sort((a,b)=>(b._n-a._n) || (a._tier-b._tier));
-  requestRender();
-}
+/* =========================================================
+   OVERLAY: level of detail, stamps and labels
+   Three zoom bands keep the map calm however many places there are:
+     far   one marker per area (stamp and count in one), nothing else
+     mid   stamps clustered by screen density; names only for areas that have places
+     near  single stamps, undiscovered spots as plain dots; a name only for the
+           selected place and the few nearest ones
+   Labels share one budget and never overlap. Only what's on screen gets a DOM element.
+   ========================================================= */
+const LOD_MID = 1.6, LOD_NEAR = 3.2, LABEL_BUDGET = 10, RECENT_MS = 14*864e5;
+const lodOf = z => z < LOD_MID ? 0 : z < LOD_NEAR ? 1 : 2;
 
-/* ---------- overlay: stamps ---------- */
-// item: { id, w:{x,y}, prio, faint:bool, data } — faint = unlit venue (only shown close up)
-let items = [], clusters = [], clusterScale = -1, clustersDirty = true, stampEls = [], highlightId = null, droppedId = null;
+// item: { id, w:{x,y}, prio, faint, zone, label, recent, rating, data } (faint = undiscovered venue)
+let items = [], clusters = [], clusterScale = -1, clusterLod = -1, clustersDirty = true;
+let highlightId = null, droppedId = null, selectedId = null, areaCounts = {}, lastLodReported = -1;
+const pool = new Map();                      // cluster key -> element, for clusters on screen only
 function setStamps(list){ items = list; clustersDirty = true; requestRender(); }
-function computeClusters(){
-  const R = 46/cam.s;
-  const z = cam.s/baseFit;
-  const out=[];
-  const groups = [items.filter(i=>!i.faint), z>=2.6 ? items.filter(i=>i.faint) : []];
-  groups.forEach(list=>{
-    const sorted = list.slice().sort((a,b)=>b.prio-a.prio);   // the most important stamp fronts each cluster
-    const used = new Uint8Array(sorted.length);
-    for (let k=0;k<sorted.length;k++){
-      if (used[k]) continue;
-      const g=[sorted[k]]; used[k]=1;
-      for (let j=k+1;j<sorted.length;j++){
-        if (used[j]) continue;
-        if (Math.hypot(sorted[k].w.x-sorted[j].w.x, sorted[k].w.y-sorted[j].w.y) < R){ g.push(sorted[j]); used[j]=1; }
+function setAreaCounts(counts){ areaCounts = counts || {}; requestRender(); }
+function setSelected(id){ id = id || null; if (selectedId === id) return; selectedId = id; clustersDirty = true; requestRender(); }
+
+function makeCluster(g, kind, at){
+  return { kind: kind || (g.length>1 ? 'cluster' : 'single'), items:g, prio:g[0].prio,
+    x: at ? at.x : g.reduce((s,v)=>s+v.w.x,0)/g.length, y: at ? at.y : g.reduce((s,v)=>s+v.w.y,0)/g.length };
+}
+// greedy clustering over a spatial hash (cell = radius), so 500+ places stay cheap
+function clusterList(list, R){
+  const sorted = list.slice().sort((a,b)=>b.prio-a.prio), grid = new Map(), key = (x,y)=>x+','+y;
+  sorted.forEach((it,k)=>{ const g=key(Math.floor(it.w.x/R), Math.floor(it.w.y/R)); if (!grid.has(g)) grid.set(g,[]); grid.get(g).push(k); });
+  const used = new Uint8Array(sorted.length), out = [];
+  for (let k=0;k<sorted.length;k++){
+    if (used[k]) continue;
+    const a = sorted[k], g = [a]; used[k] = 1;
+    if (a.id !== selectedId){
+      const cx = Math.floor(a.w.x/R), cy = Math.floor(a.w.y/R);
+      for (let dx=-1;dx<=1;dx++) for (let dy=-1;dy<=1;dy++){
+        const bucket = grid.get(key(cx+dx,cy+dy)); if (!bucket) continue;
+        for (const j of bucket){
+          if (used[j] || sorted[j].id === selectedId) continue;
+          if (Math.hypot(a.w.x-sorted[j].w.x, a.w.y-sorted[j].w.y) < R){ g.push(sorted[j]); used[j] = 1; }
+        }
       }
-      const x=g.reduce((s,v)=>s+v.w.x,0)/g.length, y=g.reduce((s,v)=>s+v.w.y,0)/g.length;
-      out.push({x, y, items:g, faint:g[0].faint, prio:g[0].prio});
     }
-  });
-  // faint stamps go underneath, then back-to-front by screen y
-  out.sort((a,b)=>(a.faint===b.faint ? a.y-b.y : (a.faint?-1:1)));
+    out.push(makeCluster(g));
+  }
   return out;
 }
-function buildStamps(){
-  stampsLayer.innerHTML='';
-  stampEls = clusters.map(cl=>{
-    const el=document.createElement('div');
-    el.className='stamp-anchor'+(cl.faint?' faint':'');
-    el.innerHTML = opts.renderStamp(cl);
-    const ids = cl.items.map(i=>i.id);
-    if (highlightId && ids.includes(highlightId)) el.classList.add('highlight');
-    if (droppedId && ids.includes(droppedId)) el.classList.add('dropped');
-    el.addEventListener('click', e=>{
-      e.stopPropagation();
-      if (picking) return;
-      if (cl.items.length===1) opts.onStampTap && opts.onStampTap(cl.items[0], e);
-      else onClusterTap(cl, e);
+// centroids drift, so merge any clusters that still sit closer than the radius
+function settle(list, R){
+  for (let pass=0; pass<3; pass++){
+    let merged=false;
+    const next = clusterList(list.map(cl=>({ id:cl.items[0].id, w:{x:cl.x, y:cl.y}, prio:cl.prio, cl })), R).map(g=>{
+      if (g.items.length===1) return g.items[0].cl;
+      merged = true;
+      const all = g.items.flatMap(p=>p.cl.items).sort((a,b)=>b.prio-a.prio);
+      return makeCluster(all);
     });
-    el._cl=cl;
-    stampsLayer.appendChild(el);
-    return el;
+    list = next; if (!merged) break;
+  }
+  return list;
+}
+// far: one marker per area, merged with any neighbour it would overlap
+function areaMarkers(list, R){
+  const byZone = new Map();
+  list.forEach(it=>{ const z = it.zone || '_'; if (!byZone.has(z)) byZone.set(z,[]); byZone.get(z).push(it); });
+  const groups = [...byZone].map(([zid,g])=>{
+    const z = zoneById(zid), w = z ? aiToWorld(z.a, z.i) : g[0].w;
+    return { zones:[zid], items:g, x:w.x, y:w.y };
+  }).sort((a,b)=>b.items.length-a.items.length);
+  const out = [];
+  groups.forEach(g=>{
+    const host = out.find(o=>Math.hypot(o.x-g.x, o.y-g.y) < R);
+    if (host){ host.items.push(...g.items); host.zones.push(...g.zones); } else out.push(g);
   });
-  droppedId = null;
+  return out.map(o=>{ const cl = makeCluster(o.items.sort((a,b)=>b.prio-a.prio), 'area', o); cl.zones = o.zones; return cl; });
+}
+function computeClusters(lod){
+  const lit = items.filter(i=>!i.faint);
+  if (lod === 0) return areaMarkers(lit, 60/cam.s);
+  const R = (lod===1 ? 62 : 50)/cam.s, out = settle(clusterList(lit, R), R*0.92);
+  // undiscovered spots: plain dots, thinned so they never pile up into blobs
+  if (lod === 2) clusterList(items.filter(i=>i.faint), 11/cam.s).forEach(cl=>out.push({ kind:'dot', x:cl.items[0].w.x, y:cl.items[0].w.y, items:[cl.items[0]], prio:0 }));
+  return out;
+}
+const clusterKey = cl => cl.kind + ':' + (cl.kind==='area' ? cl.zones.join('+') : cl.items.map(i=>i.id).join(','));
+function bounds(pts){ return { x0:Math.min(...pts.map(p=>p.x)), x1:Math.max(...pts.map(p=>p.x)), y0:Math.min(...pts.map(p=>p.y)), y1:Math.max(...pts.map(p=>p.y)) }; }
+function zoomToItems(list){
+  const b = bounds(list.map(i=>i.w));
+  const s = Math.max(baseFit*LOD_MID*1.25, Math.min(MAX_S, fitScaleFor(b, {x:60, top:110, bottom:110})));
+  flyTo((b.x0+b.x1)/2, (b.y0+b.y1)/2, s);
+}
+function makeEl(cl){
+  const el = document.createElement('div');
+  if (cl.kind === 'dot'){ el.className = 'map-dot'; el.innerHTML = '<i></i>'; }
+  else { el.className = 'stamp-anchor is-' + cl.kind; el.innerHTML = opts.renderStamp(cl); }
+  el.addEventListener('click', e=>{
+    e.stopPropagation();
+    if (picking) return;
+    const c = el._cl;
+    if (c.kind === 'area') zoomToItems(c.items);
+    else if (c.items.length === 1) opts.onStampTap && opts.onStampTap(c.items[0], e);
+    else onClusterTap(c, e);
+  });
+  const ids = cl.items.map(i=>i.id);
+  if (highlightId && ids.includes(highlightId)) el.classList.add('highlight');
+  if (droppedId && cl.kind==='single' && ids[0]===droppedId){ el.classList.add('dropped'); droppedId = null; }
+  if (selectedId && cl.kind==='single' && ids[0]===selectedId) el.classList.add('selected');
+  return el;
 }
 function onClusterTap(cl, evt){
-  const pts=cl.items.map(i=>i.w);
-  const b={x0:Math.min(...pts.map(p=>p.x)), x1:Math.max(...pts.map(p=>p.x)), y0:Math.min(...pts.map(p=>p.y)), y1:Math.max(...pts.map(p=>p.y))};
+  const b = bounds(cl.items.map(i=>i.w));
   const spread = Math.max(b.x1-b.x0, b.y1-b.y0);
   const target = Math.min(MAX_S, fitScaleFor(b,{x:70,top:140,bottom:120}), 46/Math.max(0.01,spread)*2.2);
   // zoom in if that would actually split the cluster; otherwise hand the list to the app
   if (spread*MAX_S > 46 && target > cam.s*1.35) flyTo((b.x0+b.x1)/2, (b.y0+b.y1)/2 - 25/target, target);
   else opts.onClusterList && opts.onClusterList(cl.items, evt);
 }
-function updateOverlay(){
-  if (clustersDirty || Math.abs(cam.s-clusterScale)/clusterScale > 0.04){
-    const next=computeClusters();
-    const sig=cl=>cl.map(c=>c.items.map(i=>i.id).join(',')).join('|');
-    const changed = clustersDirty || sig(next)!==sig(clusters);
-    clusters=next; clusterScale=cam.s; clustersDirty=false;
-    if (changed) buildStamps(); else stampEls.forEach((el,k)=>{ el._cl=clusters[k]; });
+
+/* ---------- labels: one budget, collision checked, highest priority first ---------- */
+const labelEls = [];
+const escL = s => String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const measure = (()=>{ const c=document.createElement('canvas').getContext('2d'), cache=new Map();
+  return (text, font)=>{ const k=font+'|'+text; if (!cache.has(k)){ c.font=font; cache.set(k, c.measureText(text).width); } return cache.get(k); }; })();
+function labelEl(n){
+  let el = labelEls[n];
+  if (!el){
+    el = document.createElement('div'); el.className = 'map-label hidden';
+    el.innerHTML = '<span role="button" tabindex="-1"></span>';
+    el.firstChild.addEventListener('click', e=>{
+      e.stopPropagation(); if (picking || !el._d) return;
+      if (el._d.zone) opts.onAreaTap && opts.onAreaTap(el._d.zone);
+      else if (el._d.item) opts.onStampTap && opts.onStampTap(el._d.item, e);
+    });
+    labelsLayer.appendChild(el); labelEls[n] = el;
   }
-  const z = cam.s/baseFit;
-  const near = z>=3.2;
-  stampsLayer.classList.toggle('near', near);
-  stampsLayer.classList.toggle('mid', z>=1.7);
+  return el;
+}
+function placeLabels(lod, vis, k){
+  const taken = [], labelBoxes = [];
+  const hit = b => taken.some(o=>b[0]<o[2] && b[2]>o[0] && b[1]<o[3] && b[3]>o[1]);
+  vis.forEach(cl=>{ if (cl.kind!=='dot') taken.push([cl.sx-23*k, cl.sy-50*k, cl.sx+23*k, cl.sy+3]); });
+  const cands = [];
+  if (lod === 2){
+    const singles = vis.filter(c=>c.kind==='single');
+    const sel = singles.find(c=>c.items[0].id===selectedId);
+    const fx = sel ? sel.sx : viewW/2, fy = sel ? sel.sy : viewH/2, now = Date.now();
+    singles.map(c=>({ c, d:Math.hypot(c.sx-fx, c.sy-fy) })).sort((a,b)=>a.d-b.d).slice(0, LABEL_BUDGET+2).forEach(({c})=>{
+      const it = c.items[0], recent = it.recent && now-it.recent < RECENT_MS;
+      // selected first, then the most recent crew activity, then the highest rated
+      const pri = it.id===selectedId ? 3e13 : recent ? 2e13 + it.recent/1e3 : 1e13 + (it.rating||0);
+      cands.push({ kind:'name', text:it.label || '', sub:it.rating ? '★'+(+it.rating).toFixed(1).replace(/\.0$/,'') : '', item:it, pri, sx:c.sx, sy:c.sy });
+    });
+  }
+  if (lod >= 1){
+    Object.keys(areaCounts).forEach(zid=>{
+      const n = areaCounts[zid], z = zoneById(zid); if (!n || !z) return;
+      const w = aiToWorld(z.a, z.i), sx = w.x*cam.s+cam.x, sy = w.y*cam.s+cam.y;
+      if (sx<-60 || sx>viewW+60 || sy<-20 || sy>viewH+20) return;
+      cands.push({ kind:'area', text:z.label, zone:zid, pri:(lod===1 ? 5e13 : 0) + n, spots:[[sx, sy], [sx, sy+26], [sx, sy-26]] });
+    });
+  }
+  cands.sort((a,b)=>b.pri-a.pri);
+  let used = 0;
+  for (const c of cands){
+    if (used >= LABEL_BUDGET) break;
+    const w = c.kind==='area' ? measure(c.text.toUpperCase(), '10px Silkscreen')*1.04 + 14
+                              : measure(c.text, '700 11.5px "Plus Jakarta Sans"') + (c.sub ? measure(c.sub, '700 10px "Space Mono"') + 6 : 0) + 18;
+    const mw = Math.min(w, 176), hgt = c.kind==='area' ? 17 : 22;
+    // names try below the stamp, then above, then to either side
+    const spots = c.kind==='area' ? c.spots : [[c.sx, c.sy+16], [c.sx, c.sy-50*k-15], [c.sx+23*k+mw/2+4, c.sy-25*k], [c.sx-23*k-mw/2-4, c.sy-25*k]];
+    let at = null;
+    for (const [x,y] of spots){
+      const b = [x-mw/2-2, y-hgt/2-2, x+mw/2+2, y+hgt/2+2];
+      // the selected place always gets its name, even over a neighbouring stamp
+      const blocked = c.kind==='name' && c.item.id===selectedId ? labelBoxes.some(o=>b[0]<o[2] && b[2]>o[0] && b[1]<o[3] && b[3]>o[1]) : hit(b);
+      if (x-mw/2 < 4 || x+mw/2 > viewW-4 || y < 4 || y > viewH-4 || blocked) continue;
+      at = [x,y]; taken.push(b); labelBoxes.push(b); break;
+    }
+    if (!at) continue;
+    const el = labelEl(used++);
+    if (el._key !== c.kind+c.text+c.sub){
+      el._key = c.kind+c.text+c.sub;
+      el.className = 'map-label ' + (c.kind==='area' ? 'area' : 'name');
+      el.firstChild.innerHTML = c.kind==='area' ? escL(c.text) : `<b>${escL(c.text)}</b>${c.sub?`<em>${c.sub}</em>`:''}`;
+    }
+    el._d = c;
+    el.classList.toggle('sel', c.kind==='name' && c.item.id===selectedId);
+    el.classList.remove('hidden');
+    el.style.transform = `translate3d(${at[0].toFixed(1)}px,${at[1].toFixed(1)}px,0)`;
+  }
+  for (let n=used; n<labelEls.length; n++) labelEls[n].classList.add('hidden');
+}
+
+/* ---------- landmark effects over the canvas (night glow, light shows) ----------
+   Small SVGs pinned to world points and scaled with the camera; their colour is
+   animated by CSS, so they cost nothing per frame beyond a transform. */
+function buildFx(){
+  const baa = LANDMARKS.find(l=>l.k==='baa'), w = aiToWorld(baa.at[0], baa.at[1]);
+  const d = baaGlowPath(), el = document.createElement('div');
+  el.className = 'fx fx-baa';
+  el.innerHTML = '<svg viewBox="-40 -120 60 124" width="60" height="124" aria-hidden="true"><path class="halo" d="'+d+'"/><path class="body" d="'+d+'"/></svg>';
+  el._w = { x:w.x-40, y:w.y-120 };
+  fxLayer.appendChild(el); fxEls.push(el);
+}
+function placeFx(){
+  if (!NIGHT) return;
+  for (const el of fxEls){
+    const sx = el._w.x*cam.s+cam.x, sy = el._w.y*cam.s+cam.y;
+    el.style.transform = 'translate3d('+sx.toFixed(1)+'px,'+sy.toFixed(1)+'px,0) scale('+cam.s.toFixed(4)+')';
+  }
+}
+function updateOverlay(){
+  placeFx();
+  const z = cam.s/baseFit, lod = lodOf(z);
+  if (clustersDirty || lod !== clusterLod || Math.abs(cam.s-clusterScale)/clusterScale > (interacting ? 0.2 : 0.04)){
+    const rebuild = clustersDirty;          // data or selection changed: redraw stamp contents
+    clusters = computeClusters(lod);
+    const keep = new Set(clusters.map(cl=>(cl.key = clusterKey(cl))));
+    pool.forEach((el,key)=>{ if (rebuild || !keep.has(key)){ el.remove(); pool.delete(key); } });
+    clusterScale = cam.s; clusterLod = lod; clustersDirty = false;
+    stampsLayer.dataset.lod = lod;
+  }
   // stamps shrink a little when zoomed right out
-  const k = Math.max(0.78, Math.min(1, 0.78 + (z-1)*0.22));
+  const k = Math.max(0.8, Math.min(1, 0.8 + (z-1)*0.2));
   stampsLayer.style.setProperty('--stamp-k', k.toFixed(3));
-  const pinBoxes=[], cardBoxes=[];
-  const hit=(b,list)=>list.some(o=>b[0]<o[2] && b[2]>o[0] && b[1]<o[3] && b[3]>o[1]);
-  // callout cards (close up only): most important first, hidden where they'd collide
-  const order = stampEls.slice().sort((a,b)=>b._cl.prio-a._cl.prio);
-  stampEls.forEach(el=>{
-    const cl=el._cl, sx=cl.x*cam.s+cam.x, sy=cl.y*cam.s+cam.y;
-    el.style.transform=`translate3d(${sx.toFixed(1)}px,${sy.toFixed(1)}px,0)`;
-    el._sx=sx; el._sy=sy;
-    if (!cl.faint) pinBoxes.push([sx-24*k, sy-50*k, sx+24*k, sy+4]);
-  });
-  order.forEach(el=>{
-    const single = el._cl.items.length===1 && !el._cl.faint;
-    let show = near && single && el._sx>-60 && el._sx<viewW+60 && el._sy>-20 && el._sy<viewH+80;
-    if (show){
-      const b=[el._sx-78, el._sy-54*k-66, el._sx+78, el._sy-54*k];
-      if (hit(b,cardBoxes)) show=false; else cardBoxes.push(b);
-    }
-    el.classList.toggle('show-card', show);
-  });
-  // Areas with places come first and win: they show at every zoom, sit just under the stamps'
-  // feet and only give way to each other. Plain labels fill in wherever there's room.
-  const chipBoxes=[];
-  labelOrder.forEach(el=>{
-    const chip = el._n>0;
-    let show = chip || el._tier===0 || (el._tier===1 && z>=1.7) || (el._tier===2 && z>=3.2);
-    const sx=el._wx*cam.s+cam.x;
-    let sy=el._wy*cam.s+cam.y + (chip?14:0);
-    if (show){
-      if (sx<-80 || sx>viewW+80 || sy<-20 || sy>viewH+20) show=false;
-      else {
-        if (!el._w){ el.classList.remove('hidden'); el._w=el.firstChild.offsetWidth||60; el._h=el.firstChild.offsetHeight||14; }
-        let b=[sx-el._w/2-2, sy-el._h/2-2, sx+el._w/2+2, sy+el._h/2+2];
-        for (let i=0; chip && i<4; i++){
-          const o=pinBoxes.find(o=>b[0]<o[2] && b[2]>o[0] && b[1]<o[3] && b[3]>o[1]);
-          if (!o) break;
-          sy=o[3]+el._h/2+4; b=[sx-el._w/2-2, sy-el._h/2-2, sx+el._w/2+2, sy+el._h/2+2];
-        }
-        if (hit(b,chipBoxes) || hit(b,cardBoxes) || (!chip && hit(b,pinBoxes))) show=false;
-        else chipBoxes.push(b);
-      }
-    }
-    el.classList.toggle('hidden', !show);
-    if (show) el.style.transform=`translate3d(${sx.toFixed(1)}px,${sy.toFixed(1)}px,0)`;
-  });
+  const M = 70, vis = [];
+  for (const cl of clusters){
+    const sx = cl.x*cam.s+cam.x, sy = cl.y*cam.s+cam.y;
+    let el = pool.get(cl.key);
+    if (sx < -M || sx > viewW+M || sy < -M || sy > viewH+M*1.5){ if (el){ el.remove(); pool.delete(cl.key); } continue; }
+    if (!el){ el = makeEl(cl); pool.set(cl.key, el); stampsLayer.appendChild(el); }
+    el._cl = cl; cl.sx = sx; cl.sy = sy;
+    el.style.transform = `translate3d(${sx.toFixed(1)}px,${sy.toFixed(1)}px,0)`;
+    el.style.zIndex = cl.kind==='dot' ? 1 : (cl.kind==='single' && cl.items[0].id===selectedId ? 9999 : 2 + Math.round(Math.max(0,sy)));
+    vis.push(cl);
+  }
+  placeLabels(lod, vis, k);
   if (meWorld && watchId!==null){
     meEl.classList.remove('hidden');
     meEl.style.transform=`translate3d(${(meWorld.x*cam.s+cam.x).toFixed(1)}px,${(meWorld.y*cam.s+cam.y).toFixed(1)}px,0)`;
   }
+  if (opts.onLod && lod !== lastLodReported){ lastLodReported = lod; opts.onLod(lod); }
 }
 
 /* ---------- you: live location ---------- */
@@ -1077,13 +1400,16 @@ function resumeTracking(){
 /* ---------- public API ---------- */
 function initMap(o){
   opts = o; wrap = o.wrap; canvas = o.canvas; ctx = canvas.getContext('2d');
+  twinkles = ['a','b'].map(k=>{ const c=document.createElement('canvas'); c.className='map-twinkle '+k; c.setAttribute('aria-hidden','true'); canvas.after(c); return c; });
+  wrap.classList.toggle('night', NIGHT);
   stampsLayer = document.createElement('div'); stampsLayer.className='stamps-layer';
   labelsLayer = document.createElement('div'); labelsLayer.className='labels-layer';
   meEl = document.createElement('div'); meEl.className='me hidden';
   meEl.innerHTML = `<div class="me-ring"></div><button class="me-sprite" aria-label="You are here"></button>`;
   meEl.querySelector('.me-sprite').addEventListener('click', e=>{ e.stopPropagation(); if (!picking && opts.onMeTap) opts.onMeTap(); });
-  o.overlay.append(labelsLayer, stampsLayer, meEl);
-  buildLabels();
+  fxLayer = document.createElement('div'); fxLayer.className='fx-layer';
+  buildFx();
+  o.overlay.append(fxLayer, stampsLayer, labelsLayer, meEl);
   initGestures();
   new ResizeObserver(()=>{
     if (!cache) return;
@@ -1095,7 +1421,10 @@ function initMap(o){
   document.addEventListener('visibilitychange', ()=>{ if (!document.hidden) requestRender(); });
   // a timer, not rAF: rAF never fires in a background tab, and the city should be ready when you switch to it
   setTimeout(()=>{
-    buildTerrain(); buildObjects(); prepRoads(); buildCache();
+    buildTerrain(); buildObjects(); prepRoads();
+    if (NIGHT) buildLights();
+    buildCache();
+    if (NIGHT) buildLightBitmaps();
     built = true;
     if (resizeCanvas()) initialView();
     readyCbs.splice(0).forEach(f=>f());
@@ -1121,9 +1450,15 @@ function placeWorld(p){
   let ai;
   if (typeof p.lat==='number' && typeof p.lng==='number') ai = toAI(p.lat,p.lng);
   else {
+    // no exact spot: a stable point spread evenly over the area (uniform disc ~1 km), kept on land
     const z = zoneById(p.zone) || zoneById('downtown');
-    const [oa,oi] = hashOffset(String(p.id), 0.8);
-    ai = { a:z.a+oa, i:z.i+oi };
+    const h = hashStr(String(p.id)), ang = (h%3600)/3600*Math.PI*2;
+    let rad = Math.sqrt(((h>>>12)%1000)/1000)*1.0;
+    for (let k=0;k<5;k++){
+      ai = { a:z.a+Math.cos(ang)*rad, i:z.i+Math.sin(ang)*rad };
+      if (palmAt(ai.a,ai.i) || ai.i > coastIn(ai.a)+0.2) break;
+      rad *= 0.55;
+    }
   }
   return aiToWorld(ai.a, ai.i);
 }
@@ -1149,7 +1484,6 @@ function setPicking(on){ picking=!!on; wrap.classList.toggle('picking', picking)
 function highlight(id, ms){ highlightId=id; clustersDirty=true; requestRender(); setTimeout(()=>{ if (highlightId===id){ highlightId=null; clustersDirty=true; requestRender(); } }, ms||2600); }
 function markDropped(id){ droppedId=id; clustersDirty=true; }
 function setMeSprite(html){ meEl.querySelector('.me-sprite').innerHTML = html; }
-function zoomBy(f){ const c=viewCenter(); flyTo(c.x, c.y, cam.s*f, 260); }
 function isTracking(){ return watchId!==null; }
 function visible(){ return !!viewW; }
 // draw a small static view of the city around a point (place sheet header)
@@ -1162,16 +1496,30 @@ function drawSnapshot(target, w, zoomMult){
   const s=baseFit*(zoomMult||5);
   c.setTransform(r*s,0,0,r*s, r*(W/2-w.x*s), r*(H/2-w.y*s));
   const prevLW=LW; LW=Math.max(0.22, Math.min(0.8, 1.05/s));
-  drawScene(c, { x0:w.x-W/2/s, y0:w.y-H/2/s, x1:w.x+W/2/s, y1:w.y+H/2/s });
+  const view = { x0:w.x-W/2/s, y0:w.y-H/2/s, x1:w.x+W/2/s, y1:w.y+H/2/s };
+  drawScene(c, view);
+  if (NIGHT && LIGHTS) [0,1,2].forEach(tw=>drawLights(c, view, tw, s*r));
   LW=prevLW;
   return true;
 }
 function refresh(){ clustersDirty=true; requestRender(); }
+// day or night: rebuild the city bitmap in the new palette (and the lights, the first time)
+function setTheme(t){
+  const n = t==='dark';
+  if (n===NIGHT) return;
+  NIGHT = n;
+  if (wrap) wrap.classList.toggle('night', NIGHT);
+  if (!built) return;
+  if (NIGHT && !LIGHTS) buildLights();
+  buildCache();
+  if (NIGHT && !lightsBmp) buildLightBitmaps();
+  requestRender();
+}
 function resize(){ if (cache && resizeCanvas()){ if (needsCenter) initialView(); requestRender(); } }
 
 export {
   initMap, whenReady, setStamps, setAreaCounts, placeWorld, fitPoints, fitCity, flyToWorld, flyToSeparate,
-  centerLatLng, viewZone, zoomRatio, setPicking, highlight, markDropped, setMeSprite, zoomBy, startTracking,
-  stopTracking, isTracking, drawSnapshot, refresh, resize, visible,
-  ZONES, zoneById, nearestZone, toAI, toLatLng, inMap,
+  centerLatLng, viewZone, zoomRatio, setPicking, highlight, markDropped, setMeSprite, setSelected, startTracking,
+  stopTracking, isTracking, drawSnapshot, refresh, resize, visible, setTheme,
+  ZONES, zoneById, nearestZone, toAI, toLatLng, inMap, onLand,
 };

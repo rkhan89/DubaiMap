@@ -169,7 +169,7 @@ export function polaroidHTML({src, caption, id, rot, tape=true, badge='', cls=''
   return `<figure class="polaroid ${cls}" style="--r:${r.toFixed(2)}deg" ${id?`data-photo="${esc(id)}"`:''}>
     ${tape?'<span class="tape"></span>':''}
     <span class="pol-img">${src?`<img src="${esc(src)}" alt="" loading="lazy">`:''}${badge}</span>
-    ${caption||sub?`<figcaption>${caption?`<span class="hand">${esc(caption)}</span>`:''}${sub}</figcaption>`:''}
+    ${caption||sub?`<figcaption>${caption?`<span class="cap">${esc(caption)}</span>`:''}${sub}</figcaption>`:''}
   </figure>`;
 }
 
