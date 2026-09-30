@@ -917,9 +917,11 @@ function spawnCar(list, v){
   return { r, s, dir, v:r.speed*(0.75+carRng()*0.5), lane:dir*RD[r.k].w*0.22, c:CAR_COLORS[Math.floor(carRng()*CAR_COLORS.length)] };
 }
 function carView(){ return { x0:-cam.x/cam.s, y0:-cam.y/cam.s, x1:(viewW-cam.x)/cam.s, y1:(viewH-cam.y)/cam.s }; }
+let carsEnabled = true;
+function setCars(on){ carsEnabled = !!on; if (!on) cars = []; kickCars(); drawCars(); }
 function carsWanted(){
   const z = cam.s/baseFit;
-  return z >= LOD_MID && viewW > 0 && !document.hidden && !picking;
+  return carsEnabled && z >= LOD_MID && viewW > 0 && !document.hidden && !picking;
 }
 function updateCars(dt){
   const v = carView(), list = roadsInView(v);
@@ -979,6 +981,56 @@ if (navigator.getBattery) navigator.getBattery().then(b=>{
   const f = ()=>{ lowPower = !b.charging && b.level <= 0.2; kickCars(); };
   f(); b.addEventListener('levelchange', f); b.addEventListener('chargingchange', f);
 }).catch(()=>{});
+
+/* =========================================================
+   EXPLORED AREAS: land tinted gold by how much of each area you (or your crew) have
+   eaten in. Each land tile belongs to its nearest area; the tint is one bitmap, redrawn
+   only when the numbers change.
+   ========================================================= */
+let zoneOfTile = null, tintBmp = null, tintKey = '', pendingTint = null;
+function buildZoneTiles(){
+  zoneOfTile = new Int16Array(ROWS*COLS).fill(-1);
+  for (let r=0;r<ROWS;r++) for (let c=0;c<COLS;c++){
+    const t = tType[r*COLS+c]; if (isWaterT(t) || t===L_TARMAC) continue;
+    const {a,i} = gridToAI(c+0.5, r+0.5);
+    let best = -1, bd = 1.7;
+    for (let k=0;k<ZONES.length;k++){ const d = Math.hypot(ZONES[k].a-a, ZONES[k].i-i); if (d < bd){ bd = d; best = k; } }
+    zoneOfTile[r*COLS+c] = best;
+  }
+}
+// values: { zoneId: 0..1 } or null to switch off
+function setZoneTint(values){
+  const key = values ? JSON.stringify(values) : '';
+  if (key === tintKey) return;
+  tintKey = key;
+  if (!built){ pendingTint = values; return; }
+  if (!values){ tintBmp = null; requestRender(); return; }
+  if (!zoneOfTile) buildZoneTiles();
+  const sc = Math.min(0.6, cacheScale*0.5);
+  const cv = tintBmp || document.createElement('canvas');
+  cv.width = Math.round(WORLD.w*sc); cv.height = Math.round(WORLD.h*sc);
+  const c = cv.getContext('2d'); c.setTransform(sc,0,0,sc,0,0); c.clearRect(0,0,WORLD.w,WORLD.h);
+  const paths = new Map(), hw = TW/2, hh = TH/2;
+  for (let r=0;r<ROWS;r++) for (let col=0;col<COLS;col++){
+    const k = zoneOfTile[r*COLS+col]; if (k<0) continue;
+    const v = values[ZONES[k].id]; if (!v) continue;
+    if (!paths.has(k)) paths.set(k, new Path2D());
+    const p = paths.get(k), x = (col-r)*hw+WORLD.ox, y = (col+r)*hh+WORLD.oy;
+    p.moveTo(x,y); p.lineTo(x+hw+0.3,y+hh); p.lineTo(x,y+TH+0.3); p.lineTo(x-hw-0.3,y+hh); p.closePath();
+  }
+  paths.forEach((p,k)=>{ const v = Math.min(1, values[ZONES[k].id]); c.fillStyle = 'rgba(236,150,40,'+(0.3+0.5*v).toFixed(3)+')'; c.fill(p); });
+  tintBmp = cv; tintBmp._sc = sc;
+  requestRender();
+}
+function drawTint(view){
+  if (!tintBmp) return;
+  const sc = tintBmp._sc, x0 = Math.max(0, view.x0), y0 = Math.max(0, view.y0), x1 = Math.min(WORLD.w, view.x1), y1 = Math.min(WORLD.h, view.y1);
+  if (x1<=x0 || y1<=y0) return;
+  // multiply by day so it colours the ground and keeps the buildings' detail; screen at night
+  ctx.globalCompositeOperation = NIGHT ? 'screen' : 'multiply'; ctx.globalAlpha = NIGHT ? 0.45 : 0.8;
+  ctx.drawImage(tintBmp, x0*sc, y0*sc, (x1-x0)*sc, (y1-y0)*sc, x0, y0, x1-x0, y1-y0);
+  ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+}
 
 /* =========================================================
    ENGINE: canvas, camera, gestures, overlay (stamps, area chips, you)
@@ -1058,6 +1110,7 @@ function render(){
     LW = Math.max(0.22, Math.min(0.8, 1.05/cam.s));
     drawScene(ctx, view);
   }
+  drawTint(view);
   if (NIGHT && LIGHTS) renderLights(view, fromCache);
   drawCars(); kickCars();
   updateOverlay();
@@ -1569,6 +1622,7 @@ function initMap(o){
     if (NIGHT) buildLightBitmaps();
     built = true;
     if (resizeCanvas()) initialView();
+    if (pendingTint){ const v = pendingTint; pendingTint = null; tintKey = ""; setZoneTint(v); }
     readyCbs.splice(0).forEach(f=>f());
     requestRender();
   }, 0);
@@ -1662,6 +1716,6 @@ function resize(){ if (cache && resizeCanvas()){ if (needsCenter) initialView();
 export {
   initMap, whenReady, setStamps, setAreaCounts, placeWorld, fitPoints, fitCity, flyToWorld, flyToSeparate,
   centerLatLng, viewZone, zoomRatio, setPicking, highlight, markDropped, setMeSprite, setSelected, startTracking,
-  stopTracking, isTracking, drawSnapshot, refresh, resize, visible, setTheme, setShow,
+  stopTracking, isTracking, drawSnapshot, refresh, resize, visible, setTheme, setShow, setZoneTint, setCars,
   ZONES, zoneById, nearestZone, toAI, toLatLng, inMap, onLand,
 };

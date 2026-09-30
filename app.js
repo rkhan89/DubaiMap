@@ -5,7 +5,7 @@ import * as M from './model.js';
 import * as MAP from './map.js';
 import { CATEGORIES, catById, iconSvg, esc, fmtRating, ago, agoLong, plural } from './data.js';
 import { avatarHTML, avatarStack, spriteSvg, DEFAULT_AVATAR } from './avatar.js';
-import { $, $$, icon, toast, openSheet, back, stampHTML, catChip, seg, bindSeg, toggleHTML, bindToggle, ratingPill } from './ui.js';
+import { $, $$, icon, toast, openSheet, back, closeAll, stampHTML, catChip, seg, bindSeg, toggleHTML, bindToggle, ratingPill } from './ui.js';
 import { go, state } from './go.js';
 import { applyTheme, onTheme, themePref, setThemePref } from './theme.js';
 import { showState, now } from './shows.js';
@@ -13,6 +13,11 @@ import './onboarding.js';
 import './crew.js';
 import './place.js';
 import './book.js';
+import { primeBadges } from './badges.js';
+import './profile.js';
+import './social.js';
+import './recap.js';
+import { prefs, setPref } from './prefs.js';
 
 const scopeKey = 'bites-scope';
 state.scope = (()=>{ const s=M.defaultScope(); try{ const p=JSON.parse(localStorage.getItem(scopeKey)); if (p && p.mode) s.mode=p.mode; }catch(_){} return s; })();
@@ -32,7 +37,7 @@ function paintProfileButtons(){
   $$('.profile-btn').forEach(b=>{ b.innerHTML = me ? avatarHTML(me, 44) : icon('person'); });
 }
 document.addEventListener('click', e=>{
-  const b=e.target.closest('[data-act="profile"]'); if (b){ e.preventDefault(); openProfile(); }
+  const b=e.target.closest('[data-act="profile"]'); if (b){ e.preventDefault(); go.profile(); }
   const bk=e.target.closest('[data-act="back"]'); if (bk){ e.preventDefault(); back(); }
 });
 
@@ -68,6 +73,7 @@ function rebuild(){
   MAP.setStamps(stampItems());
   const counts={}; modelCache.forEach(s=>{ if (s.state!=='unlit') counts[s.v.zone]=(counts[s.v.zone]||0)+1; });
   MAP.setAreaCounts(counts);
+  MAP.setZoneTint(prefs().zones ? Object.fromEntries(Object.entries(counts).map(([z,n])=>[z, Math.min(1, n/5)])) : null);
   // mode toggle, with how many places each side shows
   const meN = sc.mode==='me' ? modelCache.filter(s=>s.state!=='unlit').length : M.mapModel({...sc, mode:'me', members:null}).filter(s=>s.state!=='unlit').length;
   const crewN = sc.mode==='crew' ? modelCache.filter(s=>s.state!=='unlit').length : M.mapModel({...sc, mode:'crew'}).filter(s=>s.state!=='unlit').length;
@@ -237,10 +243,12 @@ function openFilters(){
       <div class="opt-grid mt12" style="grid-template-columns:1fr 1fr 1fr" data-f="privacy">
         ${[['shared','Shared only','public'],['private','Private only','lock'],['all','All places','layers']].map(([v,l,ic])=>`<button class="opt-card${draft.privacy===v?' on':''}" data-p="${v}" style="flex-direction:column;justify-content:center;gap:6px;padding:12px 6px;font-family:var(--f-mono);font-size:12px;text-align:center">${icon(ic)}${l}</button>`).join('')}
       </div>
+      <div class="person-row mt24" style="box-shadow:none;background:var(--sc-low)">${icon('format_color_fill')}<span class="pr-main"><span class="pr-name">Colour explored areas</span><span class="pr-sub">Areas with ${draft.mode==='me'?'your':'crew'} places glow gold</span></span>${toggleHTML('fZones', prefs().zones, 'Colour explored areas')}</div>
       <div class="sheet-foot"><button class="btn btn-gold btn-block" data-f="apply">${icon('check_circle')}Apply filters (${plural(n,'place')})</button></div>`;
     };
     paint();
     body.addEventListener('click', e=>{
+      if (e.target.closest('#fZones')){ const on=!prefs().zones; setPref('zones', on); e.target.closest('#fZones').classList.toggle('on', on); rebuild(); return; }
       const t=e.target.closest('button'); if (!t) return;
       const f=t.closest('[data-f]')?.dataset.f || t.dataset.f;
       if (f==='clear'){ draft.members=null; draft.cats=null; draft.privacy='all'; draft.status={been:true,want:true}; }
@@ -352,63 +360,6 @@ $('#nav').addEventListener('click', e=>{
 $('#btnFit').onclick=()=>{ const pts=modelCache.filter(s=>s.state!=='unlit').map(s=>MAP.placeWorld(s.v)); pts.length?MAP.fitPoints(pts,true):MAP.fitCity(true); };
 $('#btnLocate').onclick=()=>MAP.startTracking(true);
 
-/* =========================================================
-   PROFILE (own design: settings are Phase 2)
-   ========================================================= */
-function openProfile(){
-  const me=S.me(); if (!me) return;
-  openSheet(body=>{
-    const paint=()=>{
-      const crew=S.myCrew();
-      body.innerHTML = `
-      <div class="row" style="gap:16px">${avatarHTML(me,72)}<div class="grow"><h2 class="h-lg">${esc(me.name||'@'+me.handle)}</h2><span class="mono muted">@${esc(me.handle)} • ${me.points||0} pts</span></div></div>
-      ${APP.previewMode?`<div class="note mt16">${icon('science')}<span><b>Preview mode.</b> Your account, crew and photos live on this phone until sign-in goes live. Export a backup to move them.</span></div>`:''}
-      <div class="stack mt20">
-        <button class="person-row" data-p="avatar">${icon('face')}<span class="pr-main"><span class="pr-name">Edit avatar</span><span class="pr-sub">Pixel you on the map</span></span>${icon('chevron_right')}</button>
-        <button class="person-row" data-p="handle">${icon('alternate_email')}<span class="pr-main"><span class="pr-name">Name & handle</span><span class="pr-sub">@${esc(me.handle)}</span></span>${icon('chevron_right')}</button>
-        <button class="person-row" data-p="crew">${icon('groups')}<span class="pr-main"><span class="pr-name">${crew?esc(crew.name):'Your crew'}</span><span class="pr-sub">${crew?plural(crew.memberIds.length,'member'):'Start or join a crew'}</span></span>${icon('chevron_right')}</button>
-        <div class="person-row">${icon('share')}<span class="pr-main"><span class="pr-name">Share new places with my crew</span><span class="pr-sub">Default for new logs. You can change any single place.</span></span>${toggleHTML('pShare', me.shareDefault!=='private','Share with crew by default')}</div>
-        <div class="person-row" style="flex-wrap:wrap">${icon('contrast')}<span class="pr-main"><span class="pr-name">Appearance</span><span class="pr-sub">Auto follows your phone</span></span>${seg('theme', [['light','Light'],['dark','Dark'],['auto','Auto']], themePref())}</div>
-        <div class="person-row">${icon('celebration')}<span class="pr-main"><span class="pr-name">Burj Khalifa light shows</span><span class="pr-sub">7 to 11 pm, every 15 minutes, on the map</span></span>${toggleHTML('pShows', showsOn(),'Burj Khalifa light shows')}</div>
-        <div class="person-row">${icon('my_location')}<span class="pr-main"><span class="pr-name">Show me on the map</span><span class="pr-sub">Only on this phone, never saved</span></span>${toggleHTML('pLoc', MAP.isTracking(),'Show my location')}</div>
-        ${APP.previewMode?`<div class="person-row">${icon('diversity_3')}<span class="pr-main"><span class="pr-name">Preview with a sample crew</span><span class="pr-sub">Adds Maya, Omar, Layla, Kabir & Noor with real-looking logs and photos</span></span>${toggleHTML('pDemo', S.demoOn(),'Sample crew')}</div>`:''}
-        <button class="person-row" data-p="tour">${icon('tour')}<span class="pr-main"><span class="pr-name">Replay the map tour</span></span>${icon('chevron_right')}</button>
-        ${S.legacyPlaces().length?`<button class="person-row" data-p="import">${icon('install_mobile')}<span class="pr-main"><span class="pr-name">Import from this phone</span><span class="pr-sub">${plural(S.legacyPlaces().length,'place')} from the old version</span></span>${icon('chevron_right')}</button>`:''}
-        <button class="person-row" data-p="export">${icon('download')}<span class="pr-main"><span class="pr-name">Export backup</span><span class="pr-sub">Your logs and photos as one file</span></span>${icon('chevron_right')}</button>
-        <label class="person-row" style="position:relative">${icon('upload')}<span class="pr-main"><span class="pr-name">Import backup</span></span>${icon('chevron_right')}<input type="file" accept="application/json,.json" id="pImport" style="position:absolute;inset:0;opacity:0"></label>
-        <button class="btn btn-danger btn-block mt8" data-p="signout">${icon('logout')}Sign out</button>
-      </div>`;
-      bindToggle(body.querySelector('#pShare'), on=>{ S.updateMe({shareDefault:on?'crew':'private'}); toast(on?'New places will be shared with your crew':'New places will stay private'); });
-      bindSeg(body, 'theme', v=>setThemePref(v));
-      bindToggle(body.querySelector('#pShows'), on=>{ try{ localStorage.setItem(SHOWS_KEY, on?'1':'0'); }catch(_){} tickShow(); });
-      bindToggle(body.querySelector('#pLoc'), on=>{ on?MAP.startTracking(true):MAP.stopTracking(); });
-      const d=body.querySelector('#pDemo'); if (d) bindToggle(d, async on=>{ await S.setDemo(on); toast(on?'Sample crew added':'Sample crew removed'); paint(); });
-      body.querySelector('#pImport').addEventListener('change', async e=>{
-        const f=e.target.files[0]; if (!f) return;
-        try{ const n=await S.importBackup(JSON.parse(await f.text())); toast(`Imported ${plural(n,'log')}`); }catch(_){ toast("That file isn't a backup from this app"); }
-      });
-    };
-    paint();
-    body.addEventListener('click', async e=>{
-      const b=e.target.closest('[data-p]'); if (!b) return;
-      const p=b.dataset.p;
-      if (p==='avatar'){ back(); setTimeout(()=>go.editAvatar(), 60); }
-      if (p==='handle'){ back(); setTimeout(()=>go.editHandle(), 60); }
-      if (p==='crew'){ back(); setTimeout(()=>go.crew(), 60); }
-      if (p==='tour'){ back(); setTimeout(()=>go.coach(), 300); }
-      if (p==='import'){ back(); setTimeout(()=>go.importPhone(), 60); }
-      if (p==='export'){
-        toast('Preparing backup…');
-        const data=await S.exportBackup();
-        const blob=new Blob([JSON.stringify(data)],{type:'application/json'});
-        const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`${APP.name.replace(/\W+/g,'-').toLowerCase()}-backup.json`;
-        document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
-      }
-      if (p==='signout'){ S.signOut(); back(); setTimeout(()=>go.onboarding(), 300); }
-    });
-  });
-}
-go.profile = openProfile;
 
 /* =========================================================
    COACH MARKS (3 steps after onboarding)
@@ -416,7 +367,7 @@ go.profile = openProfile;
 function coach(){
   switchView('map');
   const steps = [
-    { tag:'Venue diary pin', icon:'local_cafe', title:'Tap a stamp to see who visited', body:'Every postal stamp is a spot your crew discovered. Tap one to flip it open for tasting notes, photos and honest ratings.', target:()=>$('.stamp-anchor:not(.faint) .stamp') },
+    { tag:'Venue diary pin', icon:'local_cafe', title:'Tap a stamp to see who visited', body: $('.stamp-anchor') ? 'Every stamp is a spot you or your crew logged. Tap one for tasting notes, photos and honest ratings.' : 'Every place you or your crew log becomes a stamp here. Tap one later for notes, photos and ratings.', target:()=>$('.stamp-anchor .stamp') },
     { tag:'Me / Crew', icon:'group', title:'Flip between you and your crew', body:'Me shows your own scrapbook, private spots included. Crew shows everything your friends have shared. Filter by friend or category with the slider button.', target:()=>$('.map-top') },
     { tag:'Crew news', icon:'notifications', title:'New from your crew', body:'A dot on the bell means a friend logged or saved somewhere new. Tap it for the list; the map itself stays clean.', target:()=>$('#btnBell') },
     { tag:'Log a bite', icon:'add_a_photo', title:'Stamp your first spot', body:'Tap + to log a place: rate it, add photos, and choose whether your crew can see it.', target:()=>$('#navLog') },
@@ -453,6 +404,7 @@ go.coach = coach;
 async function boot(){
   if (new URLSearchParams(location.search).has('still')) document.documentElement.classList.add('still');
   onTheme(t=>{ MAP.setTheme(t); tickShow(); });
+  MAP.setCars(prefs().cars);
   MAP.setTheme(applyTheme());
   setInterval(tickShow, 1000);
   document.addEventListener('visibilitychange', ()=>{ if (!document.hidden) tickShow(); });
@@ -483,15 +435,15 @@ async function boot(){
   if (join){ state.pendingJoin = join.toUpperCase(); history.replaceState(null,'',location.pathname); }
   if (!S.isOnboarded()) go.onboarding();
   else {
-    rebuild();
+    rebuild(); primeBadges();
     if (state.pendingJoin) go.inviteLanding(state.pendingJoin);
     else if (!S.flag('coachDone')) MAP.whenReady(()=>setTimeout(coach, 500));
   }
 }
 /* Burj Khalifa light shows (schedule in shows.js), recomputed from the clock every second */
-const SHOWS_KEY='bites-shows';
-const showsOn = ()=>{ try{ return localStorage.getItem(SHOWS_KEY)!=='0'; }catch(_){ return true; } };
-function tickShow(){ MAP.setShow(showsOn() ? showState(now()) : null); }
+function tickShow(){ MAP.setShow(prefs().shows ? showState(now()) : null); }
+go.tickShow = tickShow;
+go.closeAll = closeAll;
 function paintMe(){ const me=S.me(); if (me) MAP.setMeSprite(spriteSvg({...DEFAULT_AVATAR, ...(me.avatar&&me.avatar.pixel||{})}, 3)); }
 go.paintMe = paintMe;
 go.afterOnboarding = ()=>{

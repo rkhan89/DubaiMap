@@ -114,10 +114,12 @@ function crewScreen(){
           <div class="grow"><h2 class="h-lg" id="cnm">${esc(crew.name)}</h2><span class="hand">${esc(crew.tagline||(owner?'Tap to add a crew motto':''))}</span></div>
           <button class="btn btn-gold btn-sm" id="cInv" style="border-radius:999px;min-height:48px;font-size:17px">${icon('person_add')}Invite</button>
         </div>
+        <button class="card mt16 block-btn row" id="cBoard">${icon('leaderboard')}<span class="grow"><b>Leaderboard</b><span class="muted small" style="display:block">Who's eaten their way furthest this month</span></span>${icon('chevron_right')}</button>
+        ${go.eventsCard ? go.eventsCard() : ''}
         <div class="row between mt20"><span class="eyebrow">Fellow explorers (${members.length})</span><span class="mono" style="color:var(--green);font-size:12px">All sync'd</span></div>
         <div class="stack mt12">${members.map(u=>{
           const isMe=u.id===me.id, isOwner=u.id===crew.ownerId;
-          return `<div class="person-row">${avatarHTML(u,52)}<div class="pr-main">
+          return `<div class="person-row"><button data-profile="${u.id}" aria-label="${esc(u.name||u.handle)}'s profile" style="border-radius:50%">${avatarHTML(u,52)}</button><div class="pr-main">
             <div class="pr-name">${isMe?'You':esc(u.name||u.handle)}${isOwner?'<span class="tag soft">Owner</span>':''}${!isMe&&u.tagline?`<span class="hand">${esc(u.tagline)}</span>`:''}</div>
             <div class="pr-sub">@${esc(u.handle)} • ${plural(M.placesPinned(u.id),'place')} pinned</div></div>
             ${isMe?`<span class="ms" style="color:var(--outline)">${isOwner?'local_police':'person'}</span>`:`<button class="icon-btn" data-member="${u.id}" aria-label="Manage ${esc(u.name||u.handle)}">${icon('more_horiz')}</button>`}</div>`;
@@ -128,6 +130,9 @@ function crewScreen(){
       </div>`;
       el.querySelector('#cpCopy').onclick=()=>copy(crew.code, `Passcode ${crew.code} copied!`);
       el.querySelector('#cInv').onclick=()=>sendInvite(crew);
+      el.querySelector('#cBoard').onclick=()=>go.leaderboard();
+      if (go.bindEventsCard) go.bindEventsCard(el, paint);
+      el.querySelectorAll('.person-row [data-profile]').forEach(b=>b.onclick=()=>go.profile(b.dataset.profile));
       if (owner){ const t=el.querySelector('#cnm').parentElement; t.style.cursor='pointer'; t.onclick=()=>editCrew(crew, paint); }
       el.querySelectorAll('[data-member]').forEach(b=>b.onclick=()=>memberMenu(S.user(b.dataset.member), owner, paint));
       el.querySelector('#cLeave').onclick=()=>{
@@ -190,9 +195,11 @@ function memberMenu(u, owner, after){
   openSheet(body=>{
     body.innerHTML = `<div class="row">${avatarHTML(u,56)}<div class="grow"><h2 class="h-md">${esc(u.name||u.handle)}</h2><span class="mono muted">@${esc(u.handle)}</span></div></div>
       <div class="stack mt20">
+        <button class="person-row" data-x="profile">${icon('badge')}<span class="pr-main"><span class="pr-name">View profile</span><span class="pr-sub">Stickers, stats and favourite spots</span></span></button>
         <button class="person-row" data-x="map">${icon('map')}<span class="pr-main"><span class="pr-name">See ${esc(u.name||u.handle)}'s places</span><span class="pr-sub">Filters the crew map to them</span></span></button>
         ${owner?`<button class="person-row" data-x="remove" style="color:var(--red)">${icon('person_remove')}<span class="pr-main"><span class="pr-name">Remove from crew</span><span class="pr-sub">Their places leave your shared map</span></span></button>`:''}
       </div>`;
+    body.querySelector('[data-x="profile"]').onclick=()=>{ back(); setTimeout(()=>go.profile(u.id), 60); };
     body.querySelector('[data-x="map"]').onclick=()=>{ closeAll(); state.scope.mode='crew'; state.scope.members=new Set([u.id]); go.switchView('map'); go.refresh(); };
     const r=body.querySelector('[data-x="remove"]'); if (r) r.onclick=()=>{ S.removeMember(u.id); back(); toast(`${u.name||u.handle} removed`); go.refresh(); after(); };
   });

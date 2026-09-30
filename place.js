@@ -286,6 +286,7 @@ function logFlow(opts){
         MAP.markDropped(venue.id);
         MAP.flyToSeparate(w, S.venues().filter(x=>x.id!==venue.id).map(x=>MAP.placeWorld(x)).filter(p=>Math.hypot(p.x-w.x,p.y-w.y)<60));
         if (parts.length) pointsToast(parts); else toast('Saved');
+        setTimeout(()=>go.checkBadges && go.checkBadges(), parts.length ? 3400 : 600);
       }, 120);
     };
     paint();
