@@ -24,7 +24,9 @@ export function placeLink(v){
 }
 export function sharePlace(v){
   const z = MAP.zoneById(v.zone);
-  return share({ title:v.name, text:`${v.name}, ${z?z.label:APP.city}. On ${APP.name}:`, url:placeLink(v) });
+  // the tagline doubles as the sign-off when you've actually been
+  const been = S.entries({venueId:v.id, userId:S.me()?.id, kind:'visit'}).length > 0;
+  return share({ title:v.name, text:`${been ? APP.tagline+': ' : ''}${v.name}, ${z?z.label:APP.city}. On ${APP.name}:`, url:placeLink(v) });
 }
 // read ?place=… on arrival; returns the venue id to open (creating the place if it's new here)
 export function takeSharedPlace(){

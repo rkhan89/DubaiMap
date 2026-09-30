@@ -1,7 +1,7 @@
 {
-  "name": "Dubai Bites",
-  "short_name": "Dubai Bites",
-  "description": "A shared scrapbook map of the best food, coffee and desserts in Dubai.",
+  "name": "Koko",
+  "short_name": "Koko",
+  "description": "We were here. A shared food scrapbook map of Dubai for you and your crew.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

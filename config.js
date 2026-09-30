@@ -1,8 +1,8 @@
 // Everything that names or brands the app lives here, so a rename is a one-file change.
 // The logo is the single asset logo.svg (also used as the favicon).
 export const APP = {
-  name: 'Dubai Bites',
-  tagline: 'Your scrapbook of the city',
+  name: 'Koko',
+  tagline: 'We were here',
   logo: 'logo.svg',
   city: 'Dubai',
   // invite links look like <origin>/?join=CODE

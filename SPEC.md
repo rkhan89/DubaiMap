@@ -1,4 +1,4 @@
-# Dubai Bites — product spec
+# Koko — product spec
 
 Living spec for the app as built. Where a review prompt changes behaviour, this file is
 updated to match. (Created during polish-1; there was no earlier SPEC.md. Before that, the
@@ -11,7 +11,8 @@ photos, and share a photobook. Private logs are visible to their owner only.
 
 ## Brand
 - Name, tagline and logo live in `config.js` (`APP.name`, `APP.tagline`, `APP.logo`) and `logo.svg`.
-- Tagline: "Your scrapbook of the city".
+- Name: **Koko**. Tagline: "We were here" (header, welcome screen, recap card, shared places).
+- The live URL is still dubai-bites-pi.vercel.app (Vercel project name); rename it in Vercel if you want a new address.
 
 ## Type
 - Titles: **Nunito Sans** (700–900).

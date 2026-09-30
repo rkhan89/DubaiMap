@@ -27,7 +27,7 @@ async function drawRecap(canvas, month){
   const logo = await loadImg(APP.logo);
   if (logo) c.drawImage(logo, 72, 70, 96, 96);
   c.fillStyle = INK; c.font = '900 44px "Nunito Sans"'; c.fillText(APP.name, 192, 118);
-  c.fillStyle = SOFT; c.font = '500 30px "Plus Jakarta Sans"'; c.fillText(fmtMonth(month), 192, 158);
+  c.fillStyle = SOFT; c.font = '500 30px "Plus Jakarta Sans"'; c.fillText(APP.tagline + '  ·  ' + fmtMonth(month), 192, 158);
   c.fillStyle = INK; c.font = '900 92px "Nunito Sans"'; c.fillText('My month', 72, 300); c.fillText('in bites', 72, 400);
   // stat tiles
   const tiles = [[s.places,'places'],[s.visits,'visits'],[s.areaCount,'areas'],[s.photos,'photos']];

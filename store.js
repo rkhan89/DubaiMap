@@ -297,6 +297,8 @@ export function books(){
   if (crew && !Object.values(db.books).some(b=>b.kind==='crew' && b.crewId===crew.id))
     db.books[uid()] = { id:null, ownerId:crew.ownerId, crewId:crew.id, kind:'crew', title:`${crew.name} Scrapbook`, byline:'', texture:'cloth', tint:'#486636', pin:'karak', coverPhotoId:null };
   Object.entries(db.books).forEach(([k,b])=>{ if (!b.id) b.id=k; });
+  // the app was renamed: personal books still carrying the old default title follow the new name
+  Object.values(db.books).forEach(b=>{ if (b.kind==='personal' && b.title==='Dubai Bites • Vol. 1') b.title=APP.name+' • Vol. 1'; });
   return Object.values(db.books).filter(b=> b.ownerId===m.id && b.kind!=='crew' || (b.kind==='crew' && crew && b.crewId===crew.id));
 }
 export function book(id){ books(); return db.books[id]||null; }

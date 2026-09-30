@@ -1,6 +1,6 @@
-# Dubai Bites
+# Koko
 
-A social food scrapbook for Dubai: an isometric, Habbo-style map of the city where you and
+Koko (We were here) is a social food scrapbook for Dubai: an isometric, Habbo-style map of the city where you and
 your crew stamp the cafés, karak stops and dessert spots you've been to, plus a shared photobook.
 
 Plain HTML/CSS/JS (ES modules), no build step. Live: https://dubai-bites-pi.vercel.app
