@@ -909,3 +909,33 @@ html{overflow:hidden;}
 /* recap */
 .recap-frame{border-radius:18px;overflow:hidden;box-shadow:var(--shadow);background:var(--paper);}
 .recap-frame canvas{display:block;width:100%;height:auto;aspect-ratio:1080/1350;}
+
+/* =========================================================
+   PHASE 3: events, page editor (own design)
+   ========================================================= */
+.event-ticket{position:relative;background:var(--paper);color:var(--ink);border-radius:var(--r-xl);padding:18px 16px;box-shadow:var(--shadow-sm);border:2px dashed var(--outline-v);}
+.event-ticket .tape{top:-9px;left:50%;margin-left:-32px;}
+.event-row{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:10px;border-radius:14px;background:var(--sc-low);}
+.ev-date{width:46px;height:50px;border-radius:12px;background:var(--card);box-shadow:var(--shadow-sm);display:flex;flex-direction:column;align-items:center;justify-content:center;flex:none;}
+.ev-date b{font-family:var(--f-head);font-weight:900;font-size:20px;line-height:1;}
+.ev-date small{font-family:var(--f-mono);font-size:10px;color:var(--rust);font-weight:700;}
+.card .h-sm .ms,.card-soft .h-sm .ms{font-size:20px;vertical-align:-4px;color:var(--gold-text);}
+
+/* photobook pages: edit button, stickers, note, layouts */
+.page .page-edit{position:absolute;top:10px;right:10px;background:var(--sc-low);z-index:3;}
+.page-sticker{position:absolute;z-index:3;pointer-events:none;}
+.page-sticker.ps-0{top:74px;right:-6px;}
+.page-sticker.ps-1{top:46%;left:-8px;}
+.page-sticker.ps-2{bottom:92px;right:10px;}
+.page-note{position:relative;margin:22px 8px 0;padding:14px 16px;background:var(--gold-fixed);color:var(--gold-fixed-ink);border-radius:4px;font-size:15px;line-height:1.45;transform:rotate(-1deg);box-shadow:var(--shadow-sm);}
+.page-note .tape{top:-9px;left:24px;}
+.layout-grid .page-photos{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px;}
+.layout-grid .page-photos .polaroid{margin:0;}
+.layout-hero .page-photos{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px;}
+.layout-hero .page-photos .polaroid{margin:0;}
+.layout-hero .page-photos .polaroid.hero{grid-column:1 / -1;}
+.order-row img{width:52px;height:52px;border-radius:8px;object-fit:cover;flex:none;}
+.order-row .icon-btn[disabled]{opacity:.3;}
+.sticker-pick{display:flex;flex-wrap:wrap;gap:12px;}
+.sticker-pick button{border-radius:50%;padding:4px;opacity:.55;}
+.sticker-pick button.on{opacity:1;box-shadow:0 0 0 3px var(--gold);}

@@ -116,3 +116,46 @@ designs are listed in the README and the review reports.
 Local-first today (`store.js`: localStorage plus IndexedDB for photos) behind an API that Supabase
 will replace. A private entry or photo is visible to its owner only. Crew views, counts, the
 feed, the bell and the crew book only ever include visible records.
+
+## Phase 2 (own design; there were no Stitch frames 23–30)
+Built from the existing components (paper passport, stamps, polaroids, person rows, sheets).
+- **Profile** (tap your avatar): level and points, places, visits, areas explored (of 49), photos;
+  a sticker strip; your crew rank this month; this month's goals; your recap; favourite kinds of
+  place and area; recent stamps. Friends' profiles (from the crew screen or leaderboard) show only
+  what they share. Points, the same for everyone: new place 10, repeat visit 4, first in the crew
+  +5, each photo +2, check-in +3. Levels: New in town → Street snacker → Karak regular → Food scout
+  → Neighbourhood insider → City taster → Bites legend.
+- **Badge stickers**: 15 die-cut stickers derived from your logs (First bite, Explorer, Karak
+  connoisseur, Sweet tooth, Caffeine trail, Regular, Old Dubai, Shutterbug, Critic, Crew pioneer,
+  Dreamer, On the spot, Omnivore, Cartographer, Local legend). Locked ones show progress. A new one
+  gets an unlock moment (sticker peels on with confetti) after the action that earned it; the
+  first run marks what you already have as seen.
+- **Crew leaderboard**: this month or all time, a podium for the top three, then everyone.
+- **Goals**: five monthly goals (new places, new kinds, new areas, photos, places from your
+  want-to-try list) with targets you can raise or lower. They reset on the 1st.
+- **Map zone colouring**: "Colour explored areas" (filter sheet or Settings) tints each area's land
+  gold by how many places you (Me) or the crew (Crew) have there. Off by default.
+- **Recap card**: a month in bites (places, visits, areas, photos, top spot with its photo,
+  favourite kind, level, who topped the crew), drawn as an image to save or share. It stays on light
+  paper in both themes.
+- **Settings**: account, appearance, map (show me, explored areas, cars, light shows), privacy,
+  notifications, crew and sample crew, backups, tour, sign out.
+
+## Phase 3 (own design)
+- **Share links**: sharing a place sends `<site>/?place=<id>`; places someone added themselves
+  also carry their name, area, kind and spot, so the link works on a phone that has never seen
+  them. Opening a link flies to the place and opens it (after sign-up if needed).
+- **Check-ins**: "Check in" on a place asks for your location and logs a visit (+3 points and
+  the On the spot sticker) when you're within 300 m of its exact spot, or within 1.5 km of its
+  area when it has none. Otherwise it says how far away you are and offers a normal log.
+  Development: `?at=lat,lng` fakes your location.
+- **Events ("plan a bite")**: pick a place and a time, and the crew gets the plan. They can RSVP
+  going / maybe / can't, add it to their calendar (.ics) or share it. Plans show on the crew
+  screen, on the place and in the bell. The host can cancel.
+- **Push (reminders)**: with reminders on (Settings), the phone is nudged an hour before a crew
+  bite you're going to, and two minutes before the first light show at 7 pm. Without a server
+  this works while the app is open or installed and running; real push to a closed app needs
+  Supabase plus a push service. The app is installable (web manifest, icons) and works offline
+  from its last copy (service worker, network first).
+- **Page editor**: each photobook page can be edited: layout (scrapbook, grid, hero), photo
+  order, up to three earned stickers stuck on the page, and a page note.

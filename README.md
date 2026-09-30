@@ -19,10 +19,15 @@ Plain HTML/CSS/JS (ES modules), no build step. Live: https://dubai-bites-pi.verc
 | `book.js` | Photobook: shelf, cover, open book, filters, viewer, add photos (frames 15-22). |
 | `ui.js`, `avatar.js`, `data.js` | Shared components, pixel avatars, categories + helpers. |
 | `seed-places.json` | The 100 starter venues. |
-| `demo.js`, `demo/` | Optional sample crew for preview mode (toggle in your profile). |
+| `demo.js`, `demo/` | Optional sample crew for preview mode (toggle in Settings). |
 | `theme.js` | Light / Dark / Auto: resolves to `data-theme` on `<html>`. |
 | `synth.js` | Development only: `?synthetic=500` adds test places in memory. |
 | `shows.js` | Burj Khalifa light-show schedule and clock (`?now=` to test); tests in `tests/` (`node --test tests/shows.test.mjs`). |
+| `stats.js`, `badges.js` | Points, levels and stickers, all derived from visible logs. |
+| `profile.js`, `social.js`, `recap.js` | Profile and Settings, leaderboard and goals, the monthly recap card. |
+| `events.js`, `notify.js` | Crew plans, check-ins, share links; reminders. |
+| `sw.js`, `manifest.webmanifest` | Installable app, offline copy, notification taps. |
+| `prefs.js` | Per-device preferences (map extras, reminders). |
 | `SPEC.md` | The living product spec. |
 | `design/` | The Stitch reference screens (not deployed). |
 

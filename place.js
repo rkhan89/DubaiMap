@@ -7,6 +7,7 @@ import { CATEGORIES, catById, iconSvg, esc, fmtRating, fmtDate, todayISO, plural
 import { avatarHTML, avatarStack } from './avatar.js';
 import { $, icon, toast, pointsToast, openScreen, openSheet, back, closeAll, topbar, stampHTML, catChip, polaroidHTML, starInput, toggleHTML, bindToggle, ratingPill, share, compressImage } from './ui.js';
 import { go, state } from './go.js';
+import { sharePlace, eventRowHTML, planBite, eventSheet, checkIn } from './events.js';
 
 function whenText(e){
   const d=new Date(e.createdAt), days=Math.floor((Date.now()-e.createdAt)/864e5);
@@ -58,7 +59,9 @@ function placeScreen(venueId){
           </div>`;
         }).join('') || `<div class="card-soft center"><span class="hand">Nobody in your crew has stamped this yet.</span><p class="muted small mt8">Be the first: +5 points for first in the crew.</p></div>`}</div>
         ${wanters.length?`<div class="card-soft row mt16">${icon('bookmark')}<div class="grow"><b>Wants to try</b><div class="muted small">${plural(wanters.length,'crew friend')} saved this spot</div></div>${avatarStack(wanters,34,3)}</div>`:''}
-        <button class="btn btn-soft btn-block mt16" id="pLog">${icon('add_a_photo')}${mine.some(e=>e.kind==='visit')?'Log another visit':'Log your visit'}</button>
+${S.events({venueId:v.id, upcoming:true}).length?`<div class="card mt16"><span class="h-sm">${icon('event')} Crew plans here</span><div class="stack mt8">${S.events({venueId:v.id, upcoming:true}).map(eventRowHTML).join('')}</div></div>`:''}
+        <div class="btn-grid mt16"><button class="btn btn-soft" id="pCheck">${icon('where_to_vote')}Check in</button><button class="btn btn-soft" id="pPlan">${icon('event')}Plan a bite</button></div>
+        <button class="btn btn-soft btn-block mt12" id="pLog">${icon('add_a_photo')}${mine.some(e=>e.kind==='visit')?'Log another visit':'Log your visit'}</button>
         ${photos.length?`<div class="row between mt24"><span class="row h-md" style="gap:8px">${icon('photo_camera')}Crew Photo Strip</span><span class="mono muted" style="font-size:12px">${plural(photos.length,'snap')}</span></div>
         <div class="strip">${photos.map(p=>polaroidHTML({src:S.photoURL(p), caption:p.caption, id:p.id, badge:p.private?`<span class="pol-badge tr">${icon('lock')}Only me</span>`:''})).join('')}</div>`:''}
         <button class="btn btn-gold btn-block mt16" id="pSend">${icon('send')}Send to Crew</button>
@@ -71,7 +74,10 @@ function placeScreen(venueId){
       el.querySelectorAll('[data-edit]').forEach(r=>r.onclick=()=>logFlow({entryId:r.dataset.edit}));
       el.querySelectorAll('.strip [data-photo]').forEach(f=>f.onclick=()=>go.viewer(photos.map(p=>p.id), photos.findIndex(p=>p.id===f.dataset.photo)));
       el.querySelector('#pLog').onclick=()=>logFlow({venueId:v.id});
-      el.querySelector('#pSend').onclick=()=>share({title:v.name, text:`${v.name} — ${z?z.label:APP.city}. Found on ${APP.name}`, url:mapsURL(v)});
+      el.querySelector('#pSend').onclick=()=>sharePlace(v);
+      el.querySelector('#pCheck').onclick=()=>checkIn(v.id, ()=>setTimeout(paint, 300));
+      el.querySelector('#pPlan').onclick=()=>planBite(v.id, ()=>paint());
+      el.querySelectorAll('[data-event]').forEach(b=>b.onclick=()=>eventSheet(b.dataset.event, paint));
       el.querySelector('#pMap').onclick=()=>{ closeAll(); go.switchView('map'); const w=MAP.placeWorld(v); MAP.flyToSeparate(w, S.venues().filter(x=>x.id!==v.id).map(x=>MAP.placeWorld(x)).filter(p=>Math.hypot(p.x-w.x,p.y-w.y)<60)); MAP.highlight(v.id); };
       const pw=el.querySelector('#pWant'); if (pw) pw.onclick=()=>{ S.addEntry({venueId:v.id, kind:'want'}); toast('Saved to try'); go.refresh(); paint(); };
       el.querySelector('#pMore').onclick=()=>moreMenu(v, paint);
@@ -91,7 +97,7 @@ function moreMenu(v, after){
     const q=s=>body.querySelector(`[data-x="${s}"]`);
     if (q('unwant')) q('unwant').onclick=async()=>{ for (const w of wants) await S.deleteEntry(w.id); back(); toast('Removed'); go.refresh(); after(); };
     if (q('edit')) q('edit').onclick=()=>{ back(); setTimeout(()=>editVenue(v, after), 60); };
-    q('share').onclick=()=>{ back(); share({title:v.name, text:`${v.name} on ${APP.name}`, url:mapsURL(v)}); };
+    q('share').onclick=()=>{ back(); sharePlace(v); };
   });
 }
 go.place = placeScreen;

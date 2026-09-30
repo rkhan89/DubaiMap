@@ -11,7 +11,8 @@
 //   venues   {id, name, zone, categories[], lat, lng, address, createdBy, createdAt, seed}
 //   entries  {id, venueId, userId, kind:'visit'|'want', rating, notes, date, private, createdAt}
 //   photos   {id, userId, venueId, entryId, caption, date, private, src, bookmarkedBy[], createdAt}
-//   books    {id, ownerId, kind:'personal'|'crew'|'album', title, byline, texture, tint, pin, coverPhotoId, filter}
+//   books    {id, ownerId, kind:'personal'|'crew'|'album', title, byline, texture, tint, pin, coverPhotoId, filter, pages}
+//   events   {id, crewId, createdBy, venueId, when (ISO local datetime), note, rsvps:{userId:'going'|'maybe'|'no'}, createdAt}
 //
 // Privacy: a private entry or photo is visible to its owner only. Everything else is
 // visible to the owner's crew. Crew totals, the crew map, feed and crew book only
@@ -28,7 +29,7 @@ const listeners = new Set();
 export function onChange(fn){ listeners.add(fn); return ()=>listeners.delete(fn); }
 function emit(what){ listeners.forEach(f=>{ try{ f(what); }catch(e){ console.error(e); } }); }
 
-function fresh(){ return { version:2, meId:null, users:{}, crews:{}, venues:{}, entries:{}, photos:{}, books:{}, flags:{} }; }
+function fresh(){ return { version:2, meId:null, users:{}, crews:{}, venues:{}, entries:{}, photos:{}, books:{}, events:{}, flags:{} }; }
 function load(){
   try{ const d=JSON.parse(localStorage.getItem(KEY)); if (d && d.version===2) return {...fresh(), ...d}; }catch(_){}
   return fresh();
@@ -350,6 +351,7 @@ export async function exportBackup(){
     if (p.src==='idb'){ try{ const b = await (await fetch(photoURL(p))).blob(); rec.data = await blobToDataURL(b); }catch(_){} }
     mine.photos.push(rec);
   }
+  mine.events = Object.values(db.events||{}).filter(ev=>ev.createdBy===m.id);
   return { app:APP.name, version:2, exportedAt:new Date().toISOString(), profile:m, ...mine };
 }
 export async function importBackup(data){
@@ -357,6 +359,8 @@ export async function importBackup(data){
   const m=me(); let n=0;
   (data.venues||[]).forEach(v=>{ if (!db.venues[v.id]) db.venues[v.id]=v; });
   (data.entries||[]).forEach(e=>{ if (!db.entries[e.id]){ db.entries[e.id]={...e, userId:m.id}; n++; } });
+  db.events = db.events||{};
+  (data.events||[]).forEach(ev=>{ if (!db.events[ev.id]) db.events[ev.id]={...ev, createdBy:m.id, crewId:myCrew()?.id||null}; });
   for (const p of (data.photos||[])){
     if (db.photos[p.id] || !p.data) continue;
     const blob = await dataURLtoBlob(p.data); const {data:_, ...rec}=p;
@@ -364,6 +368,30 @@ export async function importBackup(data){
   }
   save('import'); return n;
 }
+
+/* =========================================================
+   CREW EVENTS ("plan a bite"): visible to the crew they belong to
+   ========================================================= */
+export function events(filter){
+  filter = filter||{};
+  const m=me(), crew=myCrew(); if (!m) return [];
+  return Object.values(db.events||{}).filter(ev=>
+    (ev.createdBy===m.id || (crew && ev.crewId===crew.id)) &&
+    (!filter.venueId || ev.venueId===filter.venueId) &&
+    (!filter.upcoming || new Date(ev.when).getTime() > Date.now()-3*3600e3)
+  ).sort((a,b)=>a.when.localeCompare(b.when));
+}
+export function event(id){ return (db.events||{})[id]||null; }
+export function addEvent({venueId, when, note}){
+  const m=me(), crew=myCrew();
+  db.events = db.events||{};
+  const id=uid();
+  db.events[id] = { id, crewId:crew?crew.id:null, createdBy:m.id, venueId, when, note:note||'', rsvps:{[m.id]:'going'}, createdAt:Date.now() };
+  save('events'); return db.events[id];
+}
+export function updateEvent(id, patch){ const ev=event(id); if (!ev || ev.createdBy!==me()?.id) return; Object.assign(ev, patch); save('events'); return ev; }
+export function rsvp(id, status){ const ev=event(id), m=me(); if (!ev || !m) return; ev.rsvps[m.id]=status; save('events'); return ev; }
+export function cancelEvent(id){ const ev=event(id); if (!ev || ev.createdBy!==me()?.id) return; delete db.events[id]; save('events'); }
 
 /* =========================================================
    DEMO CREW (preview only: sample friends so the social screens have life in them)
@@ -376,6 +404,8 @@ export async function setDemo(on){
   Object.keys(db.users).forEach(k=>{ if (k.startsWith('demo-')) delete db.users[k]; });
   Object.keys(db.entries).forEach(k=>{ if (k.startsWith('demo-')) delete db.entries[k]; });
   Object.keys(db.photos).forEach(k=>{ if (k.startsWith('demo-')) delete db.photos[k]; });
+  db.events = db.events||{};
+  Object.keys(db.events).forEach(k=>{ if (k.startsWith('demo-')) delete db.events[k]; });
   Object.values(db.crews).forEach(c=>{ c.memberIds = c.memberIds.filter(id=>!id.startsWith('demo-')); });
   Object.keys(db.crews).forEach(k=>{ if (!db.crews[k].memberIds.length) delete db.crews[k]; });
   db.flags.demo = !!on;
@@ -389,6 +419,11 @@ export async function setDemo(on){
     DEMO.users.forEach(u=>{ if (crew.memberIds.length < APP.crewMax && !crew.memberIds.includes(u.id)) crew.memberIds.push(u.id); });
     const byName = n=>venues().find(v=>v.name===n);
     const day = 864e5;
+    // two crew plans coming up, so the events screens have life in them
+    const at = (days, hh, mm)=>{ const d=new Date(Date.now()+days*864e5); d.setHours(hh, mm, 0, 0); const p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(hh)}:${p(mm)}`; };
+    const ev = (id, by, name, when, note, rsvps)=>{ const v=venues().find(x=>x.name===name); if (v) db.events[id]={ id, crewId:crew.id, createdBy:by, venueId:v.id, when, note, rsvps, createdAt:Date.now()-2*3600e3 }; };
+    ev('demo-ev1', 'demo-maya', 'Koukh Al Shay', at(2,21,30), 'Late karak run, who’s in?', {'demo-maya':'going','demo-omar':'going','demo-noor':'maybe'});
+    ev('demo-ev2', 'demo-layla', 'Knot Bakehouse', at(5,9,0), 'Before they sell out of cardamom knots', {'demo-layla':'going','demo-kabir':'going'});
     DEMO.entries.forEach((e,i)=>{
       const v = byName(e.venue); if (!v) return;
       const ts = Date.now() - e.daysAgo*day - (i%5)*3.6e6;

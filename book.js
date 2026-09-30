@@ -1,5 +1,6 @@
 // Photobook (frames 15-22): shelf, cover customiser, open book (by date / by place),
 // book filters, photo viewer, add photos, privacy + empty + loading states.
+import { badgeStatus, stickerHTML } from './badges.js';
 import { APP } from './config.js';
 import * as S from './store.js';
 import * as M from './model.js';
@@ -140,6 +141,40 @@ function coverHTML(b, count){
     <span class="cv-geo">${esc(zs.map(zoneLabel).join(' • ').toUpperCase()||APP.city.toUpperCase())}<br>${z0?`${z0.lat.toFixed(4)}° N, ${z0.lng.toFixed(4)}° E`:''}</span>
   </div>`;
 }
+/* ---------- page editor (Phase 3): layout, photo order, stickers, a note ---------- */
+function pageEditor(b, day, dps, after){
+  const cfg = JSON.parse(JSON.stringify((b.pages||{})[day]||{}));
+  cfg.layout = cfg.layout||'scrapbook';
+  let order = (cfg.order||[]).filter(id=>dps.some(p=>p.id===id));
+  dps.forEach(p=>{ if (!order.includes(p.id)) order.push(p.id); });
+  const earned = badgeStatus(S.me().id).filter(x=>x.done);
+  let chosen = (cfg.stickers||[]).filter(id=>earned.some(x=>x.id===id));
+  openSheet(body=>{
+    const paint=()=>{
+      body.innerHTML = `<div class="sheet-head"><div class="grow"><h2 class="h-md">Edit page</h2><span class="hand">${esc(fmtDay(day))}</span></div></div>
+        <div class="eyebrow">Layout</div>
+        ${seg('playout', [['scrapbook','Scrapbook','auto_awesome_mosaic'],['grid','Grid','grid_view'],['hero','Hero','photo_size_select_large']], cfg.layout).replace('class="seg"','class="seg mt8"')}
+        <div class="eyebrow mt20">Photo order</div>
+        <div class="stack mt8">${order.map((id,i)=>{ const p=dps.find(x=>x.id===id); return `<div class="person-row order-row"><img src="${esc(S.photoURL(p))}" alt=""><span class="pr-main"><span class="pr-name trunc">${esc(p.caption||S.venue(p.venueId)?.name||'Photo')}</span></span>
+          <button class="icon-btn" data-mv="${i}" data-d="-1" ${i?'':'disabled'} aria-label="Move up">${icon('arrow_upward')}</button><button class="icon-btn" data-mv="${i}" data-d="1" ${i<order.length-1?'':'disabled'} aria-label="Move down">${icon('arrow_downward')}</button></div>`; }).join('')}</div>
+        <div class="row between mt20"><span class="eyebrow">Stickers</span><span class="mono muted small">${chosen.length} of 3</span></div>
+        ${earned.length ? `<div class="sticker-pick mt8">${earned.map(x=>`<button class="${chosen.includes(x.id)?'on':''}" data-st="${x.id}" aria-label="${esc(x.name)}">${stickerHTML(x, 46, {progress:false})}</button>`).join('')}</div>` : `<p class="muted small mt8">Earn stickers by logging places, then stick them on your pages.</p>`}
+        <div class="eyebrow mt20">Page note</div>
+        <textarea class="input mt8" id="pgNote" maxlength="160" placeholder="What made this day…">${esc(cfg.note||'')}</textarea>
+        <div class="sheet-foot btn-grid"><button class="btn btn-soft" id="pgReset">Reset</button><button class="btn btn-gold" id="pgSave">${icon('check')}Save page</button></div>`;
+      bindSeg(body, 'playout', v=>{ cfg.layout=v; });
+      body.querySelectorAll('[data-mv]').forEach(x=>x.onclick=()=>{ const i=+x.dataset.mv, j=i+(+x.dataset.d); [order[i],order[j]]=[order[j],order[i]]; cfg.note=body.querySelector('#pgNote').value; paint(); });
+      body.querySelectorAll('[data-st]').forEach(x=>x.onclick=()=>{ const id=x.dataset.st; if (chosen.includes(id)) chosen=chosen.filter(c=>c!==id); else if (chosen.length<3) chosen.push(id); else return toast('Three stickers per page'); cfg.note=body.querySelector('#pgNote').value; paint(); });
+      body.querySelector('#pgReset').onclick=()=>{ const pages={...(b.pages||{})}; delete pages[day]; S.saveBook(b.id, {pages}); b.pages=pages; back(); after(); };
+      body.querySelector('#pgSave').onclick=()=>{
+        const pages={...(b.pages||{}), [day]:{ layout:cfg.layout, order, stickers:chosen, note:body.querySelector('#pgNote').value.trim() }};
+        S.saveBook(b.id, {pages}); b.pages=pages; back(); toast('Page saved'); after();
+      };
+    };
+    paint();
+  });
+}
+
 function coverScreen(bookId){
   const b0=S.book(bookId); if (!b0) return;
   const d={title:b0.title, byline:b0.byline||'', texture:b0.texture, tint:b0.tint, pin:b0.pin};
@@ -222,12 +257,16 @@ function openBook(bookId, opts){
       el.querySelectorAll('[data-page]').forEach(p=>p.onclick=()=>{ page=+p.dataset.page; paint(); el.scrollTop=0; });
       el.querySelectorAll('[data-addplace]').forEach(p=>p.onclick=()=>addPhotos({venueId:p.dataset.addplace}));
       el.querySelectorAll('[data-venue]').forEach(p=>p.onclick=()=>go.place(p.dataset.venue));
+      el.querySelectorAll('[data-editpage]').forEach(x=>x.onclick=()=>pageEditor(b, x.dataset.editpage, bookPhotos(b, filter).filter(p=>p.date===x.dataset.editpage), paint));
     };
     // pages: one per day (by date) or one per venue (by place)
     const datePage=(ps)=>{
       const days=[...new Set(ps.map(p=>p.date))].sort().reverse();
       page=Math.min(page, days.length-1);
-      const day=days[page], dps=ps.filter(p=>p.date===day);
+      const day=days[page], cfg=(b.pages||{})[day]||{};
+      const order=cfg.order||[], dps=ps.filter(p=>p.date===day).sort((x,y)=>{ const a=order.indexOf(x.id), c=order.indexOf(y.id); return (a<0?999:a)-(c<0?999:c); });
+      const layout=cfg.layout||'scrapbook';
+      const earned=badgeStatus(S.me().id).filter(x=>x.done), stickers=(cfg.stickers||[]).map(id=>earned.find(x=>x.id===id)).filter(Boolean);
       const vs=[...new Set(dps.map(p=>p.venueId))].map(S.venue).filter(Boolean);
       const z=MAP.zoneById(vs[0]?.zone);
       const notes=[...new Set(dps.map(p=>p.entryId).filter(Boolean))].map(S.entry).filter(e=>e&&e.notes);
@@ -235,17 +274,20 @@ function openBook(bookId, opts){
       const prev=days[page+1], next=days[page-1];
       const nextPs = next ? ps.filter(p=>p.date===next) : [];
       const areaOf = d=>{ const v=S.venue(ps.find(p=>p.date===d)?.venueId); return v?zoneLabel(v.zone):''; };
-      return `<div class="page mt16"><span class="bookmark"></span>
+      return `<div class="page mt16 layout-${layout}"><span class="bookmark"></span>
+        <button class="icon-btn page-edit" data-editpage="${esc(day)}" aria-label="Edit this page">${icon('edit')}</button>
+        ${stickers.map((st,i)=>`<span class="page-sticker ps-${i}">${stickerHTML(st, 58, {progress:false})}</span>`).join('')}
         <div class="row between page-date" style="align-items:flex-start"><div><span class="cap">${esc(fmtDay(day))}</span><div class="page-geo">${esc((z?z.label:APP.city).toUpperCase())}${z?` • ${z.lat.toFixed(4)}° N, ${z.lng.toFixed(4)}° E`:''}</div></div>
           ${vs.length?`<span class="page-weather">${icon('wb_sunny')}${esc(vs.length>1?`${vs.length} stops`:`Out in ${z?z.label:APP.city}`)}</span>`:''}</div>
-        ${dps.map((p,i)=>{
+        ${cfg.note?`<div class="page-note"><span class="tape"></span>${esc(cfg.note)}</div>`:''}
+        <div class="page-photos">${dps.map((p,i)=>{
           const v=S.venue(p.venueId), e=p.entryId&&S.entry(p.entryId), u=S.user(p.userId);
           const bm=(p.bookmarkedBy||[]).includes(me.id);
-          return polaroidHTML({src:S.photoURL(p), id:p.id, cls:(i%2?'r':'l')+' wide', rot:tilt(p.id,5),
+          return polaroidHTML({src:S.photoURL(p), id:p.id, cls:(layout==='scrapbook'?(i%2?'r':'l')+' wide':(layout==='hero'&&i===0?'hero wide':'')), rot:layout==='scrapbook'?tilt(p.id,5):(layout==='grid'?tilt(p.id,2):0),
             caption:p.caption || v?.name,
             badge: p.private?`<span class="pol-badge tr" style="top:8px">${icon('lock')}Only you</span>`:(u&&u.id!==me.id?`<span class="pol-badge light">${esc(u.name||u.handle)}</span>`:''),
             sub:`<span style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">${e&&e.rating?`<span class="mono" style="color:var(--green);font-size:12px;font-weight:700">★ ${e.rating}</span>`:''}<button data-heart="${p.id}" aria-label="Bookmark" style="color:var(--rust)">${icon(bm?'bookmark':'bookmark_border','',bm)}</button></span>`});
-        }).join('')}
+        }).join('')}</div>
         ${notes.length?`<div class="notes-block"><span class="eyebrow">${icon('edit_note')}Tasting notes</span>${notes.map(e=>{ const u=S.user(e.userId); return `<p style="font-size:16px;margin-top:6px">${u.id!==me.id?`<b>${esc(u.name)}:</b> `:''}${esc(e.notes)}</p>`; }).join('')}</div>`:''}
         <div class="page-nav"><button data-page="${page+1}" ${prev?'':'disabled'}>${icon('arrow_back')}<span>${prev?esc(fmtDate(prev,{day:'numeric',month:'short'})):''}<br><span class="muted">${prev?'('+esc(areaOf(prev))+')':''}</span></span></button>
           <span class="pn-mid">Page ${page+1} of ${days.length} • Vol. 1</span>

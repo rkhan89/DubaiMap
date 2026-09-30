@@ -18,6 +18,8 @@ import './profile.js';
 import './social.js';
 import './recap.js';
 import { prefs, setPref } from './prefs.js';
+import { takeSharedPlace, openSharedPlace, eventSheet } from './events.js';
+import { registerSW, scheduleReminders } from './notify.js';
 
 const scopeKey = 'bites-scope';
 state.scope = (()=>{ const s=M.defaultScope(); try{ const p=JSON.parse(localStorage.getItem(scopeKey)); if (p && p.mode) s.mode=p.mode; }catch(_){} return s; })();
@@ -98,9 +100,14 @@ $('#mapMode').addEventListener('click', e=>{
 /* ---------- bell: recent crew activity (nothing about it lives on the map) ---------- */
 const SEEN_KEY='bites-activity-seen';
 const seenAt = ()=>{ try{ return +localStorage.getItem(SEEN_KEY)||0; }catch(_){ return 0; } };
-function crewActivity(){ const me=S.me(); return me ? M.activity(40).filter(a=>a.u.id!==me.id).slice(0,20) : []; }
+function crewActivity(){
+  const me=S.me(); if (!me) return [];
+  const logs = M.activity(40).filter(a=>a.u.id!==me.id).map(a=>({...a, at:a.e.createdAt}));
+  const plans = S.events({upcoming:true}).filter(ev=>ev.createdBy!==me.id).map(ev=>({ ev, u:S.user(ev.createdBy), v:S.venue(ev.venueId), at:ev.createdAt })).filter(a=>a.u && a.v);
+  return [...plans, ...logs].sort((a,b)=>b.at-a.at).slice(0,20);
+}
 function paintBell(){
-  const acts=crewActivity(), fresh=acts.filter(a=>a.e.createdAt>seenAt()).length;
+  const acts=crewActivity(), fresh=acts.filter(a=>a.at>seenAt()).length;
   const dot=$('#btnBell .bell-dot'); dot.hidden = !fresh;
   $('#btnBell').setAttribute('aria-label', fresh ? `Crew activity, ${fresh} new` : 'Crew activity');
 }
@@ -111,12 +118,17 @@ function openActivity(){
   openSheet(body=>{
     body.innerHTML = `<div class="sheet-head"><div class="grow"><h2 class="h-md">Crew activity</h2><span class="hand">${crew?esc(crew.name):'Your crew'}, newest first</span></div></div>
       ${acts.length ? `<div class="act-list">${acts.map(a=>{
-        const z=MAP.zoneById(a.v.zone), verb=a.e.kind==='want'?'saved':'visited';
-        return `<button class="act-row${a.e.createdAt>since?' new':''}" data-venue="${a.v.id}">${avatarHTML(a.u,40)}
+        const z=MAP.zoneById(a.v.zone);
+        if (a.ev){ const d=new Date(a.ev.when); return `<button class="act-row${a.at>since?' new':''}" data-event="${a.ev.id}">${avatarHTML(a.u,40)}
+          <span class="grow"><span class="act-text"><b>${esc(a.u.name||a.u.handle)}</b> planned <b>${esc(a.v.name)}</b></span>
+          <span class="act-sub">${esc(d.toLocaleDateString('en-GB',{weekday:'short', day:'numeric', month:'short'}))} • ${esc(d.toLocaleTimeString('en-GB',{hour:'numeric', minute:'2-digit', hour12:true}).toLowerCase())} • tap to RSVP</span></span>${icon('event')}</button>`; }
+        const verb=a.e.kind==='want'?'saved':(a.e.checkin?'checked in at':'visited');
+        return `<button class="act-row${a.at>since?' new':''}" data-venue="${a.v.id}">${avatarHTML(a.u,40)}
           <span class="grow"><span class="act-text"><b>${esc(a.u.name||a.u.handle)}</b> ${verb} <b>${esc(a.v.name)}</b></span>
           <span class="act-sub">${esc(z?z.label:APP.city)} • ${ago(a.e.createdAt)}${a.e.rating?` • ★ ${fmtRating(a.e.rating)}`:''}</span></span>${icon('chevron_right')}</button>`; }).join('')}</div>`
         : `<div class="empty">${icon('notifications_none')}<p class="muted">${crew?'When your crew logs or saves a place, it shows up here.':'Start a crew and their new places will show up here.'}</p></div>`}`;
     body.querySelectorAll('[data-venue]').forEach(r=>r.addEventListener('click', ()=>{ back(); setTimeout(()=>go.showOnMap(r.dataset.venue), 60); }));
+    body.querySelectorAll('[data-event]').forEach(r=>r.addEventListener('click', ()=>{ back(); setTimeout(()=>eventSheet(r.dataset.event), 60); }));
   });
 }
 $('#btnBell').addEventListener('click', openActivity);
@@ -433,10 +445,13 @@ async function boot(){
   paintMe();
   const join = new URLSearchParams(location.search).get('join');
   if (join){ state.pendingJoin = join.toUpperCase(); history.replaceState(null,'',location.pathname); }
+  state.pendingPlace = takeSharedPlace();
+  registerSW();
   if (!S.isOnboarded()) go.onboarding();
   else {
-    rebuild(); primeBadges();
+    rebuild(); primeBadges(); scheduleReminders();
     if (state.pendingJoin) go.inviteLanding(state.pendingJoin);
+    else if (state.pendingPlace){ const p=state.pendingPlace; state.pendingPlace=null; MAP.whenReady(()=>openSharedPlace(p)); }
     else if (!S.flag('coachDone')) MAP.whenReady(()=>setTimeout(coach, 500));
   }
 }
@@ -449,7 +464,9 @@ go.paintMe = paintMe;
 go.afterOnboarding = ()=>{
   paintMe(); rebuild();
   MAP.whenReady(()=>{ MAP.fitCity(false); const pts=modelCache.filter(s=>s.state!=='unlit').map(s=>MAP.placeWorld(s.v)); if (pts.length) MAP.fitPoints(pts,false); });
+  primeBadges(); scheduleReminders();
   if (state.pendingJoin){ const code=state.pendingJoin; state.pendingJoin=null; go.inviteLanding(code); }
+  else if (state.pendingPlace){ const p=state.pendingPlace; state.pendingPlace=null; MAP.whenReady(()=>openSharedPlace(p)); }
   else if (!S.flag('coachDone')) MAP.whenReady(()=>setTimeout(coach, 600));
 };
 boot();
