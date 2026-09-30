@@ -20,6 +20,7 @@ import './recap.js';
 import { prefs, setPref } from './prefs.js';
 import { takeSharedPlace, openSharedPlace, eventSheet } from './events.js';
 import { registerSW, scheduleReminders } from './notify.js';
+import { maybeStartTour, paintEmptyMap } from './tour.js';
 
 const scopeKey = 'bites-scope';
 state.scope = (()=>{ const s=M.defaultScope(); try{ const p=JSON.parse(localStorage.getItem(scopeKey)); if (p && p.mode) s.mode=p.mode; }catch(_){} return s; })();
@@ -81,6 +82,7 @@ function rebuild(){
   const crewN = sc.mode==='crew' ? modelCache.filter(s=>s.state!=='unlit').length : M.mapModel({...sc, mode:'crew'}).filter(s=>s.state!=='unlit').length;
   $('#mapMode').innerHTML = `<button data-v="me" class="${sc.mode==='me'?'on':''}">Me <em>${meN}</em></button><button data-v="crew" class="${sc.mode==='crew'?'on':''}">Crew <em>${crewN}</em></button>`;
   paintBell();
+  paintEmptyMap(meN + crewN);
   // filter dot
   const filtered = isFiltered();
   $('#btnFilter').classList.toggle('filtered', filtered);
@@ -309,7 +311,7 @@ function renderList(){
     </div>
     <div class="feed-head"><span class="hand">${sc.mode==='crew' && crew ? `${esc(crew.name)} shared feed` : 'Your scrapbook'}</span>
       <select class="sort-sel" id="lSort" aria-label="Sort">${[['recent','Recent visits'],['rating','Top rated'],['visits','Most visited'],['name','A–Z']].map(([v,l])=>`<option value="${v}"${listSort===v?' selected':''}>${l}</option>`).join('')}</select></div>
-    ${items.map(feedCardHTML).join('') || `<div class="empty">${stampHTML('unlit',{cat:'coffee', big:true})}<h3 class="h-md">${q?'Nothing matches that':'No stamps yet'}</h3><p class="muted">${q?'Try another name, area or dish.':'Log your first bite with the + button, or tap an undiscovered spot on the map.'}</p></div>`}
+    ${items.map(feedCardHTML).join('') || `<div class="empty">${stampHTML('unlit',{cat:'coffee', big:true})}<h3 class="h-md">${q?'Nothing matches that':'No stamps yet'}</h3><p class="muted">${q?'Try another name, area or dish.':'Pin your first place with the + button. It lands on your map as a stamp.'}</p></div>`}
     ${items.length?`<div class="feed-end"><span class="tag soft">${icon('local_activity')}End of scrapbook page</span><span class="hand">${hidden>0?`${plural(hidden,'more entry','more entries')} hidden by your filters`:`${unlitCount} undiscovered spots still on the map`}</span></div>`:''}
   </div>`;
   const lq=el.querySelector('#lq');
@@ -373,42 +375,6 @@ $('#btnFit').onclick=()=>{ const pts=modelCache.filter(s=>s.state!=='unlit').map
 $('#btnLocate').onclick=()=>MAP.startTracking(true);
 
 
-/* =========================================================
-   COACH MARKS (3 steps after onboarding)
-   ========================================================= */
-function coach(){
-  switchView('map');
-  const steps = [
-    { tag:'Venue diary pin', icon:'local_cafe', title:'Tap a stamp to see who visited', body: $('.stamp-anchor') ? 'Every stamp is a spot you or your crew logged. Tap one for tasting notes, photos and honest ratings.' : 'Every place you or your crew log becomes a stamp here. Tap one later for notes, photos and ratings.', target:()=>$('.stamp-anchor .stamp') },
-    { tag:'Me / Crew', icon:'group', title:'Flip between you and your crew', body:'Me shows your own scrapbook, private spots included. Crew shows everything your friends have shared. Filter by friend or category with the slider button.', target:()=>$('.map-top') },
-    { tag:'Crew news', icon:'notifications', title:'New from your crew', body:'A dot on the bell means a friend logged or saved somewhere new. Tap it for the list; the map itself stays clean.', target:()=>$('#btnBell') },
-    { tag:'Log a bite', icon:'add_a_photo', title:'Stamp your first spot', body:'Tap + to log a place: rate it, add photos, and choose whether your crew can see it.', target:()=>$('#navLog') },
-  ];
-  let i=0;
-  const wrap=document.createElement('div'); wrap.className='coach';
-  const ring=document.createElement('div'); ring.className='coach-target';
-  document.body.append(wrap, ring);
-  const end=()=>{ wrap.remove(); ring.remove(); S.setFlag('coachDone'); };
-  const paint=()=>{
-    const s=steps[i];
-    wrap.innerHTML = `<div class="coach-card"><span class="tape"></span>
-      <div class="row between"><span class="tag rust">${icon(s.icon)}${s.tag}</span><span class="mono muted">0${i+1} / 0${steps.length}</span></div>
-      <h2>${s.title}</h2><p class="muted" style="font-size:15px">${s.body}</p>
-      <div class="coach-foot"><button class="link" data-c="skip">Skip quick tour</button><button class="btn btn-gold" data-c="next">${i<steps.length-1?`Next (${i+1}/${steps.length})`:'Let’s go'} ${icon('arrow_forward')}</button></div></div>
-      <p class="coach-tip">✎ Tip: tap anywhere outside to jump straight in.</p>`;
-    const t=s.target();
-    if (t){ const r=t.getBoundingClientRect(); Object.assign(ring.style,{left:(r.left-6)+'px',top:(r.top-6)+'px',width:(r.width+12)+'px',height:(r.height+12)+'px',display:'block'}); }
-    else ring.style.display='none';
-  };
-  wrap.addEventListener('click', e=>{
-    const b=e.target.closest('[data-c]');
-    if (!b){ if (!e.target.closest('.coach-card')) end(); return; }
-    if (b.dataset.c==='skip') return end();
-    i++; if (i>=steps.length) end(); else paint();
-  });
-  paint();
-}
-go.coach = coach;
 
 /* =========================================================
    BOOT
@@ -452,7 +418,7 @@ async function boot(){
     rebuild(); primeBadges(); scheduleReminders();
     if (state.pendingJoin) go.inviteLanding(state.pendingJoin);
     else if (state.pendingPlace){ const p=state.pendingPlace; state.pendingPlace=null; MAP.whenReady(()=>openSharedPlace(p)); }
-    else if (!S.flag('coachDone')) MAP.whenReady(()=>setTimeout(coach, 500));
+    else MAP.whenReady(maybeStartTour);
   }
 }
 /* Burj Khalifa light shows (schedule in shows.js), recomputed from the clock every second */
@@ -467,6 +433,6 @@ go.afterOnboarding = ()=>{
   primeBadges(); scheduleReminders();
   if (state.pendingJoin){ const code=state.pendingJoin; state.pendingJoin=null; go.inviteLanding(code); }
   else if (state.pendingPlace){ const p=state.pendingPlace; state.pendingPlace=null; MAP.whenReady(()=>openSharedPlace(p)); }
-  else if (!S.flag('coachDone')) MAP.whenReady(()=>setTimeout(coach, 600));
+  else MAP.whenReady(maybeStartTour);
 };
 boot();

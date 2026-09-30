@@ -68,7 +68,7 @@ is an unlabelled stamp or dot. Only stamps on screen get DOM elements, and clust
 spatial hash, so 500+ places stay smooth. `?synthetic=500` (development) adds 500 test places in
 memory to prove it.
 
-**Places without exact coordinates** (all 100 starter places today) are spread evenly and stably
+**Places without exact coordinates** are spread evenly and stably
 over about 1 km around their area's centre, kept on land. Real coordinates would place them exactly.
 
 **Night map** (dark theme): deep navy sea, dusky blue-grey land and roads, and city lights: lit
@@ -104,9 +104,18 @@ National Day and New Year's Eve, empty and off by default). Profile has a toggle
 off. `?now=2026-09-30T19:00:20+04:00` sets the app's clock for testing; unit tests are in
 `tests/shows.test.mjs` (run `node --test tests/shows.test.mjs`).
 
-## Coach marks (frame 7)
-Four steps after onboarding: tap a stamp; Me / Crew and the filter; the bell for crew news;
-+ to log a place. Replayable from Profile.
+## The map starts empty, and a first-run guide (replaces the coach marks, frame 7)
+There are no starter places: every place on the map is one someone pinned. (The earlier 100
+starter places were removed; any a person had logged stay as ordinary places.) Right after
+onboarding a guide opens: “Your map looks empty. Let's fix that. Pin a place you've been to
+recently.” It walks through the real screens with a spotlight and a floating prompt: search →
+add it → where is it → what kind → rate → add a photo → who sees it → save, then the new stamp,
+Me / Crew, filters, the bell, the Crew tab and the Shelf. Each step moves on when you do the
+thing (or tap Next); Skip is on every step. If you leave the log screen midway, a small pill
+offers to pick up again. Anyone whose map is empty (skipped, or new to a crew) sees an
+empty-map card with Pin a place and Show me around. Replay from Settings → Replay the guide.
+The sample crew brings the 30 real places it has been to, and takes them away again when
+switched off (unless you logged or planned something there yourself).
 
 ## Everything else
 Onboarding (frames 1–6, 8), crew (9–10), place sheet (13), log a place (14), list (40) and the

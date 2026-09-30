@@ -122,7 +122,7 @@ function settingsScreen(){
           ${link('download','Export backup','Your logs and photos as one file','export')}
           <label class="person-row" style="position:relative">${icon('upload')}<span class="pr-main"><span class="pr-name">Import backup</span></span>${icon('chevron_right')}<input type="file" accept="application/json,.json" id="sImport" style="position:absolute;inset:0;opacity:0"></label>
           ${S.legacyPlaces().length?link('install_mobile','Import from this phone', plural(S.legacyPlaces().length,'place')+' from the old version','import'):''}
-          ${link('tour','Replay the map tour','','tour')}
+          ${link('tour','Replay the guide','How to pin a place and use the map','tour')}
         </div>
         <button class="btn btn-danger btn-block mt24" id="sOut">${icon('logout')}Sign out</button>
         <p class="center mono muted small mt16">${esc(APP.name)} • preview build</p>
@@ -145,7 +145,7 @@ function settingsScreen(){
         if (k==='handle') go.editHandle();
         if (k==='crew') go.crew();
         if (k==='import') go.importPhone();
-        if (k==='tour'){ go.closeAll(); setTimeout(()=>go.coach(), 300); }
+        if (k==='tour'){ go.closeAll(); go.switchView('map'); setTimeout(()=>go.startTour(), 300); }
         if (k==='export'){
           toast('Preparing backup…');
           const data = await S.exportBackup(), blob = new Blob([JSON.stringify(data)], {type:'application/json'});

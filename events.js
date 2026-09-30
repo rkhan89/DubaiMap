@@ -9,13 +9,13 @@ import { POINTS } from './stats.js';
 import { go } from './go.js';
 
 /* =========================================================
-   SHARE LINKS: <origin>/?place=<id>. Places someone added themselves also carry
-   their name, area and spot, so the link works on a phone that's never seen them.
+   SHARE LINKS: <origin>/?place=<id>, carrying the place's name, area, kind and spot so
+   the link works on a phone that has never seen it.
    ========================================================= */
 export function placeLink(v){
   const u = new URL(location.origin + location.pathname);
   u.searchParams.set('place', v.id);
-  if (!v.seed){
+  {
     u.searchParams.set('n', v.name); u.searchParams.set('z', v.zone||'');
     if ((v.categories||[])[0]) u.searchParams.set('c', v.categories[0]);
     if (typeof v.lat==='number'){ u.searchParams.set('lat', v.lat.toFixed(5)); u.searchParams.set('lng', v.lng.toFixed(5)); }

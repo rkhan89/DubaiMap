@@ -1,5 +1,5 @@
 // Sample crew for preview mode only (turn it on/off in your profile). Friends, their
-// visits and photos, on real venues from the starter list. Photos are the Stitch
+// visits and photos, on 30 real Dubai places it brings with it. Photos are the Stitch
 // design images in /demo. Removed completely when the demo is switched off.
 export const DEMO = {
   crew: { name:'Karak Crew', tagline:'Chai, saffron buns, and old Deira hideouts', code:'KARAK7' },
@@ -9,6 +9,19 @@ export const DEMO = {
     { id:'demo-layla', name:'Layla', handle:'layla', tagline:'Sweet tooth',  avatar:{photo:'demo/d36.jpg'} },
     { id:'demo-kabir', name:'Kabir', handle:'kabir', tagline:'Parotta lead', avatar:{photo:'demo/d14.jpg'} },
     { id:'demo-noor',  name:'Noor',  handle:'noor',  tagline:'Deira native', avatar:{photo:'demo/d24.jpg'} },
+  ],
+  // the places the sample crew has been (added with the demo, removed with it unless you've logged them)
+  venues: [
+    ['Trio Cafe (Dubai Mall)','downtown','coffee'], ['Knot Bakehouse','jumeirah','matcha'], ['Ravi Restaurant','satwa','cafeteria'],
+    ['Koukh Al Shay','jumeirah','karak'], ['Emmy Squared','jumeirah','pizza'], ['Al Ustad Special Kabab','burdubai','cafeteria'],
+    ['Arabian Tea House','burdubai','coffee'], ['Tom & Serg','alquoz','coffee'], ['Nightjar Coffee Roasters','alquoz','coffee'],
+    ['RAW Coffee Company','alquoz','coffee'], ['Home Bakery','jumeirah','dessert'], ['Filli Cafeteria','karama','cafeteria'],
+    ['Al Mallah','satwa','cafeteria'], ["Mama'Esh",'jumeirah','cafeteria'], ['Al Samadi Sweets & Cafe','downtown','dessert'],
+    ["Toby's Estate",'downtown','coffee'], ['Stomping Grounds','jumeirah','coffee'], ['Common Grounds','alquoz','coffee'],
+    ['Alma 560 Cafe','alquoz','coffee'], ['Cafe Rider','alquoz','coffee'], ['Society Cafe & Lounge','jumeirah','coffee'],
+    ['Bait Al Shay','deira','karak'], ['Chai and Co','deira','karak'], ['Project Chaiwala','jumeirah','karak'],
+    ['Salt','umsuqeim','burger'], ['Pitfire Pizza','businessbay','pizza'], ['Pickl','marina','burger'],
+    ['Magnolia Bakery','downtown','dessert'], ['Trio Cafe (Jumeirah)','jumeirah','coffee'], ['ABC Coffee Roasters','alquoz','coffee'],
   ],
   // [photo file, caption]
   entries: [

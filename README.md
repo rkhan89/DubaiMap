@@ -18,8 +18,8 @@ Plain HTML/CSS/JS (ES modules), no build step. Live: https://dubai-bites-pi.verc
 | `place.js` | Place sheet and Log a Place (frames 13, 14). |
 | `book.js` | Photobook: shelf, cover, open book, filters, viewer, add photos (frames 15-22). |
 | `ui.js`, `avatar.js`, `data.js` | Shared components, pixel avatars, categories + helpers. |
-| `seed-places.json` | The 100 starter venues. |
-| `demo.js`, `demo/` | Optional sample crew for preview mode (toggle in Settings). |
+| `demo.js`, `demo/` | Optional sample crew for preview mode, with the 30 places they've been (toggle in Settings). |
+| `tour.js` | First-run guide (pin your first place) and the empty-map card. |
 | `theme.js` | Light / Dark / Auto: resolves to `data-theme` on `<html>`. |
 | `synth.js` | Development only: `?synthetic=500` adds test places in memory. |
 | `shows.js` | Burj Khalifa light-show schedule and clock (`?now=` to test); tests in `tests/` (`node --test tests/shows.test.mjs`). |

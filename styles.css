@@ -554,16 +554,6 @@ textarea.input{min-height:110px;resize:none;line-height:1.45;}
 .import-row .ir-thumb img{width:100%;height:100%;object-fit:cover;}
 .import-row .ir-thumb svg{width:28px;height:28px;}
 
-/* coach marks */
-.coach{position:fixed;inset:0;z-index:80;background:rgba(var(--shade),.45);display:flex;flex-direction:column;justify-content:flex-end;padding:20px 16px calc(110px + var(--safe-b));}
-.coach-card{position:relative;background:var(--card);border-radius:var(--r-xl);padding:20px;box-shadow:var(--shadow);max-width:520px;margin:0 auto;width:100%;}
-.coach-card .tape{top:-9px;left:60px;}
-.coach-card h2{font-size:23px;font-weight:800;margin:10px 0 6px;}
-.coach-foot{display:flex;align-items:center;justify-content:space-between;margin-top:16px;gap:12px;}
-.coach-foot .link{font-family:var(--f-body);font-weight:600;font-size:14px;text-decoration:underline;color:var(--ink);}
-.coach-tip{text-align:center;color:#fff;font-family:var(--f-body);font-weight:500;font-size:13.5px;margin-top:14px;}
-.coach-target{position:fixed;z-index:81;border-radius:16px;box-shadow:0 0 0 4px var(--gold), 0 0 0 9999px rgba(var(--shade),.0);pointer-events:none;transition:all .3s;}
-
 /* =========================================================
    CREW
    ========================================================= */
@@ -942,3 +932,29 @@ html{overflow:hidden;}
 .layout-grid .page-photos .polaroid,.layout-hero .page-photos .polaroid{min-width:0;}
 .page .page-date{padding-right:40px;}
 .page .page-weather{max-width:46%;overflow:hidden;text-overflow:ellipsis;}
+
+/* =========================================================
+   FIRST-RUN GUIDE: spotlight ring + floating prompt over the real controls
+   ========================================================= */
+.tour{position:fixed;inset:0;z-index:88;pointer-events:none;}
+.tour-ring{position:fixed;display:none;border-radius:16px;box-shadow:0 0 0 3px var(--gold), 0 0 0 9px rgba(229,169,60,.28);transition:left .2s, top .2s, width .2s, height .2s;animation:ringpulse 1.6s ease-in-out infinite;}
+@keyframes ringpulse{50%{box-shadow:0 0 0 3px var(--gold), 0 0 0 13px rgba(229,169,60,.12);}}
+.tour-bubble{position:fixed;display:none;pointer-events:auto;background:var(--toast-bg);color:var(--toast-ink);border-radius:18px;padding:12px 14px 14px;box-shadow:0 10px 30px rgba(0,0,0,.3);}
+.tour-bubble::before{content:"";position:absolute;left:var(--ax,50%);top:-8px;margin-left:-8px;border:8px solid transparent;border-top:0;border-bottom-color:var(--toast-bg);}
+.tour-bubble.above::before{top:auto;bottom:-8px;border-bottom:0;border-top:8px solid var(--toast-bg);}
+.tour-title{display:block;font-family:var(--f-head);font-weight:800;font-size:17px;margin-top:4px;}
+.tour-body{font-size:14px;line-height:1.45;opacity:.9;margin-top:4px;}
+.tour-step{font-family:var(--f-mono);font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--gold-dim);}
+.tour-skip{font-size:12.5px;font-weight:600;color:var(--toast-ink);opacity:.75;text-decoration:underline;text-underline-offset:3px;}
+.tour.intro{background:var(--scrim);pointer-events:auto;display:flex;align-items:center;justify-content:center;padding:20px;}
+.tour.intro .tour-bubble{position:relative;display:block;width:100%;max-width:380px;background:var(--paper);color:var(--ink);padding:26px 22px 18px;text-align:center;border-radius:var(--r-xl);}
+.tour.intro .tour-bubble::before{display:none;}
+.tour.intro .tour-bubble .tape{top:-9px;left:50%;margin-left:-32px;}
+.tour-art{width:84px;height:84px;margin:0 auto 14px;border-radius:24px;background:var(--gold);color:var(--gold-ink);display:flex;align-items:center;justify-content:center;box-shadow:0 5px 0 var(--gold-shade);transform:rotate(-4deg);}
+.tour-art .ms{font-size:44px;}
+.tour-pause{position:fixed;left:12px;right:12px;bottom:calc(92px + var(--safe-b));max-width:520px;margin:0 auto;display:none;align-items:center;gap:10px;pointer-events:auto;background:var(--toast-bg);color:var(--toast-ink);border-radius:18px;padding:8px 8px 8px 14px;box-shadow:0 8px 22px rgba(0,0,0,.3);}
+.tour-pause .icon-btn{color:var(--toast-ink);width:38px;height:38px;}
+/* empty map card */
+.empty-map{position:absolute;left:14px;right:14px;bottom:78px;z-index:16;max-width:420px;margin:0 auto;background:var(--paper);color:var(--ink);border-radius:var(--r-xl);padding:16px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:4px;}
+.empty-map .tape{top:-9px;left:26px;}
+.empty-map b{font-family:var(--f-head);font-weight:800;font-size:18px;}

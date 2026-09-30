@@ -199,13 +199,13 @@ function logFlow(opts){
           }).join('')}
           ${query.trim()?`<button class="search-result" id="lNew" style="background:var(--sc)"><span class="sr-ico">${icon('add_location_alt')}</span><span class="grow"><b>Add “${esc(query.trim())}”</b><span class="muted small" style="display:block">New place on the map</span></span>${icon('chevron_right')}</button>`:''}
           </div>
-          ${!query.trim()?`<div class="empty"><span class="stamp st-want big"><span class="st-paper"><span class="st-ico">${iconSvg('karak','#7e5700')}</span></span><span class="st-ribbon">TRY</span></span><span class="hand">Where did you eat?</span><p class="muted small">${S.venues().length} spots in ${esc(APP.city)} to search, or add your own.</p></div>`:''}
+          ${!query.trim()?`<div class="empty"><span class="stamp st-want big"><span class="st-paper"><span class="st-ico">${iconSvg('karak','#7e5700')}</span></span><span class="st-ribbon">TRY</span></span><span class="hand">Where did you eat?</span><p class="muted small">${S.venues().length ? 'Search places you and your crew have pinned, or type a new name to add it.' : 'Type its name to add it. Every place on the map starts with someone pinning it.'}</p></div>`:''}
         </div>`;
         const q=el.querySelector("#logQ"); q.focus();
         q.oninput=()=>{ query=q.value; const pos=q.selectionStart; paint(); const n=el.querySelector("#logQ"); n.setSelectionRange(pos,pos); };
         el.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{ venue=S.venue(b.dataset.v); paint(); });
         const nb=el.querySelector('#lNew'); if (nb) nb.onclick=()=>venueForm({name:query.trim(), zone:opts.zone}, dd=>{ venue=S.addVenue(dd); paint(); });
-        el.querySelector('#lMore').onclick=()=>toast('Search the starter list or add your own place');
+        el.querySelector('#lMore').onclick=()=>toast('Search your crew’s places, or type a new name to add it');
         return;
       }
       const sum=M.venueSummary(venue,{...state.scope, mode:'crew', members:null});
@@ -270,6 +270,7 @@ function logFlow(opts){
     const keepScroll=(fn)=>{ const s=el.scrollTop; fn(); el.scrollTop=s; };
     const save=async()=>{
       const btn=el.querySelector('#lSave'); btn.disabled=true;
+      go.tourSaved && go.tourSaved();
       const firstHere = !S.entries({venueId:venue.id, userId:me.id}).length;
       const firstCrew = S.firstInCrew(venue.id) && !d.private && d.kind==='visit';
       const data={ kind:d.kind, rating:d.kind==='visit'?d.rating:0, date:d.kind==='visit'?d.date:todayISO(), notes:d.notes.trim(), private:d.private };

@@ -8,7 +8,7 @@
 // Records
 //   users    {id, name, handle, email, tagline, avatar:{pixel|photo}, shareDefault:'crew'|'private', points, createdAt}
 //   crews    {id, name, tagline, code, ownerId, memberIds[], createdAt}
-//   venues   {id, name, zone, categories[], lat, lng, address, createdBy, createdAt, seed}
+//   venues   {id, name, zone, categories[], lat, lng, address, createdBy, createdAt, demo}
 //   entries  {id, venueId, userId, kind:'visit'|'want', rating, notes, date, private, createdAt}
 //   photos   {id, userId, venueId, entryId, caption, date, private, src, bookmarkedBy[], createdAt}
 //   books    {id, ownerId, kind:'personal'|'crew'|'album', title, byline, texture, tint, pin, coverPhotoId, filter, pages}
@@ -81,16 +81,12 @@ export function photoURL(p){ if (!p) return ''; return p.src==='idb' ? (urlCache
    INIT
    ========================================================= */
 export async function init(){
-  // venue catalogue: the 100 starter spots (once), then whatever people add
-  if (!db.flags.venuesSeeded){
-    try{
-      const seed = await (await fetch('seed-places.json', {cache:'no-cache'})).json();
-      seed.forEach(p=>{
-        if (!db.venues[p.id]) db.venues[p.id] = { id:p.id, name:p.name, zone:p.zone, categories:p.categories,
-          lat:p.lat??null, lng:p.lng??null, address:'', createdBy:null, createdAt:p.createdAt||Date.now(), seed:true };
-      });
-      db.flags.venuesSeeded = true; save('venues');
-    }catch(_){ /* offline on first run: try again next time */ }
+  // The map starts empty: every place is one someone pinned. Earlier versions shipped 100
+  // starter places; those nobody has logged are removed once (logged ones become ordinary places).
+  if (!db.flags.seedsRemoved){
+    const used = new Set(Object.values(db.entries).map(e=>e.venueId));
+    Object.values(db.venues).forEach(v=>{ if (v.seed){ if (used.has(v.id)) delete v.seed; else delete db.venues[v.id]; } });
+    db.flags.seedsRemoved = true; save('venues');
   }
   // development: ?synthetic=500 adds that many places in memory only
   const syn = +new URLSearchParams(location.search).get('synthetic');
@@ -404,6 +400,9 @@ export async function setDemo(on){
   const m=me(); if (!m) return;
   // clear any previous demo records
   Object.keys(db.users).forEach(k=>{ if (k.startsWith('demo-')) delete db.users[k]; });
+  // demo places go too, unless you logged or planned something there yourself
+  const keep = new Set([...Object.values(db.entries).filter(e=>!e.id.startsWith('demo-')).map(e=>e.venueId), ...Object.values(db.events||{}).filter(e=>!e.id.startsWith('demo-')).map(e=>e.venueId)]);
+  Object.keys(db.venues).forEach(k=>{ if (k.startsWith('demo-v') && !keep.has(k)) delete db.venues[k]; });
   Object.keys(db.entries).forEach(k=>{ if (k.startsWith('demo-')) delete db.entries[k]; });
   Object.keys(db.photos).forEach(k=>{ if (k.startsWith('demo-')) delete db.photos[k]; });
   db.events = db.events||{};
@@ -413,6 +412,10 @@ export async function setDemo(on){
   db.flags.demo = !!on;
   if (on){
     DEMO.users.forEach(u=>{ db.users[u.id]={...u, createdAt:Date.now()}; });
+    DEMO.venues.forEach(([name, zone, cat], i)=>{
+      const id = 'demo-v'+i;
+      if (!db.venues[id] && !venues().some(v=>v.name===name)) db.venues[id] = { id, name, zone, categories:[cat], lat:null, lng:null, address:'', createdBy:null, createdAt:Date.now(), demo:true };
+    });
     let crew = myCrew();
     if (!crew){
       crew = { id:'demo-crew', ...DEMO.crew, ownerId:m.id, memberIds:[m.id], createdAt:Date.now() };
