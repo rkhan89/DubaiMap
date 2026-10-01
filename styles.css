@@ -1018,3 +1018,12 @@ html{overflow:hidden;}
 .fx-gv .s{animation:gvbulb 1.8s ease-in-out infinite;} .fx-gv .s1{animation-delay:-.9s;}
 @keyframes gvbulb{0%,100%{opacity:1}50%{opacity:.35}}
 @media (prefers-reduced-motion: reduce){ .fx-gv .b,.fx-gv .s{animation:none;} }
+
+/* support Koko */
+.support-card{background:linear-gradient(135deg,var(--gold-fixed),var(--sc-low));border-radius:var(--r-lg,18px);padding:16px;box-shadow:0 3px 0 var(--gold-deep);}
+.support-cup{width:44px;height:44px;border-radius:12px;background:var(--gold);color:var(--gold-ink);display:flex;align-items:center;justify-content:center;flex:none;}
+.support-card a.btn{text-decoration:none;}
+
+/* Google Places attribution (required wherever its place details show without a Google map) */
+.g-attr{font-family:Roboto,Arial,sans-serif;font-size:12px;color:var(--ink-3);text-align:center;}
+.g-attr b{font-weight:500;color:var(--ink-2);}

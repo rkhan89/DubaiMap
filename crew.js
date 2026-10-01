@@ -57,7 +57,7 @@ function crewSetup(opts){
         <div class="card mt20">
           <span class="eyebrow">${icon('confirmation_number')} Crew code</span>
           <p class="muted mt8">Paste the invite link or type the code from your friend's text.</p>
-          <div class="input-wrap mt12"><input class="input" id="jCode" autocapitalize="characters" placeholder="E.G. MYCRE42" value="${esc(joinCode)}" style="padding-left:16px;font-family:var(--f-mono);letter-spacing:.12em;font-size:18px"><span class="trail ms">key</span></div>
+          <div class="input-wrap mt12"><input class="input" id="jCode" autocapitalize="characters" placeholder="E.G. 4F9A2C7E1B" value="${esc(joinCode)}" style="padding-left:16px;font-family:var(--f-mono);letter-spacing:.12em;font-size:18px"><span class="trail ms">key</span></div>
           <button class="btn btn-soft btn-block mt12" id="jGo">Join their crew ${icon('arrow_forward')}</button>
         </div>
         ${err==='invalid'?`<div class="alert mt16">${icon('priority_high')}<div class="grow"><div class="row between"><b>Invalid crew code</b><span class="tag red" style="background:var(--card)">Error #404</span></div>Code <b class="mono">${esc(joinCode.toUpperCase())}</b> not found. Please double-check with your host or paste their link.${!S.cloud?'<br><br><b>Preview mode:</b> only crews made on this phone can be joined until accounts go live.':''}</div></div>`:''}
@@ -192,7 +192,7 @@ function crewScreen(){
         <div class="card-soft mt20">
           <div class="row">${icon('confirmation_number')}<b class="h-sm" style="font-family:var(--f-body)">Have an invite code from a friend?</b></div>
           <p class="muted mt8">Enter the crew code from your friend's napkin note or text.</p>
-          <div class="input-wrap mt12"><input class="input" id="soCode" autocapitalize="characters" placeholder="E.G. MYCRE42" style="background:var(--card);padding-left:16px;font-family:var(--f-mono);letter-spacing:.1em"><span class="trail ms">key</span></div>
+          <div class="input-wrap mt12"><input class="input" id="soCode" autocapitalize="characters" placeholder="E.G. 4F9A2C7E1B" style="background:var(--card);padding-left:16px;font-family:var(--f-mono);letter-spacing:.1em"><span class="trail ms">key</span></div>
           <div id="soErr"></div>
           <button class="btn btn-soft btn-block mt12" id="soJoin">Join their crew ${icon('arrow_forward')}</button>
         </div>

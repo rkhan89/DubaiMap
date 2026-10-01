@@ -10,7 +10,8 @@
 // Privacy is enforced by the database (row level security, supabase/migrations), not here.
 import { APP } from './config.js';
 
-const SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+// pinned to an exact version: a new release can't change what runs here without a deploy
+const SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/+esm';
 let sb = null, loading = null;
 export const enabled = () => !!(APP.supabase && APP.supabase.url && APP.supabase.key) && !new URLSearchParams(location.search).has('local');
 export async function client(){
@@ -126,6 +127,16 @@ export async function rpc(name, args){
   const { data, error } = await c.rpc(name, args||{});
   if (error) throw error;
   return data;
+}
+// delete my account: photo files first (the storage API removes the stored files), then everything else
+export async function deleteMyFiles(userId){
+  const c = await client(); if (!c) throw new Error('offline');
+  const bucket = c.storage.from('photos');
+  for (let i=0; i<200; i++){
+    const { data, error } = await bucket.list(userId, { limit:100 }); if (error) throw error;
+    if (!data || !data.length) return;
+    const { error:e2 } = await bucket.remove(data.map(f=>userId+'/'+f.name)); if (e2) throw e2;
+  }
 }
 export async function removeMember(crewId, userId){
   const c = await client(); if (!c) throw new Error('offline');

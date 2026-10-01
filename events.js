@@ -157,7 +157,8 @@ go.bindEventsCard = (el, repaint)=>{
    ========================================================= */
 const CHECKIN_M = 300;             // metres from the exact spot
 const AREA_M = 1500;               // places without an exact spot: within the area
-function devLocation(){ const at = new URLSearchParams(location.search).get('at'); if (!at) return null; const [lat,lng] = at.split(',').map(Number); return isNaN(lat)||isNaN(lng) ? null : {lat,lng}; }
+// development only: ?at=lat,lng fakes your location (never on the live site, or check-ins could be faked)
+function devLocation(){ if (!/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) return null; const at = new URLSearchParams(location.search).get('at'); if (!at) return null; const [lat,lng] = at.split(',').map(Number); return isNaN(lat)||isNaN(lng) ? null : {lat,lng}; }
 function whereAmI(){
   const fake = devLocation(); if (fake) return Promise.resolve(fake);      // development: ?at=lat,lng
   return new Promise((res, rej)=>{

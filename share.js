@@ -102,7 +102,8 @@ function candidates(list, query, src, ctx){
     body.innerHTML = `<div class="sheet-head"><div class="grow"><span class="eyebrow">${esc((SOURCE[src.sourceType]||SOURCE.text).label)}</span><h2 class="h-md">Which one is it?</h2></div></div>
       <div class="stack">${list.slice(0,3).map((p,i)=>{ const z=MAP.zoneById(zoneFor(p.lat,p.lng)); const cat=catById(p.category);
         return `<button class="search-result" data-i="${i}"><span class="sr-ico">${cat?iconSvg(cat.id, cat.color):icon('storefront')}</span><span class="grow"><b class="trunc" style="display:block">${esc(p.name)}</b><span class="muted small">${esc(z?z.label:(p.address||APP.city))}</span></span>${icon('chevron_right')}</button>`; }).join('')}</div>
-      <button class="btn btn-ghost btn-block mt12" id="cdNone">None of these</button>`;
+      <button class="btn btn-ghost btn-block mt12" id="cdNone">None of these</button>
+      <p class="g-attr mt8">Results from <b>Google Maps</b></p>`;
     body.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{ back(); setTimeout(()=>confirmPlace(list[+b.dataset.i], src, ctx), 60); });
     body.querySelector('#cdNone').onclick=()=>{ back(); setTimeout(()=>needsPlace({ state:'needs_place', query, message:'Search again, or add it yourself.' }, src, ctx), 60); };
   });
@@ -158,7 +159,7 @@ function confirmPlace(place, src, ctx){
     const paint = ()=>{
       const z = MAP.zoneById(d.zone);
       body.innerHTML = `
-        <div class="row between"><span class="tag soft">${icon(s.ic)}${esc(s.label)}</span>${place.placeId?`<span class="mono muted small">${icon('verified')} Google place</span>`:''}</div>
+        <div class="row between"><span class="tag soft">${icon(s.ic)}${esc(s.label)}</span>${place.placeId?`<span class="g-attr">Place details from <b>Google Maps</b></span>`:''}</div>
         ${existing ? `<div class="note mt12">${icon('groups')}<span><b>${esc(existing.name)}</b> is already on the crew map. Add it to your list?</span></div>` : ''}
         <div class="mt12">${editName
           ? `<label class="eyebrow" for="cfN">Place</label><input class="input mt8" id="cfN" maxlength="80" value="${esc(d.name)}" placeholder="Place name">`

@@ -22,4 +22,9 @@ export const APP = {
   supabase: { url:'https://crvadsjnqnxlkqzpywva.supabase.co', key:'sb_publishable_9I39ztDfQcQ9dRkTIK392g_zP6HJsVg' },
   // the sample crew (Maya, Omar…) can be switched on in Settings; it only ever exists on that phone
   sampleCrew: true,
+  // shown on /terms, /privacy and /data (and in the app). Fill these in before launch.
+  legal: { owner:'', contact:'', city:'Dubai, United Arab Emirates',
+           law:'the laws of the United Arab Emirates as applied in the Emirate of Dubai', effective:'1 October 2026' },
+  // "Support Koko": a Stripe Payment Link (https://buy.stripe.com/…) and/or a PayPal.me link. Empty = hidden.
+  support: { stripe:'', paypal:'' },
 };

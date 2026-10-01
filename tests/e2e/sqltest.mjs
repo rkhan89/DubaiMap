@@ -33,6 +33,11 @@ await db.exec('reset role');
 const sql3 = fs.readFileSync(new URL('../../supabase/migrations/0003_multi_crew.sql', import.meta.url),'utf8');
 try{ await db.exec(sql3); ok('multi-crew migration runs over existing data'); } catch(e){ bad('multi-crew migration: '+e.message); process.exit(1); }
 try{ await db.exec(sql3); ok('multi-crew migration runs a second time'); } catch(e){ bad('multi-crew rerun: '+e.message); process.exit(1); }
+const oldCode = lc.code;
+const sql6 = fs.readFileSync(new URL('../../supabase/migrations/0006_security.sql', import.meta.url),'utf8');
+try{ await db.exec(sql6); await db.exec(sql6); ok('security migration runs (twice)'); } catch(e){ bad('security migration: '+e.message); process.exit(1); }
+const newCode = (await db.query(`select code from crews where id=$1`, [lc.id])).rows[0].code;
+/^[A-Z]{3,5}\d\d$/.test(oldCode) && /^[0-9A-F]{10}$/.test(newCode) ? ok('old guessable crew code '+oldCode+' replaced with '+newCode) : bad('code rotation '+oldCode+' -> '+newCode);
 const back = (await asPre(L2, `select id, crew_ids from entries`)).rows;
 back.length===1 && back[0].id==='le1' && back[0].crew_ids[0]===lc.id ? ok('existing shared visit moved to its crew; private one stays private') : bad('backfill '+JSON.stringify(back));
 await db.exec('reset role');
@@ -49,7 +54,8 @@ const count = async (u, q)=> (await as(u, q)).rows.length;
 await as(A, `update profiles set handle='alice', name='Alice' where id=auth.uid()`);
 (await as(B, `select handle_available('alice') as a`)).rows[0].a===false ? ok('handle taken check') : bad('handle_available');
 const crew = (await as(A, `select * from create_crew('Karak Crew','chai')`)).rows[0];
-/^KARAK\d\d$/.test(crew.code) ? ok('create_crew code '+crew.code) : bad('code '+crew.code);
+/^[0-9A-F]{10}$/.test(crew.code) ? ok('create_crew gives a random code '+crew.code) : bad('code '+crew.code);
+(await as(A, `update crews set code='EASY12' where id=$1 returning code`, [crew.id])).rows[0]?.code===crew.code ? ok('the owner cannot pick a guessable code') : bad('code change');
 (await as(C, `select crew_preview($1) as p`, [crew.code])).rows[0].p.count===1 ? ok('invite preview works for an outsider') : bad('preview');
 (await as(B, `select join_crew($1) as r`, [crew.code])).rows[0].r==='ok' ? ok('B joins with the code') : bad('join');
 (await as(C, `select join_crew('NOPE12') as r`)).rows[0].r==='invalid' ? ok('bad code → invalid') : bad('invalid');
@@ -109,7 +115,8 @@ let n; for (let i=0;i<3;i++) n=(await as(D, `select share_rate_hit() as n`)).row
 n===3 ? ok('rate limit counts this hour\'s calls') : bad('rate '+n);
 (await count(E, `select * from share_rate`))===0 ? ok('nobody reads the rate table directly') : bad('rate table');
 await as(D, `select share_cache_put('k1','{"finalUrl":"https://www.google.com/maps/place/X"}')`);
-(await as(E, `select share_cache_get('k1') as v`)).rows[0].v?.finalUrl ? ok('link cache is shared (it only holds where links lead)') : bad('cache');
+(await as(D, `select share_cache_get('k1') as v`)).rows[0].v?.finalUrl ? ok('link cache works for the person who filled it') : bad('cache own');
+(await as(E, `select share_cache_get('k1') as v`)).rows[0].v===null ? ok('one person cannot plant link-cache answers for others') : bad('cache shared');
 (await count(E, `select * from share_cache`))===0 ? ok('cache table not readable directly') : bad('cache table');
 (await count(E, `select * from place_type_categories`))>30 ? ok('category map readable') : bad('categories');
 
@@ -135,6 +142,8 @@ await as(X, `select leave_crew($1)`, [fam.id]);
 const me1 = (await as(X, `select crew_ids, private from entries where id='me1'`)).rows[0];
 me1.crew_ids.length===0 && me1.private===true ? ok('leaving a crew takes your posts out of it (now only yours)') : bad('unshare '+JSON.stringify(me1));
 (await count(Y, `select * from entries where id in ('me1','me2')`))===0 ? ok('Family no longer sees the posts of someone who left') : bad('Y after X left');
+await as(X, `insert into events(id,crew_id,venue_id,starts_at) values ('xev','${work.id}','mv1','2026-10-09T20:00')`);
+await expectErr('moving your plan into a crew you are not in', X, `update events set crew_id='${fam.id}' where id='xev'`);
 const W='40000000-0000-0000-0000-0000000000f4';
 await db.exec(`reset role; insert into auth.users values ('${W}','w@x');`);
 for (let i=0;i<5;i++) await as(W, `select * from create_crew('W${i}','')`);
@@ -170,5 +179,24 @@ await db.exec('reset role');
 const sql5 = fs.readFileSync(new URL('../../supabase/migrations/0005_categories.sql', import.meta.url),'utf8');
 try{ await db.exec(sql5); await db.exec(sql5); ok('categories migration runs (twice)'); } catch(e){ bad('categories migration: '+e.message); }
 (await as(T, `select category from place_type_categories where google_type='ice_cream_shop'`)).rows[0]?.category==='icecream' ? ok('ice cream shops map to Ice cream') : bad('icecream map');
+// ---- delete my account: mine goes, shared things carry on ----
+const Rm='60000000-0000-0000-0000-0000000000d1', Sf='60000000-0000-0000-0000-0000000000d2';
+await db.exec(`reset role; insert into auth.users values ('${Rm}','rm@x'),('${Sf}','sf@x');`);
+const rc = (await as(Rm, `select * from create_crew('Leaving Crew','')`)).rows[0];
+await as(Sf, `select join_crew($1)`, [rc.code]);
+await as(Rm, `insert into venues(id,name,zone) values ('dv1','Shared spot','satwa'),('dv2','Only mine','satwa')`);
+await as(Rm, `insert into entries(id,venue_id,kind,private) values ('de1','dv1','visit',true),('de2','dv2','visit',true)`);
+await as(Rm, `insert into books(id,crew_id,kind,title) values ('crewbook-del','${rc.id}','crew','Leaving Crew Scrapbook')`);
+await as(Sf, `insert into entries(id,venue_id,kind,private,crew_ids,tagged_ids) values ('de3','dv1','visit',false,array['${rc.id}']::uuid[],array['${Rm}']::uuid[])`);
+await as(Rm, `select delete_me()`);
+await db.exec('reset role');
+const left = (await db.query(`select (select count(*)::int from profiles where id='${Rm}') p, (select count(*)::int from entries where user_id='${Rm}') e,
+  (select owner_id from crews where id='${rc.id}') owner, (select created_by from venues where id='dv1') v1, (select count(*)::int from venues where id='dv2') v2,
+  (select owner_id from books where id='crewbook-del') book, (select tagged_ids from entries where id='de3') tags, (select count(*)::int from entries where id='de3') friend`)).rows[0];
+left.p===0 && left.e===0 ? ok('delete my account: profile and visits gone') : bad('delete '+JSON.stringify(left));
+left.owner===Sf ? ok('a crew you owned passes to the next member') : bad('crew owner '+left.owner);
+left.v1===Sf && left.v2===0 ? ok("places friends logged stay (now theirs); places only you used go") : bad('venues '+JSON.stringify(left));
+left.book===Sf ? ok('the crew book passes to a member') : bad('book '+left.book);
+left.friend===1 && left.tags.length===0 ? ok("your friend's visit stays, without your tag") : bad('friend entry '+JSON.stringify(left));
 console.log(process.exitCode ? '\nSOME CHECKS FAILED' : '\nall checks passed');
 

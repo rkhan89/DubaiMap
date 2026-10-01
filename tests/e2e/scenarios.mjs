@@ -28,7 +28,8 @@ import crews from './crews.mjs';
 import bookadd from './bookadd.mjs';
 import gallery from './gallery.mjs';
 import gv from './gv.mjs';
-const dflt = { screens, baa, perf2:perf, show, e2e, p2, p3, tour, brand, share1, crews, bookadd, gallery, gv,
+import legal from './legal.mjs';
+const dflt = { screens, baa, perf2:perf, show, e2e, p2, p3, tour, brand, share1, crews, bookadd, gallery, gv, legal,
   async fonts(h){
     await h.seed({mode:'crew'});
     await h.click('[data-tab="shelf"]'); await h.sleep(600); await h.shot('f-shelf');

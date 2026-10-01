@@ -8,7 +8,8 @@ import { badgeStatus, stickerHTML } from './badges.js';
 import { goalProgress } from './social.js';
 import { CATEGORIES, catById, iconSvg, esc, plural, fmtDate, fmtMonth, fmtRating } from './data.js';
 import { avatarHTML } from './avatar.js';
-import { icon, openScreen, topbar, toast, back, seg, bindSeg, toggleHTML, bindToggle, ratingPill } from './ui.js';
+import { icon, openScreen, openSheet, topbar, toast, back, seg, bindSeg, toggleHTML, bindToggle, ratingPill } from './ui.js';
+import { LEGAL_PAGES, fillLegal } from './legal.js';
 import { themePref, setThemePref } from './theme.js';
 import { prefs, setPref } from './prefs.js';
 import { go } from './go.js';
@@ -94,6 +95,7 @@ function settingsScreen(){
       const link = (ic, name, sub, key)=>`<button class="person-row" data-go="${key}">${icon(ic)}<span class="pr-main"><span class="pr-name">${name}</span>${sub?`<span class="pr-sub">${sub}</span>`:''}</span>${icon('chevron_right')}</button>`;
       el.innerHTML = topbar({title:'Settings', eyebrow:'Your scrapbook', profile:false}) + `<div class="screen-body">
         ${!S.cloud?`<div class="note mt16">${icon('science')}<span><b>Preview mode.</b> Your account, crew and photos live on this phone until sign-in goes live. Export a backup to move them.</span></div>`:''}
+        ${supportCardHTML()}
         <div class="eyebrow mt24">Account</div><div class="stack mt8">
           ${link('face','Edit avatar','Pixel you on the map','avatar')}
           ${link('alternate_email','Name & handle','@'+esc(me.handle),'handle')}
@@ -124,7 +126,13 @@ function settingsScreen(){
           ${S.legacyPlaces().length?link('install_mobile','Import from this phone', plural(S.legacyPlaces().length,'place')+' from the old version','import'):''}
           ${link('tour','Replay the guide','How to pin a place and use the map','tour')}
         </div>
+        <div class="eyebrow mt24">About</div><div class="stack mt8">
+          ${link('gavel','Terms of use','The rules for using '+esc(APP.name),'legal-terms')}
+          ${link('shield','Privacy policy','What we collect and why','legal-privacy')}
+          ${link('table_view','How we use your data','Everything we keep, in one table','legal-data')}
+        </div>
         <button class="btn btn-danger btn-block mt24" id="sOut">${icon('logout')}Sign out</button>
+        <button class="btn btn-ghost btn-block mt8" id="sDelete" style="color:var(--red)">${icon('delete_forever')}Delete my account</button>
         <p class="center mono muted small mt16">${esc(APP.name)} • preview build</p>
       </div>`;
       bindSeg(el, 'theme', v=>setThemePref(v));
@@ -144,6 +152,7 @@ function settingsScreen(){
         if (k==='handle') go.editHandle();
         if (k==='crew') go.crew();
         if (k==='import') go.importPhone();
+        if (k.startsWith('legal-')) go.legal(k.slice(6));
         if (k==='tour'){ go.closeAll(); go.switchView('map'); setTimeout(()=>go.startTour(), 300); }
         if (k==='export'){
           toast('Preparing backup…');
@@ -152,9 +161,65 @@ function settingsScreen(){
           document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
         }
       });
+      bindSupport(el);
+      el.querySelector('#sDelete').onclick = ()=>deleteAccountSheet();
       el.querySelector('#sOut').onclick = async ()=>{ await S.signOut(); go.closeAll(); setTimeout(()=>{ go.refresh(); go.onboarding(); }, 300); };
     };
     paint();
   });
 }
 go.settings = settingsScreen;
+
+/* ---------- support Koko (only shown once a Stripe or PayPal link is set in config.js) ---------- */
+function supportCardHTML(){
+  const s = APP.support || {}; if (!s.stripe && !s.paypal) return '';
+  return `<div class="support-card mt16"><div class="row" style="gap:12px;align-items:flex-start"><span class="support-cup">${icon('local_cafe','',true)}</span>
+    <div class="grow"><b class="h-sm">${esc(APP.name)} is free. Buy me a karak?</b><p class="muted small mt4">No ads, and your data's never for sale. If ${esc(APP.name)}'s found you a good spot, chip in for the next one.</p></div></div>
+    <div class="btn-grid mt12">${s.stripe?`<a class="btn btn-gold" href="${esc(s.stripe)}" target="_blank" rel="noopener" data-support="stripe">${icon('credit_card')}Card or Apple Pay</a>`:''}${s.paypal?`<a class="btn btn-soft" href="${esc(s.paypal)}" target="_blank" rel="noopener" data-support="paypal">${icon('account_balance_wallet')}PayPal</a>`:''}</div>
+    <p class="muted small mt8">A gift, not a purchase: it doesn't unlock anything. Payments are handled by Stripe or PayPal.</p></div>`;
+}
+function bindSupport(el){ el.querySelectorAll('[data-support]').forEach(a=>a.addEventListener('click', ()=>toast('Thank you! That keeps the karak flowing.'))); }
+go.supportCardHTML = supportCardHTML;
+
+/* ---------- terms, privacy, your data: the same text as the web pages ---------- */
+function legalScreen(name){
+  const title = LEGAL_PAGES[name]; if (!title) return;
+  openScreen(el=>{
+    el.innerHTML = topbar({ title, eyebrow:'About '+APP.name, profile:false }) + `<div class="screen-body"><div class="legal" id="lgBody"><p class="muted">Loading…</p></div>
+      <p class="mt24 small"><a href="/${name}" target="_blank" rel="noopener">Open this page in your browser</a></p></div>`;
+    (async ()=>{
+      try{
+        const html = await (await fetch('/'+name+'.html')).text();
+        const main = new DOMParser().parseFromString(html, 'text/html').querySelector('main');
+        const body = el.querySelector('#lgBody'); body.innerHTML = main.innerHTML; fillLegal(body);
+        body.querySelectorAll('a[href^="/"]').forEach(a=>{ const n=a.getAttribute('href').slice(1); if (LEGAL_PAGES[n]) a.onclick=e=>{ e.preventDefault(); legalScreen(n); }; });
+      }catch(_){ el.querySelector('#lgBody').innerHTML = `<p>Couldn't load this page. You can read it at <a href="/${name}" target="_blank" rel="noopener">${esc(location.origin)}/${name}</a>.</p>`; }
+    })();
+  });
+}
+go.legal = legalScreen;
+
+/* ---------- delete my account ---------- */
+function deleteAccountSheet(){
+  openSheet(body=>{
+    body.innerHTML = `<h2 class="h-md">Delete your account?</h2>
+      <p class="muted mt8">This removes your profile, every place you've logged or saved, your photos and your plans, from ${esc(APP.name)} and from this phone. It can't be undone.</p>
+      <ul class="muted small mt8" style="padding-left:18px;display:flex;flex-direction:column;gap:4px">
+        <li>Crews you own pass to the next member. Places friends have logged stay on their maps.</li>
+        <li>Want a copy first? Settings → Export backup.</li>
+      </ul>
+      <label class="eyebrow mt16" for="dlIn" style="display:block">Type DELETE to confirm</label>
+      <input class="input mt8" id="dlIn" autocomplete="off" autocapitalize="characters" placeholder="DELETE">
+      <div class="btn-grid mt16"><button class="btn btn-soft" id="dlNo">Keep my account</button><button class="btn btn-danger" id="dlYes" disabled>Delete everything</button></div>`;
+    const inp = body.querySelector('#dlIn'), yes = body.querySelector('#dlYes');
+    inp.oninput = ()=>{ yes.disabled = inp.value.trim().toUpperCase()!=='DELETE'; };
+    body.querySelector('#dlNo').onclick = ()=>back();
+    yes.onclick = async ()=>{
+      yes.disabled = true; yes.textContent = 'Deleting…';
+      try{ await S.deleteAccount(); }
+      catch(_){ yes.disabled = false; yes.textContent = 'Delete everything'; return toast('Couldn’t delete it just now. Check your connection and try again.'); }
+      go.closeAll(); toast('Your account and everything in it has been deleted.'); setTimeout(()=>{ go.refresh(); go.onboarding(); }, 300);
+    };
+  });
+}
+

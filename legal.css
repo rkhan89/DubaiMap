@@ -1,0 +1,39 @@
+/* Terms, privacy and data pages: shared by the web pages (/terms, /privacy, /data) and the in-app screen */
+.legal{font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:var(--ink,#291709);line-height:1.6;font-size:16px;max-width:680px;margin:0 auto}
+.legal h1,.legal h2,.legal h3{font-family:'Nunito Sans',system-ui,sans-serif;line-height:1.2;text-wrap:balance;margin:0}
+.legal h1{font-size:34px;font-weight:900;margin-top:8px}
+.legal h2{font-size:21px;font-weight:900;margin-top:32px}
+.legal h3{font-size:17px;font-weight:800;margin-top:18px}
+.legal p,.legal li{max-width:65ch}
+.legal p{margin:10px 0 0}
+.legal ul{margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+.legal .meta{font-family:'Space Mono',ui-monospace,monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--rust,#895029)}
+.legal .lede{font-size:18px;color:var(--ink-2,#504535)}
+.legal .box{background:var(--sc-low,#fff1e9);border-radius:14px;padding:14px 16px;margin-top:16px}
+.legal .table{overflow-x:auto;margin-top:14px}
+.legal table{border-collapse:collapse;width:100%;min-width:560px;font-size:14px}
+.legal th,.legal td{text-align:left;vertical-align:top;padding:10px 8px;border-bottom:1px solid var(--outline-v,#d4c4b0)}
+.legal th{font-family:'Space Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3,#6b5c4c);font-weight:700}
+.legal a{color:var(--gold-deep,#7e5700)}
+.legal .fill-missing{background:#ffe08a;color:#291709;border-radius:4px;padding:0 4px}
+/* the standalone web pages */
+body.legal-page{margin:0;background:#fff8f5;padding:24px 20px 64px}
+body.legal-page nav{max-width:680px;margin:0 auto 8px;display:flex;flex-wrap:wrap;gap:14px;align-items:center;font-family:'Space Mono',ui-monospace,monospace;font-size:13px}
+body.legal-page nav .logo{font-family:'Nunito Sans',system-ui,sans-serif;font-weight:900;font-size:24px;color:#291709;text-decoration:none;margin-right:auto}
+body.legal-page nav .logo i{color:#e5a93c;font-style:normal}
+@media (prefers-color-scheme: dark){
+  body.legal-page{background:#1b1612;--ink:#f5e8da;--ink-2:#dac9b6;--ink-3:#bba995;--rust:#f0a878;--sc-low:#221c17;--outline-v:#4b3f34;--gold-deep:#f0b955}
+  body.legal-page nav .logo{color:#f5e8da}
+}
+body.legal-page nav a:not(.logo){color:var(--gold-deep,#7e5700)}
+/* the data table becomes one card per row on phones */
+@media (max-width:600px){
+  .legal .table{overflow:visible}
+  .legal table{min-width:0}
+  .legal thead{display:none}
+  .legal table,.legal tbody,.legal tr,.legal td{display:block;width:100%}
+  .legal tr{padding:12px 0;border-bottom:1px solid var(--outline-v,#d4c4b0)}
+  .legal td{border:0;padding:2px 0}
+  .legal td:first-child{font-weight:700;font-size:16px;padding-bottom:4px}
+  .legal td[data-label]:not(:first-child)::before{content:attr(data-label) ": ";font-family:'Space Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3,#6b5c4c)}
+}

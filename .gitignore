@@ -1,2 +1,8 @@
 .claude/
 .vercel/
+# secrets never go in the repo: keys live in Vercel and Supabase settings
+.env
+.env.*
+*.pem
+*.key
+node_modules/

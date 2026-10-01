@@ -48,6 +48,7 @@ export async function POST(request){
   const t0 = Date.now();
   let type = 'unknown', state = 'error';
   try{
+    if (+(request.headers.get('content-length')||0) > MAX_BYTES) return json(413, { state:'error', message:'That’s too long. Paste just the link or the place name.' });
     const raw = await request.text();
     if (raw.length > MAX_BYTES) return json(413, { state:'error', message:'That’s too long. Paste just the link or the place name.' });
     let input; try{ input = JSON.parse(raw||'{}'); }catch(_){ return json(400, { state:'error', message:'Bad request' }); }
@@ -70,7 +71,8 @@ export async function POST(request){
     return json(200, { ...out, places: !!deps.placesKey });
   }catch(e){
     state = 'error';
-    return json(200, { state:'error', message:'Something went wrong reading that. It’s saved, try again in a moment.' });
+    // never send the error itself back: a generic message, the details stay out of the response
+    return json(500, { state:'error', message:'Something went wrong reading that. Try again in a moment, or type the place name.' });
   }finally{
     console.log(JSON.stringify({ evt:'resolve-share', type, state, ms: Date.now()-t0 }));
   }

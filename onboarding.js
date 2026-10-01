@@ -29,10 +29,11 @@ function welcome(){
       <button class="btn btn-gold btn-block" id="wEmail">${icon('mail')}Continue with Email</button>
     </div>
     <div class="or-rule mt20">${icon('restaurant')}</div>
-    <p class="center muted mt12" style="font-size:15px">By continuing, you agree to our Terms. Location is only used when stamping and bookmarking a bite.</p>
+    <p class="center muted mt12" style="font-size:15px">By continuing, you agree to our <button class="link" data-legal="terms">Terms</button> and <button class="link" data-legal="privacy">Privacy policy</button>. Your location is only used on your phone, to check you in.</p>
     ${!S.cloud?`<p class="center mono mt16" style="font-size:11px;color:var(--outline)">PREVIEW • accounts stay on this phone for now</p>`:''}
   </div>`;
   $('#screens').prepend(root);   // always underneath the step screens
+  root.querySelectorAll('[data-legal]').forEach(b=>b.onclick=()=>go.legal(b.dataset.legal));
   root.querySelector('#wGoogle').onclick=async()=>{
     if (!S.cloud){ S.signIn({provider:'google'}); toast('Google sign-in switches on with accounts. Setting you up on this phone.'); handleStep(); return; }
     // off to Google and back; the app picks up the session on return

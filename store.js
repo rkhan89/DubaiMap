@@ -219,8 +219,25 @@ export function signIn({email, provider}){
   save('me'); return m;
 }
 export async function signOut(){
-  if (cloud){ await C.unsubscribe(); await C.signOut(); C.setOutboxOwner(null); const flags={ seedsRemoved:true, cloudUser:true }; db=fresh(); db.flags=flags; save('me'); return; }
+  if (cloud){
+    const waiting = C.pending().length;
+    await C.unsubscribe(); await C.signOut(); C.setOutboxOwner(null);
+    // photos kept on this phone go too (a shared phone shouldn't keep them), unless some still need uploading
+    if (!waiting) await idbDo('readwrite', st=>st.clear()).catch(()=>{});
+    urlCache.forEach(u=>{ try{ URL.revokeObjectURL(u); }catch(_){} }); urlCache.clear();
+    const flags={ seedsRemoved:true, cloudUser:true }; db=fresh(); db.flags=flags; save('me'); return;
+  }
   db.meId = null; save('me');
+}
+// delete my account: on the server (photos, then everything else) and on this phone
+export async function deleteAccount(){
+  const m=me(); if (!m) return;
+  if (cloud){ await C.deleteMyFiles(m.id); await C.rpc('delete_me'); }
+  await idbDo('readwrite', st=>st.clear()).catch(()=>{});
+  urlCache.forEach(u=>{ try{ URL.revokeObjectURL(u); }catch(_){} }); urlCache.clear();
+  try{ Object.keys(localStorage).filter(k=>/^(koko|bites)/.test(k)).forEach(k=>localStorage.removeItem(k)); }catch(_){}
+  if (cloud){ await C.unsubscribe(); await C.signOut(); C.setOutboxOwner(null); }
+  db = fresh(); db.flags = { seedsRemoved:true, cloudUser:!!cloud }; save('me');
 }
 export function updateMe(patch){ const m=me(); if (!m) return; Object.assign(m, patch); save('me'); push('profiles', { id:m.id, patch }, 'upd'); return m; }
 export function addPoints(n){ const m=me(); if (m){ m.points=(m.points||0)+n; save('me'); push('profiles', { id:m.id, patch:{points:m.points} }, 'upd'); } }
@@ -275,10 +292,10 @@ export function untagMe(entryId){
 }
 // the crews a post is shared with, by name (yours only)
 export function crewsOf(rec){ return (rec && rec.crewIds || []).map(id=>db.crews[id]).filter(Boolean); }
-function makeCode(name){
-  const letters = (name||'CREW').toUpperCase().replace(/[^A-Z]/g,'').slice(0,5).padEnd(3,'X');
+// 10 random characters, like the server's (crew codes must not be guessable)
+function makeCode(){
   let code;
-  do { code = letters + Math.floor(Math.random()*90+10); } while (Object.values(db.crews).some(c=>c.code===code));
+  do { code = Array.from(crypto.getRandomValues(new Uint8Array(5)), b=>b.toString(16).padStart(2,'0')).join('').toUpperCase(); } while (Object.values(db.crews).some(c=>c.code===code));
   return code;
 }
 export async function createCrew({name, tagline}){
