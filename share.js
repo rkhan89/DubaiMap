@@ -34,7 +34,7 @@ async function resolve(input){
 }
 
 /* ---------- "Add from link or text" ---------- */
-export function addFromLink(prefill){
+export function addFromLink(prefill, shared){
   openScreen(el=>{
     let busy = false;
     const paint = (status)=>{
@@ -65,7 +65,9 @@ export function addFromLink(prefill){
       el.querySelector('#shStatus').innerHTML = loadingHTML();
       el.querySelector('#shGo').disabled = true;
       const isLink = /https?:\/\//i.test(v);
-      const res = await resolve(isLink ? { url:'', text:v } : { text:v });
+      // a share from the phone's Share menu goes as it came (link and text separately); edits go as typed
+      const input = shared && v === String(prefill||'').trim() ? { url:shared.url||'', text:shared.text||'', title:shared.title||'' } : (isLink ? { url:'', text:v } : { text:v });
+      const res = await resolve(input);
       busy = false;
       const b = el.querySelector('#shGo'); if (b) b.disabled = false;
       const st = el.querySelector('#shStatus'); if (st) st.innerHTML = '';

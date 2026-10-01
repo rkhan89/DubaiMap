@@ -1027,3 +1027,6 @@ html{overflow:hidden;}
 /* Google Places attribution (required wherever its place details show without a Google map) */
 .g-attr{font-family:Roboto,Arial,sans-serif;font-size:12px;color:var(--ink-3);text-align:center;}
 .g-attr b{font-weight:500;color:var(--ink-2);}
+
+/* signed out with a share waiting */
+.share-waiting{margin:calc(16px + var(--safe-t, 0px)) 20px 0;}

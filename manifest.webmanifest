@@ -39,5 +39,16 @@
       "type": "image/png",
       "purpose": "monochrome"
     }
-  ]
+  ],
+  "id": "/",
+  "share_target": {
+    "action": "/share",
+    "method": "POST",
+    "enctype": "application/x-www-form-urlencoded",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
 }

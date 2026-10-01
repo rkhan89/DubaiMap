@@ -22,6 +22,7 @@ import { prefs, setPref } from './prefs.js';
 import { takeSharedPlace, openSharedPlace, eventSheet } from './events.js';
 import { registerSW, scheduleReminders } from './notify.js';
 import { maybeStartTour, paintEmptyMap } from './tour.js';
+import { readIncoming, pendingShares, takeShare, shareText } from './incoming.js';
 
 const scopeKey = 'bites-scope';
 state.scope = (()=>{ const s=M.defaultScope(); try{ const p=JSON.parse(localStorage.getItem(scopeKey)); if (p && p.mode) s.mode=p.mode; }catch(_){} return s; })();
@@ -443,13 +444,14 @@ async function boot(){
   const join = new URLSearchParams(location.search).get('join');
   if (join){ state.pendingJoin = join.toUpperCase(); history.replaceState(null,'',location.pathname); }
   state.pendingPlace = takeSharedPlace();
+  state.sharesRead = readIncoming();          // something shared to Koko from the phone's Share menu
   registerSW();
-  if (!S.isOnboarded()) go.onboarding();
+  if (!S.isOnboarded()){ go.onboarding(); noteWaitingShare(); }
   else {
     rebuild(); primeBadges(); scheduleReminders();
     if (state.pendingJoin) go.inviteLanding(state.pendingJoin);
     else if (state.pendingPlace){ const p=state.pendingPlace; state.pendingPlace=null; MAP.whenReady(()=>openSharedPlace(p)); }
-    else MAP.whenReady(maybeStartTour);
+    else openWaitingShare(()=>MAP.whenReady(maybeStartTour));
   }
 }
 /* Burj Khalifa light shows (schedule in shows.js), recomputed from the clock every second */
@@ -464,6 +466,24 @@ go.afterOnboarding = ()=>{
   primeBadges(); scheduleReminders();
   if (state.pendingJoin){ const code=state.pendingJoin; state.pendingJoin=null; go.inviteLanding(code); }
   else if (state.pendingPlace){ const p=state.pendingPlace; state.pendingPlace=null; MAP.whenReady(()=>openSharedPlace(p)); }
-  else MAP.whenReady(maybeStartTour);
+  else openWaitingShare(()=>MAP.whenReady(maybeStartTour));
 };
+// a share waiting on this phone opens in "Add from link" (once you're signed in); otherwise carry on
+async function openWaitingShare(otherwise){
+  await state.sharesRead;
+  const item = await takeShare();
+  if (!item) return otherwise && otherwise();
+  const prefill = shareText(item);
+  if (prefill) go.shareAdd(prefill, item); else otherwise && otherwise();
+}
+// signed out: say the share is safe and will open after signing in
+async function noteWaitingShare(){
+  await state.sharesRead;
+  if (!(await pendingShares()).length) return;
+  const welcome = document.querySelector('#screens > .screen');
+  if (!welcome || welcome.querySelector('.share-waiting')) return;
+  const n = document.createElement('div'); n.className = 'note share-waiting';
+  n.innerHTML = `${icon('bookmark_added')}<span><b>Your shared place is saved.</b> Sign in and it'll open, ready to add.</span>`;
+  (welcome.querySelector('.screen-body') || welcome).prepend(n);
+}
 boot();
