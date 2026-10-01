@@ -1,4 +1,5 @@
--- Koko, Phase 1c: Share to Koko. Run after 0001_koko.sql.
+-- Koko, Phase 1c: Share to Koko. Run after 0001_koko.sql. Safe to run again.
+-- In the Supabase SQL editor use plain Run: this file already turns on RLS for every table.
 --   venues get a Google place id; visits get a source type (TikTok, Google Maps…)
 --   the source LINK is private to its owner, so it lives in its own owner-only table
 --   share_inbox: shares to finish later; a type→category map; rate limit + link cache helpers
@@ -13,18 +14,19 @@ create index if not exists venues_google_place on public.venues (google_place_id
 alter table public.entries add column if not exists source_type text
   check (source_type in ('google_maps','tiktok','instagram','text','manual'));
 
-create table public.entry_sources (
+create table if not exists public.entry_sources (
   entry_id   text primary key references public.entries on delete cascade,
   user_id    uuid not null default auth.uid() references public.profiles on delete cascade,
   source_url text not null check (char_length(source_url) <= 2000),
   created_at timestamptz not null default now()
 );
 alter table public.entry_sources enable row level security;
+drop policy if exists "entry_sources: only yours" on public.entry_sources;
 create policy "entry_sources: only yours" on public.entry_sources for all to authenticated
   using (user_id = auth.uid()) with check (user_id = auth.uid());
 
 /* the inbox: shares that couldn't be resolved, were saved for later, or arrived offline */
-create table public.share_inbox (
+create table if not exists public.share_inbox (
   id                text primary key check (char_length(id) between 1 and 80),
   user_id           uuid not null default auth.uid() references public.profiles on delete cascade,
   source_url        text check (char_length(source_url) <= 2000),
@@ -37,15 +39,17 @@ create table public.share_inbox (
   created_at        timestamptz not null default now()
 );
 alter table public.share_inbox enable row level security;
+drop policy if exists "share_inbox: only yours" on public.share_inbox;
 create policy "share_inbox: only yours" on public.share_inbox for all to authenticated
   using (user_id = auth.uid()) with check (user_id = auth.uid());
 
 /* Google Places types → Koko categories (mirrors api/_lib/categories.js) */
-create table public.place_type_categories (
+create table if not exists public.place_type_categories (
   google_type text primary key,
   category    text not null check (category in ('coffee','matcha','dessert','burger','fastfood','cafeteria','karak','pizza','acai','froyo'))
 );
 alter table public.place_type_categories enable row level security;
+drop policy if exists "place_type_categories: everyone signed in reads" on public.place_type_categories;
 create policy "place_type_categories: everyone signed in reads" on public.place_type_categories for select to authenticated using (true);
 insert into public.place_type_categories (google_type, category) values
   ('coffee_shop','coffee'),('cafe','coffee'),('coffee_roastery','coffee'),('coffee_stand','coffee'),
@@ -63,11 +67,11 @@ insert into public.place_type_categories (google_type, category) values
 on conflict (google_type) do nothing;
 
 /* rate limit: each resolve call records a hit; the function returns this hour's count */
-create table public.share_rate (
+create table if not exists public.share_rate (
   user_id uuid not null references public.profiles on delete cascade,
   at      timestamptz not null default now()
 );
-create index share_rate_user_at on public.share_rate (user_id, at);
+create index if not exists share_rate_user_at on public.share_rate (user_id, at);
 alter table public.share_rate enable row level security;   -- no policies: only the function below
 create or replace function public.share_rate_hit() returns integer
 language plpgsql security definer set search_path = public as $$
@@ -81,7 +85,7 @@ begin
 end $$;
 
 /* link cache: where a short link leads (its full Maps URL). No Google place content is cached. */
-create table public.share_cache (
+create table if not exists public.share_cache (
   key        text primary key check (char_length(key) <= 600),
   value      jsonb not null,
   updated_at timestamptz not null default now()
@@ -100,4 +104,7 @@ $$;
 revoke all on function public.share_rate_hit, public.share_cache_get, public.share_cache_put from public, anon;
 grant execute on function public.share_rate_hit, public.share_cache_get, public.share_cache_put to authenticated;
 
-alter publication supabase_realtime add table public.share_inbox;
+do $$ begin
+  alter publication supabase_realtime add table public.share_inbox;
+exception when duplicate_object then null;
+end $$;

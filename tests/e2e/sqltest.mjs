@@ -19,6 +19,7 @@ const sql = fs.readFileSync(new URL('../../supabase/migrations/0001_koko.sql', i
 try{ await db.exec(sql); ok('migration runs'); } catch(e){ bad('migration: '+e.message); process.exit(1); }
 const sql2 = fs.readFileSync(new URL('../../supabase/migrations/0002_share.sql', import.meta.url),'utf8');
 try{ await db.exec(sql2); ok('share migration runs'); } catch(e){ bad('share migration: '+e.message); process.exit(1); }
+try{ await db.exec(sql2); ok('share migration runs a second time'); } catch(e){ bad('share migration rerun: '+e.message); process.exit(1); }
 // Supabase grants table access to the API roles; policies do the rest
 await db.exec(`grant usage on schema public, storage, auth to authenticated; grant all on all tables in schema public to authenticated; grant all on storage.objects to authenticated;`);
 const A='00000000-0000-0000-0000-00000000000a', B='00000000-0000-0000-0000-00000000000b', C='00000000-0000-0000-0000-00000000000c';
