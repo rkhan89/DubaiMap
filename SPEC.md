@@ -221,3 +221,6 @@ Steps 2–4: Android share target and /share, TikTok captions, Inbox and offline
   link, map filter) show the 3 most-used categories plus anything picked, and "+N more" for the
   rest. Google restaurant types map to Restaurant, ice cream shops to Ice cream
   (`0005_categories.sql` updates the server's copy of that map).
+- **Global Village** on the map (Dubailand): festival ground ringed by domed pavilions, the Ferris
+  wheel at the back and the rainbow-arched gate at the front; at night the wheel's bulbs cycle,
+  the gate glows and string lights twinkle. A "Global Village" area files places there.

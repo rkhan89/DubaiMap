@@ -221,6 +221,7 @@ const LANDMARKS = [
   {k:'terminal', at:[30.05,6.9]},
   {k:'meydan',   at:G(25.1570,55.2980)},
   {k:'ibn',      at:G(25.0450,55.1180)},
+  {k:'gv',       at:G(25.0700,55.3089), name:'Global Village'},
 ];
 
 /* =========================================================
@@ -277,6 +278,7 @@ const ZONES = [
   {id:'motorcity',   label:'Motor City',    lat:25.0470, lng:55.2350},
   {id:'sportscity',  label:'Sports City',   lat:25.0400, lng:55.2200},
   {id:'ranches',     label:'Arabian Ranches', lat:25.0550, lng:55.2700},
+  {id:'globalvillage',label:'Global Village', lat:25.0700, lng:55.3089},
   {id:'furjan',      label:'Al Furjan',     lat:25.0300, lng:55.1500},
   {id:'discovery',   label:'Discovery Gardens', lat:25.0400, lng:55.1400},
   {id:'ibnbattuta',  label:'Ibn Battuta',   lat:25.0450, lng:55.1180},
@@ -373,7 +375,7 @@ function reserveAround(a,i,rad){
 
 function buildObjects(){
   LANDMARKS.forEach(l=>{
-    const rad = l.k==='meydan' ? 4 : l.k==='mall'||l.k==='terminal'||l.k==='atlantis'||l.k==='burj'||l.k==='ibn' ? 2 : 1;
+    const rad = l.k==='gv' ? 5 : l.k==='meydan' ? 4 : l.k==='mall'||l.k==='terminal'||l.k==='atlantis'||l.k==='burj'||l.k==='ibn' ? 2 : 1;
     reserveAround(l.at[0], l.at[1], rad);
     const g=aiToGrid(l.at[0], l.at[1]), p=proj(g.gx,g.gy);
     OBJECTS.push({k:'lm', lm:l.k, x:p.x, y:p.y, d:g.gx+g.gy+0.9});
@@ -690,6 +692,56 @@ function drawLandmark(ctx, o){
       ctx.lineWidth=LW; ctx.strokeStyle=C(OUT);
       iso(2.6,'#C99A63'); iso(2.1,'#8CC46B'); iso(1.3,'#7FB862');
       isoBox(ctx, x-TW/2*2.95, y+TH/2*2.95, 2.2, 0.3, 0, 11, '#F2EEE6', {floors:4, top:'#DDE7EC'});   // just outside the track at gy=+2.95
+      break;
+    }
+    case 'gv': {
+      // Global Village: a paved festival ground ringed by country pavilions with domes in every
+      // colour, the big Ferris wheel at the back and the arched gate facing you at the front
+      const at = (gx,gy)=>[x+(gx-gy)*TW/2, y+(gx+gy)*TH/2];
+      const oval = (r,col)=>{ ctx.beginPath(); for (let t=0;t<=72;t++){ const q=t/72*Math.PI*2, [px,py]=at(Math.cos(q)*r, Math.sin(q)*r); t?ctx.lineTo(px,py):ctx.moveTo(px,py); } ctx.closePath(); ctx.fillStyle=C(col); ctx.fill(); ctx.stroke(); };
+      const cols=['#E86A5C','#F2B84B','#5FA8D3','#8BC34A','#B57EDC','#F28CB1','#4DB6AC','#FF9E5E','#7C8CE0','#E0C35A','#D45D79','#57B894'];
+      ctx.lineWidth=LW; ctx.strokeStyle=C(OUT);
+      oval(3.4,'#E4BE93'); oval(2.9,'#F1D9B8'); oval(1.1,'#8CC46B');
+      // fountain in the middle
+      { const [fx,fy]=at(0,0); ctx.fillStyle=C('#78D7CC'); ctx.beginPath(); ctx.ellipse(fx,fy,7,3.5,0,0,Math.PI*2); ctx.fill(); ctx.stroke(); }
+      // the Ferris wheel, at the back
+      { const [wx,wy]=at(-2.9,-0.6), Rw=30, cy=wy-Rw-6;
+        ctx.save(); ctx.lineCap='round';
+        ctx.strokeStyle=C(OUT); ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(wx-10,wy); ctx.lineTo(wx,cy); ctx.lineTo(wx+10,wy); ctx.stroke();
+        ctx.strokeStyle=C('#E9EDF0'); ctx.lineWidth=1.6; ctx.stroke();
+        ctx.strokeStyle=C('rgba(74,59,48,0.5)'); ctx.lineWidth=0.6; ctx.beginPath();
+        for (let k=0;k<16;k++){ const t=k/16*Math.PI*2; ctx.moveTo(wx,cy); ctx.lineTo(wx+Math.cos(t)*Rw*0.42, cy+Math.sin(t)*Rw); } ctx.stroke();
+        ctx.strokeStyle=C(OUT); ctx.lineWidth=4; ctx.beginPath(); ctx.ellipse(wx,cy,Rw*0.42,Rw,0,0,Math.PI*2); ctx.stroke();
+        ctx.strokeStyle=C('#F28CB1'); ctx.lineWidth=2.4; ctx.stroke();
+        for (let k=0;k<16;k++){ const t=k/16*Math.PI*2, cx2=wx+Math.cos(t)*Rw*0.42, cy2=cy+Math.sin(t)*Rw;
+          ctx.fillStyle=C(cols[k%cols.length]); ctx.strokeStyle=C(OUT); ctx.lineWidth=LW*0.8; ctx.beginPath(); ctx.rect(cx2-1.8,cy2-1.2,3.6,3.2); ctx.fill(); ctx.stroke(); }
+        ctx.fillStyle=C('#E2B544'); ctx.beginPath(); ctx.arc(wx,cy,2.2,0,Math.PI*2); ctx.fill(); ctx.stroke();
+        ctx.restore(); }
+      // pavilions round the ground, back to front so nearer ones overlap (a gap at the front for the gate)
+      const pav=[]; for (let k=0;k<14;k++){ const q=k/14*Math.PI*2; pav.push({ gx:Math.cos(q)*2.25, gy:Math.sin(q)*2.25, c:cols[k%cols.length], w:k%3===0?0.5:0.4, h:k%2?9:12 }); }
+      pav.filter(q=>q.gx+q.gy < 2.6).sort((p,q)=>(p.gx+p.gy)-(q.gx+q.gy)).forEach(q=>{
+        const [px,py]=at(q.gx,q.gy);
+        isoBox(ctx,px,py,q.w,q.w,0,q.h,q.c,{floors:2});
+        ctx.strokeStyle=C(OUT); ctx.lineWidth=LW;
+        ctx.fillStyle=C(q.c===cols[1]?'#5FA8D3':'#F2CF6B'); ctx.beginPath(); ctx.ellipse(px,py-q.h-TH*q.w*0.5,TW*q.w*0.42,TW*q.w*0.4,0,Math.PI,0); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(px,py-q.h-TH*q.w*0.5-TW*q.w*0.4); ctx.lineTo(px,py-q.h-TH*q.w*0.5-TW*q.w*0.4-3); ctx.stroke();
+      });
+      // the gate, facing you: twin domed towers and a big coloured arch with the sign
+      { const [gx0,gy0]=at(3.05,3.05), sp=10, th=19, red='#C9603E', gold='#E2B544';
+        isoBox(ctx,gx0-sp,gy0,0.24,0.24,0,th,red,{floors:3});
+        isoBox(ctx,gx0+sp,gy0,0.24,0.24,0,th,red,{floors:3});
+        ctx.strokeStyle=C(OUT); ctx.lineWidth=LW;
+        [gx0-sp, gx0+sp].forEach(tx=>{ ctx.fillStyle=C(gold); ctx.beginPath(); ctx.ellipse(tx,gy0-th-1.5,4.2,4.6,0,Math.PI,0); ctx.closePath(); ctx.fill(); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(tx,gy0-th-6); ctx.lineTo(tx,gy0-th-9); ctx.stroke(); });
+        // arch: a thick band in rainbow stripes
+        const arch = (r, col, w)=>{ ctx.strokeStyle=C(col); ctx.lineWidth=w; ctx.beginPath(); ctx.ellipse(gx0, gy0-th+5, sp-1, r, 0, Math.PI, 0); ctx.stroke(); };
+        ctx.save(); ctx.lineCap='butt';
+        arch(12, OUT, 6); ['#E86A5C','#F2B84B','#5FA8D3','#8BC34A'].forEach((c,i)=>arch(12-1.8+i*1.2, c, 1.3));
+        ctx.restore();
+        // sign board over the arch
+        ctx.fillStyle=C('#3A2A1E'); ctx.strokeStyle=C(OUT); ctx.lineWidth=LW;
+        ctx.beginPath(); ctx.rect(gx0-7.5,gy0-th-11,15,4.5); ctx.fill(); ctx.stroke();
+        ctx.fillStyle=C(gold); for (let k=0;k<7;k++){ ctx.beginPath(); ctx.arc(gx0-5.4+k*1.8, gy0-th-8.75, 0.6, 0, Math.PI*2); ctx.fill(); } }
       break;
     }
     case 'ibn': isoBox(ctx,x,y,0.5,1.8,0,8,'#E9C99A',{floors:4, top:'#D9A36E'}); break;
@@ -1471,6 +1523,29 @@ function buildFx(){
   el._w = { x:w.x-40, y:w.y-120 };
   fxLayer.appendChild(el); fxEls.push(el);
   buildBurjShow();
+  buildGlobalVillageLights();
+}
+// Global Village at night: bulbs round the Ferris wheel, a glowing gate arch, string lights round the ground.
+// Same geometry as drawLandmark('gv'): world offsets from the landmark point.
+function buildGlobalVillageLights(){
+  const gv = LANDMARKS.find(l=>l.k==='gv'); if (!gv) return;
+  const w = aiToWorld(gv.at[0], gv.at[1]);
+  const at = (gx,gy)=>[(gx-gy)*TW/2, (gx+gy)*TH/2];
+  const cols = ['#ff5a7a','#ffd24a','#5ad1ff','#7dff8a','#c78bff','#ff9b4a'];
+  const [wx,wy] = at(-2.9,-0.6), Rw = 30, wcy = wy-Rw-6;
+  let bulbs = '';
+  for (let k=0;k<24;k++){ const t=k/24*Math.PI*2; bulbs += '<circle class="b b'+(k%3)+'" cx="'+(wx+Math.cos(t)*Rw*0.42).toFixed(1)+'" cy="'+(wcy+Math.sin(t)*Rw).toFixed(1)+'" r="1.6" fill="'+cols[k%cols.length]+'"/>'; }
+  let ring = '';
+  for (let k=0;k<40;k++){ const q=k/40*Math.PI*2, gx=Math.cos(q)*3.4, gy=Math.sin(q)*3.4; if (gx+gy < 0.6 || (gx+gy > 3.9 && Math.abs(gx-gy) < 2.2)) continue; const [px,py]=at(gx,gy); ring += '<circle class="s s'+(k%2)+'" cx="'+px.toFixed(1)+'" cy="'+py.toFixed(1)+'" r="1" fill="'+(k%2?'#ffe08a':'#ff9bd0')+'"/>'; }
+  const [gx0,gy0] = at(3.05,3.05), th = 19;
+  const arch = 'M'+(gx0-9)+' '+(gy0-th+5)+' A 9 12 0 0 1 '+(gx0+9)+' '+(gy0-th+5);
+  const el = document.createElement('div');
+  el.className = 'fx fx-gv';
+  el.innerHTML = '<svg viewBox="-60 -100 120 140" width="120" height="140" aria-hidden="true">'
+    + '<ellipse class="wheel" cx="'+wx.toFixed(1)+'" cy="'+wcy.toFixed(1)+'" rx="'+(Rw*0.42).toFixed(1)+'" ry="'+Rw+'"/>'
+    + bulbs + ring + '<path class="arch" d="'+arch+'"/></svg>';
+  el._w = { x:w.x-60, y:w.y-100 };
+  fxLayer.appendChild(el); fxEls.push(el);
 }
 // Burj Khalifa light show: a colour wash that runs up the tower, clipped to its silhouette
 const BURJ_TIERS = [[0.62,30],[0.52,30],[0.43,28],[0.34,26],[0.26,24],[0.19,20],[0.13,18]];
