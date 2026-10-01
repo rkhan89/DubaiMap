@@ -205,3 +205,15 @@ Steps 2–4: Android share target and /share, TikTok captions, Inbox and offline
   `all_crewmates()`, `tagged_in()`, `untag_me()`; `leave_crew(crew)`; a trigger unshares on
   leave. Existing shared rows move to the owner's crew. Checks in `tests/e2e/sqltest.mjs`;
   the flow in `tests/e2e/crews.mjs`.
+
+## Meals, crew names, adding to a crew book
+- **Breakfast / Lunch / Dinner**: optional tags on a visit or a save (log screen, *Meal*).
+  The map filter has a *Meal* section (shows places with a visit tagged that meal); a place's
+  page shows the meals people tagged. Stored in `entries.meals` (`0004_meals.sql`); only sent
+  when set.
+- **New crews start as "My Crew"**, ready to rename. The optional preview crew is "Sample Crew".
+  Onboarding step 4 just says: up to 5 crews of up to 15 people, and you choose Just me or crews
+  each time you save.
+- **Adding photos from a crew book**: the crew is pre-picked (it's where you asked to add),
+  the Add button says what's missing instead of greying out, and "Open book" returns to that
+  book. Every book has an Add photos button in its header.

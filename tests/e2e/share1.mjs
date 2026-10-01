@@ -42,7 +42,7 @@ export default async function share1(h){
     await h.js(()=>document.querySelector('#cfC [data-cat="karak"]').click()); await h.sleep(150);
     await h.js(()=>document.querySelector('[data-who]:not([data-who="me"])').click()); await h.sleep(150);
     await h.js(()=>document.querySelector('#cfAdd').click()); await h.sleep(600);
-    const t = await toastText(); if (!/Shared with Karak Crew/.test(t)) throw new Error(t);
+    const t = await toastText(); if (!/Shared with Sample Crew/.test(t)) throw new Error(t);
     await h.js(()=>[...document.querySelectorAll('#toast .toast-btn')].find(b=>b.textContent==='View on map').click()); await h.sleep(1200);
     await h.shot('s1-on-map');
   });

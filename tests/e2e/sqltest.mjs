@@ -158,5 +158,12 @@ await expectErr('tagging someone who shares no crew with you', T, `insert into e
 (await as(U, `update entries set tagged_ids='{}' where id='te1' returning id`)).rows.length===0 ? ok('a tagged friend cannot edit the visit') : bad('U edit');
 await as(U, `select untag_me('te1')`);
 (await count(U, `select * from entries where id='te1'`))===0 ? ok('taking yourself off the tag hides it again') : bad('untag');
+// ---- meals (0004) ----
+await db.exec('reset role');
+const sql4 = fs.readFileSync(new URL('../../supabase/migrations/0004_meals.sql', import.meta.url),'utf8');
+try{ await db.exec(sql4); await db.exec(sql4); ok('meals migration runs (twice)'); } catch(e){ bad('meals migration: '+e.message); }
+await as(T, `insert into entries(id,venue_id,kind,private,meals) values ('mm1','tv1','visit',true,array['breakfast','dinner'])`);
+(await as(T, `select meals from entries where id='mm1'`)).rows[0].meals.length===2 ? ok('a visit can be tagged breakfast and dinner') : bad('meals');
+await expectErr('an unknown meal is refused', T, `insert into entries(id,venue_id,kind,private,meals) values ('mm2','tv1','visit',true,array['brunch'])`);
 console.log(process.exitCode ? '\nSOME CHECKS FAILED' : '\nall checks passed');
 

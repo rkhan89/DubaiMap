@@ -1003,3 +1003,5 @@ html{overflow:hidden;}
 .who-grid .radio-card.on{box-shadow:inset 0 0 0 2px var(--gold), 0 3px 0 var(--gold-deep);}
 .who-grid .radio-card .rc-head .trunc{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;line-height:1.15;}
 .who-grid .radio-card p.trunc{white-space:normal;}
+.meal-chip{padding:0 16px 0 12px;gap:6px;}
+.meal-chip .ms{font-size:20px;}

@@ -16,14 +16,15 @@ function crewSetup(opts){
   let tab = opts.tab || (state.pendingJoin ? 'join' : 'create');
   // in onboarding you may come back to the crew you just made; otherwise this always makes a new crew
   let made = opts.onboarding ? S.myCrew() : null;
-  let name = made?.name || '';
+  // a new crew starts as "My Crew": rename it here or any time later
+  let name = made?.name || 'My Crew';
   const full = !made && S.myCrews().length >= APP.crewsPerPerson;
   let joinCode = opts.code || state.pendingJoin || '';
   let err = null;
   openScreen(el=>{
     const paint=()=>{
       const me=S.me();
-      const preview = { name: name.trim() || 'Your Crew', code: made?.code || ((name.toUpperCase().replace(/[^A-Z]/g,'').slice(0,5)||'CREW')+'··') };
+      const preview = { name: name.trim() || 'My Crew', code: made?.code || ((name.toUpperCase().replace(/[^A-Z]/g,'').slice(0,5)||'CREW')+'··') };
       el.innerHTML = topbar({title:'Crew Setup Invitation', center:true, profile:false, progress:opts.onboarding?[0,4]:null}) + `<div class="screen-body">
         <div class="row between mt8">${opts.onboarding?`<span class="step">STEP 5 OF 5 • CREW</span>`:'<span></span>'}<span class="hand">Almost ready to feast! 🫖</span></div>
         <h1 class="h-xl mt12">Set up your food crew</h1>
@@ -33,7 +34,7 @@ function crewSetup(opts){
         ${tab==='create' ? `
         <div class="card mt20">
           <div class="field-label"><span class="eyebrow">${icon('local_cafe')} Crew log name</span><span class="hand">Personalised stamp</span></div>
-          <div class="input-wrap mt8"><input class="input" id="cName" maxlength="32" placeholder="e.g. Karak Crew" value="${esc(name)}" style="padding-left:16px;font-size:18px;font-weight:600"><span class="trail ms">edit</span></div>
+          <div class="input-wrap mt8"><input class="input" id="cName" maxlength="32" placeholder="My Crew" value="${esc(name)}" style="padding-left:16px;font-size:18px;font-weight:600"><span class="trail ms">edit</span></div>
           <p class="muted mt8">This title adorns your communal polaroid book and map pins across ${esc(APP.city)}.</p>
         </div>
         <div class="card mt16">
@@ -56,7 +57,7 @@ function crewSetup(opts){
         <div class="card mt20">
           <span class="eyebrow">${icon('confirmation_number')} Crew code</span>
           <p class="muted mt8">Paste the invite link or type the code from your friend's text.</p>
-          <div class="input-wrap mt12"><input class="input" id="jCode" autocapitalize="characters" placeholder="E.G. KARAK7" value="${esc(joinCode)}" style="padding-left:16px;font-family:var(--f-mono);letter-spacing:.12em;font-size:18px"><span class="trail ms">key</span></div>
+          <div class="input-wrap mt12"><input class="input" id="jCode" autocapitalize="characters" placeholder="E.G. MYCRE42" value="${esc(joinCode)}" style="padding-left:16px;font-family:var(--f-mono);letter-spacing:.12em;font-size:18px"><span class="trail ms">key</span></div>
           <button class="btn btn-soft btn-block mt12" id="jGo">Join their crew ${icon('arrow_forward')}</button>
         </div>
         ${err==='invalid'?`<div class="alert mt16">${icon('priority_high')}<div class="grow"><div class="row between"><b>Invalid crew code</b><span class="tag red" style="background:var(--card)">Error #404</span></div>Code <b class="mono">${esc(joinCode.toUpperCase())}</b> not found. Please double-check with your host or paste their link.${!S.cloud?'<br><br><b>Preview mode:</b> only crews made on this phone can be joined until accounts go live.':''}</div></div>`:''}
@@ -68,12 +69,12 @@ function crewSetup(opts){
       </div>`;
       bindSeg(el, 'ctab', v=>{ tab=v; err=null; paint(); });
       const nm=el.querySelector('#cName');
-      if (nm) nm.addEventListener('input', ()=>{ name=nm.value; const lb=el.querySelector('.link-box span'); if (!made) lb.textContent=APP.inviteUrl((name.toUpperCase().replace(/[^A-Z]/g,'').slice(0,5)||'CREW')+'··').replace(/^https?:\/\//,''); el.querySelector('.invite-card h2').textContent=`You're invited to ${name.trim()||'Your Crew'}`; });
+      if (nm) nm.addEventListener('input', ()=>{ name=nm.value; const lb=el.querySelector('.link-box span:not(.ms)'); if (!made) lb.textContent=APP.inviteUrl((name.toUpperCase().replace(/[^A-Z]/g,'').slice(0,5)||'CREW')+'··').replace(/^https?:\/\//,''); el.querySelector('.invite-card h2').textContent=`You're invited to ${name.trim()||'My Crew'}`; });
       let making=null;
       const ensure=async()=>{
         if (!made){
           if (full){ toast(`You're in ${APP.crewsPerPerson} crews already. Leave one to start another.`); return null; }
-          if (!name.trim()){ toast('Give your crew a name first'); el.querySelector('#cName')?.focus(); return null; }
+          if (!name.trim()) name = 'My Crew';
           try{ made = await (making = making || S.createCrew({name})); }catch(e){ making=null; toast(e && /max/.test(e.message) ? `You're in ${APP.crewsPerPerson} crews already. Leave one to start another.` : 'Couldn’t create the crew. Check your connection and try again.'); return null; }
         }
         else if (name.trim() && name.trim()!==made.name){ S.setActiveCrew(made.id); S.updateCrew({name:name.trim()}); }
@@ -191,7 +192,7 @@ function crewScreen(){
         <div class="card-soft mt20">
           <div class="row">${icon('confirmation_number')}<b class="h-sm" style="font-family:var(--f-body)">Have an invite code from a friend?</b></div>
           <p class="muted mt8">Enter the crew code from your friend's napkin note or text.</p>
-          <div class="input-wrap mt12"><input class="input" id="soCode" autocapitalize="characters" placeholder="E.G. KARAK7" style="background:var(--card);padding-left:16px;font-family:var(--f-mono);letter-spacing:.1em"><span class="trail ms">key</span></div>
+          <div class="input-wrap mt12"><input class="input" id="soCode" autocapitalize="characters" placeholder="E.G. MYCRE42" style="background:var(--card);padding-left:16px;font-family:var(--f-mono);letter-spacing:.1em"><span class="trail ms">key</span></div>
           <div id="soErr"></div>
           <button class="btn btn-soft btn-block mt12" id="soJoin">Join their crew ${icon('arrow_forward')}</button>
         </div>

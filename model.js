@@ -5,7 +5,7 @@ import * as S from './store.js';
 import { avg, catById } from './data.js';
 
 // scope: { mode:'me'|'crew', members:Set<userId>|null (null = everyone in crew), privacy:'all'|'shared'|'private',
-//          cats:Set|null, status:{been:bool, want:bool} }
+//          cats:Set|null, meals:Set|null, status:{been:bool, want:bool} }
 export function defaultScope(){ return { mode:'crew', members:null, privacy:'all', cats:null, status:{been:true, want:true} }; }
 
 function inScope(e, scope, meId){
@@ -13,6 +13,7 @@ function inScope(e, scope, meId){
   if (scope.mode==='crew' && scope.members && !scope.members.has(e.userId)) return false;
   if (scope.privacy==='shared' && e.private) return false;
   if (scope.privacy==='private' && !e.private) return false;
+  if (scope.meals && !(e.meals||[]).some(m=>scope.meals.has(m))) return false;
   return true;
 }
 
@@ -42,6 +43,7 @@ export function venueSummary(v, scope, pre){
     myRating: mineV.filter(e=>e.rating).sort((a,b)=>b.createdAt-a.createdAt)[0]?.rating || 0,
     visitCount: visits.length, myVisitCount: mineV.length,
     latest, noteEntry,
+    meals: [...new Set(es.flatMap(e=>e.meals||[]))],
     hasPrivate: all.some(e=>e.userId===meId && e.private),
   };
 }
@@ -64,7 +66,7 @@ export function mapModel(scope){
   for (const v of S.venues()){
     const sum = venueSummary(v, scope, byVenue.get(v.id) || []);
     if (sum.state==='unlit'){
-      if (!scope.cats || (v.categories||[]).some(c=>scope.cats.has(c))) out.push(sum);
+      if (!scope.meals && (!scope.cats || (v.categories||[]).some(c=>scope.cats.has(c)))) out.push(sum);
     } else if (passes(sum, scope)) out.push(sum);
   }
   return out;

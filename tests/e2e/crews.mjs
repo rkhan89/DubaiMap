@@ -1,5 +1,5 @@
 import path from 'path';
-// Several crews + tagging (local mode, sample Karak Crew): start a second crew, switch between
+// Several crews + tagging (local mode, sample Sample Crew): start a second crew, switch between
 // them on the Crew tab and the map, choose crews on save, tag who you were with, get tagged,
 // "Not me", the scrapbook "Tagged with" filter, leaving a crew.
 export default async function crews(h){
@@ -22,16 +22,16 @@ export default async function crews(h){
   });
   await step('Crew tab: switcher shows both', async ()=>{
     await h.click('[data-tab="crew"]'); await h.sleep(700);
-    if (!/Karak Crew/.test(await text()) || !/Family/.test(await text())) throw new Error('switcher');
+    if (!/Sample Crew/.test(await text()) || !/Family/.test(await text())) throw new Error('switcher');
     await h.shot('c-switch-family');
-    await h.js(()=>[...document.querySelectorAll('.crew-switch [data-crew]')].find(b=>/Karak/.test(b.textContent)).click()); await h.sleep(600);
-    if (await store(S=>S.myCrew().name)!=='Karak Crew') throw new Error('did not switch');
+    await h.js(()=>[...document.querySelectorAll('.crew-switch [data-crew]')].find(b=>/Sample/.test(b.textContent)).click()); await h.sleep(600);
+    if (await store(S=>S.myCrew().name)!=='Sample Crew') throw new Error('did not switch');
     await h.shot('c-switch-karak'); await back();
   });
   await step('map: Crew pill names the crew; tapping again switches', async ()=>{
     await h.js(()=>{ const b=document.querySelector('#mapMode [data-v="crew"]'); if (!b.classList.contains('on')) b.click(); }); await h.sleep(400);
     const lbl = await h.js(()=>document.querySelector('#mapMode [data-v="crew"]').textContent);
-    if (!/Karak/.test(lbl)) throw new Error('label '+lbl);
+    if (!/Sample/.test(lbl)) throw new Error('label '+lbl);
     await h.js(()=>document.querySelector('#mapMode [data-v="crew"]').click()); await h.sleep(500);
     if (!/Show which crew/.test(await text())) throw new Error('no picker'); await h.shot('c-map-pick');
     await back();
@@ -45,6 +45,7 @@ export default async function crews(h){
     if (!/Choose who it’s for/.test(await toastText())) throw new Error('saved without choosing');
     await clickText('#lWho [data-who]', /Family/); await h.sleep(300);
     await h.js(()=>document.querySelector('#lTags [data-tag="demo-maya"]').click()); await h.sleep(300);
+    await h.js(()=>document.querySelector('#lMeals [data-meal="breakfast"]').click()); await h.sleep(300);
     await h.js(()=>{ const n=document.querySelector('#lNotes'); n.value='Matcha with @omar'; n.dispatchEvent(new Event('input')); });
     const input = await p.$('#lPh'); await input.uploadFile(path.resolve('fixture.jpg')); await h.sleep(1500);
     await h.js(()=>document.querySelector('#lWho').scrollIntoView({block:'start'})); await h.sleep(200); await h.shot('c-log-who');
@@ -55,15 +56,26 @@ export default async function crews(h){
     if (!(e.tags.includes('demo-maya') && e.tags.includes('demo-omar'))) throw new Error('tags '+JSON.stringify(e.tags));
     if (e.here) throw new Error('shows as shared with Karak');
   });
+  await step('meals: the visit is tagged Breakfast; the map filter finds it', async ()=>{
+    const meals = await store((S, a)=>S.entries({venueId:a[0], userId:S.me().id}).sort((x,y)=>y.createdAt-x.createdAt)[0].meals, raviId);
+    if (String(meals)!=='breakfast') throw new Error('meals '+meals);
+    await h.js(()=>document.querySelector('#btnFilter').click()); await h.sleep(500);
+    await h.js(()=>document.querySelector('[data-f="meals"] [data-meal="breakfast"]').click()); await h.sleep(300);
+    await h.js(()=>document.querySelector('[data-f="meals"]').scrollIntoView({block:'center'})); await h.sleep(200); await h.shot('c-filter-meal');
+    const btn = await h.js(()=>document.querySelector('[data-f="apply"]').textContent);
+    if (!/(1 place)/.test(btn)) throw new Error('apply says '+btn);
+    await h.js(()=>document.querySelector('[data-f="clear"]').click()); await h.sleep(200);
+    await h.js(()=>document.querySelector('[data-f="apply"]').click()); await h.sleep(500);
+  });
   await step('place page: "with @maya, @omar" and Change who sees it', async ()=>{
     await go('place', raviId); await h.sleep(900);
     if (!/with @maya, @omar/.test(await text())) throw new Error('no tags shown');
-    if (!/Shared with Karak Crew and Family/.test(await text())) throw new Error('no who line');   // earlier visits here were shared with Karak
+    if (!/Shared with Sample Crew and Family/.test(await text())) throw new Error('no who line');   // earlier visits here were shared with Karak
     await h.shot('c-place');
     await h.js(()=>document.querySelector('#pShare').click()); await h.sleep(500); await h.shot('c-change-who');
     await clickText('.sheet [data-who]', /Family/); await h.sleep(200);   // untick Family
     await h.js(()=>document.querySelector('#awGo').click()); await h.sleep(500);
-    if (!/^Shared with Karak Crew./.test(await toastText())) throw new Error('toast '+await toastText());
+    if (!/^Shared with Sample Crew./.test(await toastText())) throw new Error('toast '+await toastText());
     await back();
   });
   await step('someone tags you → bell; "Not me"', async ()=>{
@@ -95,7 +107,7 @@ export default async function crews(h){
     await h.js(()=>[...document.querySelectorAll('.crew-switch [data-crew]')].find(b=>/Family/.test(b.textContent)).click()); await h.sleep(500);
     await h.js(()=>document.querySelector('#soInvite, #cLeave') && 0); // (Family is just you: solo screen)
     const r = await store(async (S)=>{ const fam=S.myCrews().find(c=>c.name==='Family'); await S.leaveCrew(fam.id); return { n:S.myCrews().length, active:S.myCrew().name }; });
-    if (r.n!==1 || r.active!=='Karak Crew') throw new Error(JSON.stringify(r));
+    if (r.n!==1 || r.active!=='Sample Crew') throw new Error(JSON.stringify(r));
     const e = await store((S, a)=>{ const e=S.entries({venueId:a[0], userId:S.me().id}).sort((x,y)=>y.createdAt-x.createdAt)[0]; return { crews:e.crewIds, priv:e.private }; }, raviId);
     if (e.crews.length!==1 || e.priv) throw new Error('after leave '+JSON.stringify(e));   // still shared with Karak
     // a Family-only save becomes just yours

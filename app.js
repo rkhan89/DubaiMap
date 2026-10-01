@@ -3,7 +3,7 @@ import { APP } from './config.js';
 import * as S from './store.js';
 import * as M from './model.js';
 import * as MAP from './map.js';
-import { CATEGORIES, catById, iconSvg, esc, fmtRating, ago, agoLong, plural } from './data.js';
+import { CATEGORIES, MEALS, catById, iconSvg, esc, fmtRating, ago, agoLong, plural } from './data.js';
 import { avatarHTML, avatarStack, spriteSvg, DEFAULT_AVATAR } from './avatar.js';
 import { $, $$, icon, toast, openSheet, back, closeAll, stampHTML, catChip, seg, bindSeg, toggleHTML, bindToggle, ratingPill } from './ui.js';
 import { go, state } from './go.js';
@@ -90,7 +90,7 @@ function rebuild(){
   if (state.view==='list') renderList();
   paintProfileButtons();
 }
-function isFiltered(){ const sc=scope(); return !!(sc.cats || sc.members || sc.privacy!=='all' || !sc.status.been || !sc.status.want); }
+function isFiltered(){ const sc=scope(); return !!(sc.cats || sc.meals || sc.members || sc.privacy!=='all' || !sc.status.been || !sc.status.want); }
 let rebuildT=null;
 function scheduleRebuild(){ clearTimeout(rebuildT); rebuildT=setTimeout(rebuild, 40); }
 go.refresh = scheduleRebuild;
@@ -248,7 +248,7 @@ go.area = openArea;
    ========================================================= */
 function openFilters(){
   const sc=scope();
-  const draft = { mode:sc.mode, members:sc.members?new Set(sc.members):null, cats:sc.cats?new Set(sc.cats):null, privacy:sc.privacy, status:{...sc.status} };
+  const draft = { mode:sc.mode, members:sc.members?new Set(sc.members):null, cats:sc.cats?new Set(sc.cats):null, meals:sc.meals?new Set(sc.meals):null, privacy:sc.privacy, status:{...sc.status} };
   const members=S.crewMembers();
   openSheet((body)=>{
     const paint=()=>{
@@ -263,12 +263,14 @@ function openFilters(){
       <div class="chip-scroll mt8" data-f="members"><button class="person-chip${!draft.members?' on':''}" data-m="all">${icon('done_all')}All <em>${M.mapModel({...draft, mode:'crew', members:null}).filter(s=>s.state!=='unlit').length}</em></button>${members.map(u=>`<button class="person-chip${draft.members&&draft.members.has(u.id)?' on':''}" data-m="${u.id}">${avatarHTML(u,30)}${esc(u.id===S.me().id?'You':u.name||u.handle)}</button>`).join('')}</div>`:''}
       <div class="eyebrow mt24">${members.length>1?3:2}. Categories</div>
       <div class="chip-wrap mt12" data-f="cats">${CATEGORIES.map(c=>catChip(c.id, !draft.cats || draft.cats.has(c.id))).join('')}</div>
-      <div class="eyebrow mt24">${members.length>1?4:3}. Visit status</div>
+      <div class="row between mt24"><span class="eyebrow">${members.length>1?4:3}. Meal</span><span class="hand">${draft.meals?'Tagged visits only':'Any time of day'}</span></div>
+      <div class="chip-wrap mt12" data-f="meals">${MEALS.map(m=>`<button class="person-chip meal-chip${draft.meals&&draft.meals.has(m.id)?' on':''}" data-meal="${m.id}">${icon(m.icon)}${m.label}</button>`).join('')}</div>
+      <div class="eyebrow mt24">${members.length>1?5:4}. Visit status</div>
       <div class="btn-grid mt12" data-f="status">
         <button class="radio-card${draft.status.been?' on':''}" data-s="been"><span class="rc-head">${icon('verified')}Been here<span class="grow"></span>${draft.status.been?icon('check_box','',true):icon('check_box_outline_blank')}</span><p style="margin-left:0">★★★★☆ <span class="hand">Rated</span></p></button>
         <button class="radio-card${draft.status.want?' on':''}" data-s="want"><span class="rc-head">${icon('bookmark')}Want to try<span class="grow"></span>${draft.status.want?icon('check_box','',true):icon('check_box_outline_blank')}</span><p style="margin-left:0"><span class="tag">To try ribbon</span></p></button>
       </div>
-      <div class="eyebrow mt24">${members.length>1?5:4}. Privacy scope</div>
+      <div class="eyebrow mt24">${members.length>1?6:5}. Privacy scope</div>
       <div class="opt-grid mt12" style="grid-template-columns:1fr 1fr 1fr" data-f="privacy">
         ${[['shared','Shared only','public'],['private','Private only','lock'],['all','All places','layers']].map(([v,l,ic])=>`<button class="opt-card${draft.privacy===v?' on':''}" data-p="${v}" style="flex-direction:column;justify-content:center;gap:6px;padding:12px 6px;font-family:var(--f-mono);font-size:12px;text-align:center">${icon(ic)}${l}</button>`).join('')}
       </div>
@@ -280,10 +282,11 @@ function openFilters(){
       if (e.target.closest('#fZones')){ const on=!prefs().zones; setPref('zones', on); e.target.closest('#fZones').classList.toggle('on', on); rebuild(); return; }
       const t=e.target.closest('button'); if (!t) return;
       const f=t.closest('[data-f]')?.dataset.f || t.dataset.f;
-      if (f==='clear'){ draft.members=null; draft.cats=null; draft.privacy='all'; draft.status={been:true,want:true}; }
+      if (f==='clear'){ draft.members=null; draft.cats=null; draft.meals=null; draft.privacy='all'; draft.status={been:true,want:true}; }
       else if (f==='mode' && t.dataset.v){ draft.mode=t.dataset.v; }
       else if (f==='members'){ const id=t.dataset.m; if (id==='all') draft.members=null; else { draft.members=draft.members?new Set(draft.members):new Set(); draft.members.has(id)?draft.members.delete(id):draft.members.add(id); if (!draft.members.size) draft.members=null; } }
       else if (f==='cats' && t.dataset.cat){ const id=t.dataset.cat; const s=draft.cats?new Set(draft.cats):new Set(CATEGORIES.map(c=>c.id)); s.has(id)?s.delete(id):s.add(id); draft.cats = s.size===CATEGORIES.length?null:s; }
+      else if (f==='meals' && t.dataset.meal){ const s=draft.meals?new Set(draft.meals):new Set(); s.has(t.dataset.meal)?s.delete(t.dataset.meal):s.add(t.dataset.meal); draft.meals=s.size?s:null; }
       else if (f==='status' && t.dataset.s){ draft.status[t.dataset.s]=!draft.status[t.dataset.s]; if (!draft.status.been && !draft.status.want) draft.status[t.dataset.s==='been'?'want':'been']=true; }
       else if (f==='privacy' && t.dataset.p){ draft.privacy=t.dataset.p; }
       else if (f==='apply'){ Object.assign(scope(), draft); saveScope(); back(); rebuild(); return; }

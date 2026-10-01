@@ -1,6 +1,13 @@
 // Shared constants and small helpers used by every screen.
 
 /* ---------- categories ---------- */
+// meal tags on a visit or a save (filterable on the map)
+export const MEALS = [
+  { id:'breakfast', label:'Breakfast', icon:'free_breakfast' },
+  { id:'lunch',     label:'Lunch',     icon:'lunch_dining' },
+  { id:'dinner',    label:'Dinner',    icon:'dinner_dining' },
+];
+export const mealById = id => MEALS.find(m=>m.id===id) || null;
 export const CATEGORIES = [
   {id:'coffee',    label:'Coffee',     color:'#8B5A2B', icon:c=>`<path d="M5 8h11v6.5A3.5 3.5 0 0 1 12.5 18h-4A3.5 3.5 0 0 1 5 14.5V8z" fill="none" stroke="${c}" stroke-width="2"/><path d="M16 9.2c2.4-.3 3.6 1.2 3.6 2.8s-1.2 3-3.6 2.8" fill="none" stroke="${c}" stroke-width="2"/><path d="M8 4.5c-.6.7-.6 1.3 0 2M11 4.5c-.6.7-.6 1.3 0 2" stroke="${c}" stroke-width="1.6" stroke-linecap="round"/>`},
   {id:'matcha',    label:'Matcha',     color:'#5F8D4E', icon:c=>`<path d="M4 9.5c0 4.5 3.6 8 8 8s8-3.5 8-8" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round"/><line x1="4" y1="9.5" x2="20" y2="9.5" stroke="${c}" stroke-width="2"/><path d="M9 4l.6 4M12 3.5l0 4M15 4l-.6 4" stroke="${c}" stroke-width="1.6" stroke-linecap="round"/>`},

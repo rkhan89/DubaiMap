@@ -228,16 +228,11 @@ function shareStep(){
       <span class="tag rust mt8" style="transform:rotate(-1deg)">● Field notes • privacy</span><br>
       <span class="step mt8" style="letter-spacing:.2em">STEP 4 OF ${STEPS}</span>
       <h1 class="h-xl mt12">You decide who sees each place</h1>
-      <p class="muted mt8" style="font-size:16px">Every time you save a place, pick <b>Just me</b> or any of your crews: family, friends, the work lunch gang. Nothing is shared unless you choose.</p>
-      <div class="card mt24" style="text-align:left;position:relative"><span class="tape" style="right:40px;left:auto;top:-10px"></span>
-        <span class="eyebrow">Who's this for?</span>
-        <div class="who-grid mt8" aria-hidden="true">
-          <span class="radio-card"><span class="rc-head">${icon('lock')}Just me</span><p>Only you can see it</p></span>
-          <span class="radio-card on"><span class="rc-head">${icon('groups','',true)}Family</span><p>4 members</p></span>
-          <span class="radio-card on"><span class="rc-head">${icon('groups','',true)}Karak Crew</span><p>6 members</p></span>
-          <span class="radio-card"><span class="rc-head">${icon('groups')}Work</span><p>9 members</p></span>
-        </div></div>
-      <div class="note mt20" style="border-radius:999px;justify-content:center;text-align:center">${icon('verified_user')}<span>You can be in up to ${APP.crewsPerPerson} crews. Change who sees a place any time from its page.</span></div>
+      <p class="muted mt8" style="font-size:16px">Nothing is shared unless you choose.</p>
+      <div class="card mt24" style="text-align:left">
+        <div class="row" style="gap:12px;align-items:flex-start">${icon('groups')}<span><b>Up to ${APP.crewsPerPerson} crews</b>, with up to ${APP.crewMax} people in each.</span></div>
+        <div class="row mt12" style="gap:12px;align-items:flex-start">${icon('lock')}<span>Each time you save a place, choose <b>Just me</b> or the crews that can see it.</span></div>
+      </div>
       <button class="btn btn-gold btn-block mt24" id="sGo">Continue to Crew Setup ${icon('arrow_forward')}</button>
     </div>`;
     el.querySelector('#sGo').onclick=()=>go.crewSetup({onboarding:true});

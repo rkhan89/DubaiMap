@@ -3,7 +3,7 @@ import { APP } from './config.js';
 import * as S from './store.js';
 import * as M from './model.js';
 import * as MAP from './map.js';
-import { CATEGORIES, catById, iconSvg, esc, fmtRating, fmtDate, todayISO, plural } from './data.js';
+import { CATEGORIES, MEALS, mealById, catById, iconSvg, esc, fmtRating, fmtDate, todayISO, plural } from './data.js';
 import { avatarHTML, avatarStack } from './avatar.js';
 import { $, icon, toast, pointsToast, openScreen, openSheet, back, closeAll, topbar, stampHTML, catChip, polaroidHTML, starInput, toggleHTML, bindToggle, ratingPill, share, compressImage, whoHTML, bindWho, whoDefault, whoText, askWho } from './ui.js';
 import { go, state } from './go.js';
@@ -51,7 +51,7 @@ function placeScreen(venueId){
       <div class="snap"><canvas id="pSnap"></canvas><span class="snap-pin">${icon('storefront')}${esc(v.name)}</span></div>
       <div class="place-body">
         <div class="sheet-handle" style="margin:0 auto 12px"></div>
-        <div class="row" style="flex-wrap:wrap;gap:8px"><span class="tag">${iconSvg(cat.id,'#5e4000').replace('<svg','<svg width="14" height="14"')}${esc(cat.label)}</span>${sum.visitCount?`<span class="tag green">${icon('check_circle')}Visited ${sum.visitCount}x</span>`:''}${sum.state==='unlit'?'<span class="tag soft">Undiscovered</span>':''}</div>
+        <div class="row" style="flex-wrap:wrap;gap:8px"><span class="tag">${iconSvg(cat.id,'#5e4000').replace('<svg','<svg width="14" height="14"')}${esc(cat.label)}</span>${sum.visitCount?`<span class="tag green">${icon('check_circle')}Visited ${sum.visitCount}x</span>`:''}${sum.state==='unlit'?'<span class="tag soft">Undiscovered</span>':''}${sum.meals.map(m=>`<span class="tag soft">${icon(mealById(m).icon)}${mealById(m).label}</span>`).join('')}</div>
         <h1 class="h-xl mt8">${esc(v.name)}</h1>
         <div class="row muted mt4" style="gap:6px">${icon('storefront')}${esc([z?z.label:APP.city, v.address].filter(Boolean).join(' • '))}</div>
         ${mine.length?`<div class="share-card mt20${minePrivate?' private':''}"><span class="sc-ico">${icon(minePrivate?'lock':'lock_open')}</span>
@@ -190,6 +190,7 @@ function logFlow(opts){
     notes: editing ? editing.notes : '',
     // who it's for: chosen every time (an edit starts from what it was)
     tags: editing ? (editing.taggedIds||[]).slice() : [],
+    meals: editing ? (editing.meals||[]).slice() : [],
     who: editing ? (editing.private ? [] : (editing.crewIds&&editing.crewIds.length ? editing.crewIds.slice() : (S.myCrew()?[S.myCrew().id]:[]))) : whoDefault(opts.who),
   };
   const existingPhotos = editing ? S.photos({entryId:editing.id}) : [];
@@ -236,6 +237,8 @@ function logFlow(opts){
           <div class="seg"><button data-k="visit" class="${d.kind==='visit'?'on':''}">Been here ✓</button><button data-k="want" class="${d.kind==='want'?'on':''}">Want to try 🔖</button></div>
           ${d.kind==='visit'?`<div class="row between mt20" style="align-items:flex-end;flex-wrap:wrap;gap:12px"><div><span class="eyebrow">Your stamp</span><div class="star-input mt8" id="lStars"></div></div>
             <div style="text-align:right"><span class="eyebrow">Logged on</span><label class="date-pill mt8">${icon('calendar_month')}<span id="lDateTxt">${d.date===todayISO()?'Today, ':''}${fmtDate(d.date,{day:'numeric',month:'short'})}</span><input type="date" id="lDate" value="${d.date}" max="${todayISO()}"></label></div></div>`:''}
+          <div class="row between mt20"><span class="eyebrow">Meal</span><span class="hand">Optional</span></div>
+          <div class="chip-wrap mt8" id="lMeals">${MEALS.map(m=>`<button type="button" class="person-chip meal-chip${d.meals.includes(m.id)?' on':''}" data-meal="${m.id}" aria-pressed="${d.meals.includes(m.id)}">${icon(m.icon)}${m.label}</button>`).join('')}</div>
           <div class="field-label mt20"><span class="eyebrow">${d.kind==='visit'?'Gourmet notes':'Why you want to go'}</span><span class="hand">Add your own words</span></div>
           <textarea class="input mt8" id="lNotes" maxlength="400" placeholder="${d.kind==='visit'?'Tasting notes, hidden gems, dish recommendations…':'Who recommended it, what to order…'}">${esc(d.notes)}</textarea>
           <div class="row between mt20"><span class="eyebrow">Polaroid reel (${allPhotos})</span><span class="mono" style="color:var(--rust);font-weight:700;font-size:12px">${allPhotos}/${APP.photosPerLog}</span></div>
@@ -263,6 +266,7 @@ function logFlow(opts){
       const dt=el.querySelector('#lDate'); if (dt) dt.onchange=()=>{ d.date=dt.value||todayISO(); el.querySelector('#lDateTxt').textContent=(d.date===todayISO()?'Today, ':'')+fmtDate(d.date,{day:'numeric',month:'short'}); };
       const nt=el.querySelector('#lNotes'); nt.oninput=()=>{ d.notes=nt.value; };
       bindWho(el, ()=>d.who, v=>{ d.who=v; keepScroll(paint); });
+      el.querySelectorAll('[data-meal]').forEach(b=>b.onclick=()=>{ const m=b.dataset.meal; d.meals=d.meals.includes(m)?d.meals.filter(x=>x!==m):[...d.meals,m]; keepScroll(paint); });
       el.querySelectorAll('[data-tag]').forEach(b=>b.onclick=()=>{ const id=b.dataset.tag; d.tags=d.tags.includes(id)?d.tags.filter(x=>x!==id):[...d.tags,id]; const sx=el.querySelector('#lTags').scrollLeft; keepScroll(paint); el.querySelector('#lTags').scrollLeft=sx; });
       el.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{ const i=+b.dataset.rm; URL.revokeObjectURL(newPhotos[i].url); newPhotos.splice(i,1); keepScroll(paint); });
       el.querySelectorAll('[data-cap]').forEach(inp=>inp.oninput=()=>{ newPhotos[+inp.dataset.cap].caption=inp.value; });
@@ -292,7 +296,7 @@ function logFlow(opts){
       go.tourSaved && go.tourSaved();
       const firstHere = !S.entries({venueId:venue.id, userId:me.id}).length;
       const firstCrew = S.firstInCrew(venue.id) && hereToo() && d.kind==='visit';
-      const data={ kind:d.kind, rating:d.kind==='visit'?d.rating:0, date:d.kind==='visit'?d.date:todayISO(), notes:d.notes.trim(), crewIds:d.who, taggedIds:d.kind==='visit' ? [...new Set([...d.tags, ...S.mentionIds(d.notes)])] : [] };
+      const data={ kind:d.kind, rating:d.kind==='visit'?d.rating:0, date:d.kind==='visit'?d.date:todayISO(), notes:d.notes.trim(), crewIds:d.who, meals:d.meals, taggedIds:d.kind==='visit' ? [...new Set([...d.tags, ...S.mentionIds(d.notes)])] : [] };
       let e;
       if (editing){ e=S.updateEntry(editing.id, data); }
       else e=S.addEntry({venueId:venue.id, ...data});

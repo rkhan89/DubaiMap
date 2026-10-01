@@ -235,7 +235,7 @@ function openBook(bookId, opts){
       const me=S.me();
       const ps=bookPhotos(b, filter);
       const nf=filterCount(filter);
-      const head = topbar({title:b.title, eyebrow:'Scrapbook page', actions:`<button class="icon-btn" id="bkCover" aria-label="Customise cover">${icon('palette')}</button><button class="icon-btn" id="bkShare" aria-label="Share">${icon('share')}</button>`}) +
+      const head = topbar({title:b.title, eyebrow:'Scrapbook page', actions:`<button class="icon-btn" id="bkAddTop" aria-label="Add photos">${icon('add_a_photo')}</button><button class="icon-btn" id="bkCover" aria-label="Customise cover">${icon('palette')}</button><button class="icon-btn" id="bkShare" aria-label="Share">${icon('share')}</button>`}) +
         `<div class="screen-body"><div class="row mt8" style="gap:10px"><div class="grow">${seg('bmode',[['date','By Date','calendar_month'],['place','By Place','location_on']],mode)}</div><button class="sq-btn${nf?' filtered':''}" id="bkFilter" aria-label="Filter photos" style="width:48px;height:48px">${icon('tune')}</button></div>`;
       let body='';
       const hasPrivate = b.kind!=='crew' && ps.some(p=>p.private);
@@ -253,7 +253,9 @@ function openBook(bookId, opts){
       el.querySelector('#bkFilter').onclick=()=>bookFilters(b, filter, f=>{ filter=f; page=0; paint(); });
       el.querySelector('#bkCover').onclick=()=>coverScreen(b.id);
       el.querySelector('#bkShare').onclick=()=>share({title:b.title, text:`${b.title} — ${plural(ps.length,'memory','memories')} on ${APP.name}`, url:location.origin});
-      const add=el.querySelector('#bkAdd'); if (add) add.onclick=()=>addPhotos({});
+      const addHere=()=>addPhotos({ bookId:b.id, after:paint });
+      const add=el.querySelector('#bkAdd'); if (add) add.onclick=addHere;
+      el.querySelector('#bkAddTop').onclick=addHere;
       el.querySelectorAll('[data-photo]').forEach(f=>f.onclick=e=>{
         if (e.target.closest('[data-heart]')) return;
         const list=[...el.querySelectorAll('[data-photo]')].map(x=>x.dataset.photo);
@@ -261,7 +263,7 @@ function openBook(bookId, opts){
       });
       el.querySelectorAll('[data-heart]').forEach(h=>h.onclick=e=>{ e.stopPropagation(); const on=S.toggleBookmark(h.dataset.heart); h.innerHTML=icon(on?'bookmark':'bookmark_border','',on); toast(on?'Bookmarked to your shelf':'Bookmark removed'); });
       el.querySelectorAll('[data-page]').forEach(p=>p.onclick=()=>{ page=+p.dataset.page; paint(); el.scrollTop=0; });
-      el.querySelectorAll('[data-addplace]').forEach(p=>p.onclick=()=>addPhotos({venueId:p.dataset.addplace}));
+      el.querySelectorAll('[data-addplace]').forEach(p=>p.onclick=()=>addPhotos({venueId:p.dataset.addplace, bookId:b.id, after:paint}));
       el.querySelectorAll('[data-venue]').forEach(p=>p.onclick=()=>go.place(p.dataset.venue));
       el.querySelectorAll('[data-editpage]').forEach(x=>x.onclick=()=>pageEditor(b, x.dataset.editpage, bookPhotos(b, filter).filter(p=>p.date===x.dataset.editpage), paint));
     };
@@ -464,7 +466,10 @@ function addPhotos(opts){
   const me=S.me();
   const picked=[];        // {blob, url, caption, time, on}
   let venue = opts.venueId ? S.venue(opts.venueId) : null;
-  let kind='visit', who = whoDefault(), q='';
+  // added from a crew's book: it's for that crew (you can still change it)
+  const fromBook = opts.bookId ? S.book(opts.bookId) : null;
+  const bookCrew = fromBook && fromBook.kind==='crew' ? S.myCrews().find(c=>c.id===fromBook.crewId) : null;
+  let kind='visit', who = bookCrew ? [bookCrew.id] : whoDefault(), q='';
   const input=document.createElement('input'); input.type='file'; input.accept='image/*'; input.multiple=true;
   openScreen(el=>{
     const paint=()=>{
@@ -475,8 +480,8 @@ function addPhotos(opts){
       const hits = q ? S.searchVenues(q, 5) : [];
       el.innerHTML = topbar({title:'Add Scrapbook Memory', eyebrow:'Scrapbook and notes', actions:''}) + `<div class="screen-body">
         <div class="row between mt8"><button class="row btn-ghost" data-act="back" style="gap:4px;color:var(--ink-2)">${icon('close')}Cancel</button>
-          <div class="center"><span class="hand">Memory entry</span><div class="h-sm">Add to Photobook</div></div>
-          <button class="btn btn-gold btn-sm" id="apNext" style="border-radius:999px" ${sel.length&&venue?'':'disabled'}>Next <span class="tag soft" style="background:rgba(255,255,255,.5)">${sel.length}</span></button></div>
+          <div class="center"><span class="hand">Memory entry</span><div class="h-sm">${bookCrew?esc(bookCrew.name)+' book':'Add to Photobook'}</div></div>
+          <button class="btn btn-gold btn-sm" id="apNext" style="border-radius:999px">Next <span class="tag soft" style="background:rgba(255,255,255,.5)">${sel.length}</span></button></div>
         <div class="stepper mt16"><span class="${step>=1?'on':''}"><i>1</i>Photos</span><b></b><span class="${step>=2?'on':''}"><i>2</i>Place</span><b></b><span class="${step>=3?'on':''}"><i>3</i>Review</span></div>
         <div class="row between mt24"><span class="row h-md" style="gap:8px">${icon('photo_library')}1. Selected Photos <span class="tag">${sel.length} of ${picked.length}</span></span><button class="hand" id="apPick">${picked.length?'Reselect roll ›':'Choose ›'}</button></div>
         ${picked.length?`<div class="sel-grid mt12">${picked.map((p,i)=>`<div style="position:relative" data-toggle="${i}">${p.on?`<span class="tick" style="position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;z-index:3">${icon('check')}</span>`:''}${polaroidHTML({src:p.url, id:'s'+i, tape:false, rot:0, badge:`<span class="pol-badge" style="left:6px;bottom:6px">${esc(p.time)}</span>`, sub:`<input data-cap="${i}" value="${esc(p.caption)}" placeholder="caption" maxlength="40" style="width:100%;border:0;background:none;font-family:var(--f-mono);font-size:12px;text-align:center;outline:none">`, cls:p.on?'':'dim'})}</div>`).join('')}</div>`
@@ -491,7 +496,7 @@ function addPhotos(opts){
           <button class="radio-card${kind==='want'?' on':''}" data-kind="want"><span class="rc-head"><span class="dot"></span>Want to try ${icon('bookmark')}<span class="grow"></span><span class="tag soft">Wishlist</span></span><p>Saves photos as inspiration for an upcoming visit or tasting route.</p></button></div></div>
         <div class="card mt20" style="border-radius:var(--r-xl)"><span class="hand">Crew photobooks</span><div class="h-md">Who's this for?</div>
           <div class="mt12" id="apWho">${whoHTML(who)}</div></div>`:''}
-        <button class="btn btn-gold btn-block mt24" id="apGo" style="min-height:64px" ${sel.length&&venue?'':'disabled'}>${icon('menu_book')}${sel.length?`Add ${plural(sel.length,'Photo')} to ${esc(venue?venue.name:'a place')}${venue?' Chapter':''}`:'Add photos'}</button>
+        <button class="btn btn-gold btn-block mt24" id="apGo" style="min-height:64px">${icon('menu_book')}${sel.length?`Add ${plural(sel.length,'Photo')} to ${esc(venue?venue.name:'a place')}${venue?' Chapter':''}`:'Add photos'}</button>
         <p class="center hand mt12">Memory will be stamped in your ${esc(APP.name)} Shelf</p>
       </div>`;
       const keep=fn=>{ const s=el.scrollTop; fn(); el.scrollTop=s; };
@@ -506,7 +511,9 @@ function addPhotos(opts){
       bindWho(el, ()=>who, v=>{ who=v; keep(paint); });
       const go2=async()=>{
         const list=picked.filter(p=>p.on);
-        if (!list.length || !venue) return;
+        // say what's missing instead of a greyed-out button
+        if (!list.length) return toast('Choose a photo first');
+        if (!venue){ el.querySelector('#apQ')?.scrollIntoView({ block:'center', behavior:'smooth' }); el.querySelector('#apQ')?.focus(); return toast('Pick the place first'); }
         if (list.length > room) return toast(`Your photo roll only has room for ${room} more`);
         if (who===null){ el.querySelector('#apWho').scrollIntoView({ block:'center', behavior:'smooth' }); return toast('Choose who it’s for'); }
         el.querySelector('#apGo').disabled=true;
@@ -514,7 +521,9 @@ function addPhotos(opts){
         await S.addPhotos(list.map(p=>({blob:p.blob, caption:p.caption.trim(), venueId:venue.id, entryId:e.id, date:e.date})));
         picked.forEach(p=>URL.revokeObjectURL(p.url));
         back(); go.refresh();
-        toast(`${plural(list.length,'photo')} added to ${venue.name}`, 'Open book', ()=>{ const b=S.books().find(x=>x.kind==='personal'); openBook(b.id); });
+        const shownIn = fromBook && (fromBook.kind!=='crew' || (who||[]).includes(fromBook.crewId)) ? fromBook : S.books().find(x=>x.kind==='personal');
+        toast(`${plural(list.length,'photo')} added to ${venue.name}`, 'Open book', ()=>openBook(shownIn.id));
+        if (opts.after) opts.after();
       };
       el.querySelector('#apGo').onclick=go2; el.querySelector('#apNext').onclick=go2;
     };

@@ -258,6 +258,8 @@ export function audience(d){
   if (d.private) return { crewIds:[], private:true };
   const c = myCrew(); return c ? { crewIds:[c.id], private:false } : { crewIds:[], private:true };
 }
+// breakfast / lunch / dinner
+const mealsOf = a => [...new Set(a||[])].filter(m=>['breakfast','lunch','dinner'].includes(m));
 // everyone in any of your crews (not you), for tagging
 export function crewmates(){ const m=me(); if (!m) return []; const ids=new Set(myCrews().flatMap(c=>c.memberIds)); ids.delete(m.id); return [...ids].map(user).filter(Boolean).sort((a,b)=>(a.name||a.handle||'').localeCompare(b.name||b.handle||'')); }
 // tags: only people who share a crew with you
@@ -391,7 +393,7 @@ export function entries(filter){
 export function entry(id){ return db.entries[id]||null; }
 export function addEntry(data){
   const m=me();
-  const e = { id:uid(), userId:m.id, kind:'visit', rating:0, notes:'', date:todayISO(), createdAt:Date.now(), ...data, ...audience(data), taggedIds:tagsOf(data.taggedIds) };
+  const e = { id:uid(), userId:m.id, kind:'visit', rating:0, notes:'', date:todayISO(), createdAt:Date.now(), ...data, ...audience(data), taggedIds:tagsOf(data.taggedIds), meals:mealsOf(data.meals) };
   db.entries[e.id]=e; save('entries'); push('entries', e);
   // where it came from: the link is private to you, so it goes to its own owner-only table
   if (e.sourceUrl && cloud && !volatile) C.queue({ k:'put', t:'entry_sources', id:e.id, row:{ entry_id:e.id, user_id:m.id, source_url:String(e.sourceUrl).slice(0,2000) } });
@@ -401,6 +403,7 @@ export function updateEntry(id, patch){
   const e=db.entries[id]; if (!e || e.userId!==me()?.id) return;
   if ('crewIds' in patch || 'private' in patch) patch = { ...patch, ...audience('crewIds' in patch ? patch : { private:patch.private }) };
   if ('taggedIds' in patch) patch = { ...patch, taggedIds:tagsOf(patch.taggedIds) };
+  if ('meals' in patch) patch = { ...patch, meals:mealsOf(patch.meals) };
   Object.assign(e, patch);
   // a visit's photos go to the same people
   Object.values(db.photos).filter(p=>p.entryId===id && p.userId===e.userId).forEach(p=>{
@@ -598,7 +601,7 @@ const DEMO_IDS = ['demo-maya','demo-omar','demo-layla','demo-kabir','demo-noor']
 function addDemoMembers(){
   const m=me(); if (!m) return;
   let crew = myCrew();
-  if (!crew){ crew = { id:'demo-crew', name:'Karak Crew', tagline:'Chai, saffron buns, and old Deira hideouts', code:'KARAK7', ownerId:m.id, memberIds:[m.id], createdAt:Date.now() }; db.crews[crew.id]=crew; }
+  if (!crew){ crew = { id:'demo-crew', name:'Sample Crew', tagline:'Chai, saffron buns, and old Deira hideouts', code:'SAMPLE7', ownerId:m.id, memberIds:[m.id], createdAt:Date.now() }; db.crews[crew.id]=crew; }
   DEMO_IDS.forEach(id=>{ if (db.users[id] && crew.memberIds.length < APP.crewMax && !crew.memberIds.includes(id)) crew.memberIds.push(id); });
 }
 export function demoOn(){ return !!db.flags.demo; }

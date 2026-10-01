@@ -66,8 +66,8 @@ export const MAP = {
     fields: { name:'name', zone:'zone', categories:'categories', lat:'lat', lng:'lng', address:'address' },
   },
   entries: {
-    to: e => ({ id:e.id, venue_id:e.venueId, user_id:e.userId, kind:e.kind, rating:e.rating||0, notes:e.notes||'', date:e.date, private:!!e.private, crew_ids:uuids(e.crewIds), tagged_ids:uuids(e.taggedIds), checkin:!!e.checkin, created_at:ts(e.createdAt), ...(e.sourceType ? { source_type:e.sourceType } : {}) }),
-    from: r => ({ id:r.id, venueId:r.venue_id, userId:r.user_id, kind:r.kind, rating:+r.rating||0, notes:r.notes||'', date:r.date, private:r.private, crewIds:r.crew_ids||[], taggedIds:r.tagged_ids||[], checkin:r.checkin, createdAt:ms(r.created_at), sourceType:r.source_type||null }),
+    to: e => ({ id:e.id, venue_id:e.venueId, user_id:e.userId, kind:e.kind, rating:e.rating||0, notes:e.notes||'', date:e.date, private:!!e.private, crew_ids:uuids(e.crewIds), tagged_ids:uuids(e.taggedIds), ...((e.meals||[]).length ? { meals:e.meals } : {}), checkin:!!e.checkin, created_at:ts(e.createdAt), ...(e.sourceType ? { source_type:e.sourceType } : {}) }),
+    from: r => ({ id:r.id, venueId:r.venue_id, userId:r.user_id, kind:r.kind, rating:+r.rating||0, notes:r.notes||'', date:r.date, private:r.private, crewIds:r.crew_ids||[], taggedIds:r.tagged_ids||[], meals:r.meals||[], checkin:r.checkin, createdAt:ms(r.created_at), sourceType:r.source_type||null }),
   },
   photos: {
     to: p => ({ id:p.id, user_id:p.userId, venue_id:p.venueId, entry_id:p.entryId||null, caption:p.caption||'', date:p.date, private:!!p.private, crew_ids:uuids(p.crewIds), path:p.path, created_at:ts(p.createdAt) }),
