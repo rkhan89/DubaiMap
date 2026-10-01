@@ -17,7 +17,7 @@ export default async function e2e(h){
   await step('skip the guide', async ()=>{ for (let i=0;i<20 && !(await h.js(()=>!!document.querySelector('.tour [data-t="skip"]')));i++) await h.sleep(200); await h.js(()=>document.querySelector('.tour [data-t="skip"]').click()); await h.sleep(400); if (!(await h.js(()=>!!document.querySelector('#emptyMap')))) throw new Error('no empty-map card'); });
   await step('log a place with photo', async ()=>{
     await tap('#navLog'); await tap('[data-plus="log"]'); await typeIn('#logQ', 'Ravi Restaurant'); await h.sleep(300);
-    await h.js(()=>document.querySelector('#lNew').click()); await h.sleep(500); await p.select('#vfZ','satwa'); await h.js(()=>document.querySelector('#vfC [data-cat="cafeteria"]').click()); await h.sleep(200); await h.js(()=>document.querySelector('#vfS').click()); await h.sleep(600);
+    await h.js(()=>document.querySelector('#lNew').click()); await h.sleep(500); await p.select('#vfZ','satwa'); await h.js(()=>document.querySelector('#vfC [data-cat="cafeteria"]').click()); await h.sleep(200); await h.js(()=>document.querySelector('#vfM [data-meal="lunch"]').click()); await h.sleep(200); await h.shot('e-07b-newplace'); await h.js(()=>document.querySelector('#vfS').click()); await h.sleep(600);
     await h.js(()=>{ const b=document.querySelectorAll('#lStars button')[3]; const r=b.getBoundingClientRect(); b.dispatchEvent(new MouseEvent('click',{bubbles:true, clientX:r.right-2, clientY:r.top+5})); });
     await typeIn('#lNotes', 'Butter chicken, two parottas.');
     const input = await p.$('#lPh'); await input.uploadFile(path.resolve('fixture.jpg')); await h.sleep(1500);
@@ -25,6 +25,8 @@ export default async function e2e(h){
     await h.shot('e-08-log');
     await h.js(()=>document.querySelector('#lSave').click()); await h.sleep(1800);
     await h.shot('e-09-saved');
+    const meals = await h.js(async ()=>{ const S=await import('/store.js'); const v=S.venues().find(v=>v.name==='Ravi Restaurant'); return S.entries({venueId:v.id, userId:S.me().id})[0]?.meals; });
+    if (String(meals)!=='lunch') throw new Error('meal from the new-place form: '+meals);
   });
   await step('first-bite sticker unlocks', async ()=>{ await h.sleep(2500); const u=await h.js(()=>!!document.querySelector('.unlock')); if (!u) throw new Error('no unlock'); await h.shot('e-09b-unlock'); await h.js(()=>document.querySelector('.unlock [data-x="ok"]').click()); await h.sleep(400); });
   await step('Me count is 1', async ()=>{ const t=await h.js(()=>document.querySelector('#mapMode').innerText); if (!/Me\s*1/i.test(t)) throw new Error('mode text: '+t); });

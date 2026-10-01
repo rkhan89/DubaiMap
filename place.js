@@ -134,6 +134,8 @@ go.pickOnMap = pickOnMap;
 /* ---------- new / edit venue ---------- */
 function venueForm(initial, onSave, title){
   const d={ name:initial.name||'', zone:initial.zone||MAP.viewZone()?.id||'downtown', categories:initial.categories?[...initial.categories]:[], lat:initial.lat??null, lng:initial.lng??null };
+  // a new place: which meal was it? (goes on the visit you log next; editing a place doesn't ask)
+  const askMeal = !initial.id; if (askMeal) d.meals = [];
   openSheet((body)=>{
     const paint=()=>{
       const z=MAP.zoneById(d.zone);
@@ -144,8 +146,11 @@ function venueForm(initial, onSave, title){
           <button class="btn btn-white btn-sm" id="vfPick">${icon('pin_drop')}Pick on map</button><button class="btn btn-white btn-sm" id="vfLoc" aria-label="Use my location">${icon('my_location')}</button></div>
         <div class="eyebrow mt20">Categories</div>
         <div class="chip-wrap mt8" id="vfC">${CATEGORIES.map(c=>catChip(c.id, d.categories.includes(c.id))).join('')}</div>
+        ${askMeal?`<div class="row between mt20"><span class="eyebrow">Meal</span><span class="hand">Optional</span></div>
+        <div class="chip-wrap mt8" id="vfM">${MEALS.map(m=>`<button type="button" class="person-chip meal-chip${d.meals.includes(m.id)?' on':''}" data-meal="${m.id}" aria-pressed="${d.meals.includes(m.id)}">${icon(m.icon)}${m.label}</button>`).join('')}</div>`:''}
         <div class="sheet-foot"><button class="btn btn-gold btn-block" id="vfS">${icon('check')}Save place</button></div>`;
       const n=body.querySelector('#vfN'); n.oninput=()=>{ d.name=n.value; };
+      body.querySelectorAll('#vfM [data-meal]').forEach(b=>b.onclick=()=>{ const m=b.dataset.meal; d.meals=d.meals.includes(m)?d.meals.filter(x=>x!==m):[...d.meals,m]; const st=body.scrollTop; paint(); body.scrollTop=st; });
       body.querySelector('#vfZ').onchange=e=>{ d.zone=e.target.value; d.lat=null; d.lng=null; paint(); };
       body.querySelector('#vfC').onclick=e=>{ const b=e.target.closest('[data-cat]'); if (!b) return; const id=b.dataset.cat; d.categories.includes(id)?d.categories.splice(d.categories.indexOf(id),1):d.categories.push(id); paint(); };
       body.querySelector('#vfPick').onclick=()=>{
@@ -190,7 +195,7 @@ function logFlow(opts){
     notes: editing ? editing.notes : '',
     // who it's for: chosen every time (an edit starts from what it was)
     tags: editing ? (editing.taggedIds||[]).slice() : [],
-    meals: editing ? (editing.meals||[]).slice() : [],
+    meals: editing ? (editing.meals||[]).slice() : (opts.meals||[]).slice(),
     who: editing ? (editing.private ? [] : (editing.crewIds&&editing.crewIds.length ? editing.crewIds.slice() : (S.myCrew()?[S.myCrew().id]:[]))) : whoDefault(opts.who),
   };
   const existingPhotos = editing ? S.photos({entryId:editing.id}) : [];
@@ -217,7 +222,7 @@ function logFlow(opts){
         const q=el.querySelector("#logQ"); q.focus();
         q.oninput=()=>{ query=q.value; const pos=q.selectionStart; paint(); const n=el.querySelector("#logQ"); n.setSelectionRange(pos,pos); };
         el.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{ venue=S.venue(b.dataset.v); paint(); });
-        const nb=el.querySelector('#lNew'); if (nb) nb.onclick=()=>venueForm({name:query.trim(), zone:opts.zone}, dd=>{ venue=S.addVenue(dd); paint(); });
+        const nb=el.querySelector('#lNew'); if (nb) nb.onclick=()=>venueForm({name:query.trim(), zone:opts.zone}, dd=>{ venue=S.addVenue(dd); if (dd.meals && dd.meals.length) d.meals=dd.meals.slice(); paint(); });
         el.querySelector('#lMore').onclick=()=>toast('Search your crew’s places, or type a new name to add it');
         return;
       }

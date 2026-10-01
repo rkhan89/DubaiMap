@@ -4,7 +4,7 @@
 import { APP } from './config.js';
 import * as S from './store.js';
 import * as MAP from './map.js';
-import { CATEGORIES, catById, iconSvg, esc } from './data.js';
+import { CATEGORIES, MEALS, catById, iconSvg, esc } from './data.js';
 import { $, icon, toast, openScreen, openSheet, back, closeAll, topbar, catChip, seg, bindSeg, whoHTML, bindWho, whoDefault, whoText } from './ui.js';
 import { go } from './go.js';
 
@@ -149,6 +149,7 @@ function confirmPlace(place, src, ctx){
     name: existing ? existing.name : (place.name||''),
     zone: existing ? existing.zone : (zoneFor(place.lat, place.lng) || MAP.viewZone()?.id || 'downtown'),
     cats: existing ? [...(existing.categories||[])] : (place.category ? [place.category] : []),
+    meals: [],
     who: whoDefault(),            // you choose every time: null until you pick
   };
   const editName = !existing && (!place.placeId || place.manual);
@@ -164,6 +165,8 @@ function confirmPlace(place, src, ctx){
           : `<h2 class="h-lg">${esc(d.name)}</h2>`}</div>
         <div class="eyebrow mt20">Who's this for?</div>
         <div class="mt8" id="cfWho">${whoHTML(d.who)}</div>
+        <div class="row between mt20"><span class="eyebrow">Meal</span><span class="hand">Optional</span></div>
+        <div class="chip-wrap mt8" id="cfM">${MEALS.map(m=>`<button type="button" class="person-chip meal-chip${d.meals.includes(m.id)?' on':''}" data-meal="${m.id}" aria-pressed="${d.meals.includes(m.id)}">${icon(m.icon)}${m.label}</button>`).join('')}</div>
         ${existing ? '' : `
         <div class="field mt20"><label class="eyebrow" for="cfZ">Area</label><select class="input" id="cfZ">${MAP.ZONES.slice().sort((a,b)=>a.label.localeCompare(b.label)).map(x=>`<option value="${x.id}"${x.id===d.zone?' selected':''}>${esc(x.label)}</option>`).join('')}</select></div>
         <div class="eyebrow mt16">Kind of place</div>
@@ -174,6 +177,7 @@ function confirmPlace(place, src, ctx){
         </div>`;
       const n = body.querySelector('#cfN'); if (n) n.oninput = ()=>{ d.name = n.value; };
       bindWho(body, ()=>d.who, v=>{ d.who = v; keep(paint); });
+      body.querySelectorAll('#cfM [data-meal]').forEach(b=>b.onclick=()=>{ const m=b.dataset.meal; d.meals=d.meals.includes(m)?d.meals.filter(x=>x!==m):[...d.meals,m]; keep(paint); });
       const zs = body.querySelector('#cfZ'); if (zs) zs.onchange = ()=>{ d.zone = zs.value; };
       const cc = body.querySelector('#cfC'); if (cc) cc.onclick = e=>{ const b=e.target.closest('[data-cat]'); if (!b) return; const id=b.dataset.cat; d.cats.includes(id) ? d.cats.splice(d.cats.indexOf(id),1) : d.cats.push(id); keep(paint); };
       body.querySelector('#cfAdd').onclick = ()=>add(false);
@@ -189,9 +193,9 @@ function confirmPlace(place, src, ctx){
       const created = !existing;
       const v = existing || S.addVenue({ name:d.name, zone:d.zone, categories:d.cats, lat:place.lat, lng:place.lng, googlePlaceId:place.placeId||null });
       closeAll();
-      if (been){ setTimeout(()=>go.log({ venueId:v.id, who:d.who }), 300); return; }
+      if (been){ setTimeout(()=>go.log({ venueId:v.id, who:d.who, meals:d.meals }), 300); return; }
       // a want-to-try from a share earns no points (logging the visit later does)
-      const e = S.addEntry({ venueId:v.id, kind:'want', crewIds:d.who, sourceType:src.sourceType, sourceUrl:src.sourceUrl });
+      const e = S.addEntry({ venueId:v.id, kind:'want', crewIds:d.who, meals:d.meals, sourceType:src.sourceType, sourceUrl:src.sourceUrl });
       go.switchView('map'); go.refresh();
       const show = ()=>{ const w = MAP.placeWorld(v); MAP.markDropped(v.id); MAP.flyToSeparate(w, S.venues().filter(x=>x.id!==v.id).map(x=>MAP.placeWorld(x)).filter(p=>Math.hypot(p.x-w.x,p.y-w.y)<60)); };
       const msg = d.who.length ? 'Added. '+whoText(d.who) : 'Added to your list. Only you can see it.';
