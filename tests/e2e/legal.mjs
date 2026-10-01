@@ -11,7 +11,8 @@ export default async function legal(h){
       if (!re.test(await text())) throw new Error(path+' wrong page');
       await h.shot('l-web'+path.replace('/','-'));
     }
-    if (!/to be added/.test(await text())) throw new Error('missing owner/contact not flagged');
+    if (await h.js(()=>document.querySelectorAll('.fill-missing').length)) throw new Error('something on the legal pages is still blank');
+    if (!/collectify.app1@gmail.com/.test(await text())) throw new Error('contact missing');
   });
   await h.load();
   await step('sign-in screen links to terms and privacy', async ()=>{

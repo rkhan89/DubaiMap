@@ -175,7 +175,7 @@ function supportCardHTML(){
   const s = APP.support || {}; if (!s.stripe && !s.paypal) return '';
   return `<div class="support-card mt16"><div class="row" style="gap:12px;align-items:flex-start"><span class="support-cup">${icon('local_cafe','',true)}</span>
     <div class="grow"><b class="h-sm">${esc(APP.name)} is free. Buy me a karak?</b><p class="muted small mt4">No ads, and your data's never for sale. If ${esc(APP.name)}'s found you a good spot, chip in for the next one.</p></div></div>
-    <div class="btn-grid mt12">${s.stripe?`<a class="btn btn-gold" href="${esc(s.stripe)}" target="_blank" rel="noopener" data-support="stripe">${icon('credit_card')}Card or Apple Pay</a>`:''}${s.paypal?`<a class="btn btn-soft" href="${esc(s.paypal)}" target="_blank" rel="noopener" data-support="paypal">${icon('account_balance_wallet')}PayPal</a>`:''}</div>
+    <div class="${s.stripe&&s.paypal?'btn-grid':'stack'} mt12">${s.stripe?`<a class="btn btn-gold" href="${esc(s.stripe)}" target="_blank" rel="noopener" data-support="stripe">${icon('credit_card')}Card or Apple Pay</a>`:''}${s.paypal?`<a class="btn btn-soft" href="${esc(s.paypal)}" target="_blank" rel="noopener" data-support="paypal">${icon('account_balance_wallet')}PayPal</a>`:''}</div>
     <p class="muted small mt8">A gift, not a purchase: it doesn't unlock anything. Payments are handled by Stripe or PayPal.</p></div>`;
 }
 function bindSupport(el){ el.querySelectorAll('[data-support]').forEach(a=>a.addEventListener('click', ()=>toast('Thank you! That keeps the karak flowing.'))); }

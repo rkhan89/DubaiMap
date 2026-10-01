@@ -23,8 +23,8 @@ export const APP = {
   // the sample crew (Maya, Omar…) can be switched on in Settings; it only ever exists on that phone
   sampleCrew: true,
   // shown on /terms, /privacy and /data (and in the app). Fill these in before launch.
-  legal: { owner:'', contact:'', city:'Dubai, United Arab Emirates',
-           law:'the laws of the United Arab Emirates as applied in the Emirate of Dubai', effective:'1 October 2026' },
+  legal: { owner:'Rahman', contact:'collectify.app1@gmail.com', city:'the United Arab Emirates',
+           law:'the laws of the United Arab Emirates', effective:'1 October 2026' },
   // "Support Koko": a Stripe Payment Link (https://buy.stripe.com/…) and/or a PayPal.me link. Empty = hidden.
-  support: { stripe:'', paypal:'' },
+  support: { stripe:'', paypal:'https://paypal.me/rhmnkhn' },
 };
