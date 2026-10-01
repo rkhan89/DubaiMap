@@ -240,3 +240,21 @@ Steps 2–4: Android share target and /share, TikTok captions, Inbox and offline
   share in the request body (not logged), returns a page whose `share-landing.js` stores it on the phone
   and continues as above. Nothing is kept or logged on the server.
 - Tests: `tests/e2e/share2.mjs` (real form POST, with and without the service worker, signed in and out).
+
+## Share to Koko, step 3: TikTok captions
+- A TikTok link (shared or pasted): the server asks TikTok's public oEmbed for the post's caption
+  and creator (only that JSON is read). Claude (`claude-haiku-4-5`) reads the caption and must answer
+  through one tool, so all it can return is up to 3 place names with areas. The caption is wrapped
+  and labelled as data, and the answer is only ever used as a search term. Each name is looked up on
+  Google Places (names may be spelt slightly differently: "Amritsar" finds "Amritsr").
+- One clear match opens the confirm sheet; several give "Which one is it?" with "The caption
+  mentions …"; nothing found asks for the name, already filled in. The source label shows the
+  creator ("From TikTok · @biggest.bites_").
+- Without the Claude key, or if Claude is down, the 📍 line in the caption is used. A private or
+  deleted TikTok asks for the name.
+- Captions pasted as text (from Instagram, say) are read the same way; a plain place name is
+  searched directly and never sent to Claude.
+- Cached per person for 30 days: the place names and creator a TikTok gave (never the caption), so
+  sharing it again costs nothing. Logs record which path answered (`via`), never the text.
+- Tests: `tests/caption.test.mjs` (16, with faked TikTok/Claude/Google), `tests/e2e/share3.mjs`
+  (a real TikTok through the dev server, the pick-one sheet, pasted captions).

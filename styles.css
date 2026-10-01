@@ -1030,3 +1030,4 @@ html{overflow:hidden;}
 
 /* signed out with a share waiting */
 .share-waiting{margin:calc(16px + var(--safe-t, 0px)) 20px 0;}
+.mb12{margin-bottom:12px;}

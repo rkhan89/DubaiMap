@@ -15,6 +15,8 @@ const SOURCE = {
   text:        { label:'From what you typed', ic:'edit_note' },
   manual:      { label:'Added by you', ic:'edit_location_alt' },
 };
+// "From TikTok · @biggest.bites_"
+const srcLabel = src => { const s = SOURCE[src.sourceType] || SOURCE.text; return s.label + (src.author ? ' · @' + src.author : ''); };
 const zoneFor = (lat, lng)=>{ if (lat==null || lng==null) return null; const ai = MAP.toAI(lat, lng); return MAP.inMap(ai.a, ai.i) ? MAP.nearestZone(ai.a, ai.i).id : null; };
 
 /* ---------- talking to the resolver ---------- */
@@ -23,7 +25,7 @@ async function resolve(input){
   const token = await S.accessToken();
   if (!token) return { state:'signed_out' };
   try{
-    const r = await fetch('/api/resolve-share', { method:'POST', signal:AbortSignal.timeout(15000),
+    const r = await fetch('/api/resolve-share', { method:'POST', signal:AbortSignal.timeout(28000),
       headers:{ 'Content-Type':'application/json', Authorization:'Bearer '+token }, body:JSON.stringify(input) });
     if (r.status===401) return { state:'signed_out' };
     const j = await r.json().catch(()=>null);
@@ -62,7 +64,7 @@ export function addFromLink(prefill, shared){
       const v = String(value||'').trim();
       if (!v) return toast('Paste a link or type a place name');
       if (busy) return; busy = true;
-      el.querySelector('#shStatus').innerHTML = loadingHTML();
+      el.querySelector('#shStatus').innerHTML = loadingHTML(v);
       el.querySelector('#shGo').disabled = true;
       const isLink = /https?:\/\//i.test(v);
       // a share from the phone's Share menu goes as it came (link and text separately); edits go as typed
@@ -78,17 +80,22 @@ export function addFromLink(prefill, shared){
   }, { cls:'share-screen' });
 }
 go.shareAdd = addFromLink;
-const loadingHTML = ()=>`<div class="share-loading card row"><span class="brand-pin small" aria-hidden="true"></span><span class="grow"><b>Reading link…</b><span class="muted small" style="display:block">Working out which place it is</span></span></div>`;
+// what we're doing while the server works (a TikTok takes a few seconds: caption, then Claude, then Google)
+const loadingHTML = v=>{
+  const s = String(v||''), tiktok = /tiktok\.com/i.test(s), caption = !/https?:\/\//i.test(s) && (s.length > 60 || /\n|📍/u.test(s));
+  const [t, sub] = tiktok ? ['Reading the TikTok…', 'Finding the place in its caption'] : caption ? ['Reading the caption…', 'Finding the places it mentions'] : ['Reading link…', 'Working out which place it is'];
+  return `<div class="share-loading card row"><span class="brand-pin small" aria-hidden="true"></span><span class="grow"><b>${t}</b><span class="muted small" style="display:block">${sub}</span></span></div>`;
+};
 
 /* ---------- what the resolver said → what you see ---------- */
 function handle(res, ctx){
   // when the server couldn't answer (offline, busy), still label a pasted link by where it's from
   const link = !res.sourceType && ctx && (String(ctx.raw||'').match(/https?:\/\/[^\s]+/)||[])[0];
   const guess = !link ? 'text' : /tiktok\.com/i.test(link) ? 'tiktok' : /instagram\.com/i.test(link) ? 'instagram' : /goo\.gl|google\.[a-z.]+\/maps|maps\.google/i.test(link) ? 'google_maps' : 'manual';
-  const src = { sourceType: res.sourceType || guess, sourceUrl: res.sourceUrl || link || null };
+  const src = { sourceType: res.sourceType || guess, sourceUrl: res.sourceUrl || link || null, author: res.author || null };
   switch (res.state){
     case 'match': return confirmPlace(res.place, src, ctx);
-    case 'candidates': return candidates(res.candidates||[], res.query||'', src, ctx);
+    case 'candidates': return candidates(res.candidates||[], res.query||'', src, ctx, res.found);
     case 'needs_place': case 'unsupported': return needsPlace(res, src, ctx);
     case 'rate_limited': return needsPlace({ ...res, message: res.message || 'That’s a lot of links in one go. Try again in a bit.' }, src, ctx);
     case 'timeout': return needsPlace({ ...res, message:'That took too long. Type the place name, or try the link again in a moment.' }, src, ctx);
@@ -99,9 +106,11 @@ function handle(res, ctx){
 }
 
 // several possible places: pick one, or search yourself
-function candidates(list, query, src, ctx){
+function candidates(list, query, src, ctx, found){
+  const named = (found||[]).map(n=>n.area ? `${n.name} (${n.area})` : n.name);
   openSheet(body=>{
-    body.innerHTML = `<div class="sheet-head"><div class="grow"><span class="eyebrow">${esc((SOURCE[src.sourceType]||SOURCE.text).label)}</span><h2 class="h-md">Which one is it?</h2></div></div>
+    body.innerHTML = `<div class="sheet-head"><div class="grow"><span class="eyebrow">${esc(srcLabel(src))}</span><h2 class="h-md">Which one is it?</h2></div></div>
+      ${named.length ? `<p class="muted mt4 mb12">The caption mentions ${esc(named.length===1 ? named[0] : named.slice(0,-1).join(', ')+' and '+named[named.length-1])}.</p>` : ''}
       <div class="stack">${list.slice(0,3).map((p,i)=>{ const z=MAP.zoneById(zoneFor(p.lat,p.lng)); const cat=catById(p.category);
         return `<button class="search-result" data-i="${i}"><span class="sr-ico">${cat?iconSvg(cat.id, cat.color):icon('storefront')}</span><span class="grow"><b class="trunc" style="display:block">${esc(p.name)}</b><span class="muted small">${esc(z?z.label:(p.address||APP.city))}</span></span>${icon('chevron_right')}</button>`; }).join('')}</div>
       <button class="btn btn-ghost btn-block mt12" id="cdNone">None of these</button>
@@ -117,8 +126,10 @@ function needsPlace(res, src, ctx){
     const q = res.query || (ctx.raw && !/https?:\/\//.test(ctx.raw) ? ctx.raw.slice(0,80) : '');
     // places already on your (crew's) map with that name come first: no duplicates
     const local = q ? S.searchVenues(q, 3) : [];
-    body.innerHTML = `<div class="sheet-head"><div class="grow"><span class="eyebrow">${esc((SOURCE[src.sourceType]||SOURCE.text).label)}</span><h2 class="h-md">Which place is it?</h2></div></div>
-      ${res.message ? `<div class="note">${icon(res.state==='offline'?'wifi_off':res.state==='unsupported'?'link_off':'help')}<span>${esc(res.message)}</span></div>` : ''}
+    const named = (res.found||[]).map(n=>n.area ? `${n.name} (${n.area})` : n.name);
+    body.innerHTML = `<div class="sheet-head"><div class="grow"><span class="eyebrow">${esc(srcLabel(src))}</span><h2 class="h-md">Which place is it?</h2></div></div>
+      ${res.message ? `<div class="note">${icon(res.state==='offline'?'wifi_off':res.state==='unsupported'?'link_off':'help')}<span>${esc(res.message)}</span></div>`
+        : named.length ? `<p class="muted mb12">The caption mentions ${esc(named.join(' and '))}. Search to find it on the map, or add it yourself.</p>` : ''}
       ${local.length ? `<div class="eyebrow mt16">Already on your map</div><div class="stack mt8">${local.map(v=>{ const z=MAP.zoneById(v.zone), cat=catById((v.categories||[])[0]); return `<button class="search-result" data-v="${v.id}"><span class="sr-ico">${cat?iconSvg(cat.id,cat.color):icon('storefront')}</span><span class="grow"><b class="trunc" style="display:block">${esc(v.name)}</b><span class="muted small">${esc(z?z.label:'')}</span></span>${icon('chevron_right')}</button>`; }).join('')}</div>` : ''}
       <label class="search mt16">${icon('search')}<input id="npQ" value="${esc(q)}" placeholder="Place name" autocomplete="off"></label>
       <div class="btn-grid mt12"><button class="btn btn-soft" id="npSelf">${icon('edit_location_alt')}Add it myself</button><button class="btn btn-gold" id="npGo">${icon('search')}Search</button></div>`;
@@ -161,7 +172,7 @@ function confirmPlace(place, src, ctx){
     const paint = ()=>{
       const z = MAP.zoneById(d.zone);
       body.innerHTML = `
-        <div class="row between"><span class="tag soft">${icon(s.ic)}${esc(s.label)}</span>${place.placeId?`<span class="g-attr">Place details from <b>Google Maps</b></span>`:''}</div>
+        <div class="row" style="flex-wrap:wrap;gap:6px 12px;justify-content:space-between"><span class="tag soft trunc" style="max-width:100%">${icon(s.ic)}${esc(srcLabel(src))}</span>${place.placeId?`<span class="g-attr">Place details from <b>Google Maps</b></span>`:''}</div>
         ${existing ? `<div class="note mt12">${icon('groups')}<span><b>${esc(existing.name)}</b> is already on the crew map. Add it to your list?</span></div>` : ''}
         <div class="mt12">${editName
           ? `<label class="eyebrow" for="cfN">Place</label><input class="input mt8" id="cfN" maxlength="80" value="${esc(d.name)}" placeholder="Place name">`

@@ -6,6 +6,7 @@ import dns from 'node:dns/promises';
 import net from 'node:net';
 import { firstUrl, sourceOf, mayFetch, isShortMaps, parseMapsUrl, unwrapContinue, metres, nameScore } from './maps.js';
 import { categoryFor } from './categories.js';
+import { extractPlaces, looksLikeCaption } from './caption.js';
 
 const UA = 'Koko/1.0';
 const TIMEOUT = 5000, HOPS = 3;
@@ -151,7 +152,59 @@ export async function resolveMaps(url, deps){
   return { ...base, state:'needs_place', message:MSG.noplace };
 }
 
-// plain text: a link inside it, or a place name. (Captions with several places: step 3.)
+/* ---------- captions (TikTok, or pasted) ---------- */
+// TikTok's public oEmbed answers with the post's caption ("title") and creator; only that JSON is read
+export async function tiktokCaption(url, deps){
+  const api = 'https://www.tiktok.com/oembed?url=' + encodeURIComponent(url);
+  const host = new URL(api).hostname;
+  const addrs = await (deps.lookup || dns.lookup)(host, { all:true });
+  if (!addrs.length || addrs.some(a=>privateIp(a.address))) throw Object.assign(new Error('private address'), { code:'blocked' });
+  const r = await (deps.fetch || fetch)(api, { redirect:'manual', headers:{ 'User-Agent':UA, 'Accept':'application/json' }, signal:AbortSignal.timeout(TIMEOUT) });
+  if (!r.ok) throw Object.assign(new Error('oembed '+r.status), { code:'unreadable' });
+  const body = (await r.text()).slice(0, 200000);
+  const j = JSON.parse(body);
+  return { caption: String(j.title||'').slice(0, 2200), author: String(j.author_name||'').slice(0, 60) || null };
+}
+// names match even with a small spelling difference ("Amritsar" / "Amritsr")
+function close(a, b){
+  if (a === b) return true;
+  if (Math.min(a.length, b.length) < 4 || Math.abs(a.length - b.length) > 2) return false;
+  const d = Array.from({ length:a.length+1 }, (_,i)=>[i, ...Array(b.length).fill(0)]);
+  for (let j=1;j<=b.length;j++) d[0][j] = j;
+  for (let i=1;i<=a.length;i++) for (let j=1;j<=b.length;j++) d[i][j] = Math.min(d[i-1][j]+1, d[i][j-1]+1, d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));
+  return d[a.length][b.length] <= (Math.max(a.length, b.length) >= 8 ? 2 : 1);
+}
+export function fuzzyName(a, b){
+  const w = s => String(s||'').toLowerCase().normalize('NFKD').replace(/[^\p{L}\p{N}\s]/gu,' ').split(/\s+/).filter(x=>x.length>1);
+  const A = w(a), B = w(b); if (!A.length || !B.length) return 0;
+  return A.filter(x=>B.some(y=>close(x, y))).length / Math.min(A.length, B.length);
+}
+// a caption → the places it mentions → Google Places
+export async function placesFromCaption(caption, deps){
+  const ex = deps.captionPlaces ? { places: deps.captionPlaces, via:'cache' } : await extractPlaces(caption, deps);
+  const found = ex.places;
+  const label = n => [n.name, n.area].filter(Boolean).join(', ');
+  if (!found.length) return { state:'needs_place', found, via:ex.via,
+    message: deps.anthropicKey ? 'We couldn’t spot a place in that caption. Type the place name and we’ll find it.' : 'Type the place name and we’ll find it.' };
+  const first = found[0];
+  if (!deps.placesKey) return { state:'needs_place', found, via:ex.via, query:first.name,
+    message: found.length > 1 ? 'The caption mentions ' + found.map(label).join(' and ') + '. Search for the one you want.' : null };
+  const lists = await Promise.all(found.map(n=>placesSearch(label(n), deps.cityBias, deps).catch(()=>null)));
+  const picked = [], ids = new Set();
+  found.forEach((n, i)=>{
+    const rs = (lists[i]||[]).filter(isVenue); if (!rs.length) return;
+    const ranked = rs.map((p, k)=>({ p, k, s: fuzzyName(n.name, p.name), inArea: !!(n.area && fuzzyName(n.area, p.address) >= 0.5) }))
+      .sort((x, y)=>y.s - x.s || x.k - y.k);
+    // the name matches, or Google's own top answer is in the area the caption names
+    const best = ranked[0].s >= 0.5 ? ranked[0] : ranked.find(r=>r.k===0 && r.inArea);
+    if (best && !ids.has(best.p.placeId)){ ids.add(best.p.placeId); picked.push({ ...best, n }); }
+  });
+  if (picked.length === 1 && found.length === 1 && picked[0].s >= 0.8) return { state:'match', place:picked[0].p, found, via:ex.via, query:first.name };
+  if (picked.length) return { state:'candidates', candidates:picked.slice(0,3).map(x=>x.p), found, via:ex.via, query:first.name };
+  return { state:'needs_place', found, via:ex.via, query:first.name, message:'We couldn’t find ' + label(first) + ' on Google. Check the name or add it yourself.' };
+}
+
+// a shared link or text → the place. Google Maps links, TikTok posts (caption), captions, names.
 export async function resolveShare(input, deps){
   const { url:rawUrl, text:rawText, title } = input;
   const url = firstUrl(rawUrl, rawText, title);
@@ -159,10 +212,25 @@ export async function resolveShare(input, deps){
   if (url){
     const type = sourceOf(url);
     if (type==='google_maps') return { sourceType:'google_maps', sourceUrl:url, ...(await resolveMaps(url, deps)) };
-    if (type==='tiktok') return { sourceType:'tiktok', sourceUrl:url, state:'needs_place', query:text||null, message:'Reading TikTok links is coming next. Type the place name for now.' };
-    if (type==='instagram') return { sourceType:'instagram', sourceUrl:url, state:'unsupported', query:text||null, message:MSG.instagram };
+    if (type==='tiktok'){
+      const base = { sourceType:'tiktok', sourceUrl:url };
+      let post = null;
+      if (!deps.captionPlaces){
+        try{ post = await tiktokCaption(url, deps); }
+        catch(e){ if (!text) return { ...base, state:'needs_place', message: e.name==='TimeoutError' ? 'TikTok took too long to answer. Type the place name instead.' : 'We couldn’t read that TikTok (it may be private or removed). Type the place name.' }; }
+      }
+      const caption = [post && post.caption, text].filter(Boolean).join('\n');
+      if (!caption && !deps.captionPlaces) return { ...base, state:'needs_place', message:'That TikTok has no caption to read. Type the place name.' };
+      return { ...base, author: (post && post.author) || deps.captionAuthor || null, ...(await placesFromCaption(caption, deps)) };
+    }
+    // Instagram can't be read, but a caption pasted with the link can
+    if (type==='instagram') return text && looksLikeCaption(text)
+      ? { sourceType:'instagram', sourceUrl:url, ...(await placesFromCaption(text, deps)) }
+      : { sourceType:'instagram', sourceUrl:url, state:'unsupported', query:text||null, message:MSG.instagram };
     if (!text) return { sourceType:'manual', sourceUrl:url, state:'unsupported', message:MSG.other };
   }
+  // a pasted caption (not just a name)
+  if (looksLikeCaption(text)) return { sourceType:'text', ...(await placesFromCaption(text, deps)) };
   const q = text.slice(0, 120);
   if (!q) return { sourceType:'text', state:'needs_place', message:'Paste a link or type a place name.' };
   let results = null;

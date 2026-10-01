@@ -46,7 +46,7 @@ async function cachePut(token, key, value){
 
 export async function POST(request){
   const t0 = Date.now();
-  let type = 'unknown', state = 'error';
+  let type = 'unknown', state = 'error', via = null;
   try{
     if (+(request.headers.get('content-length')||0) > MAX_BYTES) return json(413, { state:'error', message:'That’s too long. Paste just the link or the place name.' });
     const raw = await request.text();
@@ -61,11 +61,16 @@ export async function POST(request){
 
     const link = firstUrl(input.url, input.text, input.title);
     type = link ? sourceOf(link) : 'text';
-    const deps = { placesKey: process.env.GOOGLE_PLACES_API_KEY || '', cityBias: CITY };
-    const key = link && type==='google_maps' ? cacheKey(link) : null;
-    if (key){ const hit = await cacheGet(token, key); if (hit && hit.finalUrl) deps.finalUrl = hit.finalUrl; }
+    const deps = { placesKey: process.env.GOOGLE_PLACES_API_KEY || '', anthropicKey: process.env.ANTHROPIC_API_KEY || '', cityBias: CITY };
+    // cache: where a Maps link leads; for a TikTok, just the place names its caption mentions (never the caption)
+    const key = link && type==='google_maps' ? cacheKey(link) : link && type==='tiktok' ? 'tt:'+cacheKey(link) : null;
+    if (key){ const hit = await cacheGet(token, key);
+      if (hit && hit.finalUrl) deps.finalUrl = hit.finalUrl;
+      if (hit && Array.isArray(hit.places) && hit.places.length){ deps.captionPlaces = hit.places; deps.captionAuthor = hit.author || null; } }
     const out = await resolveShare(input, deps);
     if (key && out.finalUrl && !deps.finalUrl) await cachePut(token, key, { finalUrl: out.finalUrl });
+    if (key && type==='tiktok' && !deps.captionPlaces && out.found && out.found.length) await cachePut(token, key, { places: out.found, author: out.author || null });
+    via = out.via || null;
     state = out.state;
     delete out.finalUrl;                                     // the client doesn't need it
     return json(200, { ...out, places: !!deps.placesKey });
@@ -74,7 +79,7 @@ export async function POST(request){
     // never send the error itself back: a generic message, the details stay out of the response
     return json(500, { state:'error', message:'Something went wrong reading that. Try again in a moment, or type the place name.' });
   }finally{
-    console.log(JSON.stringify({ evt:'resolve-share', type, state, ms: Date.now()-t0 }));
+    console.log(JSON.stringify({ evt:'resolve-share', type, state, via, ms: Date.now()-t0 }));   // never the shared text
   }
 }
 export function GET(){ return json(405, { state:'error', message:'Use POST' }); }

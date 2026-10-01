@@ -64,5 +64,10 @@
         }
       ]
     }
-  ]
+  ],
+  "functions": {
+    "api/resolve-share.js": {
+      "maxDuration": 30
+    }
+  }
 }
