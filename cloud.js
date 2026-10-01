@@ -59,13 +59,13 @@ export const MAP = {
     fields: { name:'name', tagline:'tagline' },
   },
   venues: {
-    to: v => ({ id:v.id, name:v.name, zone:v.zone, categories:v.categories||[], lat:v.lat??null, lng:v.lng??null, address:v.address||'', created_by:v.createdBy, created_at:ts(v.createdAt) }),
-    from: r => ({ id:r.id, name:r.name, zone:r.zone, categories:r.categories||[], lat:r.lat, lng:r.lng, address:r.address||'', createdBy:r.created_by, createdAt:ms(r.created_at) }),
+    to: v => ({ id:v.id, name:v.name, zone:v.zone, categories:v.categories||[], lat:v.lat??null, lng:v.lng??null, address:v.address||'', created_by:v.createdBy, created_at:ts(v.createdAt), ...(v.googlePlaceId ? { google_place_id:v.googlePlaceId, places_fetched_at:v.placesFetchedAt?ts(v.placesFetchedAt):null } : {}) }),
+    from: r => ({ id:r.id, name:r.name, zone:r.zone, categories:r.categories||[], lat:r.lat, lng:r.lng, address:r.address||'', createdBy:r.created_by, createdAt:ms(r.created_at), googlePlaceId:r.google_place_id||null, placesFetchedAt:r.places_fetched_at?ms(r.places_fetched_at):null }),
     fields: { name:'name', zone:'zone', categories:'categories', lat:'lat', lng:'lng', address:'address' },
   },
   entries: {
-    to: e => ({ id:e.id, venue_id:e.venueId, user_id:e.userId, kind:e.kind, rating:e.rating||0, notes:e.notes||'', date:e.date, private:!!e.private, checkin:!!e.checkin, created_at:ts(e.createdAt) }),
-    from: r => ({ id:r.id, venueId:r.venue_id, userId:r.user_id, kind:r.kind, rating:+r.rating||0, notes:r.notes||'', date:r.date, private:r.private, checkin:r.checkin, createdAt:ms(r.created_at) }),
+    to: e => ({ id:e.id, venue_id:e.venueId, user_id:e.userId, kind:e.kind, rating:e.rating||0, notes:e.notes||'', date:e.date, private:!!e.private, checkin:!!e.checkin, created_at:ts(e.createdAt), ...(e.sourceType ? { source_type:e.sourceType } : {}) }),
+    from: r => ({ id:r.id, venueId:r.venue_id, userId:r.user_id, kind:r.kind, rating:+r.rating||0, notes:r.notes||'', date:r.date, private:r.private, checkin:r.checkin, createdAt:ms(r.created_at), sourceType:r.source_type||null }),
   },
   photos: {
     to: p => ({ id:p.id, user_id:p.userId, venue_id:p.venueId, entry_id:p.entryId||null, caption:p.caption||'', date:p.date, private:!!p.private, path:p.path, created_at:ts(p.createdAt) }),
@@ -100,7 +100,11 @@ export async function pull(){
   crews.forEach(r=>{ crewMap[r.id] = MAP.crews.from(r); });
   members.sort((a,b)=>a.joined_at.localeCompare(b.joined_at)).forEach(m=>{ if (crewMap[m.crew_id]) crewMap[m.crew_id].memberIds.push(m.user_id); });
   const by = (rows, t)=>Object.fromEntries(rows.map(r=>{ const o = MAP[t].from(r); return [o.id, o]; }));
-  return { users:by(profiles,'profiles'), crews:crewMap, venues:by(venues,'venues'), entries:by(entries,'entries'),
+  const ents = by(entries,'entries');
+  // your own share links (owner-only table; missing until migration 0002 runs)
+  const sources = await c.from('entry_sources').select('entry_id,source_url').then(r=>r.data||[], ()=>[]);
+  sources.forEach(s=>{ if (ents[s.entry_id]) ents[s.entry_id].sourceUrl = s.source_url; });
+  return { users:by(profiles,'profiles'), crews:crewMap, venues:by(venues,'venues'), entries:ents,
            photos:by(photos,'photos'), books:by(books,'books'), events:by(events,'events') };
 }
 

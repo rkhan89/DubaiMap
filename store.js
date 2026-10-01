@@ -200,6 +200,8 @@ export function isOnboarded(){ const m=me(); return !!(m && m.onboarded); }
 export async function sendCode(email){ return C.sendCode(email); }
 export async function verifyCode(email, code){ await C.verifyCode(email, code); await startCloud(); return me(); }
 export async function signInGoogle(){ return C.google(); }
+// the session token the resolver needs ('dev' when running without accounts)
+export async function accessToken(){ if (!cloud) return 'dev'; const s = await C.session(); return s ? s.access_token : null; }
 export async function handleAvailable(h){
   if (!cloud) return handleStatus(h)!=='taken';
   try{ return await C.rpc('handle_available', { p_handle:h }); }catch(_){ return true; }
@@ -299,10 +301,17 @@ export async function findCrewByCode(code){
    ========================================================= */
 export function venues(){ return Object.values(db.venues); }
 export function venue(id){ return db.venues[id]||null; }
-export function addVenue({name, zone, categories, lat, lng, address}){
-  const v = { id:uid(), name:name.trim(), zone, categories:categories||[], lat:lat??null, lng:lng??null, address:address||'', createdBy:me()?.id||null, createdAt:Date.now(), seed:false };
+export function addVenue({name, zone, categories, lat, lng, address, googlePlaceId}){
+  const v = { id:uid(), name:name.trim(), zone, categories:categories||[], lat:lat??null, lng:lng??null, address:address||'', createdBy:me()?.id||null, createdAt:Date.now(), seed:false,
+              googlePlaceId:googlePlaceId||null, placesFetchedAt:googlePlaceId?Date.now():null };
   db.venues[v.id]=v; save('venues'); push('venues', v); return v;
 }
+// remove a place you added that nobody has logged (used by Undo after a share)
+export function deleteVenue(id){
+  const v=db.venues[id]; if (!v || v.createdBy!==me()?.id || Object.values(db.entries).some(e=>e.venueId===id)) return false;
+  delete db.venues[id]; save('venues'); push('venues', v, 'del'); return true;
+}
+export function venueByPlaceId(pid){ return pid ? venues().find(v=>v.googlePlaceId===pid) || null : null; }
 export function updateVenue(id, patch){ const v=db.venues[id]; if (!v) return; Object.assign(v, patch); save('venues'); push('venues', { id, patch }, 'upd'); return v; }
 export function searchVenues(q, limit){
   q=(q||'').trim().toLowerCase(); if (!q) return [];
@@ -335,7 +344,10 @@ export function entry(id){ return db.entries[id]||null; }
 export function addEntry(data){
   const m=me();
   const e = { id:uid(), userId:m.id, kind:'visit', rating:0, notes:'', date:todayISO(), private:m.shareDefault==='private', createdAt:Date.now(), ...data };
-  db.entries[e.id]=e; save('entries'); push('entries', e); return e;
+  db.entries[e.id]=e; save('entries'); push('entries', e);
+  // where it came from: the link is private to you, so it goes to its own owner-only table
+  if (e.sourceUrl && cloud && !volatile) C.queue({ k:'put', t:'entry_sources', id:e.id, row:{ entry_id:e.id, user_id:m.id, source_url:String(e.sourceUrl).slice(0,2000) } });
+  return e;
 }
 export function updateEntry(id, patch){
   const e=db.entries[id]; if (!e || e.userId!==me()?.id) return;

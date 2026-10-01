@@ -90,13 +90,15 @@ export function openSheet(render, opts){
    TOAST
    ========================================================= */
 let toastTimer=null;
+// toast(msg) · toast(msg, 'Undo', fn, ms) · toast(msg, [['Undo', fn], ['View on map', fn2]], null, ms)
 export function toast(msg, action, fn, ms){
   let el=$('#toast');
-  el.innerHTML=`<span class="toast-msg"></span>${action?`<button class="toast-btn"></button>`:''}`;
+  const actions = Array.isArray(action) ? action : (action ? [[action, fn]] : []);
+  el.innerHTML=`<span class="toast-msg"></span>${actions.map((_,i)=>`<button class="toast-btn" data-i="${i}"></button>`).join('')}`;
   el.querySelector('.toast-msg').textContent=msg;
-  if (action){ const b=el.querySelector('.toast-btn'); b.textContent=action; b.onclick=()=>{ el.classList.remove('show'); fn(); }; }
-  el.classList.add('show');
-  clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.remove('show'), ms||(action?5000:2400));
+  actions.forEach(([label, f], i)=>{ const b=el.querySelector(`[data-i="${i}"]`); b.textContent=label; b.onclick=()=>{ el.classList.remove('show'); f(); }; });
+  el.classList.toggle('multi', actions.length>1); el.classList.add('show');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.remove('show'), ms||(actions.length?5000:2400));
 }
 // the dark "points" bar from the log screen
 export function pointsToast(parts){

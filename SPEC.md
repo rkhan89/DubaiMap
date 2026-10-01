@@ -141,3 +141,42 @@ designs are listed in the README and the review reports.
   Google Cloud OAuth client (web) whose redirect URI is
   https://crvadsjnqnxlkqzpywva.supabase.co/auth/v1/callback, and the Google provider switched on
   in Supabase with that client's ID and secret.
+
+## Share to Koko (Phase 1c)
+Built in four steps. **Step 1 (done):** the resolver, "Add from link or text" and the confirm sheet.
+Steps 2–4: Android share target and /share, TikTok captions, Inbox and offline queue.
+
+- **+ button** opens a small menu: *Log a place I've been* or *Add from link or text*.
+- **Add from link or text**: paste a Google Maps link (short or full), a caption, or a name. The
+  clipboard is read only when you tap Paste. Nothing is added until you confirm.
+- **Resolver** (`api/resolve-share.js`, server only): signed-in users only, 30 per hour each,
+  4 KB body limit. Only Google Maps and TikTok hosts are ever fetched; redirects are followed by
+  hand (3 hops, 5 s each), private addresses are refused, page bodies are never read. Places
+  (New) is asked for id, displayName, location, formattedAddress and types only. Answers:
+  `match`, `candidates`, `needs_place`, `already_exists` (decided on the phone), `unsupported`,
+  `error`. Logs hold the source type, state and time only, never the shared text.
+- **States on screen**: a match opens the confirm sheet; several matches show up to 3 to pick
+  from ("None of these" → search); otherwise "Which place is it?" with the search pre-filled,
+  places already on your crew's map listed first, and *Add it myself*. Directions links, saved
+  lists, Instagram, offline, slow and busy each say what happened in plain words.
+- **Confirm sheet**: where it came from; the name (editable when it didn't come from Google);
+  **Who's this for?** *Just me* (padlock) or *My crew* (the crew's name), starting from your
+  default in Settings, with *Change my default*; area and kind of place for new places.
+  *Add to want-to-try* saves it; *I've been here* goes to logging. Already saved → "Already
+  saved" and the place opens. Already on the crew map → it says so and no second place is made.
+- **After adding**: a toast with *Undo* (5 s; also removes a place it just made) and *View on
+  map* (flies there and drops the pin). Saves from shares earn no points.
+- **Data**: `venues.google_place_id` (+ `places_fetched_at`); `entries.source_type`
+  (google_maps, tiktok, instagram, text, manual). The shared **link** is kept in
+  `entry_sources`, readable by its owner only — not on `entries`, which crewmates can read. The
+  crew sees at most "from TikTok". `share_inbox` (owner only), `place_type_categories` (Places
+  type → our category), `share_rate` and `share_cache` (server functions only).
+- **Google terms**: Place IDs may be stored indefinitely; coordinates may be cached for at most
+  30 days; other Places content (names, addresses) may not be stored. So the cache keeps only
+  link → full link, venues keep the place ID and our own name and pin, and addresses are shown
+  but never saved. Sources: developers.google.com/maps/documentation/places/web-service/policies
+  and cloud.google.com/maps-platform/terms/maps-service-terms.
+- **Tests**: `node --test tests/share-parse.test.mjs` (link shapes, short-link expansion,
+  redirect and host limits, ranking); `tests/e2e/sqltest.mjs` (share privacy: a crewmate can't
+  read your link or Inbox, can't call the cache or rate tables); `tests/e2e/share1.mjs` (the
+  flow in the browser at 390 and 360, light and dark).

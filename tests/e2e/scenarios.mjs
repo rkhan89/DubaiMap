@@ -23,7 +23,8 @@ import p2 from './p2.mjs';
 import p3 from './p3.mjs';
 import tour from './tour.mjs';
 import brand from './brand.mjs';
-const dflt = { screens, baa, perf2:perf, show, e2e, p2, p3, tour, brand,
+import share1 from './share1.mjs';
+const dflt = { screens, baa, perf2:perf, show, e2e, p2, p3, tour, brand, share1,
   async fonts(h){
     await h.seed({mode:'crew'});
     await h.click('[data-tab="shelf"]'); await h.sleep(600); await h.shot('f-shelf');

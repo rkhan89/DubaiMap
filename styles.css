@@ -425,6 +425,9 @@ textarea.input{min-height:110px;resize:none;line-height:1.45;}
 .toast{position:fixed;left:50%;bottom:calc(96px + var(--safe-b));z-index:90;transform:translate(-50%,20px);opacity:0;pointer-events:none;transition:opacity .2s, transform .25s;background:var(--toast-bg);color:var(--toast-ink);border-radius:14px;padding:11px 14px 11px 16px;font-size:14px;font-weight:600;display:flex;align-items:center;gap:12px;max-width:calc(100% - 32px);box-shadow:0 8px 22px rgba(0,0,0,.3);}
 .toast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto;}
 .toast-btn{color:var(--gold-dim);font-weight:800;padding:4px 6px;}
+.toast.multi{flex-wrap:wrap;width:calc(100% - 32px);max-width:420px;gap:4px 12px;}
+.toast.multi .toast-msg{flex:1 1 100%;}
+.toast.multi .toast-btn:first-of-type{margin-left:-6px;}
 .points-toast{position:fixed;left:16px;right:16px;bottom:calc(96px + var(--safe-b));z-index:91;max-width:520px;margin:0 auto;display:flex;align-items:center;gap:10px;background:var(--points-bg);color:#fff;border-radius:22px;padding:14px 18px;font-family:var(--f-mono);font-size:13px;transform:translateY(30px);opacity:0;pointer-events:none;transition:all .3s cubic-bezier(.3,1.4,.5,1);}
 .points-toast.show{transform:none;opacity:1;}
 .points-toast .ms{color:var(--gold-dim);}
@@ -598,7 +601,7 @@ textarea.input{min-height:110px;resize:none;line-height:1.45;}
 .strip::-webkit-scrollbar{display:none;}
 .strip .polaroid{width:168px;flex:none;}
 .btn-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-.log-screen .search-result{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:12px;border-radius:14px;background:var(--card);box-shadow:var(--shadow-sm);}
+.search-result{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:12px;border-radius:14px;background:var(--card);box-shadow:var(--shadow-sm);}
 .search-result .sr-ico{width:40px;height:40px;border-radius:10px;background:var(--sc-high);display:flex;align-items:center;justify-content:center;flex:none;}
 .search-result .sr-ico svg{width:22px;height:22px;}
 .already{position:relative;background:var(--sc-highest);border-radius:var(--r-lg);padding:16px 16px 16px 54px;}
@@ -975,3 +978,12 @@ html{overflow:hidden;}
 @media (prefers-reduced-motion: reduce){ .brand-pin{animation:none;} }
 /* the pin is brown: at night it sits on a small cream disc rather than being recoloured */
 :root[data-theme="dark"] .brand-pin{width:56px;height:56px;border-radius:50%;background-color:var(--brand-cream);background-size:78%;}
+
+/* Share to Koko */
+.share-in{min-height:96px;}
+.share-loading{gap:14px;}
+.brand-pin.small{width:30px;height:30px;margin:0;flex:none;}
+.who-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;}
+.who-grid .radio-card .rc-head{font-size:16px;gap:6px;}
+.who-grid .radio-card p{margin:4px 0 0;font-size:13px;}
+.who-grid .radio-card[disabled]{opacity:.5;}

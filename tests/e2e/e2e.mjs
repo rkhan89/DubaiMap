@@ -16,7 +16,7 @@ export default async function e2e(h){
   await step('lands on map (+coach)', async ()=>{ await h.sleep(1200); await h.shot('e-07-after-onboarding'); const t=await text(); if (!/me/i.test(t) || !/crew/i.test(t)) throw new Error('no map controls'); });
   await step('skip the guide', async ()=>{ for (let i=0;i<20 && !(await h.js(()=>!!document.querySelector('.tour [data-t="skip"]')));i++) await h.sleep(200); await h.js(()=>document.querySelector('.tour [data-t="skip"]').click()); await h.sleep(400); if (!(await h.js(()=>!!document.querySelector('#emptyMap')))) throw new Error('no empty-map card'); });
   await step('log a place with photo', async ()=>{
-    await tap('#navLog'); await typeIn('#logQ', 'Ravi Restaurant'); await h.sleep(300);
+    await tap('#navLog'); await tap('[data-plus="log"]'); await typeIn('#logQ', 'Ravi Restaurant'); await h.sleep(300);
     await h.js(()=>document.querySelector('#lNew').click()); await h.sleep(500); await p.select('#vfZ','satwa'); await h.js(()=>document.querySelector('#vfC [data-cat="cafeteria"]').click()); await h.sleep(200); await h.js(()=>document.querySelector('#vfS').click()); await h.sleep(600);
     await h.js(()=>{ const b=document.querySelectorAll('#lStars button')[3]; const r=b.getBoundingClientRect(); b.dispatchEvent(new MouseEvent('click',{bubbles:true, clientX:r.right-2, clientY:r.top+5})); });
     await typeIn('#lNotes', 'Butter chicken, two parottas.');

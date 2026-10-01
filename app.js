@@ -17,6 +17,7 @@ import { primeBadges } from './badges.js';
 import './profile.js';
 import './social.js';
 import './recap.js';
+import './share.js';
 import { prefs, setPref } from './prefs.js';
 import { takeSharedPlace, openSharedPlace, eventSheet } from './events.js';
 import { registerSW, scheduleReminders } from './notify.js';
@@ -363,12 +364,24 @@ function switchView(v){
 go.switchView = switchView;
 $('#nav').addEventListener('click', e=>{
   const b=e.target.closest('button'); if (!b) return;
-  if (b.id==='navLog') return go.log({});
+  if (b.id==='navLog') return openPlus();
   const t=b.dataset.tab;
   if (t==='map'||t==='list') switchView(t);
   if (t==='crew') go.crew();
   if (t==='shelf') go.shelf();
 });
+
+/* the + menu: log a visit, or add a place you saw somewhere */
+function openPlus(){
+  openSheet(body=>{
+    body.innerHTML = `<div class="stack">
+      <button class="person-row" data-plus="log">${icon('add_a_photo')}<span class="pr-main"><span class="pr-name">Log a place I've been</span><span class="pr-sub">Rate it, add photos, stamp it on your map</span></span>${icon('chevron_right')}</button>
+      <button class="person-row" data-plus="link">${icon('add_link')}<span class="pr-main"><span class="pr-name">Add from link or text</span><span class="pr-sub">A Google Maps or TikTok link, a caption, or a name</span></span>${icon('chevron_right')}</button>
+    </div>`;
+    body.querySelectorAll('[data-plus]').forEach(b=>b.onclick=()=>{ const k=b.dataset.plus; back(); setTimeout(()=> k==='log' ? go.log({}) : go.shareAdd(), 80); });
+  });
+}
+go.plus = openPlus;
 
 /* map controls */
 $('#btnFit').onclick=()=>{ const pts=modelCache.filter(s=>s.state!=='unlit').map(s=>MAP.placeWorld(s.v)); pts.length?MAP.fitPoints(pts,true):MAP.fitCity(true); };

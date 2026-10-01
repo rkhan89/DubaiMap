@@ -17,6 +17,8 @@ await db.exec(`
 `);
 const sql = fs.readFileSync(new URL('../../supabase/migrations/0001_koko.sql', import.meta.url),'utf8');
 try{ await db.exec(sql); ok('migration runs'); } catch(e){ bad('migration: '+e.message); process.exit(1); }
+const sql2 = fs.readFileSync(new URL('../../supabase/migrations/0002_share.sql', import.meta.url),'utf8');
+try{ await db.exec(sql2); ok('share migration runs'); } catch(e){ bad('share migration: '+e.message); process.exit(1); }
 // Supabase grants table access to the API roles; policies do the rest
 await db.exec(`grant usage on schema public, storage, auth to authenticated; grant all on all tables in schema public to authenticated; grant all on storage.objects to authenticated;`);
 const A='00000000-0000-0000-0000-00000000000a', B='00000000-0000-0000-0000-00000000000b', C='00000000-0000-0000-0000-00000000000c';
@@ -69,4 +71,26 @@ await db.exec(`reset role; insert into auth.users(id,email) select unnest(array[
 const c2 = (await as(ids[0], `select * from create_crew('Big','')`)).rows[0];
 let last; for (let i=1;i<16;i++) last = (await as(ids[i], `select join_crew($1) as r`, [c2.code])).rows[0].r;
 last==='full' ? ok('the 16th person is refused: crew full') : bad('cap: '+last);
+// ---- share to Koko: the source link is the owner's alone ----
+const D='20000000-0000-0000-0000-00000000000d', E='20000000-0000-0000-0000-00000000000e';
+await db.exec(`reset role; insert into auth.users values ('${D}','d@x'),('${E}','e@x');`);
+const c3 = (await as(D, `select * from create_crew('Share Crew','')`)).rows[0];
+await as(E, `select join_crew($1)`, [c3.code]);
+await as(D, `insert into venues(id,name,zone,google_place_id) values ('sv1','Trio','downtown','ChIJtrio')`);
+await as(D, `insert into entries(id,venue_id,kind,private,source_type) values ('se1','sv1','want',false,'tiktok'),('se2','sv1','want',true,'tiktok')`);
+await as(D, `insert into entry_sources(entry_id,source_url) values ('se1','https://vm.tiktok.com/abc/'),('se2','https://vm.tiktok.com/def/')`);
+(await as(E, `select source_type from entries where id='se1'`)).rows[0]?.source_type==='tiktok' ? ok('crewmate sees "from TikTok" on a shared save') : bad('source type');
+(await count(E, `select * from entry_sources`))===0 ? ok('crewmate can never read the source link') : bad('entry_sources leak');
+(await count(E, `select * from entries where id='se2'`))===0 ? ok('a private save from a share stays invisible to the crew') : bad('private share leak');
+(await count(D, `select * from entry_sources`))===2 ? ok('owner reads their own links') : bad('owner sources');
+await expectErr('crewmate writes a link onto the owner\'s visit', E, `insert into entry_sources(entry_id,source_url) values ('se1','x')`);
+await as(D, `insert into share_inbox(id,source_url,status) values ('in1','https://vm.tiktok.com/x/','pending')`);
+(await count(E, `select * from share_inbox`))===0 ? ok('inbox is owner-only') : bad('inbox leak');
+let n; for (let i=0;i<3;i++) n=(await as(D, `select share_rate_hit() as n`)).rows[0].n;
+n===3 ? ok('rate limit counts this hour\'s calls') : bad('rate '+n);
+(await count(E, `select * from share_rate`))===0 ? ok('nobody reads the rate table directly') : bad('rate table');
+await as(D, `select share_cache_put('k1','{"finalUrl":"https://www.google.com/maps/place/X"}')`);
+(await as(E, `select share_cache_get('k1') as v`)).rows[0].v?.finalUrl ? ok('link cache is shared (it only holds where links lead)') : bad('cache');
+(await count(E, `select * from share_cache`))===0 ? ok('cache table not readable directly') : bad('cache table');
+(await count(E, `select * from place_type_categories`))>30 ? ok('category map readable') : bad('categories');
 console.log(process.exitCode ? '\nSOME CHECKS FAILED' : '\nall checks passed');

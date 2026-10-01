@@ -58,7 +58,7 @@ function placeScreen(venueId){
             ${e.notes?`<q>${esc(e.notes)}</q>`:''}
           </div>`;
         }).join('') || `<div class="card-soft center"><span class="hand">Nobody in your crew has stamped this yet.</span><p class="muted small mt8">Be the first: +5 points for first in the crew.</p></div>`}</div>
-        ${wanters.length?`<div class="card-soft row mt16">${icon('bookmark')}<div class="grow"><b>Wants to try</b><div class="muted small">${plural(wanters.length,'crew friend')} saved this spot</div></div>${avatarStack(wanters,34,3)}</div>`:''}
+        ${wanters.length?`<div class="card-soft row mt16">${icon('bookmark')}<div class="grow"><b>Wants to try</b><div class="muted small">${plural(wanters.length,'crew friend')}${(()=>{ const L={google_maps:'from Google Maps',tiktok:'from TikTok',instagram:'from Instagram',text:'from a name'}; const ls=[...new Set(sum.wants.map(e=>L[e.sourceType]).filter(Boolean))]; return ls.length?' ('+ls.join(', ')+')':''; })()} saved this spot</div></div>${avatarStack(wanters,34,3)}</div>`:''}
 ${S.events({venueId:v.id, upcoming:true}).length?`<div class="card mt16"><span class="h-sm">${icon('event')} Crew plans here</span><div class="stack mt8">${S.events({venueId:v.id, upcoming:true}).map(eventRowHTML).join('')}</div></div>`:''}
         <div class="btn-grid mt16"><button class="btn btn-soft" id="pCheck">${icon('where_to_vote')}Check in</button><button class="btn btn-soft" id="pPlan">${icon('event')}Plan a bite</button></div>
         <button class="btn btn-soft btn-block mt12" id="pLog">${icon('add_a_photo')}${mine.some(e=>e.kind==='visit')?'Log another visit':'Log your visit'}</button>
