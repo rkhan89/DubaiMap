@@ -48,6 +48,8 @@ export async function onAuth(fn){ const c = await client(); if (c) c.auth.onAuth
 /* ---------- records <-> rows ---------- */
 const ts = ms => new Date(ms || Date.now()).toISOString();
 const ms = iso => iso ? Date.parse(iso) : Date.now();
+// crews a post is shared with (the on-phone sample crew never goes to the server)
+const uuids = a => (a||[]).filter(id=>/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id));
 export const MAP = {
   profiles: {
     to: u => ({ id:u.id, handle:u.handle||null, name:u.name||'', tagline:u.tagline||'', avatar:u.avatar||{}, share_default:u.shareDefault||'crew', points:u.points||0, onboarded:!!u.onboarded }),
@@ -64,13 +66,13 @@ export const MAP = {
     fields: { name:'name', zone:'zone', categories:'categories', lat:'lat', lng:'lng', address:'address' },
   },
   entries: {
-    to: e => ({ id:e.id, venue_id:e.venueId, user_id:e.userId, kind:e.kind, rating:e.rating||0, notes:e.notes||'', date:e.date, private:!!e.private, checkin:!!e.checkin, created_at:ts(e.createdAt), ...(e.sourceType ? { source_type:e.sourceType } : {}) }),
-    from: r => ({ id:r.id, venueId:r.venue_id, userId:r.user_id, kind:r.kind, rating:+r.rating||0, notes:r.notes||'', date:r.date, private:r.private, checkin:r.checkin, createdAt:ms(r.created_at), sourceType:r.source_type||null }),
+    to: e => ({ id:e.id, venue_id:e.venueId, user_id:e.userId, kind:e.kind, rating:e.rating||0, notes:e.notes||'', date:e.date, private:!!e.private, crew_ids:uuids(e.crewIds), tagged_ids:uuids(e.taggedIds), checkin:!!e.checkin, created_at:ts(e.createdAt), ...(e.sourceType ? { source_type:e.sourceType } : {}) }),
+    from: r => ({ id:r.id, venueId:r.venue_id, userId:r.user_id, kind:r.kind, rating:+r.rating||0, notes:r.notes||'', date:r.date, private:r.private, crewIds:r.crew_ids||[], taggedIds:r.tagged_ids||[], checkin:r.checkin, createdAt:ms(r.created_at), sourceType:r.source_type||null }),
   },
   photos: {
-    to: p => ({ id:p.id, user_id:p.userId, venue_id:p.venueId, entry_id:p.entryId||null, caption:p.caption||'', date:p.date, private:!!p.private, path:p.path, created_at:ts(p.createdAt) }),
-    from: r => ({ id:r.id, userId:r.user_id, venueId:r.venue_id, entryId:r.entry_id, caption:r.caption||'', date:r.date, private:r.private, path:r.path, src:'cloud', bookmarkedBy:r.bookmarked_by||[], createdAt:ms(r.created_at) }),
-    fields: { caption:'caption', private:'private', date:'date' },
+    to: p => ({ id:p.id, user_id:p.userId, venue_id:p.venueId, entry_id:p.entryId||null, caption:p.caption||'', date:p.date, private:!!p.private, crew_ids:uuids(p.crewIds), path:p.path, created_at:ts(p.createdAt) }),
+    from: r => ({ id:r.id, userId:r.user_id, venueId:r.venue_id, entryId:r.entry_id, caption:r.caption||'', date:r.date, private:r.private, crewIds:r.crew_ids||[], path:r.path, src:'cloud', bookmarkedBy:r.bookmarked_by||[], createdAt:ms(r.created_at) }),
+    fields: { caption:'caption', private:'private', crewIds:'crew_ids', date:'date' },
   },
   books: {
     to: b => ({ id:b.id, owner_id:b.ownerId, crew_id:b.crewId||null, kind:b.kind, title:b.title||'', byline:b.byline||'', texture:b.texture||null, tint:b.tint||null, pin:b.pin||null, cover_photo_id:b.coverPhotoId||null, filter:b.filter||{}, pages:b.pages||{} }),
@@ -86,7 +88,7 @@ export const MAP = {
 // a partial change in row terms (only the fields that changed)
 export function patchRow(table, patch){
   const f = MAP[table].fields || {}, out = {};
-  Object.keys(patch).forEach(k=>{ if (f[k]) out[f[k]] = patch[k] ?? null; });
+  Object.keys(patch).forEach(k=>{ if (f[k]) out[f[k]] = f[k]==='crew_ids' ? uuids(patch[k]) : patch[k] ?? null; });
   return out;
 }
 
@@ -125,9 +127,9 @@ export async function rpc(name, args){
   if (error) throw error;
   return data;
 }
-export async function removeMember(userId){
+export async function removeMember(crewId, userId){
   const c = await client(); if (!c) throw new Error('offline');
-  const { error } = await c.from('crew_members').delete().eq('user_id', userId);
+  const { error } = await c.from('crew_members').delete().eq('crew_id', crewId).eq('user_id', userId);
   if (error) throw error;
 }
 

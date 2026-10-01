@@ -3,7 +3,7 @@
 import { APP } from './config.js';
 import { CATEGORIES, catById, iconSvg, esc, fmtRating, tilt } from './data.js';
 import { avatarHTML } from './avatar.js';
-import { me as currentUser } from './store.js';
+import { me as currentUser, myCrews } from './store.js';
 
 export const $ = (s, r)=> (r||document).querySelector(s);
 export const $$ = (s, r)=> Array.from((r||document).querySelectorAll(s));
@@ -213,5 +213,46 @@ export function compressImage(file, maxSide, quality){
     };
     img.onerror=()=>{ URL.revokeObjectURL(url); rej(new Error('decode')); };
     img.src=url;
+  });
+}
+
+/* ---------- "Who's this for?" ----------
+   Chosen on every save: Just me, or one or more of your crews. Nothing is picked for you.
+   sel: null = not chosen yet, [] = just me, [crewId, …] = those crews */
+export function whoDefault(sel){ return sel!==undefined && sel!==null ? sel : (myCrews().length ? null : []); }
+export function whoHTML(sel){
+  const crews = myCrews();
+  if (!crews.length) return `<div class="note">${icon('lock')}<span><b>Just you</b> for now. Start or join a crew to share places.</span></div>`;
+  const card = (id, on, ic, title, sub)=>`<button type="button" class="radio-card${on?' on':''}" data-who="${id}" aria-pressed="${on}"><span class="rc-head">${icon(ic,'',on)}<span class="trunc">${title}</span></span><p class="trunc">${sub}</p></button>`;
+  return `<div class="who-grid" role="group" aria-label="Who's this for?">${card('me', !!sel && !sel.length, 'lock', 'Just me', 'Only you can see it')}${crews.map(c=>card(c.id, !!sel && sel.includes(c.id), 'groups', esc(c.name), c.memberIds.length+(c.memberIds.length===1?' member':' members'))).join('')}</div>`
+    + (crews.length>1 ? `<p class="muted small mt8">Pick one crew or several.</p>` : '');
+}
+export function bindWho(root, get, set){
+  root.querySelectorAll('[data-who]').forEach(b=>b.onclick=()=>{
+    const id = b.dataset.who, prev = get() || [];
+    if (id==='me') return set([]);
+    const next = prev.includes(id) ? prev.filter(x=>x!==id) : [...prev, id];
+    set(next.length ? next : null);
+  });
+}
+// "Only you can see it." / "Shared with Family and Work."
+export function whoText(sel){
+  const names = myCrews().filter(c=>(sel||[]).includes(c.id)).map(c=>c.name);
+  if (!names.length) return 'Only you can see it.';
+  return 'Shared with '+(names.length===1 ? names[0] : names.slice(0,-1).join(', ')+' and '+names[names.length-1])+'.';
+}
+// a small sheet asking who something is for, then done(sel)
+export function askWho({ title, action, sel }, done){
+  if (!myCrews().length) return done([]);
+  let cur = sel===undefined ? null : sel;
+  openSheet((body, layer)=>{
+    const paint = ()=>{
+      body.innerHTML = `<div class="sheet-head"><div class="grow"><span class="eyebrow">Who's this for?</span><h2 class="h-md">${esc(title||'Who can see it?')}</h2></div></div>
+        <div class="mt12">${whoHTML(cur)}</div>
+        <div class="sheet-foot"><button class="btn btn-gold btn-block" id="awGo">${esc(action||'Done')}</button></div>`;
+      bindWho(body, ()=>cur, v=>{ cur=v; paint(); });
+      body.querySelector('#awGo').onclick = ()=>{ if (cur===null) return toast('Choose who it’s for'); layer.close(); done(cur); };
+    };
+    paint();
   });
 }

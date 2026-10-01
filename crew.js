@@ -14,18 +14,22 @@ async function sendInvite(crew){ await share({ title:`Join ${crew.name}`, text:i
 function crewSetup(opts){
   opts=opts||{};
   let tab = opts.tab || (state.pendingJoin ? 'join' : 'create');
-  let name = S.myCrew()?.name || '';
+  // in onboarding you may come back to the crew you just made; otherwise this always makes a new crew
+  let made = opts.onboarding ? S.myCrew() : null;
+  let name = made?.name || '';
+  const full = !made && S.myCrews().length >= APP.crewsPerPerson;
   let joinCode = opts.code || state.pendingJoin || '';
   let err = null;
   openScreen(el=>{
     const paint=()=>{
       const me=S.me();
-      const preview = { name: name.trim() || 'Your Crew', code: S.myCrew()?.code || ((name.toUpperCase().replace(/[^A-Z]/g,'').slice(0,5)||'CREW')+'··') };
+      const preview = { name: name.trim() || 'Your Crew', code: made?.code || ((name.toUpperCase().replace(/[^A-Z]/g,'').slice(0,5)||'CREW')+'··') };
       el.innerHTML = topbar({title:'Crew Setup Invitation', center:true, profile:false, progress:opts.onboarding?[0,4]:null}) + `<div class="screen-body">
         <div class="row between mt8">${opts.onboarding?`<span class="step">STEP 5 OF 5 • CREW</span>`:'<span></span>'}<span class="hand">Almost ready to feast! 🫖</span></div>
         <h1 class="h-xl mt12">Set up your food crew</h1>
         <p class="muted mt8" style="font-size:16px">Scrapbook hidden spice dens in Deira and secret beach shacks together in one living logbook.</p>
         <div class="mt20">${seg('ctab', [['create','Create Crew','group_add'],['join','Join Crew','key']], tab)}</div>
+        ${tab==='create' && full ? `<div class="alert warn mt20">${icon('groups')}<div class="grow"><b>You're in ${APP.crewsPerPerson} crews</b>That's the most one person can be in. Leave one from the Crew tab to start another.</div></div>` : ''}
         ${tab==='create' ? `
         <div class="card mt20">
           <div class="field-label"><span class="eyebrow">${icon('local_cafe')} Crew log name</span><span class="hand">Personalised stamp</span></div>
@@ -57,22 +61,23 @@ function crewSetup(opts){
         </div>
         ${err==='invalid'?`<div class="alert mt16">${icon('priority_high')}<div class="grow"><div class="row between"><b>Invalid crew code</b><span class="tag red" style="background:var(--card)">Error #404</span></div>Code <b class="mono">${esc(joinCode.toUpperCase())}</b> not found. Please double-check with your host or paste their link.${!S.cloud?'<br><br><b>Preview mode:</b> only crews made on this phone can be joined until accounts go live.':''}</div></div>`:''}
         ${err==='offline'?`<div class="alert warn mt16">${icon('wifi_off')}<div class="grow"><b>You're offline</b>Joining a crew needs a connection. Try again in a moment.</div></div>`:''}
+        ${err==='max'?`<div class="alert warn mt16">${icon('groups')}<div class="grow"><b>You're in ${APP.crewsPerPerson} crews</b>That's the most one person can be in. Leave one from the Crew tab to join this one.</div></div>`:''}
         ${err==='full'?`<div class="alert warn mt16">${icon('lock')}<div class="grow"><div class="row between"><b>Crew is full (${APP.crewMax} of ${APP.crewMax})</b><span class="tag rust">Capacity reached</span></div>New joins need the owner to make room first.</div></div>`:''}`}
         <button class="btn btn-dark btn-block mt32" id="cGo">${opts.onboarding?'Continue to Scrapbook':'Done'} ${icon('arrow_forward')}</button>
         ${opts.onboarding?`<button class="btn btn-ghost btn-block mt8" id="cSolo">I'll explore solo for now →</button>`:''}
       </div>`;
       bindSeg(el, 'ctab', v=>{ tab=v; err=null; paint(); });
       const nm=el.querySelector('#cName');
-      if (nm) nm.addEventListener('input', ()=>{ name=nm.value; const lb=el.querySelector('.link-box span'); if (!S.myCrew()) lb.textContent=APP.inviteUrl((name.toUpperCase().replace(/[^A-Z]/g,'').slice(0,5)||'CREW')+'··').replace(/^https?:\/\//,''); el.querySelector('.invite-card h2').textContent=`You're invited to ${name.trim()||'Your Crew'}`; });
+      if (nm) nm.addEventListener('input', ()=>{ name=nm.value; const lb=el.querySelector('.link-box span'); if (!made) lb.textContent=APP.inviteUrl((name.toUpperCase().replace(/[^A-Z]/g,'').slice(0,5)||'CREW')+'··').replace(/^https?:\/\//,''); el.querySelector('.invite-card h2').textContent=`You're invited to ${name.trim()||'Your Crew'}`; });
       let making=null;
       const ensure=async()=>{
-        let c=S.myCrew();
-        if (!c){
+        if (!made){
+          if (full){ toast(`You're in ${APP.crewsPerPerson} crews already. Leave one to start another.`); return null; }
           if (!name.trim()){ toast('Give your crew a name first'); el.querySelector('#cName')?.focus(); return null; }
-          try{ c = await (making = making || S.createCrew({name})); }catch(e){ making=null; toast('Couldn’t create the crew. Check your connection and try again.'); return null; }
+          try{ made = await (making = making || S.createCrew({name})); }catch(e){ making=null; toast(e && /max/.test(e.message) ? `You're in ${APP.crewsPerPerson} crews already. Leave one to start another.` : 'Couldn’t create the crew. Check your connection and try again.'); return null; }
         }
-        else if (name.trim() && name.trim()!==c.name) S.updateCrew({name:name.trim()});
-        return S.myCrew();
+        else if (name.trim() && name.trim()!==made.name){ S.setActiveCrew(made.id); S.updateCrew({name:name.trim()}); }
+        return made;
       };
       const cp=el.querySelector('#cCopy'); if (cp) cp.onclick=async()=>{ const c=await ensure(); if (c){ copy(APP.inviteUrl(c.code), 'Invite link copied'); paint(); } };
       const inv=el.querySelector('#cInvite'); if (inv) inv.onclick=async()=>{ const c=await ensure(); if (c){ await sendInvite(c); paint(); } };
@@ -98,6 +103,19 @@ function crewSetup(opts){
 }
 go.crewSetup = crewSetup;
 
+/* ---------- your crews: switch between them, start or join another ---------- */
+function switcherHTML(){
+  const cs=S.myCrews(), active=S.myCrew();
+  if (cs.length<2 && !active) return '';
+  const room = cs.length < APP.crewsPerPerson;
+  return `<div class="crew-switch mt12" role="tablist" aria-label="Your crews">${cs.map(c=>`<button class="chip${active&&c.id===active.id?' on':''}" role="tab" aria-selected="${active&&c.id===active.id}" data-crew="${c.id}">${icon('groups')}${esc(c.name)}</button>`).join('')}${room?`<button class="chip" id="csAdd">${icon('add')}New or join</button>`:''}</div>`;
+}
+function bindSwitcher(el, paint){
+  el.querySelectorAll('[data-crew]').forEach(b=>b.onclick=()=>{ S.setActiveCrew(b.dataset.crew); go.refresh(); paint(); });
+  const a=el.querySelector('#csAdd'); if (a) a.onclick=()=>crewSetup({});
+}
+go.crewSwitcher = { html:switcherHTML, bind:bindSwitcher };
+
 /* ---------- 9 / 10. crew screen ---------- */
 function crewScreen(){
   openScreen(el=>{
@@ -107,7 +125,8 @@ function crewScreen(){
       if (!crew || members.length<2) return paintSolo(crew);
       const owner=crew.ownerId===me.id;
       const est=new Date(crew.createdAt).getFullYear();
-      el.innerHTML = topbar({title:'Your Crew', eyebrow:'Food journal'}) + `<div class="screen-body">
+      el.innerHTML = topbar({title:S.myCrews().length>1?'Your Crews':'Your Crew', eyebrow:'Food journal'}) + `<div class="screen-body">
+        ${switcherHTML()}
         <div class="passport mt16"><span class="tape"></span>
           <div class="row" style="align-items:flex-start">
             <span class="pp-icon">${icon('local_cafe','',true)}</span>
@@ -135,26 +154,30 @@ function crewScreen(){
         <div class="note mt20">${icon('tips_and_updates')}<span>Every pin added by members shows automatically on your shared map. ${owner?'Only you (Owner) can remove members.':'Only the owner can remove members.'}</span></div>
         <button class="btn btn-danger btn-block mt24" id="cLeave">${icon('logout')}Leave ${esc(crew.name)}</button>
         <p class="center mono muted mt12" style="font-size:12px">You'll keep your own saved places, but shared pins will be unlinked.</p>
+        ${S.myCrews().length<APP.crewsPerPerson?`<button class="btn btn-ghost btn-block mt12" id="cMore">${icon('group_add')}Start or join another crew</button>`:''}
       </div>`;
+      bindSwitcher(el, paint);
       el.querySelector('#cpCopy').onclick=()=>copy(crew.code, `Passcode ${crew.code} copied!`);
       el.querySelector('#cInv').onclick=()=>sendInvite(crew);
       el.querySelector('#cBoard').onclick=()=>go.leaderboard();
       if (go.bindEventsCard) go.bindEventsCard(el, paint);
+      const more=el.querySelector('#cMore'); if (more) more.onclick=()=>crewSetup({});
       el.querySelectorAll('.person-row [data-profile]').forEach(b=>b.onclick=()=>go.profile(b.dataset.profile));
       if (owner){ const t=el.querySelector('#cnm').parentElement; t.style.cursor='pointer'; t.onclick=()=>editCrew(crew, paint); }
       el.querySelectorAll('[data-member]').forEach(b=>b.onclick=()=>memberMenu(S.user(b.dataset.member), owner, paint));
       el.querySelector('#cLeave').onclick=()=>{
         openSheet(body=>{
-          body.innerHTML = `<h2 class="h-md">Leave ${esc(crew.name)}?</h2><p class="muted mt8">Your places stay in your scrapbook. You'll stop seeing the crew's pins, and they'll stop seeing yours.</p>
+          body.innerHTML = `<h2 class="h-md">Leave ${esc(crew.name)}?</h2><p class="muted mt8">Your places stay in your scrapbook. You'll stop seeing ${esc(crew.name)}'s pins, and they'll stop seeing yours. Anything you shared only with them becomes just yours.</p>
             <div class="btn-grid mt20"><button class="btn btn-soft" data-x="no">Stay</button><button class="btn btn-danger" data-x="yes">Leave</button></div>`;
           body.querySelector('[data-x="no"]').onclick=()=>back();
-          body.querySelector('[data-x="yes"]').onclick=async()=>{ try{ await S.leaveCrew(); }catch(_){ return toast('You’re offline. Try again in a moment.'); } back(); toast(`You left ${crew.name}`); go.refresh(); setTimeout(paint, 300); };
+          body.querySelector('[data-x="yes"]').onclick=async()=>{ try{ await S.leaveCrew(crew.id); }catch(_){ return toast('You’re offline. Try again in a moment.'); } back(); toast(`You left ${crew.name}`); go.refresh(); setTimeout(paint, 300); };
         });
       };
     };
     const paintSolo=(crew)=>{
       const me=S.me();
       el.innerHTML = topbar({title:'Your Crew', eyebrow:'', center:true, profile:false, actions:`<span class="tag soft" style="width:48px;height:48px;border-radius:50%;justify-content:center;padding:0;font-size:13px">1/${APP.crewMax}</span>`}).replace('<span class="tb-eyebrow"></span>','<span class="eyebrow" style="color:var(--rust)">Food journal</span>') + `<div class="screen-body">
+        ${switcherHTML()}
         <div class="solo-art mt24"><span class="label">solo table #01</span>
           <div class="solo-card"><div class="inner">${avatarHTML(me,86)}<span class="mono" style="font-weight:700">YOU (CAPTAIN)</span><span class="hand">Table for one</span></div>
             <div class="row mt8" style="gap:6px;justify-content:center"><i style="width:9px;height:9px;border-radius:50%;background:var(--green);display:inline-block"></i><span class="mono muted" style="font-size:12px">Ready to share</span></div>
@@ -175,12 +198,13 @@ function crewScreen(){
         ${APP.sampleCrew?`<button class="btn btn-ghost btn-block mt12" id="soDemo">${icon('diversity_3')}Preview with a sample crew</button>`:''}
         <p class="row center mt16 muted" style="justify-content:center">${icon('eco')} You can always explore solo and invite friends whenever you're ready.</p>
       </div>`;
+      bindSwitcher(el, paint);
       el.querySelector('#soInvite').onclick=()=>{ const c=S.myCrew(); c ? sendInvite(c) : crewSetup({tab:'create'}); };
       const sc=el.querySelector('#soCopy'); if (sc) sc.onclick=()=>copy(crew.code, 'Crew code copied');
       el.querySelector('#soJoin').onclick=async()=>{
         const r=await S.joinCrew(el.querySelector('#soCode').value);
         if (r.error==='offline'){ el.querySelector('#soErr').innerHTML = `<div class="alert warn mt12">${icon('wifi_off')}<div><b>You're offline</b>Joining needs a connection.</div></div>`; return; }
-        if (r.error){ el.querySelector('#soErr').innerHTML = r.error==='full' ? `<div class="alert warn mt12">${icon('lock')}<div><b>Crew is full</b>They've reached ${APP.crewMax} members.</div></div>` : `<div class="alert mt12">${icon('priority_high')}<div><b>Invalid crew code</b>That code isn't a crew${!S.cloud?' on this phone yet (accounts aren’t live)':''}.</div></div>`; return; }
+        if (r.error){ el.querySelector('#soErr').innerHTML = r.error==='max' ? `<div class="alert warn mt12">${icon('groups')}<div><b>You're in ${APP.crewsPerPerson} crews</b>Leave one to join another.</div></div>` : r.error==='full' ? `<div class="alert warn mt12">${icon('lock')}<div><b>Crew is full</b>They've reached ${APP.crewMax} members.</div></div>` : `<div class="alert mt12">${icon('priority_high')}<div><b>Invalid crew code</b>That code isn't a crew${!S.cloud?' on this phone yet (accounts aren’t live)':''}.</div></div>`; return; }
         toast(`Welcome to ${r.crew.name}!`); go.refresh(); paint();
       };
       const d=el.querySelector('#soDemo'); if (d) d.onclick=async()=>{ await S.setDemo(true); toast('Sample crew added'); go.refresh(); paint(); };
@@ -239,6 +263,7 @@ go.inviteLanding = async (code)=>{
     el.querySelector('#ilJoin').onclick=async()=>{
       const r=await S.joinCrew(code);
       if (r.error==='full') return toast('That crew is full');
+      if (r.error==='max') return toast(`You're in ${APP.crewsPerPerson} crews already. Leave one to join this one.`);
       if (r.error==='offline') return toast('You’re offline. Try again in a moment.');
       if (r.error) return toast('That code has expired or is wrong');
       toast(`Welcome to ${r.crew?.name||crew.name}!`); back(); go.refresh();

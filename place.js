@@ -5,7 +5,7 @@ import * as M from './model.js';
 import * as MAP from './map.js';
 import { CATEGORIES, catById, iconSvg, esc, fmtRating, fmtDate, todayISO, plural } from './data.js';
 import { avatarHTML, avatarStack } from './avatar.js';
-import { $, icon, toast, pointsToast, openScreen, openSheet, back, closeAll, topbar, stampHTML, catChip, polaroidHTML, starInput, toggleHTML, bindToggle, ratingPill, share, compressImage } from './ui.js';
+import { $, icon, toast, pointsToast, openScreen, openSheet, back, closeAll, topbar, stampHTML, catChip, polaroidHTML, starInput, toggleHTML, bindToggle, ratingPill, share, compressImage, whoHTML, bindWho, whoDefault, whoText, askWho } from './ui.js';
 import { go, state } from './go.js';
 import { sharePlace, eventRowHTML, planBite, eventSheet, checkIn } from './events.js';
 
@@ -27,6 +27,13 @@ function mapsURL(v){
 /* =========================================================
    13. PLACE SHEET
    ========================================================= */
+// "with @maya, @omar" under a visit; the person tagged can take themselves off
+function withHTML(e, me){
+  const ids=e.taggedIds||[]; if (!ids.length) return '';
+  const names=ids.map(id=>id===me.id?'you':(S.user(id)?'@'+S.user(id).handle:null)).filter(Boolean);
+  if (!names.length) return '';
+  return `<div class="rv-with">${icon('group')}<span>with ${esc(names.join(', '))}</span>${ids.includes(me.id)&&e.userId!==me.id?`<button class="link small" data-untag="${e.id}">Not me</button>`:''}</div>`;
+}
 function placeScreen(venueId){
   const v=S.venue(venueId); if (!v) return;
   openScreen(el=>{
@@ -37,6 +44,7 @@ function placeScreen(venueId){
       const visits=sum.visits.slice().sort((a,b)=>b.createdAt-a.createdAt);
       const mine=S.entries({venueId:v.id, userId:me.id});
       const minePrivate = mine.length && mine.every(e=>e.private);
+      const mineWho = [...new Set(mine.flatMap(e=>e.private?[]:(e.crewIds&&e.crewIds.length?e.crewIds:(crew?[crew.id]:[]))))];
       const photos=S.photos({venueId:v.id});
       const wanters=sum.wantIds.map(S.user).filter(Boolean);
       el.innerHTML = topbar({title:'Place Details', center:true, actions:`<button class="icon-btn" id="pMore" aria-label="More">${icon('more_vert')}</button>`}) + `
@@ -47,15 +55,16 @@ function placeScreen(venueId){
         <h1 class="h-xl mt8">${esc(v.name)}</h1>
         <div class="row muted mt4" style="gap:6px">${icon('storefront')}${esc([z?z.label:APP.city, v.address].filter(Boolean).join(' • '))}</div>
         ${mine.length?`<div class="share-card mt20${minePrivate?' private':''}"><span class="sc-ico">${icon(minePrivate?'lock':'lock_open')}</span>
-          <div class="grow"><div class="row between"><b class="h-sm">${minePrivate?'Only you can see your log':(crew?`Shared with ${esc(crew.name)}`:'Shared with your crew')}</b><span class="hand">${minePrivate?'Private log':'Public log'}</span></div>
-          <span class="muted small">${minePrivate?'Your notes & rating stay in your own scrapbook.':(crew?`All ${S.crewMembers().length} crew members can see your notes & rating`:'Your crew will see this once you have one')}</span></div>
-          ${toggleHTML('pShare', !minePrivate, 'Share with crew')}</div>`:''}
+          <div class="grow"><b class="h-sm">${minePrivate?'Only you can see your log':esc(whoText(mineWho).replace(/.$/,''))}</b>
+          <div class="muted small">${minePrivate?'Your notes & rating stay in your own scrapbook.':'They can see your notes, rating and photos here.'}</div></div>
+          <button class="btn btn-soft btn-sm" id="pShare">Change</button></div>`:''}
         <div class="row between mt24"><span class="row h-md" style="gap:8px"><i style="width:9px;height:9px;border-radius:50%;background:var(--gold-deep);display:inline-block"></i>Who's Been <span class="tag soft">${plural(visits.length,'visit')}</span></span>${sum.rating?`<span class="hand">Crew avg <span style="color:var(--gold-deep)">★ ${fmtRating(sum.rating)}</span></span>`:''}</div>
         <div class="stack mt12">${visits.map(e=>{
           const u=S.user(e.userId), isMe=u.id===me.id;
           return `<div class="review" ${isMe?`data-edit="${e.id}" style="cursor:pointer"`:''}>
             <div class="review-head">${avatarHTML(u,44)}<div class="grow"><div class="rv-name">${isMe?'You':esc(u.name||u.handle)}<span>@${esc(u.handle)}</span>${e.private?` <span class="tag dark" style="margin-left:6px">${icon('lock')}Only me</span>`:''}</div><div class="rv-when">${whenText(e)}</div></div>${e.rating?ratingPill(e.rating):''}${isMe?icon('edit','','').replace('class="ms"','class="ms" style="color:var(--outline);font-size:18px"'):''}</div>
             ${e.notes?`<q>${esc(e.notes)}</q>`:''}
+            ${withHTML(e, me)}
           </div>`;
         }).join('') || `<div class="card-soft center"><span class="hand">Nobody in your crew has stamped this yet.</span><p class="muted small mt8">Be the first: +5 points for first in the crew.</p></div>`}</div>
         ${wanters.length?`<div class="card-soft row mt16">${icon('bookmark')}<div class="grow"><b>Wants to try</b><div class="muted small">${plural(wanters.length,'crew friend')}${(()=>{ const L={google_maps:'from Google Maps',tiktok:'from TikTok',instagram:'from Instagram',text:'from a name'}; const ls=[...new Set(sum.wants.map(e=>L[e.sourceType]).filter(Boolean))]; return ls.length?' ('+ls.join(', ')+')':''; })()} saved this spot</div></div>${avatarStack(wanters,34,3)}</div>`:''}
@@ -70,8 +79,9 @@ ${S.events({venueId:v.id, upcoming:true}).length?`<div class="card mt16"><span c
       </div>`;
       MAP.whenReady(()=>requestAnimationFrame(()=>{ const c=el.querySelector('#pSnap'); if (c) MAP.drawSnapshot(c, MAP.placeWorld(v), 6); }));
       const sh=el.querySelector('#pShare');
-      if (sh) bindToggle(sh, on=>{ mine.forEach(e=>S.updateEntry(e.id,{private:!on})); toast(on?'Shared with your crew':'Now only you can see your log here'); go.refresh(); setTimeout(paint, 250); });
-      el.querySelectorAll('[data-edit]').forEach(r=>r.onclick=()=>logFlow({entryId:r.dataset.edit}));
+      if (sh) sh.onclick=()=>{ const mine=S.entries({venueId:v.id, userId:S.me().id}); askWho({ title:'Your log at '+v.name, action:'Save', sel:mineWho }, sel=>{ mine.forEach(e=>S.updateEntry(e.id,{crewIds:sel})); toast(whoText(sel)); go.refresh(); setTimeout(paint, 250); }); };
+      el.querySelectorAll('[data-edit]').forEach(r=>r.onclick=e=>{ if (e.target.closest('[data-untag]')) return; logFlow({entryId:r.dataset.edit}); });
+      el.querySelectorAll('[data-untag]').forEach(b=>b.onclick=()=>{ S.untagMe(b.dataset.untag); toast('You’re off that visit'); go.refresh(); paint(); });
       el.querySelectorAll('.strip [data-photo]').forEach(f=>f.onclick=()=>go.viewer(photos.map(p=>p.id), photos.findIndex(p=>p.id===f.dataset.photo)));
       el.querySelector('#pLog').onclick=()=>logFlow({venueId:v.id});
       el.querySelector('#pSend').onclick=()=>sharePlace(v);
@@ -79,7 +89,7 @@ ${S.events({venueId:v.id, upcoming:true}).length?`<div class="card mt16"><span c
       el.querySelector('#pPlan').onclick=()=>planBite(v.id, ()=>paint());
       el.querySelectorAll('[data-event]').forEach(b=>b.onclick=()=>eventSheet(b.dataset.event, paint));
       el.querySelector('#pMap').onclick=()=>{ closeAll(); go.switchView('map'); const w=MAP.placeWorld(v); MAP.flyToSeparate(w, S.venues().filter(x=>x.id!==v.id).map(x=>MAP.placeWorld(x)).filter(p=>Math.hypot(p.x-w.x,p.y-w.y)<60)); MAP.highlight(v.id); };
-      const pw=el.querySelector('#pWant'); if (pw) pw.onclick=()=>{ S.addEntry({venueId:v.id, kind:'want'}); toast('Saved to try'); go.refresh(); paint(); };
+      const pw=el.querySelector('#pWant'); if (pw) pw.onclick=()=>askWho({ title:'Save '+v.name+' to try', action:'Save to try' }, sel=>{ S.addEntry({venueId:v.id, kind:'want', crewIds:sel}); toast('Saved to try. '+whoText(sel)); go.refresh(); paint(); });
       el.querySelector('#pMore').onclick=()=>moreMenu(v, paint);
     };
     paint();
@@ -178,7 +188,9 @@ function logFlow(opts){
     rating: editing ? editing.rating : 0,
     date: editing ? editing.date : todayISO(),
     notes: editing ? editing.notes : '',
-    private: editing ? editing.private : me.shareDefault==='private',
+    // who it's for: chosen every time (an edit starts from what it was)
+    tags: editing ? (editing.taggedIds||[]).slice() : [],
+    who: editing ? (editing.private ? [] : (editing.crewIds&&editing.crewIds.length ? editing.crewIds.slice() : (S.myCrew()?[S.myCrew().id]:[]))) : whoDefault(opts.who),
   };
   const existingPhotos = editing ? S.photos({entryId:editing.id}) : [];
   const newPhotos = [];   // {blob, url, caption}
@@ -214,7 +226,7 @@ function logFlow(opts){
       const allPhotos = existingPhotos.length + newPhotos.length;
       const used = S.myPhotoCount() + newPhotos.length;
       const firstHere = !S.entries({venueId:venue.id, userId:me.id}).length;
-      const firstCrew = S.firstInCrew(venue.id) && !d.private && d.kind==='visit';
+      const firstCrew = S.firstInCrew(venue.id) && hereToo() && d.kind==='visit';
       el.innerHTML = header + `<div class="screen-body">${stepRow}
         <label class="search mt16">${icon('search')}<input value="${esc(venue.name)}" readonly aria-label="Place">${editing?'':`<button id="lChange" aria-label="Change place" class="icon-btn" style="width:34px;height:34px">${icon('check_circle')}</button>`}</label>
         ${others.length?`<div class="already mt12"><b>${esc(venue.name)} is already on the crew map!</b>
@@ -234,8 +246,11 @@ function logFlow(opts){
           </div>
           <div class="capacity mt16"><span class="cap-ico">${icon('photo_library')}</span><div class="grow"><div class="row between mono" style="font-size:12px;font-weight:700"><span>Scrapbook Roll Capacity</span><span style="color:var(--rust)">${used} / ${APP.photoLimit}</span></div><div class="cap-bar mt8"><i style="width:${Math.min(100,used/APP.photoLimit*100)}%"></i></div></div></div>
           ${used>=APP.photoLimit?`<div class="alert warn mt12">${icon('photo_library')}<div><b>Photo roll is full</b>Delete a photo from your book to add more.</div></div>`:''}
-          <div class="share-card mt16${d.private?' private':''}" style="background:var(--sc-low)"><span class="sc-ico">${icon(d.private?'lock':'group')}</span>
-            <div class="grow"><b class="h-sm">${crew?`Share with ${esc(crew.name)}`:'Share with your crew'}</b><div class="muted small">${d.private?'Only you will see this':'Visible to shared crew map members'}</div></div>${toggleHTML('lShare', !d.private, 'Share with crew')}</div>
+          <div class="eyebrow mt20">Who's this for?</div>
+          <div class="mt8" id="lWho">${whoHTML(d.who)}</div>
+          ${S.crewmates().length && d.kind==='visit' ? `<div class="row between mt20"><span class="eyebrow">Who were you with?</span>${d.tags.length?`<span class="tag soft">${d.tags.length} tagged</span>`:''}</div>
+          <p class="muted small mt4">They'll get a notification and can see this visit. Or type @name in your notes.</p>
+          <div class="chip-scroll mt8" id="lTags">${S.crewmates().map(u=>`<button type="button" class="person-chip${d.tags.includes(u.id)?' on':''}" data-tag="${u.id}" aria-pressed="${d.tags.includes(u.id)}">${avatarHTML(u,30)}@${esc(u.handle)}${d.tags.includes(u.id)?icon('check_circle'):''}</button>`).join('')}</div>` : ''}
         </div>
         ${!editing?`<div class="points-toast show mt20" style="position:static;transform:none;opacity:1">${icon('auto_awesome','',true)}<span class="pts">${firstHere?'<b>+10</b> New place':'<b>+4</b> Repeat visit'}${firstCrew?'<i>•</i><b>+5</b> First in the crew':''}${newPhotos.length?`<i>•</i><b>+${newPhotos.length*2}</b> Photos`:''}</span>${(firstHere&&firstCrew)?'<em>Combo!</em>':''}</div>`:''}
         <button class="btn btn-gold btn-block mt20" id="lSave" style="min-height:62px;font-size:21px">${icon('bookmark_add')}${editing?'Save changes':'Save to Scrapbook'}</button>
@@ -247,7 +262,8 @@ function logFlow(opts){
       const st=el.querySelector('#lStars'); if (st) stars=starInput(st, d.rating, v=>{ d.rating=v; });
       const dt=el.querySelector('#lDate'); if (dt) dt.onchange=()=>{ d.date=dt.value||todayISO(); el.querySelector('#lDateTxt').textContent=(d.date===todayISO()?'Today, ':'')+fmtDate(d.date,{day:'numeric',month:'short'}); };
       const nt=el.querySelector('#lNotes'); nt.oninput=()=>{ d.notes=nt.value; };
-      bindToggle(el.querySelector('#lShare'), on=>{ d.private=!on; keepScroll(paint); });
+      bindWho(el, ()=>d.who, v=>{ d.who=v; keepScroll(paint); });
+      el.querySelectorAll('[data-tag]').forEach(b=>b.onclick=()=>{ const id=b.dataset.tag; d.tags=d.tags.includes(id)?d.tags.filter(x=>x!==id):[...d.tags,id]; const sx=el.querySelector('#lTags').scrollLeft; keepScroll(paint); el.querySelector('#lTags').scrollLeft=sx; });
       el.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{ const i=+b.dataset.rm; URL.revokeObjectURL(newPhotos[i].url); newPhotos.splice(i,1); keepScroll(paint); });
       el.querySelectorAll('[data-cap]').forEach(inp=>inp.oninput=()=>{ newPhotos[+inp.dataset.cap].caption=inp.value; });
       el.querySelectorAll('.reel [data-photo]').forEach(f=>{ if (!f.dataset.photo.startsWith('n')) f.onclick=()=>go.viewer(existingPhotos.map(p=>p.id), existingPhotos.findIndex(p=>p.id===f.dataset.photo)); });
@@ -267,17 +283,20 @@ function logFlow(opts){
         toast('Log deleted', snap && !snap.photos.length ? 'Undo' : null, ()=>{ S.restoreEntry(snap); go.refresh(); });
       };
     };
+    // shared with the crew you're looking at? (for "first in the crew")
+    const hereToo=()=>{ const c=S.myCrew(); return !!(c && d.who && d.who.includes(c.id)); };
     const keepScroll=(fn)=>{ const s=el.scrollTop; fn(); el.scrollTop=s; };
     const save=async()=>{
+      if (d.who===null){ el.querySelector('#lWho').scrollIntoView({ block:'center', behavior:'smooth' }); return toast('Choose who it’s for'); }
       const btn=el.querySelector('#lSave'); btn.disabled=true;
       go.tourSaved && go.tourSaved();
       const firstHere = !S.entries({venueId:venue.id, userId:me.id}).length;
-      const firstCrew = S.firstInCrew(venue.id) && !d.private && d.kind==='visit';
-      const data={ kind:d.kind, rating:d.kind==='visit'?d.rating:0, date:d.kind==='visit'?d.date:todayISO(), notes:d.notes.trim(), private:d.private };
+      const firstCrew = S.firstInCrew(venue.id) && hereToo() && d.kind==='visit';
+      const data={ kind:d.kind, rating:d.kind==='visit'?d.rating:0, date:d.kind==='visit'?d.date:todayISO(), notes:d.notes.trim(), crewIds:d.who, taggedIds:d.kind==='visit' ? [...new Set([...d.tags, ...S.mentionIds(d.notes)])] : [] };
       let e;
-      if (editing){ e=S.updateEntry(editing.id, data); existingPhotos.forEach(p=>{ if (data.private) S.updatePhoto(p.id,{private:true}); }); }
+      if (editing){ e=S.updateEntry(editing.id, data); }
       else e=S.addEntry({venueId:venue.id, ...data});
-      if (newPhotos.length) await S.addPhotos(newPhotos.map(p=>({blob:p.blob, caption:p.caption.trim(), venueId:venue.id, entryId:e.id, date:e.date, private:e.private})));
+      if (newPhotos.length) await S.addPhotos(newPhotos.map(p=>({blob:p.blob, caption:p.caption.trim(), venueId:venue.id, entryId:e.id, date:e.date})));
       newPhotos.forEach(p=>URL.revokeObjectURL(p.url));
       let parts=[];
       if (!editing){

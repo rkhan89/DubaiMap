@@ -21,6 +21,7 @@ export default async function e2e(h){
     await h.js(()=>{ const b=document.querySelectorAll('#lStars button')[3]; const r=b.getBoundingClientRect(); b.dispatchEvent(new MouseEvent('click',{bubbles:true, clientX:r.right-2, clientY:r.top+5})); });
     await typeIn('#lNotes', 'Butter chicken, two parottas.');
     const input = await p.$('#lPh'); await input.uploadFile(path.resolve('fixture.jpg')); await h.sleep(1500);
+    await h.js(()=>document.querySelector('[data-who]:not([data-who="me"])').click()); await h.sleep(200);
     await h.shot('e-08-log');
     await h.js(()=>document.querySelector('#lSave').click()); await h.sleep(1800);
     await h.shot('e-09-saved');

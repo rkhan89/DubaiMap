@@ -4,7 +4,7 @@ import * as S from './store.js';
 import * as MAP from './map.js';
 import { esc, plural, todayISO, fmtDate } from './data.js';
 import { avatarHTML, avatarStack } from './avatar.js';
-import { icon, toast, pointsToast, openSheet, back, seg, bindSeg, share } from './ui.js';
+import { icon, toast, pointsToast, openSheet, back, seg, bindSeg, share, askWho } from './ui.js';
 import { POINTS } from './stats.js';
 import { go } from './go.js';
 
@@ -185,8 +185,9 @@ export async function checkIn(venueId, after){
     return toast(`You're ${km} away. Check-ins work when you're there.`, 'Log it', ()=>go.log({venueId}), 5000);
   }
   const firstHere = !S.entries({venueId, userId:me.id, kind:'visit'}).length;
-  const firstCrew = S.firstInCrew(venueId) && me.shareDefault!=='private';
-  const e = S.addEntry({ venueId, kind:'visit', checkin:true, date:todayISO() });
+  askWho({ title:'Check in at '+v.name, action:'Check in' }, sel=>{
+  const crew = S.myCrew(), firstCrew = S.firstInCrew(venueId) && !!crew && sel.includes(crew.id);
+  const e = S.addEntry({ venueId, kind:'visit', checkin:true, date:todayISO(), crewIds:sel });
   const parts = [firstHere?[POINTS.newPlace,'New place']:[POINTS.repeat,'Repeat visit'], [POINTS.checkin,'Checked in']];
   if (firstCrew) parts.push([POINTS.firstInCrew,'First in the crew']);
   S.addPoints(parts.reduce((s,p)=>s+p[0],0));
@@ -194,5 +195,6 @@ export async function checkIn(venueId, after){
   setTimeout(()=>toast('Checked in! Add a rating and photos?', 'Add', ()=>go.log({entryId:e.id}), 5000), 3300);
   setTimeout(()=>go.checkBadges && go.checkBadges(), 8600);
   after && after();
+  });
 }
 go.checkIn = checkIn;

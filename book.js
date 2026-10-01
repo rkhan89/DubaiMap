@@ -7,7 +7,7 @@ import * as M from './model.js';
 import * as MAP from './map.js';
 import { CATEGORIES, catById, iconSvg, esc, fmtDate, fmtDay, monthKey, fmtMonth, todayISO, plural, tilt } from './data.js';
 import { avatarHTML, avatarStack } from './avatar.js';
-import { $, icon, toast, openScreen, openSheet, back, closeAll, topbar, polaroidHTML, share, compressImage, toggleHTML, bindToggle, seg, bindSeg } from './ui.js';
+import { $, icon, toast, openScreen, openSheet, back, closeAll, topbar, polaroidHTML, share, compressImage, toggleHTML, bindToggle, seg, bindSeg, whoHTML, bindWho, whoDefault, whoText, askWho } from './ui.js';
 import { go, state } from './go.js';
 
 const TINTS = ['#e5a93c','#8B5A2B','#486636','#3b2717','#f2cfb4','#fdae7e'];
@@ -21,20 +21,26 @@ function bookPhotos(b, f){
   let ps;
   if (b.kind==='crew'){
     const ids=S.circleIds();
-    ps = S.photos().filter(p=>ids.includes(p.userId) && !p.private);        // shared entries only
+    ps = S.photos().filter(p=>ids.includes(p.userId) && S.sharedHere(p));   // shared with this crew only
   } else if (b.kind==='album'){
     ps = S.photos();
-  } else ps = S.photos({userId:me.id});
+  } else {
+    // yours, plus photos from visits you were tagged on
+    const tagged = new Set(S.taggedMe().map(e=>e.id));
+    ps = S.photos().filter(p=>p.userId===me.id || (p.entryId && tagged.has(p.entryId)));
+  }
   f = {...(b.filter||{}), ...(f||{})};
   if (f.months && f.months.length) ps = ps.filter(p=>f.months.includes(monthKey(p.date)));
   if (f.cats && f.cats.length) ps = ps.filter(p=>(S.venue(p.venueId)?.categories||[]).some(c=>f.cats.includes(c)));
   if (f.venues && f.venues.length) ps = ps.filter(p=>f.venues.includes(p.venueId));
   if (f.members && f.members.length) ps = ps.filter(p=>f.members.includes(p.userId));
+  // "with @maya": visits that tagged them, or that they made and tagged you on
+  if (f.tagged && f.tagged.length) ps = ps.filter(p=>{ const e=p.entryId&&S.entry(p.entryId); if (!e) return false; const t=e.taggedIds||[]; return f.tagged.some(id=>t.includes(id) || (e.userId===id && t.includes(me.id))); });
   if (f.privacy==='shared') ps = ps.filter(p=>!p.private);
   if (f.privacy==='private') ps = ps.filter(p=>p.private);
   return ps;
 }
-function filterCount(f){ return f ? ['months','cats','venues','members'].reduce((n,k)=>n+((f[k]||[]).length?1:0),0) + (f.privacy&&f.privacy!=='all'?1:0) : 0; }
+function filterCount(f){ return f ? ['months','cats','venues','members','tagged'].reduce((n,k)=>n+((f[k]||[]).length?1:0),0) + (f.privacy&&f.privacy!=='all'?1:0) : 0; }
 
 /* =========================================================
    15. SHELF
@@ -301,7 +307,7 @@ function openBook(bookId, opts){
       page=Math.min(page, vids.length-1);
       const v=S.venue(vids[page]); if (!v) return '';
       const vps=byV[v.id], cat=catById(M.primaryCat(v));
-      const visits=S.entries({venueId:v.id, kind:'visit'}).filter(e=>b.kind!=='crew'||!e.private).sort((a,c)=>c.date.localeCompare(a.date));
+      const visits=S.entries({venueId:v.id, kind:'visit'}).filter(e=>b.kind!=='crew'||S.sharedHere(e)).sort((a,c)=>c.date.localeCompare(a.date));
       const visitors=[...new Set(visits.map(e=>e.userId))].map(S.user).filter(Boolean);
       const dates=visits.map(e=>e.date).sort();
       const me=S.me();
@@ -333,10 +339,13 @@ go.book = openBook;
    19. BOOK FILTERS
    ========================================================= */
 function bookFilters(b, current, apply){
-  const d={ months:[...(current.months||[])], cats:[...(current.cats||[])], venues:[...(current.venues||[])], members:[...(current.members||[])], privacy:current.privacy||'all' };
+  const d={ months:[...(current.months||[])], cats:[...(current.cats||[])], venues:[...(current.venues||[])], members:[...(current.members||[])], tagged:[...(current.tagged||[])], privacy:current.privacy||'all' };
   const base = b ? bookPhotos({...b, filter:{}}) : S.photos();
   const months=[...new Set(base.map(p=>monthKey(p.date)))].sort().reverse();
   const people=b && b.kind==='crew' ? S.crewMembers() : [];
+  // people you've been tagged with (either way) in this book's photos
+  const withIds=[...new Set(base.flatMap(p=>{ const e=p.entryId&&S.entry(p.entryId); if (!e) return []; const t=(e.taggedIds||[]).filter(id=>id!==S.me().id); return e.userId!==S.me().id && (e.taggedIds||[]).includes(S.me().id) ? [...t, e.userId] : t; }))];
+  const withPeople=withIds.map(S.user).filter(Boolean);
   let q='';
   openSheet(body=>{
     const paint=()=>{
@@ -354,6 +363,8 @@ function bookFilters(b, current, apply){
         <div class="chip-scroll mt12">${d.venues.map(id=>`<button class="person-chip on" data-venue-x="${id}" style="padding-left:14px;background:var(--rust-soft);box-shadow:0 3px 0 var(--rust)">${icon('location_on')}${esc(S.venue(id)?.name||'')}${icon('close')}</button>`).join('')}${(q?vHits.map(v=>v.id):topVenues).filter(id=>!d.venues.includes(id)).map(id=>`<button class="person-chip" data-venue-add="${id}" style="padding-left:14px">${esc(S.venue(id)?.name||'')}</button>`).join('')}</div>
         ${people.length>1?`<div class="row between mt20"><span class="eyebrow" style="color:var(--ink)">${icon('group')} Crew members (shared book)</span></div><p class="muted small mt4">Filters photos by who took or uploaded them</p>
         <div class="chip-scroll mt12"><button class="person-chip${!d.members.length?' on':''}" data-mem="">${icon('groups')}Everyone</button>${people.map(u=>`<button class="person-chip${d.members.includes(u.id)?' on':''}" data-mem="${u.id}">${avatarHTML(u,30)}@${esc(u.id===S.me().id?'you':u.handle)}${d.members.includes(u.id)?icon('check_circle'):''}</button>`).join('')}</div>`:''}
+        ${withPeople.length?`<div class="row between mt20"><span class="eyebrow" style="color:var(--ink)">${icon('group')} Tagged with</span></div><p class="muted small mt4">Visits you went on together</p>
+        <div class="chip-scroll mt12" data-f="tagged">${withPeople.map(u=>`<button class="person-chip${d.tagged.includes(u.id)?' on':''}" data-with="${u.id}">${avatarHTML(u,30)}@${esc(u.handle)}${d.tagged.includes(u.id)?icon('check_circle'):''}</button>`).join('')}</div>`:''}
         ${!b||b.kind!=='crew'?`<div class="row between mt20"><span class="eyebrow" style="color:var(--ink)">${icon('visibility')} Privacy scope</span><span class="hand">Scrapbook access</span></div>
         <div class="mt12">${seg('priv',[['all','All Photos','photo_library'],['shared','Shared Only','groups'],['private','Private Only','lock']],d.privacy)}</div>`:''}
         <div class="sheet-foot"><button class="btn btn-gold btn-block" data-x="apply">${icon('menu_book')}${b?`Show ${plural(n,'Photo')} (Apply)`:`Use ${plural(n,'photo')}`}</button><p class="center hand mt8">Matching ${plural(nV,'place')} in your scrapbook</p></div>`;
@@ -364,10 +375,11 @@ function bookFilters(b, current, apply){
     body.addEventListener('click', e=>{
       const t=e.target.closest('button'); if (!t) return;
       const tog=(arr,v)=>{ const i=arr.indexOf(v); i>-1?arr.splice(i,1):arr.push(v); };
-      if (t.dataset.x==='clear'){ d.months=[]; d.cats=[]; d.venues=[]; d.members=[]; d.privacy='all'; }
+      if (t.dataset.x==='clear'){ d.months=[]; d.cats=[]; d.venues=[]; d.members=[]; d.tagged=[]; d.privacy='all'; }
       else if (t.dataset.x==='apply'){ back(); apply({...d}); return; }
       else if ('month' in t.dataset){ t.dataset.month ? tog(d.months,t.dataset.month) : d.months=[]; }
       else if (t.dataset.cat){ tog(d.cats,t.dataset.cat); }
+      else if (t.dataset.with){ tog(d.tagged,t.dataset.with); }
       else if (t.dataset.venueX){ tog(d.venues,t.dataset.venueX); }
       else if (t.dataset.venueAdd){ d.venues.push(t.dataset.venueAdd); q=''; }
       else if ('mem' in t.dataset){ t.dataset.mem ? tog(d.members,t.dataset.mem) : d.members=[]; }
@@ -415,7 +427,9 @@ function viewer(ids, index){
       const pr=el.querySelector('#vPriv'); if (pr) pr.onclick=()=>{
         const e=p.entryId&&S.entry(p.entryId);
         if (p.private && e && e.private) return toast('This photo’s log is private. Share the log from its place page first.');
-        S.updatePhoto(p.id,{private:!p.private}); toast(p.private?'Only you can see this photo':'Shared with your crew'); paint();
+        if (p.private){ const to=(e&&e.crewIds&&e.crewIds.length)?e.crewIds.slice():(S.myCrew()?[S.myCrew().id]:[]); S.updatePhoto(p.id,{private:false, crewIds:to}); toast(whoText(to)); }
+        else { S.updatePhoto(p.id,{private:true, crewIds:[]}); toast('Only you can see this photo'); }
+        paint();
       };
       el.querySelector('#vCover').onclick=()=>{
         const books=S.books(); const target = mine ? books.find(b=>b.kind==='personal') : books.find(b=>b.kind==='crew');
@@ -450,7 +464,7 @@ function addPhotos(opts){
   const me=S.me();
   const picked=[];        // {blob, url, caption, time, on}
   let venue = opts.venueId ? S.venue(opts.venueId) : null;
-  let kind='visit', priv = me.shareDefault==='private', q='';
+  let kind='visit', who = whoDefault(), q='';
   const input=document.createElement('input'); input.type='file'; input.accept='image/*'; input.multiple=true;
   openScreen(el=>{
     const paint=()=>{
@@ -475,9 +489,8 @@ function addPhotos(opts){
         ${venue?`<div class="card-peach mt20" style="border-radius:var(--r-xl)"><div class="row" style="align-items:flex-start"><span style="width:44px;height:44px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;flex:none;box-shadow:0 3px 0 var(--gold-deep)">${icon('push_pin')}</span><div><b class="h-md">This adds a visit to ${esc(venue.name)}</b><p class="muted">Have you been there today or collecting notes for next time?</p></div></div>
           <div class="stack mt16"><button class="radio-card${kind==='visit'?' on':''}" data-kind="visit"><span class="rc-head"><span class="dot"></span>Been here ${icon('verified')}<span class="grow"></span><span class="tag">Visit #${visitsHere+1}</span></span><p>Adds visit #${visitsHere+1} to your log with today's date <span class="mono">(${esc(fmtDate(todayISO()))})</span>.</p></button>
           <button class="radio-card${kind==='want'?' on':''}" data-kind="want"><span class="rc-head"><span class="dot"></span>Want to try ${icon('bookmark')}<span class="grow"></span><span class="tag soft">Wishlist</span></span><p>Saves photos as inspiration for an upcoming visit or tasting route.</p></button></div></div>
-        <div class="card mt20" style="border-radius:var(--r-xl)"><div class="row"><span style="width:52px;height:52px;border-radius:14px;background:var(--green-fixed);color:var(--green);display:flex;align-items:center;justify-content:center">${icon('groups','',true)}</span><div class="grow"><span class="hand">Crew photobook</span><div class="h-md">${crew?`Share with ${esc(crew.name)}`:'Share with your crew'}</div></div>${toggleHTML('apShare', !priv, 'Share with crew')}</div>
-          <p class="row muted mt12" style="gap:8px;align-items:flex-start">${icon('lock')}Turn off to keep strictly private in “My Book” archive.</p>
-          ${members.length?`<div class="row mt12" style="background:var(--sc-low);border-radius:12px;padding:8px 12px">${avatarStack(members,28,3)}<span class="mono small" style="font-size:12px">Visible to ${esc(members.slice(0,2).map(u=>u.name).join(', '))}${members.length>2?` & ${members.length-2} others`:''}</span></div>`:''}</div>`:''}
+        <div class="card mt20" style="border-radius:var(--r-xl)"><span class="hand">Crew photobooks</span><div class="h-md">Who's this for?</div>
+          <div class="mt12" id="apWho">${whoHTML(who)}</div></div>`:''}
         <button class="btn btn-gold btn-block mt24" id="apGo" style="min-height:64px" ${sel.length&&venue?'':'disabled'}>${icon('menu_book')}${sel.length?`Add ${plural(sel.length,'Photo')} to ${esc(venue?venue.name:'a place')}${venue?' Chapter':''}`:'Add photos'}</button>
         <p class="center hand mt12">Memory will be stamped in your ${esc(APP.name)} Shelf</p>
       </div>`;
@@ -490,14 +503,15 @@ function addPhotos(opts){
       el.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{ venue=S.venue(b.dataset.v); q=''; keep(paint); });
       const ch=el.querySelector('#apChange'); if (ch) ch.onclick=()=>{ venue=null; keep(paint); };
       el.querySelectorAll('[data-kind]').forEach(b=>b.onclick=()=>{ kind=b.dataset.kind; keep(paint); });
-      const sh=el.querySelector('#apShare'); if (sh) bindToggle(sh, on=>{ priv=!on; });
+      bindWho(el, ()=>who, v=>{ who=v; keep(paint); });
       const go2=async()=>{
         const list=picked.filter(p=>p.on);
         if (!list.length || !venue) return;
         if (list.length > room) return toast(`Your photo roll only has room for ${room} more`);
+        if (who===null){ el.querySelector('#apWho').scrollIntoView({ block:'center', behavior:'smooth' }); return toast('Choose who it’s for'); }
         el.querySelector('#apGo').disabled=true;
-        const e=S.addEntry({venueId:venue.id, kind, rating:0, date:todayISO(), notes:'', private:priv});
-        await S.addPhotos(list.map(p=>({blob:p.blob, caption:p.caption.trim(), venueId:venue.id, entryId:e.id, date:e.date, private:priv})));
+        const e=S.addEntry({venueId:venue.id, kind, rating:0, date:todayISO(), notes:'', crewIds:who});
+        await S.addPhotos(list.map(p=>({blob:p.blob, caption:p.caption.trim(), venueId:venue.id, entryId:e.id, date:e.date})));
         picked.forEach(p=>URL.revokeObjectURL(p.url));
         back(); go.refresh();
         toast(`${plural(list.length,'photo')} added to ${venue.name}`, 'Open book', ()=>{ const b=S.books().find(x=>x.kind==='personal'); openBook(b.id); });

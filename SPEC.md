@@ -180,3 +180,28 @@ Steps 2–4: Android share target and /share, TikTok captions, Inbox and offline
   redirect and host limits, ranking); `tests/e2e/sqltest.mjs` (share privacy: a crewmate can't
   read your link or Inbox, can't call the cache or rate tables); `tests/e2e/share1.mjs` (the
   flow in the browser at 390 and 360, light and dark).
+
+## Several crews and tagging
+- **Up to 5 crews each** (family, friends, work…), up to 15 people per crew. Starting or joining
+  a crew never drops you from another. The Crew tab shows one crew at a time, with a switcher
+  at the top and *Start or join another crew*; *Leave* leaves just that crew. On the map, the
+  Crew button shows the crew's name when you're in several; tap it again to switch.
+- **Who's this for? — chosen on every save.** Log a visit, save to try, check in, add photos,
+  add from a link: *Just me* or one or more of your crews. Nothing is pre-picked; saving asks you
+  to choose. A place's page shows who your log is shared with and *Change* (applies to your
+  visits there and their photos). Onboarding step 4 explains this instead of asking for a
+  default; the Settings default is gone.
+- **What others see**: a crewmate sees your visit only if you shared it with a crew you're both
+  in right now. The crew screens (map, list, feed, leaderboard, crew book, plans) show the
+  active crew. Leaving a crew (or being removed) takes your posts out of it; anything shared
+  only with that crew becomes just yours.
+- **Tagging**: *Who were you with?* on the log screen lists everyone in your crews; typing
+  `@handle` in the notes tags them too. Tagged people can see that visit and its photos (even a
+  Just me one), get "Maya tagged you at Ravi" in the bell, see the photos in their own
+  photobook, and can tap *Not me* to take themselves off. Only people who share a crew with you
+  can be tagged. Photobook filter: *Tagged with* (visits you went on together, either way).
+- **Data** (`0003_multi_crew.sql`): crew_members allows several crews; `entries.crew_ids`,
+  `photos.crew_ids`, `entries.tagged_ids`; `shared_with_me()`, `all_my_crews()`,
+  `all_crewmates()`, `tagged_in()`, `untag_me()`; `leave_crew(crew)`; a trigger unshares on
+  leave. Existing shared rows move to the owner's crew. Checks in `tests/e2e/sqltest.mjs`;
+  the flow in `tests/e2e/crews.mjs`.

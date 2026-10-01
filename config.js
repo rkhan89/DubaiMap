@@ -13,6 +13,7 @@ export const APP = {
   // invite links look like <origin>/?join=CODE
   inviteUrl: code => `${location.origin}/?join=${encodeURIComponent(code)}`,
   crewMax: 15,            // you + 14 friends
+  crewsPerPerson: 5,      // crews one person can be in
   photoLimit: 300,        // per person, across all their logs
   photosPerLog: 10,
   // Accounts, crews and photos live in Supabase (store.js + cloud.js). The publishable key is

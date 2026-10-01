@@ -221,36 +221,26 @@ function avatarStep(opts){
 }
 go.editAvatar = ()=>avatarStep({edit:true});
 
-/* ---------- 5. share default ---------- */
+/* ---------- 5. who sees what (you choose on every save) ---------- */
 function shareStep(){
-  const me=S.me();
-  let choice = me.shareDefault||'crew';
   openScreen(el=>{
-    const paint=()=>{
-      el.innerHTML = topbar({title:'Crew sharing', center:true, profile:false, progress:[0,4]}) + `<div class="screen-body center">
-        <span class="tag rust mt8" style="transform:rotate(-1deg)">● Field notes • permissions</span><br>
-        <span class="step mt8" style="letter-spacing:.2em">STEP 4 OF ${STEPS}</span>
-        <h1 class="h-xl mt12">Share your places with your crew by default?</h1>
-        <p class="muted mt8" style="font-size:16px">You can change any single place, or this default, at any time.</p>
-        <div class="card mt24 row" style="text-align:left;position:relative"><span class="tape" style="right:40px;left:auto;top:-10px"></span>
-          <span style="width:64px;height:64px;border-radius:10px;overflow:hidden;flex:none;padding:5px;background:var(--card);box-shadow:var(--shadow-sm)"><img src="demo/d47.jpg" alt="" style="width:100%;height:100%;object-fit:cover"></span>
-          <div class="grow"><span class="hand">Shared pin preview ${icon('stars')}</span><div class="h-sm">Al Ustad Special Kabab</div><span class="mono muted" style="font-size:12px">${icon('groups').replace('class="ms"','class="ms" style="font-size:15px"')} ${choice==='crew'?'Visible to your crew':'Only visible to you'}</span></div></div>
-        <div class="stack mt20" style="text-align:left">
-          <button class="choice${choice==='crew'?' on':''}" data-c="crew"><span class="ch-head"><span class="ch-dot">${icon('check')}</span><span class="ch-title">Share with my crew</span><span class="tag">Recommended</span></span>
-            <p class="ch-body">Places you log appear on your crew's shared map. Perfect for building a culinary treasure map together.</p>
-            <span class="ch-tags"><span class="tag green">${icon('map')}Auto-sync route</span><span class="tag rust">${icon('local_cafe')}Shared cafe badges</span></span></button>
-          <button class="choice${choice==='private'?' on':''}" data-c="private"><span class="ch-head"><span class="ch-dot">${icon('check')}</span><span class="ch-title">${icon('lock')}Keep private</span></span>
-            <p class="ch-body">Only you will see your stamps. You can share individual places later.</p>
-            <p class="ch-body hand">Personal scrapbook mode</p></button>
-        </div>
-        <div class="note mt20" style="border-radius:999px;justify-content:center;text-align:center">${icon('verified_user')}<span>Private places never show in crew totals, shared albums, or leaderboards.</span></div>
-        <button class="btn btn-gold btn-block mt24" id="sGo">Continue to Crew Setup ${icon('arrow_forward')}</button>
-        <p class="center hand mt12">✎ Change anytime in your profile</p>
-      </div>`;
-      el.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{ choice=b.dataset.c; paint(); });
-      el.querySelector('#sGo').onclick=()=>{ S.updateMe({shareDefault:choice}); go.crewSetup({onboarding:true}); };
-    };
-    paint();
+    el.innerHTML = topbar({title:'Crew sharing', center:true, profile:false, progress:[0,4]}) + `<div class="screen-body center">
+      <span class="tag rust mt8" style="transform:rotate(-1deg)">● Field notes • privacy</span><br>
+      <span class="step mt8" style="letter-spacing:.2em">STEP 4 OF ${STEPS}</span>
+      <h1 class="h-xl mt12">You decide who sees each place</h1>
+      <p class="muted mt8" style="font-size:16px">Every time you save a place, pick <b>Just me</b> or any of your crews: family, friends, the work lunch gang. Nothing is shared unless you choose.</p>
+      <div class="card mt24" style="text-align:left;position:relative"><span class="tape" style="right:40px;left:auto;top:-10px"></span>
+        <span class="eyebrow">Who's this for?</span>
+        <div class="who-grid mt8" aria-hidden="true">
+          <span class="radio-card"><span class="rc-head">${icon('lock')}Just me</span><p>Only you can see it</p></span>
+          <span class="radio-card on"><span class="rc-head">${icon('groups','',true)}Family</span><p>4 members</p></span>
+          <span class="radio-card on"><span class="rc-head">${icon('groups','',true)}Karak Crew</span><p>6 members</p></span>
+          <span class="radio-card"><span class="rc-head">${icon('groups')}Work</span><p>9 members</p></span>
+        </div></div>
+      <div class="note mt20" style="border-radius:999px;justify-content:center;text-align:center">${icon('verified_user')}<span>You can be in up to ${APP.crewsPerPerson} crews. Change who sees a place any time from its page.</span></div>
+      <button class="btn btn-gold btn-block mt24" id="sGo">Continue to Crew Setup ${icon('arrow_forward')}</button>
+    </div>`;
+    el.querySelector('#sGo').onclick=()=>go.crewSetup({onboarding:true});
   });
 }
 

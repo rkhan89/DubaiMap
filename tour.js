@@ -25,7 +25,7 @@ const STEPS = [
   { id:'rate', target:'#lStars', title:'How was it?', body:'Tap a star. Tap the left half of one for a half star.', next:true,
     ctx:()=>has('#lStars'), done:()=>has('#lStars .on, #lStars .half') },
   { id:'photo', target:'.reel .add-photo', title:'Add a photo (optional)', body:'Photos go into your photobook, one page per day.', next:true, ctx:()=>has('#lSave') },
-  { id:'share', target:'#lShare', title:'Who sees it?', body:'On: your crew sees it on their map. Off: it stays in your own scrapbook.', next:true, ctx:()=>has('#lSave') },
+  { id:'share', target:'#lWho', title:'Who sees it?', body:'Pick Just me, or one of your crews to put it on their map. You choose every time.', next:true, ctx:()=>has('#lSave') },
   { id:'save', target:'#lSave', title:'Save it', body:'That’s it. Watch it land on your map.', ctx:()=>has('#lSave') || tourSaved, done:()=>tourSaved },
   { id:'stamp', target:'.stamp-anchor.dropped .stamp, .stamp-anchor.selected .stamp, .stamp-anchor .stamp', title:'Your first stamp', body:'Every place you log becomes a stamp. Tap one any time for its card, notes and photos.', next:true, wait:1500 },
   { id:'mode', target:'#mapMode', title:'You, or your crew', body:'Me shows your own scrapbook, private places included. Crew shows everything your friends share.', next:true },

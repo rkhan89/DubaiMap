@@ -81,7 +81,7 @@ function rebuild(){
   // mode toggle, with how many places each side shows
   const meN = sc.mode==='me' ? modelCache.filter(s=>s.state!=='unlit').length : M.mapModel({...sc, mode:'me', members:null}).filter(s=>s.state!=='unlit').length;
   const crewN = sc.mode==='crew' ? modelCache.filter(s=>s.state!=='unlit').length : M.mapModel({...sc, mode:'crew'}).filter(s=>s.state!=='unlit').length;
-  $('#mapMode').innerHTML = `<button data-v="me" class="${sc.mode==='me'?'on':''}">Me <em>${meN}</em></button><button data-v="crew" class="${sc.mode==='crew'?'on':''}">Crew <em>${crewN}</em></button>`;
+  $('#mapMode').innerHTML = `<button data-v="me" class="${sc.mode==='me'?'on':''}">Me <em>${meN}</em></button><button data-v="crew" class="${sc.mode==='crew'?'on':''}"${S.myCrews().length>1?` aria-label="${esc(S.myCrew().name)}: tap again to switch crew"`:''}>${crewLabel()} <em>${crewN}</em></button>`;
   paintBell();
   paintEmptyMap(meN + crewN);
   // filter dot
@@ -95,8 +95,19 @@ let rebuildT=null;
 function scheduleRebuild(){ clearTimeout(rebuildT); rebuildT=setTimeout(rebuild, 40); }
 go.refresh = scheduleRebuild;
 
+// in several crews the Crew button shows which one (tap it again to switch)
+function crewLabel(){ const cs=S.myCrews(); if (cs.length<2) return 'Crew'; const n=S.myCrew().name; return esc(n.length>9 ? n.slice(0,8)+'…' : n)+' ▾'; }
+function pickCrew(){
+  openSheet(body=>{
+    const active=S.myCrew();
+    body.innerHTML = `<div class="sheet-head"><div class="grow"><span class="eyebrow">Crew map</span><h2 class="h-md">Show which crew?</h2></div></div>
+      <div class="stack mt12">${S.myCrews().map(c=>`<button class="search-result${c.id===active.id?' on':''}" data-crew="${c.id}"><span class="sr-ico">${icon('groups','',c.id===active.id)}</span><span class="grow"><b class="trunc" style="display:block">${esc(c.name)}</b><span class="muted small">${plural(c.memberIds.length,'member')}</span></span>${c.id===active.id?icon('check'):''}</button>`).join('')}</div>`;
+    body.querySelectorAll('[data-crew]').forEach(b=>b.onclick=()=>{ S.setActiveCrew(b.dataset.crew); scope().members=null; saveScope(); back(); rebuild(); toast('Showing '+S.myCrew().name); });
+  });
+}
 $('#mapMode').addEventListener('click', e=>{
   const b=e.target.closest('button'); if (!b) return;
+  if (b.dataset.v==='crew' && scope().mode==='crew' && S.myCrews().length>1) return pickCrew();
   scope().mode=b.dataset.v; scope().members=null; saveScope(); hidePeek(); rebuild();
 });
 
@@ -107,7 +118,10 @@ function crewActivity(){
   const me=S.me(); if (!me) return [];
   const logs = M.activity(40).filter(a=>a.u.id!==me.id).map(a=>({...a, at:a.e.createdAt}));
   const plans = S.events({upcoming:true}).filter(ev=>ev.createdBy!==me.id).map(ev=>({ ev, u:S.user(ev.createdBy), v:S.venue(ev.venueId), at:ev.createdAt })).filter(a=>a.u && a.v);
-  return [...plans, ...logs].sort((a,b)=>b.at-a.at).slice(0,20);
+  // someone tagged you: "Maya tagged you at Ravi" (from any of your crews)
+  const tags = S.taggedMe().map(e=>({ e, tag:true, u:S.user(e.userId), v:S.venue(e.venueId), at:e.createdAt })).filter(a=>a.u && a.v);
+  const tagged = new Set(tags.map(a=>a.e.id));
+  return [...plans, ...tags, ...logs.filter(a=>!tagged.has(a.e.id))].sort((a,b)=>b.at-a.at).slice(0,20);
 }
 function paintBell(){
   const acts=crewActivity(), fresh=acts.filter(a=>a.at>seenAt()).length;
@@ -125,10 +139,10 @@ function openActivity(){
         if (a.ev){ const d=new Date(a.ev.when); return `<button class="act-row${a.at>since?' new':''}" data-event="${a.ev.id}">${avatarHTML(a.u,40)}
           <span class="grow"><span class="act-text"><b>${esc(a.u.name||a.u.handle)}</b> planned <b>${esc(a.v.name)}</b></span>
           <span class="act-sub">${esc(d.toLocaleDateString('en-GB',{weekday:'short', day:'numeric', month:'short'}))} • ${esc(d.toLocaleTimeString('en-GB',{hour:'numeric', minute:'2-digit', hour12:true}).toLowerCase())} • tap to RSVP</span></span>${icon('event')}</button>`; }
-        const verb=a.e.kind==='want'?'saved':(a.e.checkin?'checked in at':'visited');
+        const verb=a.tag?'tagged you at':a.e.kind==='want'?'saved':(a.e.checkin?'checked in at':'visited');
         return `<button class="act-row${a.at>since?' new':''}" data-venue="${a.v.id}">${avatarHTML(a.u,40)}
           <span class="grow"><span class="act-text"><b>${esc(a.u.name||a.u.handle)}</b> ${verb} <b>${esc(a.v.name)}</b></span>
-          <span class="act-sub">${esc(z?z.label:APP.city)} • ${ago(a.e.createdAt)}${a.e.rating?` • ★ ${fmtRating(a.e.rating)}`:''}</span></span>${icon('chevron_right')}</button>`; }).join('')}</div>`
+          <span class="act-sub">${a.tag?'You were there together • ':''}${esc(z?z.label:APP.city)} • ${ago(a.e.createdAt)}${a.e.rating?` • ★ ${fmtRating(a.e.rating)}`:''}</span></span>${icon('chevron_right')}</button>`; }).join('')}</div>`
         : `<div class="empty">${icon('notifications_none')}<p class="muted">${crew?'When your crew logs or saves a place, it shows up here.':'Start a crew and their new places will show up here.'}</p></div>`}`;
     body.querySelectorAll('[data-venue]').forEach(r=>r.addEventListener('click', ()=>{ back(); setTimeout(()=>go.showOnMap(r.dataset.venue), 60); }));
     body.querySelectorAll('[data-event]').forEach(r=>r.addEventListener('click', ()=>{ back(); setTimeout(()=>eventSheet(r.dataset.event), 60); }));

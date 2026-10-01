@@ -5,7 +5,7 @@ import { APP } from './config.js';
 import * as S from './store.js';
 import * as MAP from './map.js';
 import { CATEGORIES, catById, iconSvg, esc } from './data.js';
-import { $, icon, toast, openScreen, openSheet, back, closeAll, topbar, catChip, seg, bindSeg } from './ui.js';
+import { $, icon, toast, openScreen, openSheet, back, closeAll, topbar, catChip, seg, bindSeg, whoHTML, bindWho, whoDefault, whoText } from './ui.js';
 import { go } from './go.js';
 
 const SOURCE = {
@@ -137,7 +137,6 @@ function needsPlace(res, src, ctx){
 /* ---------- the confirm sheet ---------- */
 function confirmPlace(place, src, ctx){
   const me = S.me(); if (!me) return;
-  const crew = S.myCrew(), hasCrew = !!crew && S.crewMembers().length > 1;
   // already on the map? (by Google place id; otherwise same name very close by)
   let existing = place.venueId ? S.venue(place.venueId) : S.venueByPlaceId(place.placeId);
   if (!existing && place.name && place.lat!=null){
@@ -150,7 +149,7 @@ function confirmPlace(place, src, ctx){
     name: existing ? existing.name : (place.name||''),
     zone: existing ? existing.zone : (zoneFor(place.lat, place.lng) || MAP.viewZone()?.id || 'downtown'),
     cats: existing ? [...(existing.categories||[])] : (place.category ? [place.category] : []),
-    who: me.shareDefault==='private' || !hasCrew ? 'me' : 'crew',
+    who: whoDefault(),            // you choose every time: null until you pick
   };
   const editName = !existing && (!place.placeId || place.manual);
   const s = SOURCE[src.sourceType] || SOURCE.text;
@@ -164,11 +163,7 @@ function confirmPlace(place, src, ctx){
           ? `<label class="eyebrow" for="cfN">Place</label><input class="input mt8" id="cfN" maxlength="80" value="${esc(d.name)}" placeholder="Place name">`
           : `<h2 class="h-lg">${esc(d.name)}</h2>`}</div>
         <div class="eyebrow mt20">Who's this for?</div>
-        <div class="who-grid mt8">
-          <button class="radio-card${d.who==='me'?' on':''}" data-who="me"><span class="rc-head">${icon('lock','',d.who==='me')}Just me</span><p>Only you can see it</p></button>
-          <button class="radio-card${d.who==='crew'?' on':''}" data-who="crew" ${hasCrew?'':'disabled'}><span class="rc-head">${icon('groups','',d.who==='crew')}My crew</span><p>${hasCrew?esc(crew.name):'Start a crew to share'}</p></button>
-        </div>
-        <button class="link small mt8" id="cfDefault">Change my default</button>
+        <div class="mt8" id="cfWho">${whoHTML(d.who)}</div>
         ${existing ? '' : `
         <div class="field mt20"><label class="eyebrow" for="cfZ">Area</label><select class="input" id="cfZ">${MAP.ZONES.slice().sort((a,b)=>a.label.localeCompare(b.label)).map(x=>`<option value="${x.id}"${x.id===d.zone?' selected':''}>${esc(x.label)}</option>`).join('')}</select></div>
         <div class="eyebrow mt16">Kind of place</div>
@@ -178,8 +173,7 @@ function confirmPlace(place, src, ctx){
           <button class="btn btn-ghost btn-block mt8" id="cfBeen">${icon('check_circle')}I've been here</button>
         </div>`;
       const n = body.querySelector('#cfN'); if (n) n.oninput = ()=>{ d.name = n.value; };
-      body.querySelectorAll('[data-who]').forEach(b=>b.onclick=()=>{ if (b.disabled) return; d.who = b.dataset.who; keep(paint); });
-      body.querySelector('#cfDefault').onclick = ()=>{ closeAll(); setTimeout(()=>go.settings(), 300); };
+      bindWho(body, ()=>d.who, v=>{ d.who = v; keep(paint); });
       const zs = body.querySelector('#cfZ'); if (zs) zs.onchange = ()=>{ d.zone = zs.value; };
       const cc = body.querySelector('#cfC'); if (cc) cc.onclick = e=>{ const b=e.target.closest('[data-cat]'); if (!b) return; const id=b.dataset.cat; d.cats.includes(id) ? d.cats.splice(d.cats.indexOf(id),1) : d.cats.push(id); keep(paint); };
       body.querySelector('#cfAdd').onclick = ()=>add(false);
@@ -191,15 +185,16 @@ function confirmPlace(place, src, ctx){
         if (!d.name.trim()) return toast('Give the place a name');
         if (!d.cats.length) return toast('Pick what kind of place it is');
       }
+      if (d.who===null && !been){ body.querySelector('#cfWho').scrollIntoView({ block:'center', behavior:'smooth' }); return toast('Choose who it’s for'); }
       const created = !existing;
       const v = existing || S.addVenue({ name:d.name, zone:d.zone, categories:d.cats, lat:place.lat, lng:place.lng, googlePlaceId:place.placeId||null });
       closeAll();
-      if (been){ setTimeout(()=>go.log({ venueId:v.id }), 300); return; }
+      if (been){ setTimeout(()=>go.log({ venueId:v.id, who:d.who }), 300); return; }
       // a want-to-try from a share earns no points (logging the visit later does)
-      const e = S.addEntry({ venueId:v.id, kind:'want', private: d.who==='me', sourceType:src.sourceType, sourceUrl:src.sourceUrl });
+      const e = S.addEntry({ venueId:v.id, kind:'want', crewIds:d.who, sourceType:src.sourceType, sourceUrl:src.sourceUrl });
       go.switchView('map'); go.refresh();
       const show = ()=>{ const w = MAP.placeWorld(v); MAP.markDropped(v.id); MAP.flyToSeparate(w, S.venues().filter(x=>x.id!==v.id).map(x=>MAP.placeWorld(x)).filter(p=>Math.hypot(p.x-w.x,p.y-w.y)<60)); };
-      const msg = d.who==='me' ? 'Added to your list. Only you can see it.' : `Added and shared with ${S.myCrew()?.name || 'your crew'}.`;
+      const msg = d.who.length ? 'Added. '+whoText(d.who) : 'Added to your list. Only you can see it.';
       toast(msg, [
         ['Undo', async ()=>{ await S.deleteEntry(e.id); if (created) S.deleteVenue(v.id); go.refresh(); toast('Removed'); }],
         ['View on map', show],

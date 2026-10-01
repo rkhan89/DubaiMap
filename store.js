@@ -239,10 +239,40 @@ export function user(id){ return db.users[id]||null; }
 /* =========================================================
    CREWS
    ========================================================= */
-export function myCrew(){ const m=me(); if (!m) return null; return Object.values(db.crews).find(c=>c.memberIds.includes(m.id))||null; }
+// You can be in up to APP.crewsPerPerson crews. Crew screens show one at a time: the active crew.
+const ACTIVE_KEY = 'koko-active-crew';
+export function myCrews(){ const m=me(); if (!m) return []; return Object.values(db.crews).filter(c=>c.memberIds.includes(m.id)).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0) || a.name.localeCompare(b.name)); }
+export function myCrew(){
+  const cs=myCrews(); if (!cs.length) return null;
+  let id=null; try{ id=localStorage.getItem(ACTIVE_KEY); }catch(_){}
+  return cs.find(c=>c.id===id) || cs[0];
+}
+export function setActiveCrew(id){ try{ localStorage.setItem(ACTIVE_KEY, id); }catch(_){} emit('crew'); }
 export function crewMembers(crew){ crew = crew||myCrew(); if (!crew) return me()?[me()]:[]; return crew.memberIds.map(user).filter(Boolean); }
-// who "my crew" is for visibility: me plus everyone in my crew
+// who "my crew" is for the crew screens: me plus everyone in the active crew
 export function circleIds(){ const c=myCrew(), m=me(); if (!m) return []; return c ? c.memberIds.slice() : [m.id]; }
+// who a post is for: { crewIds, private }. Only crews you're in; none means only you.
+export function audience(d){
+  const mine = myCrews().map(c=>c.id);
+  if (Array.isArray(d.crewIds)){ const ids = d.crewIds.filter(id=>mine.includes(id)); return { crewIds:ids, private:!ids.length }; }
+  if (d.private) return { crewIds:[], private:true };
+  const c = myCrew(); return c ? { crewIds:[c.id], private:false } : { crewIds:[], private:true };
+}
+// everyone in any of your crews (not you), for tagging
+export function crewmates(){ const m=me(); if (!m) return []; const ids=new Set(myCrews().flatMap(c=>c.memberIds)); ids.delete(m.id); return [...ids].map(user).filter(Boolean).sort((a,b)=>(a.name||a.handle||'').localeCompare(b.name||b.handle||'')); }
+// tags: only people who share a crew with you
+export function tagsOf(ids){ const ok=new Set(crewmates().map(u=>u.id)); return [...new Set(ids||[])].filter(id=>ok.has(id)); }
+// "matcha with @rahman" → the crewmates mentioned
+export function mentionIds(text){ const hs=[...String(text||'').matchAll(/@([a-z0-9_]{3,20})/gi)].map(x=>x[1].toLowerCase()); return crewmates().filter(u=>u.handle && hs.includes(String(u.handle).toLowerCase())).map(u=>u.id); }
+// visits someone tagged you on
+export function taggedMe(){ const m=me(); if (!m) return []; return Object.values(db.entries).filter(e=>e.userId!==m.id && (e.taggedIds||[]).includes(m.id)); }
+export function untagMe(entryId){
+  const e=db.entries[entryId], m=me(); if (!e || !m) return;
+  e.taggedIds=(e.taggedIds||[]).filter(x=>x!==m.id); save('entries');
+  if (cloud && !isLocal(entryId)) C.queue({ k:'rpc', fn:'untag_me', args:{ p_entry:entryId } });
+}
+// the crews a post is shared with, by name (yours only)
+export function crewsOf(rec){ return (rec && rec.crewIds || []).map(id=>db.crews[id]).filter(Boolean); }
 function makeCode(name){
   const letters = (name||'CREW').toUpperCase().replace(/[^A-Z]/g,'').slice(0,5).padEnd(3,'X');
   let code;
@@ -251,40 +281,50 @@ function makeCode(name){
 }
 export async function createCrew({name, tagline}){
   const m=me(); if (!m) return null;
-  if (cloud){ const r = await C.rpc('create_crew', { p_name:name, p_tagline:tagline||'' }); await pullNow(); return db.crews[r.id] || null; }
-  leaveCrew(true);
+  if (myCrews().length >= APP.crewsPerPerson) throw new Error('max');
+  if (cloud){ const r = await C.rpc('create_crew', { p_name:name, p_tagline:tagline||'' }); await pullNow(); if (db.crews[r.id]) setActiveCrew(r.id); return db.crews[r.id] || null; }
   const c = { id:uid(), name:name.trim()||'My Crew', tagline:(tagline||'').trim(), code:makeCode(name), ownerId:m.id, memberIds:[m.id], createdAt:Date.now() };
-  db.crews[c.id]=c; save('crew'); return c;
+  db.crews[c.id]=c; save('crew'); setActiveCrew(c.id); return c;
 }
 export function updateCrew(patch){ const c=myCrew(); if (!c) return; Object.assign(c, patch); save('crew'); push('crews', { id:c.id, patch }, 'upd'); }
-// join by code: { crew } or { error:'invalid'|'full'|'offline', code }
+// join by code: { crew } or { error:'invalid'|'full'|'max'|'offline', code }
 export async function joinCrew(code){
   code=(code||'').trim().toUpperCase().replace(/^.*JOIN=/,'');
   if (cloud){
     let r; try{ r = await C.rpc('join_crew', { p_code:code }); }catch(e){ return { error:'offline', code }; }
     if (r!=='ok') return { error:r, code };
-    await pullNow(); return { crew:myCrew() };
+    await pullNow();
+    const c = Object.values(db.crews).find(x=>x.code===code); if (c) setActiveCrew(c.id);
+    return { crew:c||myCrew() };
   }
   const c = Object.values(db.crews).find(c=>c.code===code);
   if (!c) return { error:'invalid', code };
   const m=me();
-  if (c.memberIds.includes(m.id)) return { crew:c };
+  if (c.memberIds.includes(m.id)){ setActiveCrew(c.id); return { crew:c }; }
+  if (myCrews().length >= APP.crewsPerPerson) return { error:'max', crew:c };
   if (c.memberIds.length >= APP.crewMax) return { error:'full', crew:c };
-  leaveCrew(true);
-  c.memberIds.push(m.id); save('crew'); return { crew:c };
+  c.memberIds.push(m.id); save('crew'); setActiveCrew(c.id); return { crew:c };
 }
-export async function leaveCrew(silent){
-  const c=myCrew(), m=me(); if (!c||!m) return;
-  if (cloud && !isLocal(c.id)){ await C.rpc('leave_crew'); await pullNow(); return; }
+// your posts stop showing in a crew you leave (the server does the same)
+function unshareFrom(crewId, userId){
+  [['entries', db.entries], ['photos', db.photos]].forEach(([t, recs])=>Object.values(recs).forEach(r=>{
+    if (r.userId!==userId || !(r.crewIds||[]).includes(crewId)) return;
+    r.crewIds = r.crewIds.filter(x=>x!==crewId); r.private = !r.crewIds.length; save(t);
+  }));
+}
+export async function leaveCrew(crewId){
+  const c = crewId ? db.crews[crewId] : myCrew(), m=me(); if (!c||!m) return;
+  if (cloud && !isLocal(c.id)){ await C.rpc('leave_crew', { p_crew:c.id }); await pullNow(); emit('crew'); return; }
   c.memberIds = c.memberIds.filter(id=>id!==m.id);
+  unshareFrom(c.id, m.id);
   if (!c.memberIds.length) delete db.crews[c.id];
   else if (c.ownerId===m.id) c.ownerId = c.memberIds[0];
-  if (!silent) save('crew');
+  save('crew'); emit('crew');
 }
 export async function removeMember(id){
   const c=myCrew(), m=me(); if (!c || c.ownerId!==m.id || id===m.id) return;
-  if (cloud && !isLocal(id)){ await C.removeMember(id); await pullNow(); return; }
-  c.memberIds=c.memberIds.filter(x=>x!==id); save('crew');
+  if (cloud && !isLocal(id) && !isLocal(c.id)){ await C.removeMember(c.id, id); await pullNow(); return; }
+  c.memberIds=c.memberIds.filter(x=>x!==id); unshareFrom(c.id, id); save('crew');
 }
 // what an invite code leads to: { id, name, tagline, code, count, members:[user] } or null
 export async function findCrewByCode(code){
@@ -326,12 +366,20 @@ export function searchVenues(q, limit){
 /* =========================================================
    ENTRIES (visits + want-to-try) and visibility
    ========================================================= */
+// what the crew screens show: yours, plus what was shared with the active crew by someone in it
 export function canSee(rec){
   const m=me(); if (!m || !rec) return false;
   if (rec.userId===m.id) return true;
+  // you were tagged on it (a visit, or a photo from that visit)
+  const tagged = rec.taggedIds || (rec.entryId && db.entries[rec.entryId] && db.entries[rec.entryId].taggedIds);
+  if (tagged && tagged.includes(m.id)) return true;
   if (rec.private) return false;
-  return circleIds().includes(rec.userId);
+  const c=myCrew(); if (!c || !c.memberIds.includes(rec.userId)) return false;
+  // records from before several crews (and the sample crew) have no crewIds: shared with the crew
+  return !(rec.crewIds && rec.crewIds.length) || rec.crewIds.includes(c.id);
 }
+// is this one of yours shared with the crew you're looking at?
+export function sharedHere(rec){ const c=myCrew(); return !!(rec && !rec.private && c && (!(rec.crewIds&&rec.crewIds.length) || rec.crewIds.includes(c.id))); }
 export function entries(filter){
   filter = filter||{};
   return Object.values(db.entries).filter(e=>
@@ -343,7 +391,7 @@ export function entries(filter){
 export function entry(id){ return db.entries[id]||null; }
 export function addEntry(data){
   const m=me();
-  const e = { id:uid(), userId:m.id, kind:'visit', rating:0, notes:'', date:todayISO(), private:m.shareDefault==='private', createdAt:Date.now(), ...data };
+  const e = { id:uid(), userId:m.id, kind:'visit', rating:0, notes:'', date:todayISO(), createdAt:Date.now(), ...data, ...audience(data), taggedIds:tagsOf(data.taggedIds) };
   db.entries[e.id]=e; save('entries'); push('entries', e);
   // where it came from: the link is private to you, so it goes to its own owner-only table
   if (e.sourceUrl && cloud && !volatile) C.queue({ k:'put', t:'entry_sources', id:e.id, row:{ entry_id:e.id, user_id:m.id, source_url:String(e.sourceUrl).slice(0,2000) } });
@@ -351,9 +399,14 @@ export function addEntry(data){
 }
 export function updateEntry(id, patch){
   const e=db.entries[id]; if (!e || e.userId!==me()?.id) return;
+  if ('crewIds' in patch || 'private' in patch) patch = { ...patch, ...audience('crewIds' in patch ? patch : { private:patch.private }) };
+  if ('taggedIds' in patch) patch = { ...patch, taggedIds:tagsOf(patch.taggedIds) };
   Object.assign(e, patch);
-  // a private entry's photos are private too
-  if (patch.private) Object.values(db.photos).filter(p=>p.entryId===id).forEach(p=>{ if (!p.private){ p.private=true; push('photos', { id:p.id, patch:{private:true} }, 'upd'); } });
+  // a visit's photos go to the same people
+  Object.values(db.photos).filter(p=>p.entryId===id && p.userId===e.userId).forEach(p=>{
+    if (p.private===e.private && String(p.crewIds||[])===String(e.crewIds||[])) return;
+    p.private=e.private; p.crewIds=(e.crewIds||[]).slice(); save('photos'); push('photos', { id:p.id, patch:{ private:p.private, crewIds:p.crewIds } }, 'upd');
+  });
   save('entries'); push('entries', e); return e;
 }
 export async function deleteEntry(id){
@@ -366,8 +419,7 @@ export async function deleteEntry(id){
 export function restoreEntry(snapshot){ db.entries[snapshot.entry.id]=snapshot.entry; save('entries'); push('entries', snapshot.entry); }
 // is this visit the first by anyone in my crew at this venue?
 export function firstInCrew(venueId){
-  const ids=circleIds();
-  return !Object.values(db.entries).some(e=>e.venueId===venueId && e.kind==='visit' && ids.includes(e.userId) && !e.private);
+  return !Object.values(db.entries).some(e=>e.venueId===venueId && e.kind==='visit' && canSee(e) && sharedHere(e));
 }
 
 /* =========================================================
@@ -383,12 +435,14 @@ export function photos(filter){
 }
 export function photo(id){ return db.photos[id]||null; }
 export function myPhotoCount(){ const m=me(); return m ? Object.values(db.photos).filter(p=>p.userId===m.id).length : 0; }
+// a photo goes to the same people as its visit
+function photoAudience(it){ const e = it.entryId && db.entries[it.entryId]; return e ? { private:!!e.private, crewIds:(e.crewIds||[]).slice() } : audience(it); }
 export async function addPhotos(list){
   const m=me(); const out=[];
   for (const it of list){
     const id = uid();
     const p = { id, userId:m.id, venueId:it.venueId, entryId:it.entryId||null, caption:it.caption||'', date:it.date||todayISO(),
-                private:!!it.private, src:'idb', path:m.id+'/'+id+'.jpg', bookmarkedBy:[], createdAt:Date.now()+out.length };
+                ...photoAudience(it), src:'idb', path:m.id+'/'+id+'.jpg', bookmarkedBy:[], createdAt:Date.now()+out.length };
     await putBlob(p.id, it.blob);
     db.photos[p.id]=p; out.push(p);
     if (cloud && !volatile){ C.queue({ k:'upload', id:p.id, path:p.path }); push('photos', p); }
@@ -470,7 +524,7 @@ export async function importLegacy(ids){
     if (!v) v = addVenue({ name:p.name||'Untitled', zone:p.zone, categories:p.categories||[], lat:p.lat, lng:p.lng });
     else if (typeof p.lat==='number' && v.lat==null){ v.lat=p.lat; v.lng=p.lng; }
     const e = addEntry({ venueId:v.id, kind:p.status==='want'?'want':'visit', rating:p.rating||0, notes:p.notes||'',
-                         date:p.dateVisited||todayISO(), private:m.shareDefault==='private', createdAt:p.createdAt||Date.now() });
+                         date:p.dateVisited||todayISO(), private:true, createdAt:p.createdAt||Date.now() });
     if (p.photo){ try{ await addPhotos([{ blob:await dataURLtoBlob(p.photo), venueId:v.id, entryId:e.id, date:e.date, private:e.private }]); }catch(_){} }
     if (p.blobId){ try{ const b = await getBlob(p.blobId); if (b) await addPhotos([{ blob:b, caption:p.caption||'', venueId:v.id, entryId:e.id, date:e.date, private:e.private }]); }catch(_){} }
     added++;
@@ -520,7 +574,7 @@ export function events(filter){
   filter = filter||{};
   const m=me(), crew=myCrew(); if (!m) return [];
   return Object.values(db.events||{}).filter(ev=>
-    (ev.createdBy===m.id || (crew && ev.crewId===crew.id)) &&
+    (crew ? ev.crewId===crew.id || (ev.createdBy===m.id && !ev.crewId) : ev.createdBy===m.id) &&
     (!filter.venueId || ev.venueId===filter.venueId) &&
     (!filter.upcoming || new Date(ev.when).getTime() > Date.now()-3*3600e3)
   ).sort((a,b)=>a.when.localeCompare(b.when));

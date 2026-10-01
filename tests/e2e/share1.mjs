@@ -14,10 +14,14 @@ export default async function share1(h){
 
   await step('+ opens a menu with "Add from link or text"', async ()=>{ await h.click('#navLog'); if (!/Add from link or text/.test(await text())) throw new Error('no menu'); await h.shot('s1-plus'); await h.js(()=>history.back()); await h.sleep(400); });
   await step('the add screen', async ()=>{ await openAdd(); await h.shot('s1-add'); });
-  await step('a Google Maps link → confirm sheet, defaulting to the crew', async ()=>{
+  await step('a Google Maps link → confirm sheet, nobody picked yet', async ()=>{
     await submit(FULL); await p.waitForSelector('#cfAdd', {visible:true, timeout:8000});
     const t = await text(); if (await h.js(()=>document.querySelector('#cfN')?.value)!=='Sunset Karak Corner' || !/From Google Maps/i.test(t) || !/Who's this for\?/i.test(t)) throw new Error('sheet text');
-    if (!await h.js(()=>document.querySelector('[data-who="crew"]').classList.contains('on'))) throw new Error('default not crew');
+    if (await h.js(()=>document.querySelectorAll('[data-who].on').length)) throw new Error('something was pre-picked');
+    await h.js(()=>document.querySelector('#cfC [data-cat="karak"]').click()); await h.sleep(150);
+    await h.js(()=>document.querySelector('#cfAdd').click()); await h.sleep(400);
+    if (!/Choose who it’s for/.test(await toastText())) throw new Error('saved without choosing'); await h.sleep(2500);
+    await h.js(()=>document.querySelector('#cfC [data-cat="karak"]').click()); await h.sleep(150);
     await h.js(()=>document.querySelector('#cfC [data-cat="karak"]').click()); await h.sleep(200);
     await h.shot('s1-confirm');
   });
@@ -33,11 +37,12 @@ export default async function share1(h){
     await h.js(()=>[...document.querySelectorAll('#toast .toast-btn')].find(b=>b.textContent==='Undo').click()); await h.sleep(500);
     const n = await store((S)=>S.venues().filter(v=>v.name==='Sunset Karak Corner').length); if (n) throw new Error(n+' left');
   });
-  await step('"My crew" → shared, toast names the crew; View on map drops the pin', async ()=>{
+  await step('a crew → shared, toast names the crew; View on map drops the pin', async ()=>{
     await openAdd(); await submit(FULL); await p.waitForSelector('#cfAdd', {visible:true, timeout:8000});
     await h.js(()=>document.querySelector('#cfC [data-cat="karak"]').click()); await h.sleep(150);
+    await h.js(()=>document.querySelector('[data-who]:not([data-who="me"])').click()); await h.sleep(150);
     await h.js(()=>document.querySelector('#cfAdd').click()); await h.sleep(600);
-    const t = await toastText(); if (!/Added and shared with Karak Crew/.test(t)) throw new Error(t);
+    const t = await toastText(); if (!/Shared with Karak Crew/.test(t)) throw new Error(t);
     await h.js(()=>[...document.querySelectorAll('#toast .toast-btn')].find(b=>b.textContent==='View on map').click()); await h.sleep(1200);
     await h.shot('s1-on-map');
   });
@@ -54,6 +59,7 @@ export default async function share1(h){
     await h.js(()=>document.querySelector('.sheet [data-v]').click()); await p.waitForSelector('#cfAdd', {visible:true});
     if (!/already on the crew map/.test(await text())) throw new Error('no banner'); await h.shot('s1-already-crew');
     const before = await store((S)=>S.venues().filter(v=>v.name===a[0]).length, other);
+    await h.js(()=>document.querySelector('[data-who]:not([data-who="me"])').click()); await h.sleep(150);
     await h.js(()=>document.querySelector('#cfAdd').click()); await h.sleep(500);
     const after = await store((S)=>S.venues().filter(v=>v.name===a[0]).length, other);
     if (before!==after) throw new Error('duplicate place made');

@@ -109,7 +109,7 @@ function settingsScreen(){
           ${row('celebration','Burj Khalifa light shows','7 to 11 pm, every 15 minutes', toggleHTML('sShows', p.shows,'Burj Khalifa light shows'))}
         </div>
         <div class="eyebrow mt24">Privacy</div><div class="stack mt8">
-          ${row('share','Share new places with my crew','Default for new logs. You can change any single place.', toggleHTML('sShare', me.shareDefault!=='private','Share with crew by default'))}
+          ${row('share','Who sees your places','You choose every time you save: just you, or any of your crews. Change a place later from its page.', '')}
         </div>
         <div class="eyebrow mt24">Notifications</div><div class="stack mt8">
           ${row('notifications_active','Reminders on this phone', 'Crew bites you’re going to, and a heads-up before light shows. Needs the app open or installed.', toggleHTML('sNotify', p.notify && ('Notification' in window) && Notification.permission==='granted','Reminders'))}
@@ -132,7 +132,6 @@ function settingsScreen(){
       bindToggle(el.querySelector('#sZones'), on=>{ setPref('zones', on); go.refresh(); });
       bindToggle(el.querySelector('#sCars'), on=>{ setPref('cars', on); MAP.setCars(on); });
       bindToggle(el.querySelector('#sShows'), on=>{ setPref('shows', on); go.tickShow && go.tickShow(); });
-      bindToggle(el.querySelector('#sShare'), on=>{ S.updateMe({shareDefault:on?'crew':'private'}); toast(on?'New places will be shared with your crew':'New places will stay private'); });
       bindToggle(el.querySelector('#sNotify'), async on=>{ const ok = await go.setNotify(on); if (on && !ok) paint(); });
       const d = el.querySelector('#sDemo'); if (d) bindToggle(d, async on=>{ await S.setDemo(on); toast(on?'Sample crew added':'Sample crew removed'); go.refresh(); paint(); });
       el.querySelector('#sImport').addEventListener('change', async e=>{
