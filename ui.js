@@ -3,7 +3,7 @@
 import { APP } from './config.js';
 import { CATEGORIES, catById, iconSvg, esc, fmtRating, tilt } from './data.js';
 import { avatarHTML } from './avatar.js';
-import { me as currentUser, myCrews } from './store.js';
+import { me as currentUser, myCrews, venues as allVenues } from './store.js';
 
 export const $ = (s, r)=> (r||document).querySelector(s);
 export const $$ = (s, r)=> Array.from((r||document).querySelectorAll(s));
@@ -255,4 +255,29 @@ export function askWho({ title, action, sel }, done){
     };
     paint();
   });
+}
+
+/* ---------- category picker: the 3 most used (plus anything picked), "+N more" for the rest ---------- */
+const CAT_RANK = ['restaurant','coffee','karak','dessert','shisha','burger','icecream','pizza','fastfood','cafeteria','matcha','acai','froyo'];
+export function topCategories(n){
+  const count = {}; allVenues().forEach(v=>(v.categories||[]).forEach(c=>{ count[c]=(count[c]||0)+1; }));
+  const rank = id => { const i=CAT_RANK.indexOf(id); return i<0 ? 99 : i; };
+  return CATEGORIES.map(c=>c.id).sort((a,b)=>(count[b]||0)-(count[a]||0) || rank(a)-rank(b)).slice(0, n||3);
+}
+// on: ids shown selected; keep: ids always visible (e.g. picked ones); open: show everything
+export function catPickerHTML(on, opts){
+  opts = opts||{};
+  const top = topCategories(3), keep = new Set([...top, ...(opts.keep||on||[])]);
+  const order = [...top, ...CATEGORIES.map(c=>c.id).filter(id=>!top.includes(id))];
+  const extra = order.filter(id=>!keep.has(id)).length;
+  return order.map(id=>catChip(id, on.includes(id)).replace('class="cat-chip', 'class="cat-chip'+(keep.has(id)?'':' cat-extra'))).join('')
+    + (extra ? `<button type="button" class="cat-more" data-cat-more aria-expanded="${!!opts.open}">${opts.open ? icon('expand_less')+'Fewer' : icon('expand_more')+'+'+extra+' more'}</button>` : '');
+}
+// call after painting: wrap = the chip container, host = an element that outlives repaints (keeps it open)
+export function bindCatPicker(wrap, host){
+  if (!wrap) return;
+  wrap.classList.add('cat-picker'); wrap.classList.toggle('open', host.dataset.catsOpen==='1');
+  const b = wrap.querySelector('[data-cat-more]'); if (!b) return;
+  b.onclick = e=>{ e.stopPropagation(); const open = host.dataset.catsOpen!=='1'; host.dataset.catsOpen = open?'1':''; wrap.classList.toggle('open', open); b.setAttribute('aria-expanded', open);
+    const n = wrap.querySelectorAll('.cat-extra').length; b.innerHTML = open ? icon('expand_less')+'Fewer' : icon('expand_more')+'+'+n+' more'; };
 }

@@ -217,3 +217,7 @@ Steps 2–4: Android share target and /share, TikTok captions, Inbox and offline
 - **Adding photos from a crew book**: the crew is pre-picked (it's where you asked to add),
   the Add button says what's missing instead of greying out, and "Open book" returns to that
   book. Every book has an Add photos button in its header.
+- **Categories**: Restaurant, Shisha and Ice cream added (13 in all). Pickers (new place, add from
+  link, map filter) show the 3 most-used categories plus anything picked, and "+N more" for the
+  rest. Google restaurant types map to Restaurant, ice cream shops to Ice cream
+  (`0005_categories.sql` updates the server's copy of that map).

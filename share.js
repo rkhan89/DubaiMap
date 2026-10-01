@@ -5,7 +5,7 @@ import { APP } from './config.js';
 import * as S from './store.js';
 import * as MAP from './map.js';
 import { CATEGORIES, MEALS, catById, iconSvg, esc } from './data.js';
-import { $, icon, toast, openScreen, openSheet, back, closeAll, topbar, catChip, seg, bindSeg, whoHTML, bindWho, whoDefault, whoText } from './ui.js';
+import { $, icon, toast, openScreen, openSheet, back, closeAll, topbar, catChip, seg, bindSeg, whoHTML, bindWho, whoDefault, whoText, catPickerHTML, bindCatPicker } from './ui.js';
 import { go } from './go.js';
 
 const SOURCE = {
@@ -170,7 +170,7 @@ function confirmPlace(place, src, ctx){
         ${existing ? '' : `
         <div class="field mt20"><label class="eyebrow" for="cfZ">Area</label><select class="input" id="cfZ">${MAP.ZONES.slice().sort((a,b)=>a.label.localeCompare(b.label)).map(x=>`<option value="${x.id}"${x.id===d.zone?' selected':''}>${esc(x.label)}</option>`).join('')}</select></div>
         <div class="eyebrow mt16">Kind of place</div>
-        <div class="chip-wrap mt8" id="cfC">${CATEGORIES.map(c=>catChip(c.id, d.cats.includes(c.id))).join('')}</div>`}
+        <div class="chip-wrap mt8" id="cfC">${catPickerHTML(d.cats, {open:body.dataset.catsOpen==='1'})}</div>`}
         <div class="sheet-foot">
           <button class="btn btn-gold btn-block" id="cfAdd">${icon('bookmark_add')}Add to want-to-try</button>
           <button class="btn btn-ghost btn-block mt8" id="cfBeen">${icon('check_circle')}I've been here</button>
@@ -179,6 +179,7 @@ function confirmPlace(place, src, ctx){
       bindWho(body, ()=>d.who, v=>{ d.who = v; keep(paint); });
       body.querySelectorAll('#cfM [data-meal]').forEach(b=>b.onclick=()=>{ const m=b.dataset.meal; d.meals=d.meals.includes(m)?d.meals.filter(x=>x!==m):[...d.meals,m]; keep(paint); });
       const zs = body.querySelector('#cfZ'); if (zs) zs.onchange = ()=>{ d.zone = zs.value; };
+      bindCatPicker(body.querySelector('#cfC'), body);
       const cc = body.querySelector('#cfC'); if (cc) cc.onclick = e=>{ const b=e.target.closest('[data-cat]'); if (!b) return; const id=b.dataset.cat; d.cats.includes(id) ? d.cats.splice(d.cats.indexOf(id),1) : d.cats.push(id); keep(paint); };
       body.querySelector('#cfAdd').onclick = ()=>add(false);
       body.querySelector('#cfBeen').onclick = ()=>add(true);

@@ -112,7 +112,7 @@ const fakePlaces = places => async (url, opts)=>{
 const P = (id, name, lat, lng, types) => ({ id, displayName:{ text:name }, location:{ latitude:lat, longitude:lng }, formattedAddress:'Dubai', types:types||['restaurant'] });
 test('with Places: the result at the link\'s pin wins', async ()=>{
   const r = await resolveShare({ url:F.fullPlace }, { lookup:publicDns, placesKey:'k', fetch:fakePlaces([P('far','Ravi Restaurant',25.30,55.40), P('ravi','Ravi Restaurant',25.2332,55.2758,['indian_restaurant'])]) });
-  assert.equal(r.state, 'match'); assert.equal(r.place.placeId, 'ravi'); assert.equal(r.place.category, 'cafeteria');
+  assert.equal(r.state, 'match'); assert.equal(r.place.placeId, 'ravi'); assert.equal(r.place.category, 'restaurant');
 });
 test('with Places: several plausible results → candidates (up to 3)', async ()=>{
   const r = await resolveShare({ url:F.search }, { lookup:publicDns, placesKey:'k', fetch:fakePlaces([P('a','Karak House',25.23,55.27), P('b','Karak Spot',25.231,55.271), P('c','Chai Karak',25.232,55.272), P('d','Karak 4',25.233,55.273)]) });

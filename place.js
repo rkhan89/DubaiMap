@@ -5,7 +5,7 @@ import * as M from './model.js';
 import * as MAP from './map.js';
 import { CATEGORIES, MEALS, mealById, catById, iconSvg, esc, fmtRating, fmtDate, todayISO, plural } from './data.js';
 import { avatarHTML, avatarStack } from './avatar.js';
-import { $, icon, toast, pointsToast, openScreen, openSheet, back, closeAll, topbar, stampHTML, catChip, polaroidHTML, starInput, toggleHTML, bindToggle, ratingPill, share, compressImage, whoHTML, bindWho, whoDefault, whoText, askWho } from './ui.js';
+import { $, icon, toast, pointsToast, openScreen, openSheet, back, closeAll, topbar, stampHTML, catChip, polaroidHTML, starInput, toggleHTML, bindToggle, ratingPill, share, compressImage, whoHTML, bindWho, whoDefault, whoText, askWho, catPickerHTML, bindCatPicker } from './ui.js';
 import { go, state } from './go.js';
 import { sharePlace, eventRowHTML, planBite, eventSheet, checkIn } from './events.js';
 
@@ -145,13 +145,14 @@ function venueForm(initial, onSave, title){
         <div class="row mt12" style="gap:8px"><span class="grow small ${typeof d.lat==='number'?'':'muted'}" style="${typeof d.lat==='number'?'color:var(--green);font-weight:700':''}">${typeof d.lat==='number'?'📍 Exact spot pinned':`Somewhere in ${esc(z?z.label:APP.city)}`}</span>
           <button class="btn btn-white btn-sm" id="vfPick">${icon('pin_drop')}Pick on map</button><button class="btn btn-white btn-sm" id="vfLoc" aria-label="Use my location">${icon('my_location')}</button></div>
         <div class="eyebrow mt20">Categories</div>
-        <div class="chip-wrap mt8" id="vfC">${CATEGORIES.map(c=>catChip(c.id, d.categories.includes(c.id))).join('')}</div>
+        <div class="chip-wrap mt8" id="vfC">${catPickerHTML(d.categories, {open:body.dataset.catsOpen==='1'})}</div>
         ${askMeal?`<div class="row between mt20"><span class="eyebrow">Meal</span><span class="hand">Optional</span></div>
         <div class="chip-wrap mt8" id="vfM">${MEALS.map(m=>`<button type="button" class="person-chip meal-chip${d.meals.includes(m.id)?' on':''}" data-meal="${m.id}" aria-pressed="${d.meals.includes(m.id)}">${icon(m.icon)}${m.label}</button>`).join('')}</div>`:''}
         <div class="sheet-foot"><button class="btn btn-gold btn-block" id="vfS">${icon('check')}Save place</button></div>`;
       const n=body.querySelector('#vfN'); n.oninput=()=>{ d.name=n.value; };
       body.querySelectorAll('#vfM [data-meal]').forEach(b=>b.onclick=()=>{ const m=b.dataset.meal; d.meals=d.meals.includes(m)?d.meals.filter(x=>x!==m):[...d.meals,m]; const st=body.scrollTop; paint(); body.scrollTop=st; });
       body.querySelector('#vfZ').onchange=e=>{ d.zone=e.target.value; d.lat=null; d.lng=null; paint(); };
+      bindCatPicker(body.querySelector('#vfC'), body);
       body.querySelector('#vfC').onclick=e=>{ const b=e.target.closest('[data-cat]'); if (!b) return; const id=b.dataset.cat; d.categories.includes(id)?d.categories.splice(d.categories.indexOf(id),1):d.categories.push(id); paint(); };
       body.querySelector('#vfPick').onclick=()=>{
         const layer=body.closest('.sheet'); layer.style.visibility='hidden'; document.querySelectorAll('.scrim').forEach(s=>s.style.visibility='hidden');

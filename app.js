@@ -5,7 +5,7 @@ import * as M from './model.js';
 import * as MAP from './map.js';
 import { CATEGORIES, MEALS, catById, iconSvg, esc, fmtRating, ago, agoLong, plural } from './data.js';
 import { avatarHTML, avatarStack, spriteSvg, DEFAULT_AVATAR } from './avatar.js';
-import { $, $$, icon, toast, openSheet, back, closeAll, stampHTML, catChip, seg, bindSeg, toggleHTML, bindToggle, ratingPill } from './ui.js';
+import { $, $$, icon, toast, openSheet, back, closeAll, stampHTML, catChip, seg, bindSeg, toggleHTML, bindToggle, ratingPill, catPickerHTML, bindCatPicker } from './ui.js';
 import { go, state } from './go.js';
 import { applyTheme, onTheme, themePref, setThemePref } from './theme.js';
 import { showState, now } from './shows.js';
@@ -262,7 +262,7 @@ function openFilters(){
       ${members.length>1?`<div class="row between mt24"><span class="eyebrow">2. Members</span><span class="hand">${draft.mode==='crew'?`${members.length-1} friends in ${esc(APP.city)}`:'Applies in Crew view'}</span></div>
       <div class="chip-scroll mt8" data-f="members"><button class="person-chip${!draft.members?' on':''}" data-m="all">${icon('done_all')}All <em>${M.mapModel({...draft, mode:'crew', members:null}).filter(s=>s.state!=='unlit').length}</em></button>${members.map(u=>`<button class="person-chip${draft.members&&draft.members.has(u.id)?' on':''}" data-m="${u.id}">${avatarHTML(u,30)}${esc(u.id===S.me().id?'You':u.name||u.handle)}</button>`).join('')}</div>`:''}
       <div class="eyebrow mt24">${members.length>1?3:2}. Categories</div>
-      <div class="chip-wrap mt12" data-f="cats">${CATEGORIES.map(c=>catChip(c.id, !draft.cats || draft.cats.has(c.id))).join('')}</div>
+      <div class="chip-wrap mt12" data-f="cats" id="fCats">${(()=>{ const on=CATEGORIES.map(c=>c.id).filter(id=>!draft.cats||draft.cats.has(id)); return catPickerHTML(on, {open:body.dataset.catsOpen==='1', keep:CATEGORIES.map(c=>c.id).filter(id=>!on.includes(id))}); })()}</div>
       <div class="row between mt24"><span class="eyebrow">${members.length>1?4:3}. Meal</span><span class="hand">${draft.meals?'Tagged visits only':'Any time of day'}</span></div>
       <div class="chip-wrap mt12" data-f="meals">${MEALS.map(m=>`<button class="person-chip meal-chip${draft.meals&&draft.meals.has(m.id)?' on':''}" data-meal="${m.id}">${icon(m.icon)}${m.label}</button>`).join('')}</div>
       <div class="eyebrow mt24">${members.length>1?5:4}. Visit status</div>
@@ -276,6 +276,7 @@ function openFilters(){
       </div>
       <div class="person-row mt24" style="box-shadow:none;background:var(--sc-low)">${icon('format_color_fill')}<span class="pr-main"><span class="pr-name">Colour explored areas</span><span class="pr-sub">Areas with ${draft.mode==='me'?'your':'crew'} places glow gold</span></span>${toggleHTML('fZones', prefs().zones, 'Colour explored areas')}</div>
       <div class="sheet-foot"><button class="btn btn-gold btn-block" data-f="apply">${icon('check_circle')}Apply filters (${plural(n,'place')})</button></div>`;
+      bindCatPicker(body.querySelector('#fCats'), body);
     };
     paint();
     body.addEventListener('click', e=>{

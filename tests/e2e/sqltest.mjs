@@ -165,5 +165,10 @@ try{ await db.exec(sql4); await db.exec(sql4); ok('meals migration runs (twice)'
 await as(T, `insert into entries(id,venue_id,kind,private,meals) values ('mm1','tv1','visit',true,array['breakfast','dinner'])`);
 (await as(T, `select meals from entries where id='mm1'`)).rows[0].meals.length===2 ? ok('a visit can be tagged breakfast and dinner') : bad('meals');
 await expectErr('an unknown meal is refused', T, `insert into entries(id,venue_id,kind,private,meals) values ('mm2','tv1','visit',true,array['brunch'])`);
+// ---- more categories (0005) ----
+await db.exec('reset role');
+const sql5 = fs.readFileSync(new URL('../../supabase/migrations/0005_categories.sql', import.meta.url),'utf8');
+try{ await db.exec(sql5); await db.exec(sql5); ok('categories migration runs (twice)'); } catch(e){ bad('categories migration: '+e.message); }
+(await as(T, `select category from place_type_categories where google_type='ice_cream_shop'`)).rows[0]?.category==='icecream' ? ok('ice cream shops map to Ice cream') : bad('icecream map');
 console.log(process.exitCode ? '\nSOME CHECKS FAILED' : '\nall checks passed');
 

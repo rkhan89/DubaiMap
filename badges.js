@@ -14,7 +14,7 @@ export const BADGES = [
   { id:'first',     name:'First bite',        desc:'Log your first visit',                     ic:'restaurant',      color:'#E5A93C', progress:s=>[s.visits, 1] },
   { id:'explorer',  name:'Explorer',          desc:'Eat in 5 different areas',                 ic:'explore',         color:'#3F7FD9', progress:s=>[s.areaCount, 5] },
   { id:'karak',     name:'Karak connoisseur', desc:'Five karak spots',                         ic:'emoji_food_beverage', color:'#B5451B', progress:s=>[has(s,'karak'), 5] },
-  { id:'sweet',     name:'Sweet tooth',       desc:'Five dessert, froyo or acai spots',        ic:'icecream',        color:'#E1699A', progress:s=>[has(s,'dessert','froyo','acai'), 5] },
+  { id:'sweet',     name:'Sweet tooth',       desc:'Five dessert, ice cream, froyo or acai spots', ic:'icecream', color:'#E1699A', progress:s=>[has(s,'dessert','icecream','froyo','acai'), 5] },
   { id:'caffeine',  name:'Caffeine trail',    desc:'Five coffee spots',                        ic:'coffee',          color:'#8B5A2B', progress:s=>[has(s,'coffee'), 5] },
   { id:'regular',   name:'Regular',           desc:'Go back to the same place 3 times',        ic:'autorenew',       color:'#5F8D4E', progress:s=>[s.maxRepeat, 3] },
   { id:'olddubai',  name:'Old Dubai',         desc:'Three places in Deira, Bur Dubai or Karama', ic:'mosque',        color:'#C9622D', progress:s=>[s.visitList.filter((e,i,a)=>{ const v=S.venue(e.venueId); return v && OLD_DUBAI.includes(v.zone) && a.findIndex(x=>x.venueId===e.venueId)===i; }).length, 3] },
