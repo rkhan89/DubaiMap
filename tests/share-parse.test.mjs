@@ -135,6 +135,15 @@ test('a ?q= link with name and address pre-fills just the name', ()=>{
   assert.equal(shortName('JGROUP, GBS Building - 2nd floor - Al Sufouh - Dubai Media City - Dubai'), 'JGROUP');
   assert.equal(shortName('Dubai Multi Commodities Centre - 1st Floor, Almas Tower'), 'Dubai Multi Commodities Centre');
 });
+test('with Places: a link naming one branch (by its address) matches that branch', async ()=>{
+  // real shape: name + address, no coordinates (maps.app.goo.gl/7K43PRC3ZeCshwQJA)
+  const url = 'https://www.google.com/maps/place/Thalassery+Restaurant+Karama+Adcb+Branch,+Trade+Centre+Road+-+133+Sheikh+Khalifa+Bin+Zayed+St+-+Al+Karama+-+Dubai/data=!4m2!3m1!1s0x3e5f43006cea643b:0x753e78ab979f319d!18m1!1e1';
+  const br = (id, area) => ({ id, displayName:{ text:'Thalassery Restaurant' }, location:{ latitude:25.24, longitude:55.30 }, formattedAddress:area+' - Dubai - United Arab Emirates', types:['restaurant'] });
+  const r = await resolveShare({ url }, { lookup:publicDns, placesKey:'k', fetch:fakePlaces([br('deira','Al Rigga Rd - Deira'), br('karama','Trade Centre Rd - 133 Sheikh Khalifa Bin Zayed St - Al Karama'), br('qusais','Al Qusais')]) });
+  assert.equal(r.state, 'match'); assert.equal(r.place.placeId, 'karama');
+  const one = await resolveShare({ url }, { lookup:publicDns, placesKey:'k', fetch:fakePlaces([br('karama','Al Karama')]) });
+  assert.equal(one.state, 'match');
+});
 test('with Places: a city is not a place to save', async ()=>{
   const r = await resolveShare({ url:'https://www.google.com/maps/place/Dubai/@25.2,55.27,10z/data=!3d25.2048!4d55.2708' }, { lookup:async()=>[{address:'1.1.1.1'}], placesKey:'k', fetch: async ()=>new Response(JSON.stringify({ places:[{ id:'dxb', displayName:{text:'Dubai'}, location:{latitude:25.2048,longitude:55.2708}, types:['locality','political'] }] }), { status:200 }) });
   assert.equal(r.state, 'needs_place');

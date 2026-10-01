@@ -87,6 +87,10 @@ function pick(results, want){
   return scored;
 }
 
+// how many words of a in b (place-name and address words)
+const words = s => new Set(String(s||'').toLowerCase().normalize('NFKD').replace(/[^\p{L}\p{N}\s]/gu,' ').split(/\s+/).filter(x=>x.length>1));
+const wordsIn = (a, b) => { const B = words(b); let n = 0; words(a).forEach(x=>{ if (B.has(x)) n++; }); return n; };
+
 // "JGROUP, GBS Building - 2nd floor - Al Sufouh" → "JGROUP" (for the search box; Places gets the full text)
 export const shortName = q => String(q||'').split(/\s+-\s+|,/)[0].trim() || String(q||'').trim();
 // cities, areas and countries aren't places you save
@@ -130,6 +134,12 @@ export async function resolveMaps(url, deps){
       // the place's own pin and a matching name: that's it
       if (at && top.d!==null && top.d < 150 && top.n >= 0.5) return { ...base, state:'match', place:top.p };
       if (!at && p.kind==='place' && top.n >= 0.8 && (ranked.length===1 || ranked[1].s < top.s*0.7)) return { ...base, state:'match', place:top.p };
+      // several branches with the same name: the link's own address ("…, Al Karama - Dubai") picks one
+      const named = ranked.filter(r=>r.n >= 0.8);
+      if (!at && p.kind==='place' && named.length){
+        const byAddr = named.map(r=>({ r, a: wordsIn(name, r.p.name+' '+r.p.address) })).sort((x,y)=>y.a-x.a);
+        if (named.length===1 || byAddr[0].a >= byAddr[1].a + 2) return { ...base, state:'match', place:byAddr[0].r.p };
+      }
       return { ...base, state:'candidates', candidates: ranked.slice(0,3).map(r=>r.p), query:shortName(name) };
     }
     if (results && !results.length && deps.placesKey) return { ...base, state:'needs_place', query:shortName(name), location:near, message:MSG.area };
