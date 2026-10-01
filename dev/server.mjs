@@ -22,6 +22,7 @@ const SEC = args.includes('--headers') ? Object.fromEntries(JSON.parse(fs.readFi
 http.createServer(async (req, res)=>{
   const url = new URL(req.url, 'http://localhost');
   try{
+    if (url.pathname === '/share-target') url.pathname = '/api/share-target';   // as vercel.json rewrites it
     if (url.pathname.startsWith('/api/')){
       const file = path.join(ROOT, url.pathname.replace(/\/$/,'') + '.js');
       if (!file.startsWith(path.join(ROOT,'api')) || !fs.existsSync(file)){ res.writeHead(404); return res.end(); }

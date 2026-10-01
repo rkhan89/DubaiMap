@@ -6,7 +6,7 @@ self.addEventListener('activate', e=>e.waitUntil(
   caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
 
 /* Share to Koko (Android share sheet, manifest share_target): the shared title/text/link arrive as a
-   POST to /share. They're kept on the phone (IndexedDB) and never reach the server, so they can't
+   POST to /share-target (if this worker isn't running yet, api/share-target.js does the same job). They're kept on the phone (IndexedDB) and never reach the server, so they can't
    end up in request logs. The redirect is always the same page, whatever was shared. */
 const str = v => typeof v === 'string' ? v.slice(0, 2000) : '';
 function shareDB(){
@@ -32,7 +32,7 @@ async function receiveShare(request){
 
 self.addEventListener('fetch', e=>{
   const r = e.request, u = new URL(r.url);
-  if (r.method === 'POST' && u.origin === location.origin && u.pathname === '/share'){ e.respondWith(receiveShare(r)); return; }
+  if (r.method === 'POST' && u.origin === location.origin && (u.pathname === '/share-target' || u.pathname === '/share')){ e.respondWith(receiveShare(r)); return; }
   if (r.method !== 'GET' || u.origin !== location.origin) return;
   e.respondWith(fetch(r).then(res=>{
     if (res.ok){ const copy = res.clone(); caches.open(CACHE).then(c=>c.put(r, copy)); }

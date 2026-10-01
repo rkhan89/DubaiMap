@@ -42,7 +42,7 @@
   ],
   "id": "/",
   "share_target": {
-    "action": "/share",
+    "action": "/share-target",
     "method": "POST",
     "enctype": "application/x-www-form-urlencoded",
     "params": {

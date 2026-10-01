@@ -16,7 +16,8 @@ async function withList(fn){
   } finally { d.close(); }
 }
 export async function pendingShares(){ try{ return await withList(list=>({ out:list })); }catch(_){ return []; } }
-async function keep(item){ return withList(list=>({ list:list.concat([item]) })); }
+export async function keepShare(item){ return withList(list=>({ list:list.concat([item]) })); }
+const keep = keepShare;
 // the newest share, removed from the list (older ones wait for the Inbox)
 export async function takeShare(){ try{ return await withList(list=>({ out:list[list.length-1] || null, list:list.slice(0,-1) })); }catch(_){ return null; } }
 

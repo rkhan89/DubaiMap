@@ -15,6 +15,10 @@
     {
       "source": "/data",
       "destination": "/data.html"
+    },
+    {
+      "source": "/share-target",
+      "destination": "/api/share-target"
     }
   ],
   "headers": [

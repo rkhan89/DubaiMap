@@ -229,11 +229,14 @@ Steps 2–4: Android share target and /share, TikTok captions, Inbox and offline
 - Once Koko is installed (Chrome → Install app / Add to Home screen), it appears in Android's Share
   menu (`share_target` in `manifest.webmanifest`). Share from Google Maps, TikTok, a browser or a
   note, and Koko opens "Add from link" with it filled in and looks it up straight away.
-- The share arrives as a POST to `/share`. The service worker (`sw.js`) keeps the title, text and
+- The share arrives as a POST to `/share-target`. The service worker (`sw.js`) keeps the title, text and
   link on the phone (IndexedDB `koko-share`) and always redirects to `/share?shared=1`. Nothing about
   the share reaches the server, so it can't end up in request logs, and the redirect never depends
   on the content. The app then cleans the address back to `/`, so a reload doesn't share twice.
 - The link and text are sent to the resolver as they came; it uses the first link in either.
 - Signed out: the share waits on the phone (up to 10), the sign-in screen says so, and it opens
   once you're in. `/share?text=…&url=…` also works (for the iPhone Shortcut in step 4).
-- Tests: `tests/e2e/share2.mjs` (real form POST through the service worker, signed in and out).
+- If the service worker isn't running yet (first open, or mid-update), `api/share-target.js` gets the
+  share in the request body (not logged), returns a page whose `share-landing.js` stores it on the phone
+  and continues as above. Nothing is kept or logged on the server.
+- Tests: `tests/e2e/share2.mjs` (real form POST, with and without the service worker, signed in and out).

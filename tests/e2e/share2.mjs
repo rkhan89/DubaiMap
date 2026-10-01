@@ -10,7 +10,7 @@ export default async function share2(h){
   const swReady = async ()=>{ await h.js(async ()=>{ await navigator.serviceWorker.ready; }); if (!await h.js(()=>!!navigator.serviceWorker.controller)){ await p.reload({ waitUntil:'networkidle0' }); await h.sleep(600); } if (!await h.js(()=>!!navigator.serviceWorker.controller)) throw new Error('no service worker'); };
   // what Android does: a form POST to /share
   const share = async (fields)=>{
-    await Promise.all([ p.waitForNavigation({ waitUntil:'networkidle0' }), h.js(f=>{ const form=document.createElement('form'); form.method='POST'; form.action='/share'; form.enctype='application/x-www-form-urlencoded';
+    await Promise.all([ p.waitForNavigation({ waitUntil:'networkidle0' }), h.js(f=>{ const form=document.createElement('form'); form.method='POST'; form.action='/share-target'; form.enctype='application/x-www-form-urlencoded';
       Object.entries(f).forEach(([k,v])=>{ const i=document.createElement('input'); i.type='hidden'; i.name=k; i.value=v; form.appendChild(i); }); document.body.appendChild(form); form.submit(); }, fields) ]);
     await h.sleep(900);
   };
@@ -48,6 +48,13 @@ export default async function share2(h){
     if (!/Arabian Tea House/.test(r.box) || /text=/.test(r.search)) throw new Error(JSON.stringify(r));
   });
 
+  await step('no service worker running (first open, or mid-update): the server fallback still delivers it', async ()=>{
+    await p.setBypassServiceWorker(true);   // as if the worker isn't running
+    await share({ title:'', text:'Fallback '+FULL, url:'' });
+    await p.waitForSelector('#cfAdd', { visible:true, timeout:10000 });
+    if (!(await h.js(()=>document.querySelector('#shIn').value)).includes('maps/place/Sunset')) throw new Error('not delivered');
+    await p.setBypassServiceWorker(false); await h.load(); await swReady();
+  });
   // signed out: the share waits on the phone until you're in
   await step('signed out: the share waits, and opens after signing in', async ()=>{
     await h.js(async ()=>{ localStorage.clear(); const dbs = indexedDB.databases ? await indexedDB.databases() : []; await Promise.all(dbs.filter(d=>d.name!=='koko-share').map(d=>new Promise(r=>{ const q=indexedDB.deleteDatabase(d.name); q.onsuccess=q.onerror=q.onblocked=()=>r(); }))); });
