@@ -229,6 +229,31 @@ export async function signOut(){
   }
   db.meId = null; save('me');
 }
+/* ---------- feedback and error reports (sent, never read back) ---------- */
+// what goes with them: the app version and the kind of phone, nothing you've saved
+export function appInfo(){
+  const ua = navigator.userAgent || '';
+  return { version: APP.version || '', ua: ua.slice(0, 200), screen: (screen.width||0)+'x'+(screen.height||0),
+    lang: navigator.language || '', installed: !!(window.matchMedia && matchMedia('(display-mode: standalone)').matches),
+    online: navigator.onLine !== false, accounts: !!cloud };
+}
+export function sendFeedback(kind, message){
+  const m = me(); if (!m) return null;
+  const f = { id:uid(), userId:m.id, kind, message:String(message).trim().slice(0, 2000), appInfo:appInfo(), createdAt:Date.now() };
+  if (cloud && !volatile) C.queue({ k:'ins', t:'feedback', id:f.id, row:C.MAP.feedback.to(f) });
+  else { try{ const k='koko-feedback-local', l=JSON.parse(localStorage.getItem(k)||'[]'); l.push(f); localStorage.setItem(k, JSON.stringify(l.slice(-20))); }catch(_){} }
+  return f;
+}
+const reported = new Set(); let reports = 0;
+export function reportError(err){
+  const m = me(); if (!m || !cloud || volatile) return false;            // signed in only
+  const key = err.message + '|' + (err.where||''); if (reported.has(key) || reports >= 5) return false;   // once each, 5 a session at most
+  reported.add(key); reports++;
+  const e = { id:uid(), userId:m.id, message:String(err.message||'').slice(0, 500), stack:String(err.stack||'').slice(0, 2000), where:String(err.where||'').slice(0, 200), appInfo:appInfo() };
+  C.queue({ k:'ins', t:'client_errors', id:e.id, row:C.MAP.client_errors.to(e) });
+  return true;
+}
+
 // delete my account: on the server (photos, then everything else) and on this phone
 export async function deleteAccount(){
   const m=me(); if (!m) return;

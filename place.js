@@ -8,6 +8,7 @@ import { avatarHTML, avatarStack } from './avatar.js';
 import { $, icon, toast, pointsToast, openScreen, openSheet, back, closeAll, topbar, stampHTML, catChip, polaroidHTML, starInput, toggleHTML, bindToggle, ratingPill, share, compressImage, whoHTML, bindWho, whoDefault, whoText, askWho, catPickerHTML, bindCatPicker } from './ui.js';
 import { go, state } from './go.js';
 import { sharePlace, eventRowHTML, planBite, eventSheet, checkIn } from './events.js';
+import { placesApi, zoneFor } from './share.js';
 
 function whenText(e){
   const d=new Date(e.createdAt), days=Math.floor((Date.now()-e.createdAt)/864e5);
@@ -136,11 +137,13 @@ function venueForm(initial, onSave, title){
   const d={ name:initial.name||'', zone:initial.zone||MAP.viewZone()?.id||'downtown', categories:initial.categories?[...initial.categories]:[], lat:initial.lat??null, lng:initial.lng??null };
   // a new place: which meal was it? (goes on the visit you log next; editing a place doesn't ask)
   const askMeal = !initial.id; if (askMeal) d.meals = [];
+  if (initial.googlePlaceId) d.googlePlaceId = initial.googlePlaceId;
   openSheet((body)=>{
     const paint=()=>{
       const z=MAP.zoneById(d.zone);
       body.innerHTML = `<div class="sheet-head"><div class="grow"><span class="hand">New stamp on the map</span><h2 class="h-md">${esc(title||'Add a new place')}</h2></div></div>
-        <div class="field"><label class="eyebrow" for="vfN">Name</label><input class="input" id="vfN" maxlength="60" value="${esc(d.name)}" placeholder="e.g. Sunset Karak Corner"></div>
+        ${initial.fromGoogle?`<p class="g-attr" style="text-align:left">Place details from <b>Google Maps</b>: check them and pick what kind of place it is.</p>`:''}
+        <div class="field mt8"><label class="eyebrow" for="vfN">Name</label><input class="input" id="vfN" maxlength="60" value="${esc(d.name)}" placeholder="e.g. Sunset Karak Corner"></div>
         <div class="field mt16"><label class="eyebrow" for="vfZ">Area</label><select class="input" id="vfZ">${MAP.ZONES.slice().sort((a,b)=>a.label.localeCompare(b.label)).map(x=>`<option value="${x.id}"${x.id===d.zone?' selected':''}>${esc(x.label)}</option>`).join('')}</select></div>
         <div class="row mt12" style="gap:8px"><span class="grow small ${typeof d.lat==='number'?'':'muted'}" style="${typeof d.lat==='number'?'color:var(--green);font-weight:700':''}">${typeof d.lat==='number'?'📍 Exact spot pinned':`Somewhere in ${esc(z?z.label:APP.city)}`}</span>
           <button class="btn btn-white btn-sm" id="vfPick">${icon('pin_drop')}Pick on map</button><button class="btn btn-white btn-sm" id="vfLoc" aria-label="Use my location">${icon('my_location')}</button></div>
@@ -202,6 +205,9 @@ function logFlow(opts){
   const existingPhotos = editing ? S.photos({entryId:editing.id}) : [];
   const newPhotos = [];   // {blob, url, caption}
   let query = '';
+  // Google suggestions while typing a new place (one session per search: the typing is free, a pick costs one lookup)
+  const newToken = ()=> (crypto.randomUUID ? crypto.randomUUID() : Array.from(crypto.getRandomValues(new Uint8Array(16)), b=>b.toString(16).padStart(2,'0')).join(''));
+  const g = { token:newToken(), list:[], q:'', loading:false, off:false, seq:0, timer:null };
   openScreen(el=>{
     let stars=null;
     const paint=()=>{
@@ -216,12 +222,14 @@ function logFlow(opts){
             const sum=M.venueSummary(v,{...state.scope, mode:'crew', members:null}), z=MAP.zoneById(v.zone);
             return `<button class="search-result" data-v="${v.id}">${stampHTML(sum.state,{cat:M.primaryCat(v)})}<span class="grow"><b class="trunc" style="display:block">${esc(v.name)}</b><span class="muted small">${esc(z?z.label:'')}${sum.visitorIds.length?` • ${plural(sum.visitorIds.length,'crew visit')}`:''}</span></span>${icon('chevron_right')}</button>`;
           }).join('')}
+          ${googleHTML()}
           ${query.trim()?`<button class="search-result" id="lNew" style="background:var(--sc)"><span class="sr-ico">${icon('add_location_alt')}</span><span class="grow"><b>Add “${esc(query.trim())}”</b><span class="muted small" style="display:block">New place on the map</span></span>${icon('chevron_right')}</button>`:''}
           </div>
           ${!query.trim()?`<div class="empty"><span class="stamp st-want big"><span class="st-paper"><span class="st-ico">${iconSvg('karak','#7e5700')}</span></span><span class="st-ribbon">TRY</span></span><span class="hand">Where did you eat?</span><p class="muted small">${S.venues().length ? 'Search places you and your crew have pinned, or type a new name to add it.' : 'Type its name to add it. Every place on the map starts with someone pinning it.'}</p></div>`:''}
         </div>`;
         const q=el.querySelector("#logQ"); q.focus();
-        q.oninput=()=>{ query=q.value; const pos=q.selectionStart; paint(); const n=el.querySelector("#logQ"); n.setSelectionRange(pos,pos); };
+        q.oninput=()=>{ query=q.value; const pos=q.selectionStart; paint(); const n=el.querySelector("#logQ"); n.setSelectionRange(pos,pos); suggestSoon(); };
+        el.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>pickGoogle(b.dataset.g, b));
         el.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{ venue=S.venue(b.dataset.v); paint(); });
         const nb=el.querySelector('#lNew'); if (nb) nb.onclick=()=>venueForm({name:query.trim(), zone:opts.zone}, dd=>{ venue=S.addVenue(dd); if (dd.meals && dd.meals.length) d.meals=dd.meals.slice(); paint(); });
         el.querySelector('#lMore').onclick=()=>toast('Search your crew’s places, or type a new name to add it');
@@ -295,6 +303,43 @@ function logFlow(opts){
     };
     // shared with the crew you're looking at? (for "first in the crew")
     const hereToo=()=>{ const c=S.myCrew(); return !!(c && d.who && d.who.includes(c.id)); };
+    // the "On Google Maps" list (places already on the map show above instead)
+    const googleHTML = ()=>{
+      if (!query.trim() || g.off) return '';
+      const list = g.list.filter(p=>!S.venueByPlaceId(p.placeId));
+      if (!list.length) return g.loading ? `<p class="muted small mt12 row" style="gap:6px">${icon('travel_explore')}Searching Google Maps…</p>` : '';
+      return `<div class="eyebrow mt16">On Google Maps</div>${list.map(p=>`<button class="search-result" data-g="${esc(p.placeId)}"><span class="sr-ico">${icon('location_on')}</span><span class="grow"><b class="trunc" style="display:block">${esc(p.name)}</b><span class="muted small trunc" style="display:block">${esc(p.detail)}</span></span>${icon('chevron_right')}</button>`).join('')}<p class="g-attr mt4">Results from <b>Google Maps</b></p>`;
+    };
+    // repaint without losing the cursor in the search box
+    const repaintSearch = ()=>{ if (venue) return; const q=el.querySelector('#logQ'), had = q && document.activeElement===q, pos = q ? q.selectionStart : 0; paint(); const n=el.querySelector('#logQ'); if (n && had){ n.focus(); n.setSelectionRange(pos,pos); } };
+    const suggestSoon = ()=>{
+      clearTimeout(g.timer);
+      const qq = query.trim();
+      if (g.off || qq.length < 3){ g.list = []; g.q = qq; g.loading = false; return; }
+      if (qq === g.q) return;
+      g.timer = setTimeout(async ()=>{
+        const my = ++g.seq; g.loading = true; repaintSearch();
+        const r = await placesApi({ action:'suggest', input:qq, sessionToken:g.token });
+        if (my !== g.seq) return;                       // a newer search is on its way
+        g.loading = false; g.q = qq;
+        if (r.state === 'unavailable' || r.state === 'signed_out'){ g.off = true; g.list = []; }
+        else g.list = r.state === 'ok' ? (r.suggestions||[]) : [];
+        repaintSearch();
+      }, 300);
+    };
+    const pickGoogle = async (placeId, btn)=>{
+      const pred = g.list.find(p=>p.placeId===placeId) || { name:query.trim() };
+      if (btn){ btn.disabled = true; btn.querySelector('.muted').textContent = 'Getting the details…'; }
+      const r = await placesApi({ action:'details', placeId, sessionToken:g.token });
+      g.token = newToken(); g.list = []; g.q = '';          // that search is done; the next one is a new session
+      if (r.state !== 'ok' || !r.place){ toast('Couldn’t get that place from Google. Add it yourself.'); repaintSearch(); return; }
+      const p = r.place;
+      // already on the map? (by Google's id, or the same name very close by)
+      const same = S.venueByPlaceId(p.placeId) || (p.lat!=null && S.venues().find(v=>v.name.toLowerCase()===p.name.toLowerCase() && v.lat!=null && Math.abs(v.lat-p.lat)<0.0006 && Math.abs(v.lng-p.lng)<0.0006));
+      if (same){ venue = same; paint(); return; }
+      venueForm({ name:p.name||pred.name, lat:p.lat, lng:p.lng, zone: zoneFor(p.lat, p.lng) || opts.zone, categories: p.category ? [p.category] : [], googlePlaceId:p.placeId, fromGoogle:true },
+        dd=>{ venue=S.addVenue(dd); if (dd.meals && dd.meals.length) d.meals=dd.meals.slice(); paint(); });
+    };
     const keepScroll=(fn)=>{ const s=el.scrollTop; fn(); el.scrollTop=s; };
     const save=async()=>{
       if (d.who===null){ el.querySelector('#lWho').scrollIntoView({ block:'center', behavior:'smooth' }); return toast('Choose who it’s for'); }

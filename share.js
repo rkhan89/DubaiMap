@@ -17,9 +17,20 @@ const SOURCE = {
 };
 // "From TikTok · @biggest.bites_"
 const srcLabel = src => { const s = SOURCE[src.sourceType] || SOURCE.text; return s.label + (src.author ? ' · @' + src.author : ''); };
-const zoneFor = (lat, lng)=>{ if (lat==null || lng==null) return null; const ai = MAP.toAI(lat, lng); return MAP.inMap(ai.a, ai.i) ? MAP.nearestZone(ai.a, ai.i).id : null; };
+export const zoneFor = (lat, lng)=>{ if (lat==null || lng==null) return null; const ai = MAP.toAI(lat, lng); return MAP.inMap(ai.a, ai.i) ? MAP.nearestZone(ai.a, ai.i).id : null; };
 
 /* ---------- talking to the resolver ---------- */
+// Google place suggestions (/api/places): { state:'ok', suggestions } or { state:'ok', place }; 'unavailable' without a key
+export async function placesApi(body){
+  if (navigator.onLine === false) return { state:'offline' };
+  const token = await S.accessToken(); if (!token) return { state:'signed_out' };
+  try{
+    const r = await fetch('/api/places', { method:'POST', signal:AbortSignal.timeout(8000),
+      headers:{ 'Content-Type':'application/json', Authorization:'Bearer '+token }, body:JSON.stringify(body) });
+    if (r.status===401) return { state:'signed_out' };
+    return (await r.json().catch(()=>null)) || { state:'error' };
+  }catch(_){ return { state:'error' }; }
+}
 async function resolve(input){
   if (navigator.onLine === false) return { state:'offline' };
   const token = await S.accessToken();

@@ -5,37 +5,10 @@
 import { resolveShare } from './_lib/resolve.js';
 import { cacheKey, sourceOf, firstUrl } from './_lib/maps.js';
 
-const SB_URL = process.env.SUPABASE_URL || 'https://crvadsjnqnxlkqzpywva.supabase.co';
-const DEV_NO_AUTH = process.env.SHARE_DEV_NO_AUTH==='1' && process.env.VERCEL_ENV!=='production';
-const SB_KEY =process.env.SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_9I39ztDfQcQ9dRkTIK392g_zP6HJsVg';
-const CITY = { lat: 25.2048, lng: 55.2708, radius: 30000 };       // Dubai; the crew's city
+import { json, userFor, rpc, overLimit as overHourly, CITY } from './_lib/server.js';
 const LIMIT = 30, MAX_BYTES = 4000;
-
-const json = (status, body)=> new Response(JSON.stringify(body), { status, headers:{ 'Content-Type':'application/json', 'Cache-Control':'no-store' } });
-
-// who's asking (Supabase checks the token)
-async function userFor(token){
-  if (!token) return null;
-  if (DEV_NO_AUTH) return { id:'dev' };          // local tests and protected previews only, never production
-  const r = await fetch(SB_URL+'/auth/v1/user', { headers:{ apikey:SB_KEY, Authorization:'Bearer '+token }, signal:AbortSignal.timeout(5000) }).catch(()=>null);
-  return r && r.ok ? r.json() : null;
-}
-// database helpers run as the user (row level security applies); memory fallback if missing
-const mem = { hits:new Map(), cache:new Map() };
-async function rpc(token, fn, args){
-  if (DEV_NO_AUTH) throw new Error('dev');
-  const r = await fetch(SB_URL+'/rest/v1/rpc/'+fn, { method:'POST', signal:AbortSignal.timeout(4000),
-    headers:{ apikey:SB_KEY, Authorization:'Bearer '+token, 'Content-Type':'application/json' }, body:JSON.stringify(args||{}) });
-  if (!r.ok) throw new Error(fn+' '+r.status);
-  return r.json();
-}
-async function overLimit(token, userId){
-  try{ return (await rpc(token, 'share_rate_hit')) > LIMIT; }
-  catch(_){
-    const now = Date.now(), list = (mem.hits.get(userId)||[]).filter(t=>now-t < 3600e3);
-    list.push(now); mem.hits.set(userId, list); return list.length > LIMIT;
-  }
-}
+const mem = { cache:new Map() };   // link cache fallback when the database helper isn't there
+const overLimit = (token, userId)=>overHourly(token, userId, 'share_rate_hit', LIMIT);
 // the cache only keeps where a link leads (its full Maps URL), never Google's place content
 async function cacheGet(token, key){
   try{ return await rpc(token, 'share_cache_get', { p_key:key }); }catch(_){ return mem.cache.get(key) || null; }

@@ -198,5 +198,22 @@ left.owner===Sf ? ok('a crew you owned passes to the next member') : bad('crew o
 left.v1===Sf && left.v2===0 ? ok("places friends logged stay (now theirs); places only you used go") : bad('venues '+JSON.stringify(left));
 left.book===Sf ? ok('the crew book passes to a member') : bad('book '+left.book);
 left.friend===1 && left.tags.length===0 ? ok("your friend's visit stays, without your tag") : bad('friend entry '+JSON.stringify(left));
+// ---- feedback, error reports, place-suggestion limit (0007) ----
+await db.exec('reset role');
+const sql7 = fs.readFileSync(new URL('../../supabase/migrations/0007_feedback_places.sql', import.meta.url),'utf8');
+try{ await db.exec(sql7); await db.exec(sql7); ok('feedback migration runs (twice)'); } catch(e){ bad('feedback migration: '+e.message); }
+const F1='70000000-0000-0000-0000-0000000000e1', F2='70000000-0000-0000-0000-0000000000e2';
+await db.exec(`reset role; insert into auth.users values ('${F1}','f1@x'),('${F2}','f2@x');`);
+await as(F1, `insert into feedback(id,kind,message,app_info) values ('fb1','bug','The map froze on JBR','{"v":"1"}')`);
+(await count(F1, `select * from feedback`))===1 ? ok('you can send feedback and see your own') : bad('feedback own');
+(await count(F2, `select * from feedback`))===0 ? ok("nobody else can read your feedback") : bad('feedback leak');
+await expectErr('feedback as someone else', F2, `insert into feedback(id,user_id,kind,message) values ('fb2','${F1}','idea','x')`);
+await expectErr('feedback with an unknown kind', F1, `insert into feedback(id,kind,message) values ('fb3','rant','x')`);
+await as(F1, `insert into client_errors(id,message,stack,where_) values ('ce1','TypeError: x is undefined','at paint (place.js:10)','/')`);
+{ let n=0; try{ n=await count(F1, `select * from client_errors`); }catch(_){ n=0; } n===0 ? ok('error reports go in but cannot be read back from the app') : bad('errors readable'); }
+for (let i=2;i<=50;i++) await as(F1, `insert into client_errors(id,message) values ('ce${i}','e')`);
+await expectErr('the 51st error report in a day', F1, `insert into client_errors(id,message) values ('ce51','e')`);
+let ph; for (let i=0;i<3;i++) ph=(await as(F1, `select places_rate_hit() as n`)).rows[0].n;
+ph===3 ? ok('place-suggestion counter counts per person') : bad('places rate '+ph);
 console.log(process.exitCode ? '\nSOME CHECKS FAILED' : '\nall checks passed');
 

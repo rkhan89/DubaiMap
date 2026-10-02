@@ -96,6 +96,7 @@ function settingsScreen(){
       el.innerHTML = topbar({title:'Settings', eyebrow:'Your scrapbook', profile:false}) + `<div class="screen-body">
         ${!S.cloud?`<div class="note mt16">${icon('science')}<span><b>Preview mode.</b> Your account, crew and photos live on this phone until sign-in goes live. Export a backup to move them.</span></div>`:''}
         ${supportCardHTML()}
+        <button class="person-row mt16 feedback-row" data-go="feedback">${icon('rate_review')}<span class="pr-main"><span class="pr-name">Send feedback</span><span class="pr-sub">Found a bug or have an idea? Tell us</span></span>${icon('chevron_right')}</button>
         <div class="eyebrow mt24">Account</div><div class="stack mt8">
           ${link('face','Edit avatar','Pixel you on the map','avatar')}
           ${link('alternate_email','Name & handle','@'+esc(me.handle),'handle')}
@@ -133,7 +134,7 @@ function settingsScreen(){
         </div>
         <button class="btn btn-danger btn-block mt24" id="sOut">${icon('logout')}Sign out</button>
         <button class="btn btn-ghost btn-block mt8" id="sDelete" style="color:var(--red)">${icon('delete_forever')}Delete my account</button>
-        <p class="center mono muted small mt16">${esc(APP.name)} • preview build</p>
+        <p class="center mono muted small mt16">${esc(APP.name)} • version ${esc(APP.version||'')}</p>
       </div>`;
       bindSeg(el, 'theme', v=>setThemePref(v));
       bindToggle(el.querySelector('#sLoc'), on=>{ on?MAP.startTracking(true):MAP.stopTracking(); });
@@ -153,6 +154,7 @@ function settingsScreen(){
         if (k==='crew') go.crew();
         if (k==='import') go.importPhone();
         if (k.startsWith('legal-')) go.legal(k.slice(6));
+        if (k==='feedback') feedbackSheet();
         if (k==='tour'){ go.closeAll(); go.switchView('map'); setTimeout(()=>go.startTour(), 300); }
         if (k==='export'){
           toast('Preparing backup…');
@@ -198,6 +200,33 @@ function legalScreen(name){
   });
 }
 go.legal = legalScreen;
+
+/* ---------- send feedback ---------- */
+function feedbackSheet(){
+  let kind = 'bug';
+  openSheet(body=>{
+    const paint = ()=>{
+      const text = body.querySelector('#fbMsg') ? body.querySelector('#fbMsg').value : '';
+      body.innerHTML = `<h2 class="h-md">Send feedback</h2>
+        <p class="muted mt4">It goes straight to the person who makes ${esc(APP.name)}.</p>
+        <div class="mt16">${seg('fbKind', [['bug','Something broke'],['idea','An idea'],['other','Other']], kind)}</div>
+        <label class="eyebrow mt16" for="fbMsg" style="display:block">${kind==='bug' ? 'What happened? What did you expect?' : kind==='idea' ? 'What would make it better?' : 'Your message'}</label>
+        <textarea class="input mt8" id="fbMsg" maxlength="2000" rows="5" placeholder="${kind==='bug' ? 'I tapped… and then…' : 'Tell us…'}"></textarea>
+        <p class="muted small mt8">${icon('info')} We'll attach the app version and your phone's model and screen size, nothing you've saved.</p>
+        <button class="btn btn-gold btn-block mt16" id="fbGo">${icon('send')}Send</button>`;
+      const ta = body.querySelector('#fbMsg'); ta.value = text;
+      bindSeg(body, 'fbKind', v=>{ kind = v; paint(); });
+      body.querySelector('#fbGo').onclick = ()=>{
+        const msg = ta.value.trim();
+        if (msg.length < 3) return toast('Write a few words first');
+        S.sendFeedback(kind, msg);
+        back(); toast('Thanks! Your feedback is on its way.');
+      };
+    };
+    paint();
+  });
+}
+go.feedback = feedbackSheet;
 
 /* ---------- delete my account ---------- */
 function deleteAccountSheet(){

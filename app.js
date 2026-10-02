@@ -23,6 +23,7 @@ import { takeSharedPlace, openSharedPlace, eventSheet } from './events.js';
 import { registerSW, scheduleReminders } from './notify.js';
 import { maybeStartTour, paintEmptyMap } from './tour.js';
 import { readIncoming, pendingShares, takeShare, shareText } from './incoming.js';
+import './errors.js';
 
 const scopeKey = 'bites-scope';
 state.scope = (()=>{ const s=M.defaultScope(); try{ const p=JSON.parse(localStorage.getItem(scopeKey)); if (p && p.mode) s.mode=p.mode; }catch(_){} return s; })();

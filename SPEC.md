@@ -258,3 +258,22 @@ Steps 2–4: Android share target and /share, TikTok captions, Inbox and offline
   sharing it again costs nothing. Logs record which path answered (`via`), never the text.
 - Tests: `tests/caption.test.mjs` (16, with faked TikTok/Claude/Google), `tests/e2e/share3.mjs`
   (a real TikTok through the dev server, the pick-one sheet, pasted captions).
+
+## Adding a place by hand: Google suggestions
+- Typing a new place's name on the log screen (3+ letters, after a short pause) shows **On Google
+  Maps** under the places already on your crews' maps. Tapping one opens the new-place form with
+  the name, exact pin, area and kind of place filled in; you check it, pick a meal, save. Places
+  already on the map aren't offered twice. "Add 'X'" by hand still works, and the list simply isn't
+  there without the key or a connection.
+- `api/places.js` (signed in, 300 an hour each) calls Places Autocomplete with one session token
+  per search, then Place Details with the same token, so the typing is free and a pick costs one
+  lookup. The Google address isn't stored (only the place id and pin, as with shares).
+
+## Feedback and error reports
+- Settings → **Send feedback** (something broke / an idea / other), with the app version and phone
+  model, browser, language and screen size attached. Read it in Supabase: Table Editor → feedback.
+- `errors.js` reports errors the app hits on a phone (signed in only): the message and where in the
+  code, never what was typed or saved; addresses are cut back to their path. Each error once, 5 a
+  session, 50 a day per person. Table Editor → client_errors.
+- `0007_feedback_places.sql`; error reports are deleted after 90 days and feedback after a year
+  (`prune_reports()`, monthly if pg_cron is on).
