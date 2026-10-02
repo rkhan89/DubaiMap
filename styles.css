@@ -1040,3 +1040,15 @@ html{overflow:hidden;}
 .ios-steps{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:10px;line-height:1.5;}
 .link-box .mono{font-size:12.5px;overflow-wrap:anywhere;}
 .link-box>span.mono:not(.ms){white-space:normal;text-overflow:clip;}
+
+/* shelf spreads: square frames whatever the photo shape, everything inside the card */
+.spread-card{display:flex;flex-direction:column;min-width:0;}
+.spread-card .sp-img{display:block;width:100%;}
+.spread-card h4,.spread-card .hand,.spread-card .sp-foot{min-width:0;}
+/* the card is white paper in both themes, so its words are always dark */
+.spread-card h4{color:var(--ink-on-light);}
+.spread-card .hand,.spread-card .sp-foot{color:#5b4c3c;}
+.spread-card .sp-img .pol-badge{max-width:calc(100% - 12px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.shelf-actions{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);}
+.shelf-actions .btn{min-width:0;padding-left:10px;padding-right:10px;white-space:nowrap;}
+.spread-card .sp-img .sp-badge{display:block;}

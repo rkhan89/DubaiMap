@@ -33,7 +33,8 @@ import share2 from './share2.mjs';
 import share3 from './share3.mjs';
 import places from './places.mjs';
 import share4 from './share4.mjs';
-const dflt = { screens, baa, perf2:perf, show, e2e, p2, p3, tour, brand, share1, crews, bookadd, gallery, gv, legal, share2, share3, places, share4,
+import shelf from './shelf.mjs';
+const dflt = { screens, baa, perf2:perf, show, e2e, p2, p3, tour, brand, share1, crews, bookadd, gallery, gv, legal, share2, share3, places, share4, shelf,
   async fonts(h){
     await h.seed({mode:'crew'});
     await h.click('[data-tab="shelf"]'); await h.sleep(600); await h.shot('f-shelf');

@@ -56,7 +56,8 @@ function shelf(){
       const privateNotes = S.entries({userId:me.id}).filter(e=>e.private && e.notes).length;
       let spreads = S.photos().filter(p=>(p.bookmarkedBy||[]).includes(me.id));
       const spreadTitle = spreads.length ? 'Recent Bookmarked Spreads' : 'Fresh Spreads';
-      if (!spreads.length) spreads = mine.concat(crewPs).slice(0,4);
+      // newest photos from your book and the crew book; one shared with the crew is in both, so once only
+      if (!spreads.length) spreads = [...new Map(mine.concat(crewPs).map(p=>[p.id, p])).values()].sort((x,y)=>(y.date||'').localeCompare(x.date||'') || (y.createdAt||0)-(x.createdAt||0)).slice(0,4);
       const members = crew ? S.crewMembers(crew) : [];
       el.innerHTML = topbar({title:'Scrapbook Shelf', eyebrow:'Scrapbook and notes', back:true, actions:`<button class="icon-btn" id="shNew" aria-label="Add photos">${icon('add_photo_alternate')}</button>`}) + `<div class="screen-body">
         <div class="deck mt8">
@@ -69,7 +70,7 @@ function shelf(){
         ${spreads.length?`<div class="row between mt32"><span class="row h-md" style="gap:8px">${icon('bookmarks')}${spreadTitle}</span></div>
         <div class="spreads mt16">${spreads.slice(0,4).map((p,i)=>spreadHTML(p,i)).join('')}</div>`:
         `<div class="card-soft mt24 center" style="padding:28px 18px"><div style="width:120px;margin:0 auto">${polaroidHTML({caption:'your first memory', rot:-3})}</div><h3 class="h-md mt16">No photos yet</h3><p class="muted mt8">Log a bite with photos, or import some from your camera roll.</p></div>`}
-        <div class="btn-grid mt24" style="grid-template-columns:1.4fr 1fr"><button class="btn btn-gold" id="shAlbum">${icon('library_add')}New Custom Album</button><button class="btn btn-white" id="shImport">${icon('upload_file')}Import Roll</button></div>
+        <div class="btn-grid mt24 shelf-actions"><button class="btn btn-gold" id="shAlbum">${icon('library_add')}New Album</button><button class="btn btn-white" id="shImport">${icon('upload_file')}Import Roll</button></div>
         <p class="row mono muted mt16" style="font-size:12px;gap:8px;justify-content:center">${icon('verified_user')}Private entries never appear in shared books</p>
       </div>`;
       el.querySelectorAll('[data-book]').forEach(b=>b.onclick=()=>openBook(b.dataset.book));
@@ -102,7 +103,7 @@ function spreadHTML(p, i){
   const v=S.venue(p.venueId), e=p.entryId && S.entry(p.entryId), u=S.user(p.userId), me=S.me();
   const mineBook = p.userId===me.id;
   return `<button class="spread-card" data-spread="${p.id}"><span class="tape ${i%2?'green':''}"></span>
-    <span class="sp-img"><img src="${esc(S.photoURL(p))}" alt="" loading="lazy"><span class="pol-badge light">${esc(zoneLabel(v?.zone))} • ${esc((v?.name||'').split(' ').slice(0,2).join(' '))}</span></span>
+    <span class="sp-img"><img src="${esc(S.photoURL(p))}" alt="" loading="lazy"><span class="pol-badge light sp-badge" title="${esc(v?.name||'')}, ${esc(zoneLabel(v?.zone))}">${esc(v?.name||zoneLabel(v?.zone))}</span></span>
     <h4 class="trunc">${esc(p.caption||v?.name||'Memory')}</h4>
     ${e&&e.notes?`<span class="hand trunc">"${esc(e.notes)}"</span>`:`<span class="hand">${esc(u?(u.id===me.id?'you':u.name):'')}</span>`}
     <span class="sp-foot"><span>${fmtDate(p.date,{day:'numeric',month:'short'})} • ${mineBook?'My Book':'Crew Book'}</span>${icon((p.bookmarkedBy||[]).includes(me.id)?'bookmark':'favorite','', (p.bookmarkedBy||[]).includes(me.id))}</span>
