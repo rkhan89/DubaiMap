@@ -277,3 +277,19 @@ Steps 2–4: Android share target and /share, TikTok captions, Inbox and offline
   session, 50 a day per person. Table Editor → client_errors.
 - `0007_feedback_places.sql`; error reports are deleted after 90 days and feedback after a year
   (`prune_reports()`, monthly if pg_cron is on).
+
+## Share to Koko, step 4: the Inbox, offline shares, iPhone
+- **Inbox** (+ menu, with a count; also from the add screen): shares waiting to be added. They get
+  there from "Save to Inbox for later" (confirm sheet, "Which one?", "Which place?"), by sharing
+  while offline (saved automatically; you can still add it by name), and when several shares arrive
+  while signed out (the newest opens after sign-in, the rest wait here). Tap one to look it up and
+  add it; adding it, or ✕ (with Undo), deletes it. The same link or text isn't saved twice. Back
+  online with shares waiting: a nudge. Stored in `share_inbox` (owner only, synced like everything
+  else, so it works offline).
+- **iPhone** (untested on a real iPhone): Safari web apps can't join the Share menu, so Settings /
+  the add screen / the Inbox link to a set-up guide for a Shortcut (Receive URLs and text → URL
+  Encode → `<siteUrl>/share#text=<encoded>` → Open URLs). The address comes from `APP.siteUrl` in
+  `config.js` (one place to change it). The text goes after `#`, so it never reaches the server or
+  its logs. Shortcuts open Safari, where you sign in once; until then the share waits.
+- Tests: `tests/e2e/share4.mjs` (offline → Inbox, + menu, open and add, save for later, no
+  duplicates, remove with Undo, the `#text=` address never sent, the guide, signed-out extras).

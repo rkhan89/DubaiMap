@@ -69,6 +69,11 @@ export const MAP = {
     from: r => ({ id:r.id, name:r.name, zone:r.zone, categories:r.categories||[], lat:r.lat, lng:r.lng, address:r.address||'', createdBy:r.created_by, createdAt:ms(r.created_at), googlePlaceId:r.google_place_id||null, placesFetchedAt:r.places_fetched_at?ms(r.places_fetched_at):null }),
     fields: { name:'name', zone:'zone', categories:'categories', lat:'lat', lng:'lng', address:'address' },
   },
+  // the Inbox: shares to finish later (yours only; deleted once added or removed)
+  share_inbox: {
+    to: i => ({ id:i.id, user_id:i.userId, source_url:i.sourceUrl||null, source_type:i.sourceType||null, raw_text:i.text||null, title:i.title||null, status:'pending', created_at:ts(i.createdAt) }),
+    from: r => ({ id:r.id, userId:r.user_id, sourceUrl:r.source_url||null, sourceType:r.source_type||null, text:r.raw_text||'', title:r.title||'', createdAt:ms(r.created_at) }),
+  },
   feedback: { to: f => ({ id:f.id, user_id:f.userId, kind:f.kind, message:f.message, app_info:f.appInfo||{} }) },
   client_errors: { to: e => ({ id:e.id, user_id:e.userId, message:e.message, stack:e.stack||'', where_:e.where||'', app_info:e.appInfo||{} }) },
   entries: {
@@ -112,7 +117,9 @@ export async function pull(){
   // your own share links (owner-only table; missing until migration 0002 runs)
   const sources = await c.from('entry_sources').select('entry_id,source_url').then(r=>r.data||[], ()=>[]);
   sources.forEach(s=>{ if (ents[s.entry_id]) ents[s.entry_id].sourceUrl = s.source_url; });
-  return { users:by(profiles,'profiles'), crews:crewMap, venues:by(venues,'venues'), entries:ents,
+  // your Inbox (owner-only)
+  const inboxRows = await c.from('share_inbox').select('*').eq('status','pending').then(r=>r.data||[], ()=>[]);
+  return { inbox:by(inboxRows,'share_inbox'), users:by(profiles,'profiles'), crews:crewMap, venues:by(venues,'venues'), entries:ents,
            photos:by(photos,'photos'), books:by(books,'books'), events:by(events,'events') };
 }
 

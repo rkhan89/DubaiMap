@@ -1031,3 +1031,12 @@ html{overflow:hidden;}
 /* signed out with a share waiting */
 .share-waiting{margin:calc(16px + var(--safe-t, 0px)) 20px 0;}
 .mb12{margin-bottom:12px;}
+
+/* the Inbox */
+.inbox-chip{display:flex;align-items:center;gap:8px;width:100%;padding:10px 14px;border-radius:14px;background:var(--gold-fixed);color:var(--gold-fixed-ink);font-weight:700;text-align:left;}
+.inbox-chip span{flex:1;}
+.inbox-row{display:flex;align-items:center;gap:8px;}
+.inbox-row .search-result{min-width:0;}
+.ios-steps{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:10px;line-height:1.5;}
+.link-box .mono{font-size:12.5px;overflow-wrap:anywhere;}
+.link-box>span.mono:not(.ms){white-space:normal;text-overflow:clip;}

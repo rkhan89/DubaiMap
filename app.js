@@ -22,7 +22,7 @@ import { prefs, setPref } from './prefs.js';
 import { takeSharedPlace, openSharedPlace, eventSheet } from './events.js';
 import { registerSW, scheduleReminders } from './notify.js';
 import { maybeStartTour, paintEmptyMap } from './tour.js';
-import { readIncoming, pendingShares, takeShare, shareText } from './incoming.js';
+import { readIncoming, pendingShares, takeShare, takeAllShares, shareText } from './incoming.js';
 import './errors.js';
 
 const scopeKey = 'bites-scope';
@@ -397,11 +397,14 @@ function openPlus(){
     body.innerHTML = `<div class="stack">
       <button class="person-row" data-plus="log">${icon('add_a_photo')}<span class="pr-main"><span class="pr-name">Log a place I've been</span><span class="pr-sub">Rate it, add photos, stamp it on your map</span></span>${icon('chevron_right')}</button>
       <button class="person-row" data-plus="link">${icon('add_link')}<span class="pr-main"><span class="pr-name">Add from link or text</span><span class="pr-sub">A Google Maps or TikTok link, a caption, or a name</span></span>${icon('chevron_right')}</button>
+      ${S.inbox().length ? `<button class="person-row" data-plus="inbox">${icon('inbox')}<span class="pr-main"><span class="pr-name">Inbox</span><span class="pr-sub">${plural(S.inbox().length,'share')} waiting to be added</span></span><span class="tag">${S.inbox().length}</span></button>` : ''}
     </div>`;
-    body.querySelectorAll('[data-plus]').forEach(b=>b.onclick=()=>{ const k=b.dataset.plus; back(); setTimeout(()=> k==='log' ? go.log({}) : go.shareAdd(), 80); });
+    body.querySelectorAll('[data-plus]').forEach(b=>b.onclick=()=>{ const k=b.dataset.plus; back(); setTimeout(()=> k==='log' ? go.log({}) : k==='inbox' ? go.inbox() : go.shareAdd(), 80); });
   });
 }
 go.plus = openPlus;
+// back online with shares waiting: a nudge
+window.addEventListener('online', ()=>{ const n = S.me() ? S.inbox().length : 0; if (n) toast(`Back online. ${plural(n,'share')} waiting in your Inbox`, 'Open', ()=>go.inbox(), 6000); });
 
 /* map controls */
 $('#btnFit').onclick=()=>{ const pts=modelCache.filter(s=>s.state!=='unlit').map(s=>MAP.placeWorld(s.v)); pts.length?MAP.fitPoints(pts,true):MAP.fitCity(true); };
@@ -472,7 +475,11 @@ go.afterOnboarding = ()=>{
 // a share waiting on this phone opens in "Add from link" (once you're signed in); otherwise carry on
 async function openWaitingShare(otherwise){
   await state.sharesRead;
-  const item = await takeShare();
+  // the newest opens now; any others shared meanwhile go to the Inbox
+  const all = await takeAllShares();
+  const item = all.pop() || null;
+  all.forEach(s=>S.addToInbox({ sourceUrl:s.url||null, text:s.text, title:s.title }));
+  if (all.length) setTimeout(()=>toast(`${plural(all.length,'more share')} saved to your Inbox`, 'Open', ()=>go.inbox()), item ? 2500 : 0);
   if (!item) return otherwise && otherwise();
   const prefill = shareText(item);
   if (prefill) go.shareAdd(prefill, item); else otherwise && otherwise();

@@ -111,6 +111,8 @@ await as(D, `insert into entry_sources(entry_id,source_url) values ('se1','https
 await expectErr('crewmate writes a link onto the owner\'s visit', E, `insert into entry_sources(entry_id,source_url) values ('se1','x')`);
 await as(D, `insert into share_inbox(id,source_url,status) values ('in1','https://vm.tiktok.com/x/','pending')`);
 (await count(E, `select * from share_inbox`))===0 ? ok('inbox is owner-only') : bad('inbox leak');
+(await as(E, `delete from share_inbox where id='in1' returning id`)).rows.length===0 ? ok("nobody else can remove your Inbox items") : bad('inbox delete by other');
+(await as(D, `delete from share_inbox where id='in1' returning id`)).rows.length===1 ? ok('you can remove your own (adding a share removes it)') : bad('inbox delete own');
 let n; for (let i=0;i<3;i++) n=(await as(D, `select share_rate_hit() as n`)).rows[0].n;
 n===3 ? ok('rate limit counts this hour\'s calls') : bad('rate '+n);
 (await count(E, `select * from share_rate`))===0 ? ok('nobody reads the rate table directly') : bad('rate table');

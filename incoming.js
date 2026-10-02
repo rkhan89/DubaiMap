@@ -18,7 +18,9 @@ async function withList(fn){
 export async function pendingShares(){ try{ return await withList(list=>({ out:list })); }catch(_){ return []; } }
 export async function keepShare(item){ return withList(list=>({ list:list.concat([item]) })); }
 const keep = keepShare;
-// the newest share, removed from the list (older ones wait for the Inbox)
+// all of them, removed from the list (the older ones go to the Inbox)
+export async function takeAllShares(){ try{ return await withList(list=>({ out:list.slice(), list:[] })); }catch(_){ return []; } }
+// the newest share, removed from the list
 export async function takeShare(){ try{ return await withList(list=>({ out:list[list.length-1] || null, list:list.slice(0,-1) })); }catch(_){ return null; } }
 
 // what goes in the "Link, caption or name" box: the text, plus the link if the text doesn't already have it
@@ -31,12 +33,15 @@ export function shareText(item){
   return parts.join('\n');
 }
 
-// at start-up on /share: a GET share joins the waiting list; the address goes back to "/"
-// (so a reload doesn't share twice, and the shared text doesn't sit in the address bar)
+// at start-up on /share: a link share joins the waiting list; the address goes back to "/"
+// (so a reload doesn't share twice, and the shared text doesn't sit in the address bar).
+// The iPhone Shortcut puts the text after # (/share#text=…), which browsers never send to the server.
 export async function readIncoming(){
   const u = new URL(location.href);
   if (u.pathname !== '/share') return;
-  const item = { title:str(u.searchParams.get('title')), text:str(u.searchParams.get('text')), url:str(u.searchParams.get('url')), at:Date.now() };
+  const h = new URLSearchParams(u.hash.replace(/^#/, ''));
+  const get = k => h.get(k) || u.searchParams.get(k);
+  const item = { title:str(get('title')), text:str(get('text')), url:str(get('url')), at:Date.now() };
   if (item.title || item.text || item.url){ try{ await keep(item); }catch(_){} }
   history.replaceState(null, '', '/' + (u.searchParams.has('local') ? '?local' : ''));
 }

@@ -42,7 +42,7 @@ const listeners = new Set();
 export function onChange(fn){ listeners.add(fn); return ()=>listeners.delete(fn); }
 function emit(what){ listeners.forEach(f=>{ try{ f(what); }catch(e){ console.error(e); } }); }
 
-function fresh(){ return { version:2, meId:null, users:{}, crews:{}, venues:{}, entries:{}, photos:{}, books:{}, events:{}, flags:{} }; }
+function fresh(){ return { version:2, meId:null, users:{}, crews:{}, venues:{}, entries:{}, photos:{}, books:{}, events:{}, inbox:{}, flags:{} }; }
 function load(){
   try{ const d=JSON.parse(localStorage.getItem(KEY)); if (d && d.version===2) return {...fresh(), ...d}; }catch(_){}
   return fresh();
@@ -115,11 +115,12 @@ export async function pullNow(){
   db.photos  = { ...keep(db.photos), ...fresh.photos };
   db.books   = { ...Object.fromEntries(Object.entries(db.books||{}).filter(([k,b])=>isLocal(k) || isLocal(b.crewId))), ...fresh.books };
   db.events  = { ...keep(db.events), ...fresh.events };
+  db.inbox   = { ...(fresh.inbox||{}) };
   // no profile row yet (an account made before the database was set up): make it from this phone's copy
   if (!db.users[db.meId] && meRec){ db.users[db.meId] = meRec; C.queue({ k:'put', t:'profiles', id:meRec.id, row:C.MAP.profiles.to(meRec) }); }
   if (db.users[db.meId] && meRec) db.users[db.meId].email = meRec.email;
   // replay what hasn't reached the server yet, so nothing flickers back
-  const T = { profiles:'users', crews:'crews', venues:'venues', entries:'entries', photos:'photos', books:'books', events:'events' };
+  const T = { profiles:'users', crews:'crews', venues:'venues', entries:'entries', photos:'photos', books:'books', events:'events', share_inbox:'inbox' };
   C.pending().forEach(o=>{
     const map = T[o.t] && db[T[o.t]]; if (!map) return;
     if (o.k==='put' || o.k==='ins'){ const rec = C.MAP[o.t].from ? C.MAP[o.t].from({ ...o.row, created_at:o.row.created_at || new Date().toISOString() }) : null; if (rec && !(o.k==='ins' && map[o.id])) map[o.id] = { ...(map[o.id]||{}), ...rec, src: map[o.id]?.src==='idb' ? 'idb' : rec.src }; }
@@ -229,6 +230,27 @@ export async function signOut(){
   }
   db.meId = null; save('me');
 }
+/* ---------- the Inbox: shares to finish later ----------
+   Saved by you ("Save for later"), when you share while offline, or when several shares arrive
+   while you're signed out. Yours only. Adding the place, or removing it, deletes it. */
+export function inbox(){ db.inbox = db.inbox || {}; return Object.values(db.inbox).sort((a,b)=>b.createdAt-a.createdAt); }
+export function addToInbox({ sourceUrl, sourceType, text, title }){
+  const m = me(); if (!m) return null;
+  db.inbox = db.inbox || {};
+  const clip = v => v ? String(v).slice(0, 2000) : '';
+  const item = { id:uid(), userId:m.id, sourceUrl:clip(sourceUrl)||null, sourceType:sourceType||null, text:clip(text), title:clip(title).slice(0,300), createdAt:Date.now() };
+  if (!item.sourceUrl && !item.text && !item.title) return null;
+  // already waiting? (the same link, or the same text)
+  const same = inbox().find(i=> (item.sourceUrl && i.sourceUrl===item.sourceUrl) || (!item.sourceUrl && item.text && i.text===item.text));
+  if (same) return same;
+  db.inbox[item.id] = item; save('inbox'); push('share_inbox', item);
+  return item;
+}
+export function removeFromInbox(id){
+  const item = db.inbox && db.inbox[id]; if (!item) return;
+  delete db.inbox[id]; save('inbox'); push('share_inbox', item, 'del');
+}
+
 /* ---------- feedback and error reports (sent, never read back) ---------- */
 // what goes with them: the app version and the kind of phone, nothing you've saved
 export function appInfo(){
