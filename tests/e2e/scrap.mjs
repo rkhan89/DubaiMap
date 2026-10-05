@@ -30,14 +30,16 @@ export default async function scrap(h){
     if (!r.aboveNav) throw new Error('covers the nav');
     await h.shot('sc-otd');
   });
-  await step('the bell has the memory too; dismissing the card shows the latest page', async ()=>{
+  await step('the strip slides away by itself after a few seconds; the memory stays in the bell', async ()=>{
+    await h.sleep(5200);
+    const r = await h.js(()=>{ const s=document.querySelector('#memStrip'); return { hidden:s.hidden, in:s.classList.contains('in') }; });
+    if (!r.hidden || r.in) throw new Error('still showing: '+JSON.stringify(r));
     await h.click('#btnBell'); await h.sleep(500);
     if (!/A year ago today/.test(await text())) throw new Error('not in the bell');
     await h.shot('sc-bell'); await close();
-    await h.click('#memStrip [data-ms="x"]'); await h.sleep(300);
-    const t = await h.js(()=>document.querySelector('#memStrip').innerText);
-    if (!/Latest page/i.test(t)) throw new Error('strip: '+t);
-    await h.shot('sc-latest');
+    // reopening the map doesn't bring the same memory back
+    await h.js(async ()=>{ const {go}=await import('/go.js'); go.refresh(); }); await h.sleep(600);
+    if (!(await h.js(()=>document.querySelector('#memStrip').hidden))) throw new Error('came back');
   });
   await step('log a visit with no photos: taped into the personal book, toast opens the page', async ()=>{
     await h.js(async ()=>{ const {go}=await import('/go.js'); const S=await import('/store.js'); go.log({ venueId:S.venues().find(v=>v.name==='Knot Bakehouse').id }); }); await h.sleep(700);
@@ -52,6 +54,8 @@ export default async function scrap(h){
     if (await h.js(()=>!!document.querySelector('.tapein'))) throw new Error('overlay stuck');
     const t = await h.js(()=>document.querySelector('#toast').innerText);
     if (!/Taped into .*Vol/.test(t)) throw new Error('toast: '+t);
+    // the toast offers the page, so the strip doesn't say it again
+    if (!(await h.js(()=>document.querySelector('#memStrip').hidden))) throw new Error('strip shown next to the toast');
     if (await h.js(()=>document.querySelector('#points').classList.contains('show'))) throw new Error('points bar shown');
     await h.js(()=>[...document.querySelectorAll('#toast .toast-btn')].find(b=>/Open page/.test(b.textContent)).click()); await h.sleep(1200);
     const r = await h.js(()=>{ const f=document.querySelector('.page.flash'); if (!f) return null; const b=f.getBoundingClientRect(); return { text:f.innerText, top:b.top, plain:f.classList.contains('layout-plain'), stamp:!!f.querySelector('.postage') }; });
@@ -59,6 +63,17 @@ export default async function scrap(h){
     if (!/Knot Bakehouse/.test(r.text) || !/Cardamom knot/.test(r.text) || !r.plain || !r.stamp) throw new Error('page: '+JSON.stringify(r));
     await h.shot('sc-page-plain');
     await close(); await settle();
+  });
+  await step('opening the app: the latest page shows for a moment; a tap opens it and the strip goes', async ()=>{
+    await h.load(); await h.sleep(900);
+    const t0 = await h.js(()=>{ const s=document.querySelector('#memStrip'); return s.hidden ? '' : s.innerText; });
+    if (!/Latest page/i.test(t0) || !/Knot Bakehouse/.test(t0)) throw new Error('strip: '+t0);
+    await h.shot('sc-latest');
+    await h.js(()=>document.querySelector('#memStrip [data-ms="page"]').click()); await h.sleep(1200);
+    if (!(await h.js(()=>document.querySelector('#memStrip').hidden))) throw new Error('tap did not hide it');
+    if (!(await h.js(()=>!!document.querySelector('.page.flash')))) throw new Error('page not opened');
+    await close();
+    if (!(await h.js(()=>document.querySelector('#memStrip').hidden))) throw new Error('came back after closing the book');
   });
   await step('a crew visit is taped into the crew book', async ()=>{
     await h.js(async ()=>{ const {go}=await import('/go.js'); const S=await import('/store.js'); go.log({ venueId:S.venues().find(v=>v.name==='Arabian Tea House').id }); }); await h.sleep(700);

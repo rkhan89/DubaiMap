@@ -360,6 +360,7 @@ function logFlow(opts){
         S.addPoints(parts.reduce((s,p)=>s+p[0],0));
       }
       closeAll();
+      go.quietStrip && go.quietStrip();
       go.switchView('map'); go.refresh();
       setTimeout(()=>{
         const w=MAP.placeWorld(venue);
