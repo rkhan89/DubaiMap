@@ -5,7 +5,7 @@ import * as M from './model.js';
 import * as MAP from './map.js';
 import { CATEGORIES, MEALS, mealById, catById, iconSvg, esc, fmtRating, fmtDate, todayISO, plural } from './data.js';
 import { avatarHTML, avatarStack } from './avatar.js';
-import { $, icon, toast, pointsToast, openScreen, openSheet, back, closeAll, topbar, stampHTML, catChip, polaroidHTML, starInput, toggleHTML, bindToggle, ratingPill, share, compressImage, whoHTML, bindWho, whoDefault, whoText, askWho, catPickerHTML, bindCatPicker } from './ui.js';
+import { $, icon, toast, openScreen, openSheet, back, closeAll, topbar, stampHTML, catChip, polaroidHTML, starInput, toggleHTML, bindToggle, ratingPill, share, compressImage, whoHTML, bindWho, whoDefault, whoText, askWho, catPickerHTML, bindCatPicker } from './ui.js';
 import { go, state } from './go.js';
 import { sharePlace, eventRowHTML, planBite, eventSheet, checkIn } from './events.js';
 import { placesApi, zoneFor } from './share.js';
@@ -195,7 +195,7 @@ function logFlow(opts){
   const d = {
     kind: editing ? editing.kind : (opts.kind||'visit'),
     rating: editing ? editing.rating : 0,
-    date: editing ? editing.date : todayISO(),
+    date: editing ? editing.date : (opts.date && opts.date <= todayISO() ? opts.date : todayISO()),
     notes: editing ? editing.notes : '',
     // who it's for: chosen every time (an edit starts from what it was)
     tags: editing ? (editing.taggedIds||[]).slice() : [],
@@ -203,7 +203,7 @@ function logFlow(opts){
     who: editing ? (editing.private ? [] : (editing.crewIds&&editing.crewIds.length ? editing.crewIds.slice() : (S.myCrew()?[S.myCrew().id]:[]))) : whoDefault(opts.who),
   };
   const existingPhotos = editing ? S.photos({entryId:editing.id}) : [];
-  const newPhotos = [];   // {blob, url, caption}
+  const newPhotos = (opts.photos||[]).slice(0, APP.photosPerLog);   // {blob, url, caption}: some may arrive picked already
   let query = '';
   // Google suggestions while typing a new place (one session per search: the typing is free, a pick costs one lookup)
   const newToken = ()=> (crypto.randomUUID ? crypto.randomUUID() : Array.from(crypto.getRandomValues(new Uint8Array(16)), b=>b.toString(16).padStart(2,'0')).join(''));
@@ -240,8 +240,8 @@ function logFlow(opts){
       const lastOther = sum.visits.filter(e=>e.userId!==me.id).sort((a,b)=>b.createdAt-a.createdAt)[0];
       const allPhotos = existingPhotos.length + newPhotos.length;
       const used = S.myPhotoCount() + newPhotos.length;
-      const firstHere = !S.entries({venueId:venue.id, userId:me.id}).length;
-      const firstCrew = S.firstInCrew(venue.id) && hereToo() && d.kind==='visit';
+      // tagging a crewmate shares the visit with a crew you're both in
+      const tagCrews = d.kind==='visit' ? S.crewsForTags([...d.tags, ...S.mentionIds(d.notes)], d.who||[], editing ? editing.taggedIds : []) : [];
       el.innerHTML = header + `<div class="screen-body">${stepRow}
         <label class="search mt16">${icon('search')}<input value="${esc(venue.name)}" readonly aria-label="Place">${editing?'':`<button id="lChange" aria-label="Change place" class="icon-btn" style="width:34px;height:34px">${icon('check_circle')}</button>`}</label>
         ${others.length?`<div class="already mt12"><b>${esc(venue.name)} is already on the crew map!</b>
@@ -266,10 +266,9 @@ function logFlow(opts){
           <div class="eyebrow mt20">Who's this for?</div>
           <div class="mt8" id="lWho">${whoHTML(d.who)}</div>
           ${S.crewmates().length && d.kind==='visit' ? `<div class="row between mt20"><span class="eyebrow">Who were you with?</span>${d.tags.length?`<span class="tag soft">${d.tags.length} tagged</span>`:''}</div>
-          <p class="muted small mt4">They'll get a notification and can see this visit. Or type @name in your notes.</p>
-          <div class="chip-scroll mt8" id="lTags">${S.crewmates().map(u=>`<button type="button" class="person-chip${d.tags.includes(u.id)?' on':''}" data-tag="${u.id}" aria-pressed="${d.tags.includes(u.id)}">${avatarHTML(u,30)}@${esc(u.handle)}${d.tags.includes(u.id)?icon('check_circle'):''}</button>`).join('')}</div>` : ''}
+          <p class="muted small mt4">They'll see it in their Tagged scrapbook, and it goes in the crew book you share. Or type @name in your notes.</p>
+          <div class="chip-scroll mt8" id="lTags">${S.crewmates().map(u=>`<button type="button" class="person-chip${d.tags.includes(u.id)?' on':''}" data-tag="${u.id}" aria-pressed="${d.tags.includes(u.id)}">${avatarHTML(u,30)}@${esc(u.handle)}${d.tags.includes(u.id)?icon('check_circle'):''}</button>`).join('')}</div>${tagCrews.length?`<p class="tag-note mt8">${icon('groups')}<span>Tagging shares this visit with <b>${esc(tagCrews.map(c=>c.name).join(' and '))}</b></span></p>`:''}` : ''}
         </div>
-        ${!editing?`<div class="points-toast show mt20" style="position:static;transform:none;opacity:1">${icon('auto_awesome','',true)}<span class="pts">${firstHere?'<b>+10</b> New place':'<b>+4</b> Repeat visit'}${firstCrew?'<i>•</i><b>+5</b> First in the crew':''}${newPhotos.length?`<i>•</i><b>+${newPhotos.length*2}</b> Photos`:''}</span>${(firstHere&&firstCrew)?'<em>Combo!</em>':''}</div>`:''}
         <button class="btn btn-gold btn-block mt20" id="lSave" style="min-height:62px;font-size:21px">${icon('bookmark_add')}${editing?'Save changes':'Save to Scrapbook'}</button>
         ${editing?`<button class="btn btn-danger btn-block mt12" id="lDel">${icon('delete')}Delete this log</button>`:''}
       </div>`;
@@ -366,8 +365,9 @@ function logFlow(opts){
         const w=MAP.placeWorld(venue);
         MAP.markDropped(venue.id);
         MAP.flyToSeparate(w, S.venues().filter(x=>x.id!==venue.id).map(x=>MAP.placeWorld(x)).filter(p=>Math.hypot(p.x-w.x,p.y-w.y)<60));
-        if (parts.length) pointsToast(parts); else toast('Saved');
-        setTimeout(()=>go.checkBadges && go.checkBadges(), parts.length ? 3400 : 600);
+        // a new visit is taped into its book; then any sticker it earned (points count quietly)
+        if (!editing && e.kind==='visit') go.tapeIn(e, ()=>go.checkBadges && go.checkBadges());
+        else { toast(editing ? 'Saved' : 'Saved to try'); setTimeout(()=>go.checkBadges && go.checkBadges(), 600); }
       }, 120);
     };
     paint();

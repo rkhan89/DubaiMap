@@ -293,3 +293,38 @@ Steps 2–4: Android share target and /share, TikTok captions, Inbox and offline
   its logs. Shortcuts open Safari, where you sign in once; until then the share waits.
 - Tests: `tests/e2e/share4.mjs` (offline → Inbox, + menu, open and add, save for later, no
   duplicates, remove with Undo, the `#text=` address never sent, the guide, signed-out extras).
+
+## The scrapbook is the payoff: every visit is a page
+
+**One flow.** Photos are added while logging a visit. Every "add photos" (the Shelf camera, Import Roll, a book's camera, "Log another visit here") picks photos from the roll and opens the log form with them in, the date set to when the earliest one was taken, and the crew picked if you came from a crew's book. The old "Add Scrapbook Memory" screen is gone.
+
+**Pages are visits** (`pages.js`). A visit is a page in every book it belongs to; nothing about the page is stored except how someone dressed it up. So a page is exactly as visible as its visit (the server's rules on visits already decide that), there's nothing to backfill, and nothing can be duplicated.
+
+| Book | Its pages |
+|---|---|
+| Personal | your own visits (Just me ones too) |
+| Tagged | visits a crewmate tagged you on, each saying which crew it came from |
+| Crew | visits shared with that crew, by someone still in it |
+| Album | any visit you can see, through the album's filter |
+
+"Want to try" saves aren't pages. Your old photos that aren't on a visit show as a page per day in your own book.
+
+**Tagging shares with a crew.** You can only tag crewmates, so tagging someone on a visit also shares it with a crew you're both in (the one you're looking at if they're in it). The log form says so before you save ("Tagging shares this visit with Karak Crew"). Only newly tagged people do this: visits already saved keep who they were shared with. The server does the same (`share_with_tagged` trigger).
+
+**Page extras** (`book_pages`, migration 0008): layout, photo order, up to 3 stickers and a page note, one row per page (`book id | visit id`). A row can only be read or written by someone who can see the visit, for a book it belongs in (`page_fits`); un-sharing a visit, leaving a crew or untagging yourself removes its rows from that book. The old per-day settings (`books.pages`) are copied onto each day's visit once, and left in place.
+
+**A page** is paper in both themes: the date and area, the place, its kind, stars, meal tags, Just me / checked in, the note, then photos as polaroids (Scrapbook, Grid or Hero) or, with no photos, a postage stamp of the place's kind with a date postmark. Underneath: who was there. The ✦ button dresses it up (optional).
+
+**The open book is a feed**: newest first under month headings, six pages at a time as you scroll (no next-page buttons). By Place shows a chapter per place. Opening a page from anywhere scrolls to it and flashes it.
+
+**Taped in** (`tapein.js`): after saving a visit (or checking in), its page drops onto the cover of the book it went to (the crew's if shared there, else your own) and two strips of tape hold it; about a second, tap to skip, a fade with reduced motion. Then a toast, "Taped into Karak Crew Scrapbook and 1 more · Open page", then any sticker it earned. The points bar after logging is gone; points still count.
+
+**On the map** (`memories.js`): a strip above the bottom nav, left of the map buttons, opening the newest page for the view you're on (Me: your book; Crew: the crew's). On days you have one, it's an "On this day" card instead: your visits and ones you were tagged on, on this day of an earlier month or year (whole years first, the longest ago; then months; then ones with photos, the best rated). One a day, dismissible (on this phone). It's also an entry in the bell. In the app only.
+
+**Stickers**: 15 more (Full scrapbook: 8 visits in a month; Whole crew: a visit with everyone in your crew tagged; a "First …" for each kind of place). Stickers you'd already earned arrive quietly. A new one shows as a small card at the top; tap it for the full sticker.
+
+**Leaderboard**: your crew, this month: Most dessert runs, First to find (places new to the crew), Most tagged, Most check-ins, Most visits; a winner and runner-up each. Only visits shared with that crew count, so everyone sees the same board.
+
+**Crew challenges** (the goals screen): three a month per crew, picked from the crew and the month (so nothing is stored and everyone sees the same), e.g. "Try 4 new cafeterias"; progress counts the crew's shared visits, with who chipped in. Your own goals are below, as before.
+
+**The monthly recap is a spread**: an open book, 1080 × 1350. Left page: the month, visits / new / places, top places, who was there. Right page: three photos taped in (or the places' stamps). For you, or your crew; save or share as an image.

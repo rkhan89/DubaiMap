@@ -142,7 +142,8 @@ function crewScreen(){
           <div class="grow"><h2 class="h-lg" id="cnm">${esc(crew.name)}</h2><span class="hand">${esc(crew.tagline||(owner?'Tap to add a crew motto':''))}</span></div>
           <button class="btn btn-gold btn-sm" id="cInv" style="border-radius:999px;min-height:48px;font-size:17px">${icon('person_add')}Invite</button>
         </div>
-        <button class="card mt16 block-btn row" id="cBoard">${icon('leaderboard')}<span class="grow"><b>Leaderboard</b><span class="muted small" style="display:block">Who's eaten their way furthest this month</span></span>${icon('chevron_right')}</button>
+        <button class="card mt16 block-btn row" id="cBoard">${icon('leaderboard')}<span class="grow"><b>Leaderboard</b><span class="muted small" style="display:block">Dessert runs, first finds, most tagged this month</span></span>${icon('chevron_right')}</button>
+        <button class="card mt12 block-btn row" id="cChallenges">${icon('flag')}<span class="grow"><b>Crew challenges</b><span class="muted small" style="display:block">Three to do together this month</span></span>${icon('chevron_right')}</button>
         ${go.eventsCard ? go.eventsCard() : ''}
         <div class="row between mt20"><span class="eyebrow">Fellow explorers (${members.length})</span><span class="mono" style="color:var(--green);font-size:12px">All sync'd</span></div>
         <div class="stack mt12">${members.map(u=>{
@@ -161,6 +162,7 @@ function crewScreen(){
       el.querySelector('#cpCopy').onclick=()=>copy(crew.code, `Passcode ${crew.code} copied!`);
       el.querySelector('#cInv').onclick=()=>sendInvite(crew);
       el.querySelector('#cBoard').onclick=()=>go.leaderboard();
+      el.querySelector('#cChallenges').onclick=()=>go.goals();
       if (go.bindEventsCard) go.bindEventsCard(el, paint);
       const more=el.querySelector('#cMore'); if (more) more.onclick=()=>crewSetup({});
       el.querySelectorAll('.person-row [data-profile]').forEach(b=>b.onclick=()=>go.profile(b.dataset.profile));

@@ -5,7 +5,7 @@ import * as S from './store.js';
 import * as MAP from './map.js';
 import { userStats, levelFor, leaderboard, thisMonth, POINTS } from './stats.js';
 import { badgeStatus, stickerHTML } from './badges.js';
-import { goalProgress } from './social.js';
+import { goalProgress, myLeads, crewChallengeList } from './social.js';
 import { CATEGORIES, catById, iconSvg, esc, plural, fmtDate, fmtMonth, fmtRating } from './data.js';
 import { avatarHTML } from './avatar.js';
 import { icon, openScreen, openSheet, topbar, toast, back, seg, bindSeg, toggleHTML, bindToggle, ratingPill } from './ui.js';
@@ -28,8 +28,9 @@ function profileScreen(userId){
       const lvl = levelFor(all.points);
       const badges = badgeStatus(userId).sort((a,b)=>(b.done-a.done) || (b.have/b.need - a.have/a.need));
       const got = badges.filter(b=>b.done).length;
-      const board = crew ? leaderboard(thisMonth()) : [];
-      const rank = board.findIndex(r=>r.u.id===userId)+1;
+      const inCrew = !!(crew && crew.memberIds.includes(userId) && crew.memberIds.length > 1);
+      const leads = mine && inCrew ? myLeads() : [];
+      const challenges = mine ? crewChallengeList() : [];
       const topCats = [...all.cats].sort((a,b)=>b[1]-a[1]).slice(0,4), maxCat = topCats[0]?.[1] || 1;
       const areaCounts = {}; all.visitList.forEach(e=>{ const v=S.venue(e.venueId); if (v) areaCounts[v.zone]=(areaCounts[v.zone]||0)+1; });
       const favArea = Object.entries(areaCounts).sort((a,b)=>b[1]-a[1])[0];
@@ -56,10 +57,10 @@ function profileScreen(userId){
         </div>
         <button class="card mt16 block-btn" id="prStickers"><div class="row between"><span class="h-sm">Stickers</span><span class="mono muted small">${got} of ${badges.length} ${icon('chevron_right')}</span></div>
           <div class="sticker-strip mt12">${badges.slice(0,6).map(b=>stickerHTML(b, 52)).join('')}</div></button>
-        ${crew && rank ? `<button class="card mt12 block-btn row" id="prBoard"><span class="rank-badge">#${rank}</span><span class="grow"><b>${rank===1?'Top of':'Number '+rank+' in'} ${esc(crew.name)}</b><span class="muted small" style="display:block">${month.points} pts this month • ${plural(month.newPlaces,'new place')}</span></span>${icon('leaderboard')}</button>` : ''}
-        ${mine ? `<button class="card mt12 block-btn" id="prGoals"><div class="row between"><span class="h-sm">${fmtMonth(thisMonth())} goals</span><span class="mono muted small">${goals.filter(g=>g.done).length} of ${goals.length} done ${icon('chevron_right')}</span></div>
-          <div class="goal-mini mt12">${goals.map(g=>`<div class="gm${g.done?' done':''}"><span class="ring" style="--p:${Math.round(g.pct*100)}"><span>${g.done?icon('check'):Math.round(g.pct*100)+'%'}</span></span><small>${esc(g.short)}</small></div>`).join('')}</div></button>
-        <button class="card mt12 block-btn row" id="prRecap">${icon('auto_awesome')}<span class="grow"><b>Your ${fmtMonth(thisMonth()).split(' ')[0]} recap</b><span class="muted small" style="display:block">A card of your month in bites, ready to share</span></span>${icon('chevron_right')}</button>` : ''}
+        ${inCrew ? `<button class="card mt12 block-btn row" id="prBoard"><span class="rank-badge">${icon('emoji_events','',true)}</span><span class="grow"><b>${leads.length ? 'You lead '+esc(leads.map(c=>c.title.replace(/^Most /,'most ')).join(', ')) : esc(crew.name)+' leaderboard'}</b><span class="muted small" style="display:block">Dessert runs, first finds, most tagged • ${esc(fmtMonth(thisMonth()).split(' ')[0])}</span></span>${icon('chevron_right')}</button>` : ''}
+        ${mine ? `<button class="card mt12 block-btn" id="prGoals"><div class="row between"><span class="h-sm">${challenges.length ? 'Crew challenges' : esc(fmtMonth(thisMonth()))+' goals'}</span><span class="mono muted small">${challenges.length ? challenges.filter(g=>g.done).length+' of '+challenges.length : goals.filter(g=>g.done).length+' of '+goals.length} done ${icon('chevron_right')}</span></div>
+          <div class="goal-mini mt12">${(challenges.length ? challenges : goals).map(g=>`<div class="gm${g.done?' done':''}"><span class="ring" style="--p:${Math.round(g.pct*100)}"><span>${g.done?icon('check'):Math.round(g.pct*100)+'%'}</span></span><small>${esc(g.short||g.name)}</small></div>`).join('')}</div></button>
+        <button class="card mt12 block-btn row" id="prRecap">${icon('auto_awesome')}<span class="grow"><b>Your ${fmtMonth(thisMonth()).split(' ')[0]} spread</b><span class="muted small" style="display:block">Your month as a scrapbook spread, ready to share</span></span>${icon('chevron_right')}</button>` : ''}
         ${topCats.length ? `<div class="card mt12"><span class="h-sm">Favourite kinds</span>
           <div class="cat-bars mt12">${topCats.map(([c,n])=>{ const k=catById(c); return `<div class="cb"><span class="cb-ico">${iconSvg(c, k.color)}</span><span class="cb-name">${esc(k.label)}</span><span class="cb-bar"><i style="width:${Math.round(n/maxCat*100)}%;background:${k.color}"></i></span><b>${n}</b></div>`; }).join('')}</div>
           ${favArea ? `<p class="muted small mt12">${icon('location_on')} Most at home in <b>${esc(MAP.zoneById(favArea[0])?.label||'')}</b> (${plural(favArea[1],'visit')})</p>` : ''}</div>` : ''}

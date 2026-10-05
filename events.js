@@ -4,7 +4,7 @@ import * as S from './store.js';
 import * as MAP from './map.js';
 import { esc, plural, todayISO, fmtDate } from './data.js';
 import { avatarHTML, avatarStack } from './avatar.js';
-import { icon, toast, pointsToast, openSheet, back, seg, bindSeg, share, askWho } from './ui.js';
+import { icon, toast, openSheet, back, seg, bindSeg, share, askWho } from './ui.js';
 import { POINTS } from './stats.js';
 import { go } from './go.js';
 
@@ -192,9 +192,9 @@ export async function checkIn(venueId, after){
   const parts = [firstHere?[POINTS.newPlace,'New place']:[POINTS.repeat,'Repeat visit'], [POINTS.checkin,'Checked in']];
   if (firstCrew) parts.push([POINTS.firstInCrew,'First in the crew']);
   S.addPoints(parts.reduce((s,p)=>s+p[0],0));
-  go.refresh(); pointsToast(parts);
-  setTimeout(()=>toast('Checked in! Add a rating and photos?', 'Add', ()=>go.log({entryId:e.id}), 5000), 3300);
-  setTimeout(()=>go.checkBadges && go.checkBadges(), 8600);
+  go.refresh();
+  // the check-in is a visit, so it's a page: tape it in, then offer to add a rating and photos
+  go.tapeIn(e, ()=>setTimeout(()=>{ toast('Checked in! Add a rating and photos?', 'Add', ()=>go.log({entryId:e.id}), 5000); setTimeout(()=>go.checkBadges && go.checkBadges(), 5200); }, 4200));
   after && after();
   });
 }

@@ -1,83 +1,74 @@
-// Photobook (frames 15-22): shelf, cover customiser, open book (by date / by place),
-// book filters, photo viewer, add photos, privacy + empty + loading states.
-import { badgeStatus, stickerHTML } from './badges.js';
+// Scrapbooks: shelf, cover customiser, the open book (a feed of pages, by date or by place),
+// page editor, book filters, photo viewer. Every visit is a page (pages.js); photos are added
+// while logging the visit, so "add photos" anywhere opens the log flow with them picked.
+import { BADGES, badgeStatus, stickerHTML } from './badges.js';
 import { APP } from './config.js';
 import * as S from './store.js';
 import * as M from './model.js';
 import * as MAP from './map.js';
-import { CATEGORIES, catById, iconSvg, esc, fmtDate, fmtDay, monthKey, fmtMonth, todayISO, plural, tilt } from './data.js';
+import * as P from './pages.js';
+import { CATEGORIES, MEALS, catById, iconSvg, esc, fmtDate, fmtDay, monthKey, fmtMonth, todayISO, plural, tilt } from './data.js';
 import { avatarHTML, avatarStack } from './avatar.js';
-import { $, icon, toast, openScreen, openSheet, back, closeAll, topbar, polaroidHTML, share, compressImage, toggleHTML, bindToggle, seg, bindSeg, whoHTML, bindWho, whoDefault, whoText, askWho } from './ui.js';
+import { $, icon, toast, openScreen, openSheet, back, closeAll, topbar, polaroidHTML, share, compressImage, toggleHTML, bindToggle, seg, bindSeg, whoText } from './ui.js';
 import { go, state } from './go.js';
 
 const TINTS = ['#e5a93c','#8B5A2B','#486636','#3b2717','#f2cfb4','#fdae7e'];
 const TEXTURES = [['leather','Leather','layers'],['cloth','Cloth Loom','grid_4x4'],['paperback','Paperback','menu_book']];
 const ROMAN = n=>{ const m=[[1000,'M'],[900,'CM'],[500,'D'],[400,'CD'],[100,'C'],[90,'XC'],[50,'L'],[40,'XL'],[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']]; let s=''; for (const [v,r] of m) while(n>=v){ s+=r; n-=v; } return s; };
 const zoneLabel = id=>MAP.zoneById(id)?.label || APP.city;
+const BATCH = 6;          // pages added to the feed at a time
 
-/* ---------- which photos a book shows ---------- */
-function bookPhotos(b, f){
-  const me=S.me();
-  let ps;
-  if (b.kind==='crew'){
-    const ids=S.circleIds();
-    ps = S.photos().filter(p=>ids.includes(p.userId) && S.sharedHere(p));   // shared with this crew only
-  } else if (b.kind==='album'){
-    ps = S.photos();
-  } else {
-    // yours, plus photos from visits you were tagged on
-    const tagged = new Set(S.taggedMe().map(e=>e.id));
-    ps = S.photos().filter(p=>p.userId===me.id || (p.entryId && tagged.has(p.entryId)));
-  }
-  f = {...(b.filter||{}), ...(f||{})};
-  if (f.months && f.months.length) ps = ps.filter(p=>f.months.includes(monthKey(p.date)));
-  if (f.cats && f.cats.length) ps = ps.filter(p=>(S.venue(p.venueId)?.categories||[]).some(c=>f.cats.includes(c)));
-  if (f.venues && f.venues.length) ps = ps.filter(p=>f.venues.includes(p.venueId));
-  if (f.members && f.members.length) ps = ps.filter(p=>f.members.includes(p.userId));
-  // "with @maya": visits that tagged them, or that they made and tagged you on
-  if (f.tagged && f.tagged.length) ps = ps.filter(p=>{ const e=p.entryId&&S.entry(p.entryId); if (!e) return false; const t=e.taggedIds||[]; return f.tagged.some(id=>t.includes(id) || (e.userId===id && t.includes(me.id))); });
-  if (f.privacy==='shared') ps = ps.filter(p=>!p.private);
-  if (f.privacy==='private') ps = ps.filter(p=>p.private);
-  return ps;
-}
+/* ---------- what a book holds ---------- */
+// its pages (an album's own filter applies, plus any filter from the filter sheet)
+function pagesOf(b, f){ return P.bookPages(b, S.pagesWorld(), { ...(b.filter||{}), ...(f||{}) }); }
+// the photos on its pages
+function bookPhotos(b, f){ return pagesOf(b, f).flatMap(p=>p.photos); }
+// pages as plain records, for the filter sheet's counts and choices
+function pageRecs(b, f){ return pagesOf(b, f).map(p=>({ id:p.id, date:p.date, venueId:p.entry?p.entry.venueId:p.venueId, entryId:p.entry?p.entry.id:null, userId:p.entry?p.entry.userId:S.me().id, private:p.entry?!!p.entry.private:true })); }
 function filterCount(f){ return f ? ['months','cats','venues','members','tagged'].reduce((n,k)=>n+((f[k]||[]).length?1:0),0) + (f.privacy&&f.privacy!=='all'?1:0) : 0; }
+const venueOfPage = pg => S.venue(pg.entry ? pg.entry.venueId : pg.venueId);
+// who was there: whoever logged it and everyone tagged
+const peopleOf = pg => pg.entry ? [...new Set([pg.entry.userId, ...(pg.entry.taggedIds||[])])].map(S.user).filter(Boolean) : [S.me()];
 
 /* =========================================================
-   15. SHELF
+   SHELF
    ========================================================= */
 function shelf(){
   openScreen(el=>{
     const paint=()=>{
       const me=S.me(), crew=S.myCrew(), books=S.books();
-      const personal=books.find(b=>b.kind==='personal'), crewBook=books.find(b=>b.kind==='crew'), albums=books.filter(b=>b.kind==='album');
-      const mine=bookPhotos(personal), crewPs=crewBook?bookPhotos(crewBook):[];
-      const zones = {}; mine.concat(crewPs).forEach(p=>{ const z=S.venue(p.venueId)?.zone; if (z) zones[z]=(zones[z]||0)+1; });
+      const personal=books.find(b=>b.kind==='personal'), crewBook=books.find(b=>b.kind==='crew'), taggedBook=books.find(b=>b.kind==='tagged'), albums=books.filter(b=>b.kind==='album');
+      const mine=pagesOf(personal), crewPgs=crewBook?pagesOf(crewBook):[], tagPgs=taggedBook?pagesOf(taggedBook):[];
+      const zones = {}; mine.concat(crewPgs).forEach(p=>{ const z=venueOfPage(p)?.zone; if (z) zones[z]=(zones[z]||0)+1; });
       const topZ = Object.keys(zones).sort((a,b)=>zones[b]-zones[a]).slice(0,2).map(zoneLabel);
-      const privateNotes = S.entries({userId:me.id}).filter(e=>e.private && e.notes).length;
-      let spreads = S.photos().filter(p=>(p.bookmarkedBy||[]).includes(me.id));
-      const spreadTitle = spreads.length ? 'Recent Bookmarked Spreads' : 'Fresh Spreads';
-      // newest photos from your book and the crew book; one shared with the crew is in both, so once only
-      if (!spreads.length) spreads = [...new Map(mine.concat(crewPs).map(p=>[p.id, p])).values()].sort((x,y)=>(y.date||'').localeCompare(x.date||'') || (y.createdAt||0)-(x.createdAt||0)).slice(0,4);
+      const photoN = ps => ps.reduce((n,p)=>n+p.photos.length, 0);
+      // the newest pages from your books (a visit in two books shows once)
+      const seen = new Set(), latest = [];
+      [...mine.map(p=>[p, personal]), ...crewPgs.map(p=>[p, crewBook]), ...tagPgs.map(p=>[p, taggedBook])]
+        .sort((a,b)=>(b[0].date||'').localeCompare(a[0].date||'') || (b[0].createdAt||0)-(a[0].createdAt||0))
+        .forEach(([p, b])=>{ const k = p.entry ? p.entry.id : p.id; if (!seen.has(k) && latest.length<4){ seen.add(k); latest.push([p, b]); } });
       const members = crew ? S.crewMembers(crew) : [];
-      el.innerHTML = topbar({title:'Scrapbook Shelf', eyebrow:'Scrapbook and notes', back:true, actions:`<button class="icon-btn" id="shNew" aria-label="Add photos">${icon('add_photo_alternate')}</button>`}) + `<div class="screen-body">
+      el.innerHTML = topbar({title:'Scrapbook Shelf', eyebrow:'Every visit, a page', back:true, actions:`<button class="icon-btn" id="shNew" aria-label="Log a visit">${icon('add_a_photo')}</button>`}) + `<div class="screen-body">
         <div class="deck mt8">
           <div class="deck-head"><span class="ms" style="color:var(--gold-deep)">book_2</span><span class="eyebrow grow" style="color:var(--ink);font-size:13px">Vol. ${new Date().getFullYear()} Archival Deck</span>${topZ.length?`<span class="tag soft">${esc(topZ.join(' • '))}</span>`:''}</div>
-          ${spineHTML(personal, { kind:'Personal photobook', kicon:'auto_stories', corner:'Keeper copy', hand: personal.byline || (topZ.length>1?`${topZ[1]} bites to ${topZ[0]} spice trails`:'Your city, one bite at a time'), meta:[`${icon('photo_library')}${plural(mine.length,'photo')}`, privateNotes?`gold:${icon('lock')}${plural(privateNotes,'private note')}`:''] })}
-          ${crewBook?spineHTML(crewBook, { kind:'Collaborative journal', kicon:'groups', corner:'Shared trail', cornerCls:'green', hand: crew.tagline || `Shared spots across ${plural(members.length-1,'friend')}`, meta:[`${avatarStack(members,30,6)} ${members.length} members`, `${icon('share')}${crewPs.length} shared photos`], foot:'Shared entries only, no private logs' }):''}
-          ${!crewBook?`<button class="book-spine" id="shNoCrew" style="background:var(--sc-highest);color:var(--ink);box-shadow:none;border:2px dashed var(--outline-v)"><span class="rings" style="background:rgba(0,0,0,.05)"><i style="background:var(--outline-v)"></i><i style="background:var(--outline-v)"></i><i style="background:var(--outline-v)"></i></span><span class="grow"><span class="bs-kind">${icon('group_add')}Crew journal</span><h3 style="font-size:20px">Start a crew to share a book</h3><span class="hand">Everyone's shared photos, one living logbook</span></span></button>`:''}
-          ${albums.map(a=>spineHTML(a, { kind:'Custom album', kicon:'collections_bookmark', hand: a.byline || describeFilter(a.filter), meta:[`${icon('photo_library')}${plural(bookPhotos(a).length,'photo')}`] })).join('')}
+          ${spineHTML(personal, { kind:'Personal scrapbook', kicon:'auto_stories', corner:'Keeper copy', hand: personal.byline || (topZ.length>1?`${topZ[1]} bites to ${topZ[0]} spice trails`:'Your city, one bite at a time'), meta:[`${icon('menu_book')}${plural(mine.length,'page')}`, photoN(mine)?`${icon('photo_library')}${plural(photoN(mine),'photo')}`:''] })}
+          ${crewBook?spineHTML(crewBook, { kind:'Crew scrapbook', kicon:'groups', corner:'Shared trail', cornerCls:'green', hand: crew.tagline || `Shared spots across ${plural(members.length-1,'friend')}`, meta:[`${avatarStack(members,30,6)} ${members.length} members`, `${icon('menu_book')}${plural(crewPgs.length,'page')}`], foot:'Shared visits only, never Just me ones' }):''}
+          ${!crewBook?`<button class="book-spine" id="shNoCrew" style="background:var(--sc-highest);color:var(--ink);box-shadow:none;border:2px dashed var(--outline-v)"><span class="rings" style="background:rgba(0,0,0,.05)"><i style="background:var(--outline-v)"></i><i style="background:var(--outline-v)"></i><i style="background:var(--outline-v)"></i></span><span class="grow"><span class="bs-kind">${icon('group_add')}Crew scrapbook</span><h3 style="font-size:20px">Start a crew to share a book</h3><span class="hand">Every visit you share becomes a page in it</span></span></button>`:''}
+          ${taggedBook?spineHTML(taggedBook, { kind:'Tagged', kicon:'sell', hand: taggedBook.byline || 'Visits friends tagged you on', meta:[`${icon('menu_book')}${plural(tagPgs.length,'page')}`] }):''}
+          ${albums.map(a=>spineHTML(a, { kind:'Custom album', kicon:'collections_bookmark', hand: a.byline || describeFilter(a.filter), meta:[`${icon('menu_book')}${plural(pagesOf(a).length,'page')}`] })).join('')}
         </div>
-        ${spreads.length?`<div class="row between mt32"><span class="row h-md" style="gap:8px">${icon('bookmarks')}${spreadTitle}</span></div>
-        <div class="spreads mt16">${spreads.slice(0,4).map((p,i)=>spreadHTML(p,i)).join('')}</div>`:
-        `<div class="card-soft mt24 center" style="padding:28px 18px"><div style="width:120px;margin:0 auto">${polaroidHTML({caption:'your first memory', rot:-3})}</div><h3 class="h-md mt16">No photos yet</h3><p class="muted mt8">Log a bite with photos, or import some from your camera roll.</p></div>`}
+        ${latest.length?`<div class="row between mt32"><span class="row h-md" style="gap:8px">${icon('auto_stories')}Latest pages</span></div>
+        <div class="spreads mt16">${latest.map(([p,b],i)=>spreadHTML(p,b,i)).join('')}</div>`:
+        `<div class="card-soft mt24 center" style="padding:28px 18px"><div style="width:120px;margin:0 auto">${polaroidHTML({caption:'your first page', rot:-3})}</div><h3 class="h-md mt16">Every visit becomes a page</h3><p class="muted mt8">Log a place you've been and it's taped in here, photos or not.</p><button class="btn btn-gold btn-block mt16" id="shFirst">${icon('add_location_alt')}Log a visit</button></div>`}
         <div class="btn-grid mt24 shelf-actions"><button class="btn btn-gold" id="shAlbum">${icon('library_add')}New Album</button><button class="btn btn-white" id="shImport">${icon('upload_file')}Import Roll</button></div>
-        <p class="row mono muted mt16" style="font-size:12px;gap:8px;justify-content:center">${icon('verified_user')}Private entries never appear in shared books</p>
+        <p class="row mono muted mt16" style="font-size:12px;gap:8px;justify-content:center">${icon('verified_user')}Just me visits never appear in shared books</p>
       </div>`;
       el.querySelectorAll('[data-book]').forEach(b=>b.onclick=()=>openBook(b.dataset.book));
-      el.querySelectorAll('[data-spread]').forEach(b=>b.onclick=()=>{ const ids=spreads.map(p=>p.id); viewer(ids, ids.indexOf(b.dataset.spread)); });
+      el.querySelectorAll('[data-spread]').forEach(x=>x.onclick=()=>openBook(x.dataset.inbook, { pageId:x.dataset.spread }));
       el.querySelector('#shAlbum').onclick=()=>bookFilters(null, {}, f=>newAlbum(f));
       el.querySelector('#shImport').onclick=()=>addPhotos({});
       el.querySelector('#shNew').onclick=()=>addPhotos({});
+      const first=el.querySelector('#shFirst'); if (first) first.onclick=()=>go.log();
       const nc=el.querySelector('#shNoCrew'); if (nc) nc.onclick=()=>go.crew();
     };
     paint(); el._repaint=paint;
@@ -99,22 +90,30 @@ function spineHTML(b, o){
     <span class="bs-go">${cover?`<img src="${S.photoURL(cover)}" alt="" style="width:44px;height:44px;border-radius:50%;object-fit:cover">`:icon('arrow_forward')}</span>
   </button>`;
 }
-function spreadHTML(p, i){
-  const v=S.venue(p.venueId), e=p.entryId && S.entry(p.entryId), u=S.user(p.userId), me=S.me();
-  const mineBook = p.userId===me.id;
-  return `<button class="spread-card" data-spread="${p.id}"><span class="tape ${i%2?'green':''}"></span>
-    <span class="sp-img"><img src="${esc(S.photoURL(p))}" alt="" loading="lazy"><span class="pol-badge light sp-badge" title="${esc(v?.name||'')}, ${esc(zoneLabel(v?.zone))}">${esc(v?.name||zoneLabel(v?.zone))}</span></span>
-    <h4 class="trunc">${esc(p.caption||v?.name||'Memory')}</h4>
-    ${e&&e.notes?`<span class="hand trunc">"${esc(e.notes)}"</span>`:`<span class="hand">${esc(u?(u.id===me.id?'you':u.name):'')}</span>`}
-    <span class="sp-foot"><span>${fmtDate(p.date,{day:'numeric',month:'short'})} • ${mineBook?'My Book':'Crew Book'}</span>${icon((p.bookmarkedBy||[]).includes(me.id)?'bookmark':'favorite','', (p.bookmarkedBy||[]).includes(me.id))}</span>
+// a small card for a page: its first photo, or its place's stamp
+function spreadHTML(pg, b, i){
+  const v=venueOfPage(pg), e=pg.entry, me=S.me(), ph=pg.photos[0];
+  const cat=v?M.primaryCat(v):'coffee';
+  return `<button class="spread-card" data-spread="${esc(pg.id)}" data-inbook="${esc(b.id)}"><span class="tape ${i%2?'green':''}"></span>
+    <span class="sp-img${ph?'':' sp-stamp'}">${ph?`<img src="${esc(S.photoURL(ph))}" alt="" loading="lazy">`:postageHTML(cat, pg.date, 64)}<span class="pol-badge light sp-badge" title="${esc(v?.name||'')}, ${esc(zoneLabel(v?.zone))}">${esc(v?.name||zoneLabel(v?.zone))}</span></span>
+    <h4 class="trunc">${esc((ph&&ph.caption)||v?.name||'Memory')}</h4>
+    ${e&&e.notes?`<span class="hand trunc">"${esc(e.notes)}"</span>`:`<span class="hand">${esc(e && e.userId!==me.id ? (S.user(e.userId)?.name||'') : 'you')}</span>`}
+    <span class="sp-foot"><span>${fmtDate(pg.date,{day:'numeric',month:'short'})} • ${esc(b.kind==='crew'?'Crew Book':b.kind==='tagged'?'Tagged':'My Book')}</span>${e&&e.rating?`<span class="mono" style="color:var(--green);font-weight:700">★${e.rating}</span>`:''}</span>
   </button>`;
+}
+// a postage stamp with the place's kind on it and a postmark with the date
+function postageHTML(cat, date, size){
+  const c = catById(cat) || CATEGORIES[0];
+  const d = date ? new Date(date+'T00:00:00') : null;
+  const mark = d && !isNaN(d) ? d.toLocaleDateString('en-GB',{day:'2-digit', month:'short'}).toUpperCase() : 'DXB';
+  return `<span class="postage" style="--s:${size||96}px;--c:${c.color}"><span class="pg-face">${iconSvg(c.id, c.color)}<b>${esc(c.label)}</b></span><span class="pg-mark">${esc(mark)}<i>DXB</i></span></span>`;
 }
 function describeFilter(f){
   f=f||{}; const bits=[];
   if (f.cats&&f.cats.length) bits.push(f.cats.map(c=>catById(c)?.label).join(', '));
   if (f.months&&f.months.length) bits.push(f.months.map(fmtMonth).join(', '));
   if (f.venues&&f.venues.length) bits.push(plural(f.venues.length,'place'));
-  return bits.join(' • ') || 'Every photo';
+  return bits.join(' • ') || 'Every page';
 }
 function newAlbum(filter){
   openSheet(body=>{
@@ -128,7 +127,7 @@ function newAlbum(filter){
 go.shelf = shelf;
 
 /* =========================================================
-   16. COVER CUSTOMISER
+   COVER CUSTOMISER
    ========================================================= */
 function coverHTML(b, count){
   const cover=b.coverPhotoId && S.photo(b.coverPhotoId);
@@ -148,35 +147,34 @@ function coverHTML(b, count){
     <span class="cv-geo">${esc(zs.map(zoneLabel).join(' • ').toUpperCase()||APP.city.toUpperCase())}<br>${z0?`${z0.lat.toFixed(4)}° N, ${z0.lng.toFixed(4)}° E`:''}</span>
   </div>`;
 }
-/* ---------- page editor (Phase 3): layout, photo order, stickers, a note ---------- */
-function pageEditor(b, day, dps, after){
-  const cfg = JSON.parse(JSON.stringify((b.pages||{})[day]||{}));
-  cfg.layout = cfg.layout||'scrapbook';
-  let order = (cfg.order||[]).filter(id=>dps.some(p=>p.id===id));
-  dps.forEach(p=>{ if (!order.includes(p.id)) order.push(p.id); });
+/* ---------- page editor (optional extras): layout, photo order, stickers, a note ---------- */
+function pageEditor(b, pg, after){
+  const cfg = { layout:'scrapbook', ...(pg.cfg||{}) };
+  let order = pg.photos.map(p=>p.id);
   const earned = badgeStatus(S.me().id).filter(x=>x.done);
-  let chosen = (cfg.stickers||[]).filter(id=>earned.some(x=>x.id===id));
+  // stickers already on the page stay, even ones someone else in the crew stuck on
+  let chosen = (cfg.stickers||[]).filter(id=>BADGES.some(x=>x.id===id));
+  const v = venueOfPage(pg);
   openSheet(body=>{
     const paint=()=>{
-      body.innerHTML = `<div class="sheet-head"><div class="grow"><h2 class="h-md">Edit page</h2><span class="hand">${esc(fmtDay(day))}</span></div></div>
-        <div class="eyebrow">Layout</div>
-        ${seg('playout', [['scrapbook','Scrapbook','auto_awesome_mosaic'],['grid','Grid','grid_view'],['hero','Hero','photo_size_select_large']], cfg.layout).replace('class="seg"','class="seg mt8"')}
-        <div class="eyebrow mt20">Photo order</div>
-        <div class="stack mt8">${order.map((id,i)=>{ const p=dps.find(x=>x.id===id); return `<div class="person-row order-row"><img src="${esc(S.photoURL(p))}" alt=""><span class="pr-main"><span class="pr-name trunc">${esc(p.caption||S.venue(p.venueId)?.name||'Photo')}</span></span>
-          <button class="icon-btn" data-mv="${i}" data-d="-1" ${i?'':'disabled'} aria-label="Move up">${icon('arrow_upward')}</button><button class="icon-btn" data-mv="${i}" data-d="1" ${i<order.length-1?'':'disabled'} aria-label="Move down">${icon('arrow_downward')}</button></div>`; }).join('')}</div>
-        <div class="row between mt20"><span class="eyebrow">Stickers</span><span class="mono muted small">${chosen.length} of 3</span></div>
-        ${earned.length ? `<div class="sticker-pick mt8">${earned.map(x=>`<button class="${chosen.includes(x.id)?'on':''}" data-st="${x.id}" aria-label="${esc(x.name)}">${stickerHTML(x, 46, {progress:false})}</button>`).join('')}</div>` : `<p class="muted small mt8">Earn stickers by logging places, then stick them on your pages.</p>`}
+      body.innerHTML = `<div class="sheet-head"><div class="grow"><h2 class="h-md">Dress up this page</h2><span class="hand">${esc(v?.name||'')} • ${esc(fmtDay(pg.date))}</span></div></div>
+        <p class="muted small">Optional. Every page already looks finished.</p>
+        <div class="row between mt16"><span class="eyebrow">Stickers</span><span class="mono muted small">${chosen.length} of 3</span></div>
+        ${earned.length ? `<div class="sticker-pick mt8">${earned.map(x=>`<button class="${chosen.includes(x.id)?'on':''}" data-st="${x.id}" aria-label="${esc(x.name)}">${stickerHTML(x, 46, {progress:false})}</button>`).join('')}</div>` : `<p class="muted small mt8">Log places to earn stickers, then stick them on your pages.</p>`}
+        ${pg.photos.length ? `<div class="eyebrow mt20">Layout</div>
+        ${seg('playout', [['scrapbook','Scrapbook','auto_awesome_mosaic'],['grid','Grid','grid_view'],['hero','Hero','photo_size_select_large']], cfg.layout).replace('class="seg"','class="seg mt8"')}` : ''}
+        ${pg.photos.length>1 ? `<div class="eyebrow mt20">Photo order</div>
+        <div class="stack mt8">${order.map((id,i)=>{ const p=pg.photos.find(x=>x.id===id); return `<div class="person-row order-row"><img src="${esc(S.photoURL(p))}" alt=""><span class="pr-main"><span class="pr-name trunc">${esc(p.caption||v?.name||'Photo')}</span></span>
+          <button class="icon-btn" data-mv="${i}" data-d="-1" ${i?'':'disabled'} aria-label="Move up">${icon('arrow_upward')}</button><button class="icon-btn" data-mv="${i}" data-d="1" ${i<order.length-1?'':'disabled'} aria-label="Move down">${icon('arrow_downward')}</button></div>`; }).join('')}</div>` : ''}
         <div class="eyebrow mt20">Page note</div>
-        <textarea class="input mt8" id="pgNote" maxlength="160" placeholder="What made this day…">${esc(cfg.note||'')}</textarea>
+        <textarea class="input mt8" id="pgNote" maxlength="160" placeholder="What made this visit…">${esc(cfg.note||'')}</textarea>
         <div class="sheet-foot btn-grid"><button class="btn btn-soft" id="pgReset">Reset</button><button class="btn btn-gold" id="pgSave">${icon('check')}Save page</button></div>`;
-      bindSeg(body, 'playout', v=>{ cfg.layout=v; });
-      body.querySelectorAll('[data-mv]').forEach(x=>x.onclick=()=>{ const i=+x.dataset.mv, j=i+(+x.dataset.d); [order[i],order[j]]=[order[j],order[i]]; cfg.note=body.querySelector('#pgNote').value; paint(); });
-      body.querySelectorAll('[data-st]').forEach(x=>x.onclick=()=>{ const id=x.dataset.st; if (chosen.includes(id)) chosen=chosen.filter(c=>c!==id); else if (chosen.length<3) chosen.push(id); else return toast('Three stickers per page'); cfg.note=body.querySelector('#pgNote').value; paint(); });
-      body.querySelector('#pgReset').onclick=()=>{ const pages={...(b.pages||{})}; delete pages[day]; S.saveBook(b.id, {pages}); b.pages=pages; back(); after(); };
-      body.querySelector('#pgSave').onclick=()=>{
-        const pages={...(b.pages||{}), [day]:{ layout:cfg.layout, order, stickers:chosen, note:body.querySelector('#pgNote').value.trim() }};
-        S.saveBook(b.id, {pages}); b.pages=pages; back(); toast('Page saved'); after();
-      };
+      const note=()=>{ cfg.note=body.querySelector('#pgNote').value; };
+      bindSeg(body, 'playout', x=>{ cfg.layout=x; });
+      body.querySelectorAll('[data-mv]').forEach(x=>x.onclick=()=>{ const i=+x.dataset.mv, j=i+(+x.dataset.d); [order[i],order[j]]=[order[j],order[i]]; note(); paint(); });
+      body.querySelectorAll('[data-st]').forEach(x=>x.onclick=()=>{ const id=x.dataset.st; if (chosen.includes(id)) chosen=chosen.filter(c=>c!==id); else if (chosen.length<3) chosen.push(id); else return toast('Three stickers per page'); note(); paint(); });
+      body.querySelector('#pgReset').onclick=()=>{ S.resetPage(b.id, pg.entry.id); back(); after(); };
+      body.querySelector('#pgSave').onclick=()=>{ note(); S.savePage(b.id, pg.entry.id, { layout:cfg.layout, order, stickers:chosen, note:(cfg.note||'').trim() }); back(); toast('Page saved'); after(); };
     };
     paint();
   });
@@ -188,7 +186,7 @@ function coverScreen(bookId){
   openScreen(el=>{
     const paint=()=>{
       const b={...b0, ...d};
-      const count=bookPhotos(b0).length;
+      const count=pagesOf(b0).length;
       el.innerHTML = topbar({title:'Book Cover', eyebrow:'Scrapbook page', actions:`<button class="icon-btn" id="cvOpen" aria-label="Open book">${icon('menu_book')}</button>`, profile:true}) + `<div class="screen-body">
         <div class="row between mt8"><span class="tag rust">${icon('menu_book')}Closed book preview</span><button class="btn btn-dark btn-sm" id="cvSave" style="border-radius:999px">${icon('check')}Save Cover</button></div>
         <div class="card-peach mt16" style="padding:20px 18px 14px"><button id="cvTap" style="display:block;width:100%">${coverHTML(b, count)}</button><p class="center hand mt12">☝ Tap book cover to open spread 📖</p></div>
@@ -222,128 +220,142 @@ function coverScreen(bookId){
 go.cover = coverScreen;
 
 /* =========================================================
-   17 / 18. OPEN BOOK (by date / by place) + 22 states
+   THE OPEN BOOK: a feed of pages you scroll through, newest first
+   (By Date: one page per visit, under month headings; By Place: a chapter per place)
    ========================================================= */
+const starsHTML = r => { r=+r||0; if (!r) return ''; let s=''; for (let i=1;i<=5;i++) s += icon(r>=i?'star':(r>=i-.5?'star_half':'star'), r>=i-.5?'on':'off', r>=i-.5); return `<span class="pg-stars" aria-label="${r} stars">${s}</span>`; };
+function pageHTML(b, pg){
+  const me=S.me(), e=pg.entry, v=venueOfPage(pg), z=MAP.zoneById(v?.zone);
+  const cfg=pg.cfg||{}, layout=pg.photos.length ? (cfg.layout||'scrapbook') : 'plain';
+  const stickers=(cfg.stickers||[]).map(id=>BADGES.find(x=>x.id===id)).filter(Boolean).map(x=>({ ...x, done:true }));
+  const people=peopleOf(pg), cat=v?M.primaryCat(v):'coffee';
+  const by = e && e.userId!==me.id ? S.user(e.userId) : null;
+  // a page in your Tagged book says which crew it came from
+  const fromCrews = b.kind==='tagged' && e ? S.crewsOf(e).map(c=>c.name) : [];
+  const meals = e ? (e.meals||[]).map(id=>MEALS.find(m=>m.id===id)).filter(Boolean) : [];
+  const photos = pg.photos.map((p,i)=>{
+    const bm=(p.bookmarkedBy||[]).includes(me.id);
+    return polaroidHTML({ src:S.photoURL(p), id:p.id, cls:(layout==='scrapbook'?(i%2?'r':'l')+' wide':(layout==='hero'&&i===0?'hero wide':'')), rot:layout==='scrapbook'?tilt(p.id,5):(layout==='grid'?tilt(p.id,2):0),
+      caption:p.caption||'', sub:`<button data-heart="${p.id}" aria-label="Bookmark" style="color:var(--rust)">${icon(bm?'bookmark':'bookmark_border','',bm)}</button>` });
+  }).join('');
+  return `<article class="page layout-${layout}" data-page-id="${esc(pg.id)}"><span class="bookmark"></span>
+    ${e?`<button class="icon-btn page-edit" data-editpage="${esc(pg.id)}" aria-label="Dress up this page">${icon('auto_fix_high')}</button>`:''}
+    ${stickers.map((st,i)=>`<span class="page-sticker ps-${i}">${stickerHTML(st, 58, {progress:false})}</span>`).join('')}
+    <div class="page-date"><span class="cap">${esc(fmtDay(pg.date))}</span><div class="page-geo">${esc((z?z.label:APP.city).toUpperCase())}${z?` • ${z.lat.toFixed(4)}° N, ${z.lng.toFixed(4)}° E`:''}</div></div>
+    <div class="pg-head">
+      ${pg.photos.length ? '' : `<span class="pg-stamp">${postageHTML(cat, pg.date, 92)}</span>`}
+      <div class="grow" style="min-width:0">
+        <h3 class="pg-place" ${v?`data-venue="${v.id}"`:''}>${esc(v?.name||'A day out')}</h3>
+        <div class="pg-meta">${esc(catById(cat)?.label||'')}${e&&e.kind==='visit'&&by?` • logged by ${esc(by.name||by.handle)}`:''}</div>
+        <div class="pg-chips">${starsHTML(e&&e.rating)}${meals.map(m=>`<span class="tag soft">${icon(m.icon)}${esc(m.label)}</span>`).join('')}${e&&e.private?`<span class="tag dark">${icon('lock','',true)}Only you</span>`:''}${e&&e.checkin?`<span class="tag green">${icon('where_to_vote')}Checked in</span>`:''}</div>
+      </div>
+    </div>
+    ${cfg.note?`<div class="page-note"><span class="tape"></span>${esc(cfg.note)}</div>`:''}
+    ${photos?`<div class="page-photos">${photos}</div>`:''}
+    ${e&&e.notes?`<p class="pg-notes">“${esc(e.notes)}”</p>`:''}
+    <div class="pg-foot">${people.length?`${avatarStack(people, 30, 5)}<span class="hand">${esc(people.length===1 && people[0].id===me.id ? 'Just you' : P.withText(people.map(u=>u.id===me.id?'you':(u.name||u.handle))).replace(/^with /,''))}</span>`:''}
+      ${fromCrews.length?`<span class="tag soft pg-from">${icon('groups')}From ${esc(fromCrews.join(', '))}</span>`:''}</div>
+  </article>`;
+}
+// the photos on a page, for the viewer
+const photoIdsOf = (pgs, id) => (pgs.find(p=>p.photos.some(x=>x.id===id)) || { photos:[] }).photos.map(p=>p.id);
+
 function openBook(bookId, opts){
   opts=opts||{};
   const b=S.book(bookId); if (!b) return;
-  let mode='date', page=0, filter={};
+  let mode='date', filter={}, shown=BATCH, pgs=[], chapters=[], io=null;
   openScreen(el=>{
-    const skeleton=()=>`<div class="page mt16"><div class="row"><span class="skeleton" style="width:40px;height:40px;border-radius:50%"></span><span class="grow"><span class="skeleton" style="display:block;width:60%;height:14px"></span><span class="skeleton mt8" style="display:block;width:40%;height:10px"></span></span></div>
-      <div class="skeleton mt20" style="height:240px;border-radius:14px"></div><div class="row mt16" style="gap:10px"><span class="skeleton" style="flex:1;height:90px"></span><span class="skeleton" style="flex:1;height:90px"></span><span class="skeleton" style="flex:1;height:90px"></span></div>
-      <p class="row mono mt16" style="font-size:11px;gap:8px;justify-content:center;color:var(--green)">● Pasting freshly stamped memories…</p></div>`;
-    const paint=()=>{
-      const me=S.me();
-      const ps=bookPhotos(b, filter);
-      const nf=filterCount(filter);
-      const head = topbar({title:b.title, eyebrow:'Scrapbook page', actions:`<button class="icon-btn" id="bkAddTop" aria-label="Add photos">${icon('add_a_photo')}</button><button class="icon-btn" id="bkCover" aria-label="Customise cover">${icon('palette')}</button><button class="icon-btn" id="bkShare" aria-label="Share">${icon('share')}</button>`}) +
-        `<div class="screen-body"><div class="row mt8" style="gap:10px"><div class="grow">${seg('bmode',[['date','By Date','calendar_month'],['place','By Place','location_on']],mode)}</div><button class="sq-btn${nf?' filtered':''}" id="bkFilter" aria-label="Filter photos" style="width:48px;height:48px">${icon('tune')}</button></div>`;
-      let body='';
-      const hasPrivate = b.kind!=='crew' && ps.some(p=>p.private);
-      if (hasPrivate && page===0) body += `<div class="privacy-banner mt16">${icon('shield_lock')}<span><b>Private photos are only visible to you.</b> They never appear on the crew map, feed, or shared memory book.</span></div>`;
-      if (!ps.length){
-        body += b.kind==='crew'
-          ? `<div class="card-soft mt16 center" style="padding:30px 18px"><div style="position:relative;width:170px;margin:0 auto"><div style="background:var(--sc-highest);border-radius:12px;padding:14px;transform:rotate(-4deg)"><div style="background:var(--card);border-radius:6px;padding:10px;transform:rotate(6deg);box-shadow:var(--shadow-sm)"><div style="background:var(--sc-high);height:70px;border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--rust)">${icon('camera')}</div></div></div><span style="position:absolute;left:-10px;bottom:-12px;width:44px;height:44px;border-radius:50%;background:var(--card);box-shadow:var(--shadow-sm);display:flex;align-items:center;justify-content:center;color:var(--gold)">${icon('restaurant','',true)}</span></div>
-             <h3 class="h-lg mt24">No shared photos yet</h3><p class="muted mt8">When you or someone in <b style="color:var(--rust)">${esc(S.myCrew()?.name||'your crew')}</b> logs a food trail and chooses <span class="hand">"Share with crew"</span>, they'll paste onto these pages automatically!</p>
-             <button class="btn btn-gold btn-block mt20" id="bkAdd">${icon('add_a_photo')}Add the first crew photo</button><p class="hand mt12">${icon('map')} Pin your favourite Deira street stall</p></div>`
-          : `<div class="card-soft mt16 center" style="padding:30px 18px"><h3 class="h-lg">${nf?'No photos match these filters':'This book is waiting for its first photo'}</h3><p class="muted mt8">${nf?'Try widening the time range or categories.':'Add photos when you log a place, or import from your camera roll.'}</p><button class="btn btn-gold btn-block mt20" id="bkAdd">${icon('add_a_photo')}${nf?'Add photos':'Add photos'}</button></div>`;
-      } else if (mode==='date') body += datePage(ps);
-      else body += placePage(ps, b);
-      el.innerHTML = head + body + `</div>`;
-      bindSeg(el,'bmode',v=>{ mode=v; page=0; paint(); el.scrollTop=0; });
-      el.querySelector('#bkFilter').onclick=()=>bookFilters(b, filter, f=>{ filter=f; page=0; paint(); });
-      el.querySelector('#bkCover').onclick=()=>coverScreen(b.id);
-      el.querySelector('#bkShare').onclick=()=>share({title:b.title, text:`${b.title} — ${plural(ps.length,'memory','memories')} on ${APP.name}`, url:location.origin});
-      const addHere=()=>addPhotos({ bookId:b.id, after:paint });
-      const add=el.querySelector('#bkAdd'); if (add) add.onclick=addHere;
-      el.querySelector('#bkAddTop').onclick=addHere;
-      el.querySelectorAll('[data-photo]').forEach(f=>f.onclick=e=>{
-        if (e.target.closest('[data-heart]')) return;
-        const list=[...el.querySelectorAll('[data-photo]')].map(x=>x.dataset.photo);
-        viewer(list, list.indexOf(f.dataset.photo));
-      });
-      el.querySelectorAll('[data-heart]').forEach(h=>h.onclick=e=>{ e.stopPropagation(); const on=S.toggleBookmark(h.dataset.heart); h.innerHTML=icon(on?'bookmark':'bookmark_border','',on); toast(on?'Bookmarked to your shelf':'Bookmark removed'); });
-      el.querySelectorAll('[data-page]').forEach(p=>p.onclick=()=>{ page=+p.dataset.page; paint(); el.scrollTop=0; });
-      el.querySelectorAll('[data-addplace]').forEach(p=>p.onclick=()=>addPhotos({venueId:p.dataset.addplace, bookId:b.id, after:paint}));
-      el.querySelectorAll('[data-venue]').forEach(p=>p.onclick=()=>go.place(p.dataset.venue));
-      el.querySelectorAll('[data-editpage]').forEach(x=>x.onclick=()=>pageEditor(b, x.dataset.editpage, bookPhotos(b, filter).filter(p=>p.date===x.dataset.editpage), paint));
+    const emptyHTML = nf => b.kind==='crew'
+      ? `<div class="card-soft mt16 center" style="padding:30px 18px"><div style="width:110px;margin:0 auto">${postageHTML('karak', todayISO(), 110)}</div>
+         <h3 class="h-lg mt24">${nf?'No pages match these filters':'No pages yet'}</h3><p class="muted mt8">${nf?'Try widening the months or kinds of place.':`Every visit you or someone in <b style="color:var(--rust)">${esc(S.myCrews().find(c=>c.id===b.crewId)?.name||'your crew')}</b> shares with the crew becomes a page here, photos or not.`}</p>
+         <button class="btn btn-gold btn-block mt20" id="bkAdd">${icon('add_location_alt')}Log a visit</button></div>`
+      : `<div class="card-soft mt16 center" style="padding:30px 18px"><div style="width:110px;margin:0 auto">${postageHTML('coffee', todayISO(), 110)}</div>
+         <h3 class="h-lg mt24">${nf?'No pages match these filters':b.kind==='tagged'?'Nobody has tagged you yet':'Every visit becomes a page'}</h3>
+         <p class="muted mt8">${nf?'Try widening the months or kinds of place.':b.kind==='tagged'?'When a crewmate tags you on a visit, its page lands here too.':'Log a place you’ve been and it’s taped in here, with or without photos.'}</p>
+         ${b.kind==='tagged'?'':`<button class="btn btn-gold btn-block mt20" id="bkAdd">${icon('add_location_alt')}Log a visit</button>`}</div>`;
+    const monthHead = d => `<div class="feed-month"><span>${esc(fmtMonth(monthKey(d)))}</span></div>`;
+    // the next slice of the feed
+    const slice = (from, to)=>{
+      if (mode==='date') return pgs.slice(from, to).map((p,i)=>{ const prev=pgs[from+i-1]; return (!prev || monthKey(prev.date)!==monthKey(p.date) ? monthHead(p.date) : '') + pageHTML(b, p); }).join('');
+      return chapters.slice(from, to).map((c,i)=>chapterHTML(c, from+i)).join('');
     };
-    // pages: one per day (by date) or one per venue (by place)
-    const datePage=(ps)=>{
-      const days=[...new Set(ps.map(p=>p.date))].sort().reverse();
-      page=Math.min(page, days.length-1);
-      const day=days[page], cfg=(b.pages||{})[day]||{};
-      const order=cfg.order||[], dps=ps.filter(p=>p.date===day).sort((x,y)=>{ const a=order.indexOf(x.id), c=order.indexOf(y.id); return (a<0?999:a)-(c<0?999:c); });
-      const layout=cfg.layout||'scrapbook';
-      const earned=badgeStatus(S.me().id).filter(x=>x.done), stickers=(cfg.stickers||[]).map(id=>earned.find(x=>x.id===id)).filter(Boolean);
-      const vs=[...new Set(dps.map(p=>p.venueId))].map(S.venue).filter(Boolean);
-      const z=MAP.zoneById(vs[0]?.zone);
-      const notes=[...new Set(dps.map(p=>p.entryId).filter(Boolean))].map(S.entry).filter(e=>e&&e.notes);
-      const me=S.me();
-      const prev=days[page+1], next=days[page-1];
-      const nextPs = next ? ps.filter(p=>p.date===next) : [];
-      const areaOf = d=>{ const v=S.venue(ps.find(p=>p.date===d)?.venueId); return v?zoneLabel(v.zone):''; };
-      return `<div class="page mt16 layout-${layout}"><span class="bookmark"></span>
-        <button class="icon-btn page-edit" data-editpage="${esc(day)}" aria-label="Edit this page">${icon('edit')}</button>
-        ${stickers.map((st,i)=>`<span class="page-sticker ps-${i}">${stickerHTML(st, 58, {progress:false})}</span>`).join('')}
-        <div class="row between page-date" style="align-items:flex-start"><div><span class="cap">${esc(fmtDay(day))}</span><div class="page-geo">${esc((z?z.label:APP.city).toUpperCase())}${z?` • ${z.lat.toFixed(4)}° N, ${z.lng.toFixed(4)}° E`:''}</div></div>
-          ${vs.length?`<span class="page-weather">${icon('wb_sunny')}${esc(vs.length>1?`${vs.length} stops`:`Out in ${z?z.label:APP.city}`)}</span>`:''}</div>
-        ${cfg.note?`<div class="page-note"><span class="tape"></span>${esc(cfg.note)}</div>`:''}
-        <div class="page-photos">${dps.map((p,i)=>{
-          const v=S.venue(p.venueId), e=p.entryId&&S.entry(p.entryId), u=S.user(p.userId);
-          const bm=(p.bookmarkedBy||[]).includes(me.id);
-          return polaroidHTML({src:S.photoURL(p), id:p.id, cls:(layout==='scrapbook'?(i%2?'r':'l')+' wide':(layout==='hero'&&i===0?'hero wide':'')), rot:layout==='scrapbook'?tilt(p.id,5):(layout==='grid'?tilt(p.id,2):0),
-            caption:p.caption || v?.name,
-            badge: p.private?`<span class="pol-badge tr" style="top:8px">${icon('lock')}Only you</span>`:(u&&u.id!==me.id?`<span class="pol-badge light">${esc(u.name||u.handle)}</span>`:''),
-            sub:`<span style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">${e&&e.rating?`<span class="mono" style="color:var(--green);font-size:12px;font-weight:700">★ ${e.rating}</span>`:''}<button data-heart="${p.id}" aria-label="Bookmark" style="color:var(--rust)">${icon(bm?'bookmark':'bookmark_border','',bm)}</button></span>`});
-        }).join('')}</div>
-        ${notes.length?`<div class="notes-block"><span class="eyebrow">${icon('edit_note')}Tasting notes</span>${notes.map(e=>{ const u=S.user(e.userId); return `<p style="font-size:16px;margin-top:6px">${u.id!==me.id?`<b>${esc(u.name)}:</b> `:''}${esc(e.notes)}</p>`; }).join('')}</div>`:''}
-        <div class="page-nav"><button data-page="${page+1}" ${prev?'':'disabled'}>${icon('arrow_back')}<span>${prev?esc(fmtDate(prev,{day:'numeric',month:'short'})):''}<br><span class="muted">${prev?'('+esc(areaOf(prev))+')':''}</span></span></button>
-          <span class="pn-mid">Page ${page+1} of ${days.length} • Vol. 1</span>
-          <button data-page="${page-1}" ${next?'':'disabled'} style="text-align:right"><span>${next?esc(fmtDate(next,{day:'numeric',month:'short'})):''}<br><span class="muted">${next?'('+esc(areaOf(next))+')':''}</span></span>${icon('arrow_forward')}</button></div>
-        ${next?`<button class="peeking" data-page="${page-1}"><img src="${esc(S.photoURL(nextPs[0]))}" alt=""><span class="grow"><span class="eyebrow" style="color:var(--gold-deep)">Next entry peeking</span><span class="hand" style="display:block">${esc(fmtDay(next).split(',')[0])} at ${esc(S.venue(nextPs[0].venueId)?.name||'')}</span></span>${icon('north_east')}</button>`:''}
-      </div>`;
-    };
-    const placePage=(ps, b)=>{
-      const byV={}; ps.forEach(p=>{ (byV[p.venueId]=byV[p.venueId]||[]).push(p); });
-      const vids=Object.keys(byV).sort((a,c)=>Math.max(...byV[c].map(p=>p.createdAt))-Math.max(...byV[a].map(p=>p.createdAt)));
-      page=Math.min(page, vids.length-1);
-      const v=S.venue(vids[page]); if (!v) return '';
-      const vps=byV[v.id], cat=catById(M.primaryCat(v));
-      const visits=S.entries({venueId:v.id, kind:'visit'}).filter(e=>b.kind!=='crew'||S.sharedHere(e)).sort((a,c)=>c.date.localeCompare(a.date));
-      const visitors=[...new Set(visits.map(e=>e.userId))].map(S.user).filter(Boolean);
-      const dates=visits.map(e=>e.date).sort();
-      const me=S.me();
-      const groups={}; vps.forEach(p=>{ const k=p.entryId||('d'+p.date); (groups[k]=groups[k]||[]).push(p); });
-      const gkeys=Object.keys(groups).sort((a,c)=>groups[c][0].date.localeCompare(groups[a][0].date));
-      const visitNo = k=>{ const e=S.entry(k); if (!e) return ''; const mineSorted=visits.slice().sort((a,c)=>a.date.localeCompare(c.date)||a.createdAt-c.createdAt); return mineSorted.findIndex(x=>x.id===e.id)+1; };
-      const names = visitors.map(u=>'@'+(u.id===me.id?'you':u.handle));
-      return `<div class="page mt16">
-        <div class="chapter-head"><div class="grow"><span class="hand">Chapter ${ROMAN(page+1)}</span><h2 data-venue="${v.id}" style="cursor:pointer">${esc(v.name)}</h2></div>
+    const total = ()=> mode==='date' ? pgs.length : chapters.length;
+    const chapterHTML = (c, n)=>{
+      const v=S.venue(c.venueId), cat=catById(v?M.primaryCat(v):'coffee');
+      const people=[...new Map(c.pages.flatMap(peopleOf).map(u=>[u.id,u])).values()];
+      const dates=c.pages.map(p=>p.date).sort();
+      return `<section class="page chapter mt16" data-chapter="${esc(c.venueId)}">
+        <div class="chapter-head"><div class="grow"><span class="hand">Chapter ${ROMAN(n+1)}</span><h2 ${v?`data-venue="${v.id}"`:''} style="cursor:pointer">${esc(v?.name||'Somewhere')}</h2></div>
           <span class="cat-tile"><span class="ct-ico">${iconSvg(cat.id,'#7e5700')}</span><b>${esc(cat.label)}</b></span></div>
-        <div class="chapter-meta"><div>${icon('near_me')}<b>${esc([zoneLabel(v.zone), v.address].filter(Boolean).join(' • '))}</b></div>
-          <div>${icon('calendar_month')}${plural(visits.length,'visit')} recorded${dates.length?` • ${esc(fmtDate(dates[0],{month:'short',year:'numeric'}))}${dates.length>1&&monthKey(dates[0])!==monthKey(dates[dates.length-1])?` – ${esc(fmtDate(dates[dates.length-1],{month:'short',year:'numeric'}))}`:''}`:''}</div></div>
-        ${visitors.length?`<div class="visited-by">${avatarStack(visitors,32,3)}<span>Visited by ${esc(names.length>2?names.slice(0,-1).join(', ')+', & '+names[names.length-1]:names.join(' & '))}</span></div>`:''}
-        ${gkeys.map(k=>{ const g=groups[k], n=visitNo(k); return `<div class="visit-rule">${n?`VISIT #${n} — `:''}${esc(fmtDate(g[0].date,{day:'numeric',month:'short',year:'numeric'}).toUpperCase())}</div>
-          <div class="photo-grid">${g.map(p=>polaroidHTML({src:S.photoURL(p), id:p.id, caption:p.caption||'', rot:tilt(p.id,4), badge:p.private?`<span class="pol-badge tr" style="top:8px">${icon('lock')}Only me</span>`:''})).join('')}</div>`; }).join('')}
-        <button class="btn btn-dark btn-block mt24" data-addplace="${v.id}">${icon('add_photo_alternate')}+ Add photos to this place</button>
-        <div class="page-nav"><button data-page="${page-1}" ${page>0?'':'disabled'}>${icon('arrow_back')}Prev</button><span class="pn-mid">${esc(APP.name)} Scrapbook <b>Page ${page+1}</b> • ${esc(v.name)} Chapter</span><button data-page="${page+1}" ${page<vids.length-1?'':'disabled'}>Next${icon('arrow_forward')}</button></div>
-      </div>`;
+        <div class="chapter-meta"><div>${icon('near_me')}<b>${esc(zoneLabel(v?.zone))}</b></div>
+          <div>${icon('calendar_month')}${plural(c.pages.length,'visit')}${dates.length?` • ${esc(fmtDate(dates[0],{month:'short',year:'numeric'}))}${monthKey(dates[0])!==monthKey(dates[dates.length-1])?` – ${esc(fmtDate(dates[dates.length-1],{month:'short',year:'numeric'}))}`:''}`:''}</div></div>
+        ${people.length?`<div class="visited-by">${avatarStack(people,32,4)}<span>${esc(people.map(u=>u.id===S.me().id?'you':(u.name||u.handle)).join(', '))}</span></div>`:''}
+        ${c.pages.map(p=>`<div class="visit-rule">${esc(fmtDate(p.date,{day:'numeric',month:'short',year:'numeric'}).toUpperCase())}${p.entry&&p.entry.rating?` • ★ ${p.entry.rating}`:''}</div>
+          ${p.photos.length?`<div class="photo-grid">${p.photos.map(ph=>polaroidHTML({src:S.photoURL(ph), id:ph.id, caption:ph.caption||'', rot:tilt(ph.id,4)})).join('')}</div>`:`<p class="pg-notes" style="margin-top:8px">${p.entry&&p.entry.notes?`“${esc(p.entry.notes)}”`:'<span class="muted">No photos, just the memory.</span>'}</p>`}`).join('')}
+        ${b.kind!=='tagged'?`<button class="btn btn-dark btn-block mt24" data-addplace="${esc(c.venueId)}">${icon('add_a_photo')}Log another visit here</button>`:''}
+      </section>`;
     };
-    // tactile loading state while the first photos decode
-    el.innerHTML = topbar({title:b.title, eyebrow:'Scrapbook page'}) + `<div class="screen-body">${skeleton()}</div>`;
+    const more = ()=>{
+      if (shown >= total()) return;
+      const from = shown; shown = Math.min(total(), shown + BATCH);
+      const s = el.querySelector('#bkMore'); if (!s) return;
+      s.insertAdjacentHTML('beforebegin', slice(from, shown));
+      if (shown >= total()){ s.remove(); io && io.disconnect(); }
+    };
+    const paint=()=>{
+      pgs = pagesOf(b, filter);
+      const byV = new Map(); pgs.forEach(p=>{ const k=p.entry?p.entry.venueId:p.venueId; if (!byV.has(k)) byV.set(k, []); byV.get(k).push(p); });
+      chapters = [...byV].map(([venueId, pages])=>({ venueId, pages })).sort((a,c)=>(c.pages[0].date||'').localeCompare(a.pages[0].date||''));
+      // opening at a page: load the feed down to it
+      if (opts.pageId){ const i = pgs.findIndex(p=>p.id===opts.pageId); if (i>=0){ mode='date'; shown = Math.max(shown, i+2); } }
+      shown = Math.min(Math.max(shown, BATCH), total() || BATCH);
+      const nf=filterCount(filter);
+      const head = topbar({title:b.title, eyebrow: b.kind==='crew' ? 'Crew scrapbook' : b.kind==='tagged' ? 'Tagged scrapbook' : 'Scrapbook', actions:`<button class="icon-btn" id="bkAddTop" aria-label="Log a visit">${icon('add_a_photo')}</button><button class="icon-btn" id="bkCover" aria-label="Customise cover">${icon('palette')}</button><button class="icon-btn" id="bkShare" aria-label="Share">${icon('share')}</button>`}) +
+        `<div class="screen-body"><div class="row mt8" style="gap:10px"><div class="grow">${seg('bmode',[['date','By Date','calendar_month'],['place','By Place','location_on']],mode)}</div><button class="sq-btn${nf?' filtered':''}" id="bkFilter" aria-label="Filter pages" style="width:48px;height:48px">${icon('tune')}</button></div>`;
+      let body='';
+      if (b.kind!=='crew' && pgs.some(p=>p.entry && p.entry.private)) body += `<div class="privacy-banner mt16">${icon('shield_lock')}<span><b>Just me pages are only visible to you.</b> They never appear in a crew’s book.</span></div>`;
+      body += pgs.length ? `<div class="feed">${slice(0, shown)}${shown<total()?`<div class="feed-more" id="bkMore"><span class="skeleton"></span>Taping in more pages…</div>`:`<p class="book-end hand">${mode==='date'?`The first page • ${plural(pgs.length,'page')}`:`${plural(chapters.length,'place')}`}</p>`}</div>` : emptyHTML(nf);
+      el.innerHTML = head + body + `</div>`;
+      bindSeg(el,'bmode',v=>{ mode=v; shown=BATCH; opts.pageId=null; paint(); el.scrollTop=0; });
+      el.querySelector('#bkFilter').onclick=()=>bookFilters(b, filter, f=>{ filter=f; shown=BATCH; paint(); });
+      el.querySelector('#bkCover').onclick=()=>coverScreen(b.id);
+      el.querySelector('#bkShare').onclick=()=>share({title:b.title, text:`${b.title} — ${plural(pgs.length,'page')} on ${APP.name}`, url:location.origin});
+      const addHere=()=>addPhotos({ bookId:b.id });
+      const add=el.querySelector('#bkAdd'); if (add) add.onclick=()=>go.log(b.kind==='crew'?{ who:[b.crewId] }:{});
+      el.querySelector('#bkAddTop').onclick=addHere;
+      io && io.disconnect();
+      const s=el.querySelector('#bkMore');
+      if (s && 'IntersectionObserver' in window){ io = new IntersectionObserver(es=>{ if (es.some(x=>x.isIntersecting)) more(); }, { root:el, rootMargin:'600px 0px' }); io.observe(s); }
+      else if (s) s.onclick = more;
+      if (opts.pageId){ const t=el.querySelector(`[data-page-id="${CSS.escape(opts.pageId)}"]`); if (t) requestAnimationFrame(()=>{ el.scrollTop = t.offsetTop - 70; t.classList.add('flash'); }); opts.pageId=null; }
+    };
+    // one set of handlers for everything in the feed (pages keep arriving as you scroll)
+    el.addEventListener('click', e=>{
+      const t=e.target;
+      const heart=t.closest('[data-heart]'); if (heart){ e.stopPropagation(); const on=S.toggleBookmark(heart.dataset.heart); heart.innerHTML=icon(on?'bookmark':'bookmark_border','',on); toast(on?'Bookmarked':'Bookmark removed'); return; }
+      const ed=t.closest('[data-editpage]'); if (ed){ const pg=pgs.find(p=>p.id===ed.dataset.editpage); if (pg) pageEditor(b, pg, ()=>{ const s=el.scrollTop; paint(); el.scrollTop=s; }); return; }
+      const ph=t.closest('[data-photo]'); if (ph){ const ids = mode==='date' ? photoIdsOf(pgs, ph.dataset.photo) : pgs.flatMap(p=>p.photos).filter(p=>p.venueId===S.photo(ph.dataset.photo)?.venueId).map(p=>p.id); go.viewer(ids, ids.indexOf(ph.dataset.photo)); return; }
+      const ap=t.closest('[data-addplace]'); if (ap){ go.log({ venueId:ap.dataset.addplace, ...(b.kind==='crew'?{ who:[b.crewId] }:{}) }); return; }
+      const vn=t.closest('[data-venue]'); if (vn){ go.place(vn.dataset.venue); return; }
+    });
+    // repaint when something changes (a new page, a crewmate's edit), keeping your place
+    const off=S.onChange(w=>{ if (!el.isConnected){ off(); io && io.disconnect(); return; } if (['entries','photos','pages','sync','books'].includes(w)){ const s=el.scrollTop; paint(); el.scrollTop=s; } });
+    // a quick tactile placeholder while the first photos decode
+    el.innerHTML = topbar({title:b.title, eyebrow:'Scrapbook'}) + `<div class="screen-body"><div class="page mt16"><div class="skeleton" style="height:22px;width:60%"></div><div class="skeleton mt20" style="height:220px;border-radius:14px"></div><p class="row mono mt16" style="font-size:11px;gap:8px;justify-content:center;color:var(--green)">● Taping in your pages…</p></div></div>`;
     const first=bookPhotos(b).slice(0,3).map(p=>new Promise(r=>{ const i=new Image(); i.onload=i.onerror=r; i.src=S.photoURL(p); }));
-    Promise.race([Promise.all(first), new Promise(r=>setTimeout(r,900))]).then(()=>{ if (el.isConnected) paint(); });
+    Promise.race([Promise.all(first), new Promise(r=>setTimeout(r,700))]).then(()=>{ if (el.isConnected) paint(); });
   });
 }
 go.book = openBook;
+// open the book a page is in, at that page
+go.bookPage = (bookId, pageId)=>openBook(bookId, { pageId });
 
 /* =========================================================
    19. BOOK FILTERS
    ========================================================= */
 function bookFilters(b, current, apply){
   const d={ months:[...(current.months||[])], cats:[...(current.cats||[])], venues:[...(current.venues||[])], members:[...(current.members||[])], tagged:[...(current.tagged||[])], privacy:current.privacy||'all' };
-  const base = b ? bookPhotos({...b, filter:{}}) : S.photos();
+  const base = b ? pageRecs({...b, filter:{}}) : pageRecs({ kind:'album', id:'_all' });
   const months=[...new Set(base.map(p=>monthKey(p.date)))].sort().reverse();
   const people=b && b.kind==='crew' ? S.crewMembers() : [];
   // people you've been tagged with (either way) in this book's photos
@@ -352,11 +364,11 @@ function bookFilters(b, current, apply){
   let q='';
   openSheet(body=>{
     const paint=()=>{
-      const n=bookPhotos(b||{kind:'album'}, d).length;
+      const n=pageRecs(b||{kind:'album', id:'_all'}, d).length;
       const vHits = q ? S.searchVenues(q, 6).filter(v=>base.some(p=>p.venueId===v.id)) : [];
       const topVenues = [...new Set(base.map(p=>p.venueId))].slice(0,6).filter(id=>!d.venues.includes(id));
-      const nV = new Set(bookPhotos(b||{kind:'album'}, d).map(p=>p.venueId)).size;
-      body.innerHTML = `<div class="sheet-head"><div class="grow"><h2 class="h-lg">Filter Photobook <span class="hand">Al-Daftar</span></h2><p class="muted">Refine memories across ${esc(APP.city)} pages</p></div><button class="btn btn-ghost btn-sm mono" data-x="clear" style="font-size:13px;letter-spacing:.08em">CLEAR<br>ALL</button></div>
+      const nV = new Set(pageRecs(b||{kind:'album', id:'_all'}, d).map(p=>p.venueId)).size;
+      body.innerHTML = `<div class="sheet-head"><div class="grow"><h2 class="h-lg">Filter Scrapbook <span class="hand">Al-Daftar</span></h2><p class="muted">Refine memories across ${esc(APP.city)} pages</p></div><button class="btn btn-ghost btn-sm mono" data-x="clear" style="font-size:13px;letter-spacing:.08em">CLEAR<br>ALL</button></div>
         <div class="row between mt8"><span class="eyebrow" style="color:var(--ink)">${icon('calendar_month')} Time range / month</span></div>
         <div class="month-row mt12"><button class="month-chip${!d.months.length?' on':''}" data-month="">All Time</button>${months.map(m=>`<button class="month-chip${d.months.includes(m)?' on':''}" data-month="${m}">${d.months.includes(m)?icon('check'):''}${esc(fmtMonth(m))}</button>`).join('')}</div>
         <div class="row between mt20"><span class="eyebrow" style="color:var(--ink)">${icon('local_cafe')} Category (taste &amp; mood)</span>${d.cats.length?`<span class="tag" style="background:var(--rust);color:var(--on-deep);text-transform:none">${d.cats.length} Selected</span>`:''}</div>
@@ -364,13 +376,13 @@ function bookFilters(b, current, apply){
         <div class="row between mt20"><span class="eyebrow" style="color:var(--ink)">${icon('location_on')} Places &amp; spots</span></div>
         <label class="search mt12">${icon('search')}<input id="bfQ" placeholder="Search a place" value="${esc(q)}"></label>
         <div class="chip-scroll mt12">${d.venues.map(id=>`<button class="person-chip on" data-venue-x="${id}" style="padding-left:14px;background:var(--rust-soft);box-shadow:0 3px 0 var(--rust)">${icon('location_on')}${esc(S.venue(id)?.name||'')}${icon('close')}</button>`).join('')}${(q?vHits.map(v=>v.id):topVenues).filter(id=>!d.venues.includes(id)).map(id=>`<button class="person-chip" data-venue-add="${id}" style="padding-left:14px">${esc(S.venue(id)?.name||'')}</button>`).join('')}</div>
-        ${people.length>1?`<div class="row between mt20"><span class="eyebrow" style="color:var(--ink)">${icon('group')} Crew members (shared book)</span></div><p class="muted small mt4">Filters photos by who took or uploaded them</p>
+        ${people.length>1?`<div class="row between mt20"><span class="eyebrow" style="color:var(--ink)">${icon('group')} Crew members (shared book)</span></div><p class="muted small mt4">Pages by who logged the visit</p>
         <div class="chip-scroll mt12"><button class="person-chip${!d.members.length?' on':''}" data-mem="">${icon('groups')}Everyone</button>${people.map(u=>`<button class="person-chip${d.members.includes(u.id)?' on':''}" data-mem="${u.id}">${avatarHTML(u,30)}@${esc(u.id===S.me().id?'you':u.handle)}${d.members.includes(u.id)?icon('check_circle'):''}</button>`).join('')}</div>`:''}
         ${withPeople.length?`<div class="row between mt20"><span class="eyebrow" style="color:var(--ink)">${icon('group')} Tagged with</span></div><p class="muted small mt4">Visits you went on together</p>
         <div class="chip-scroll mt12" data-f="tagged">${withPeople.map(u=>`<button class="person-chip${d.tagged.includes(u.id)?' on':''}" data-with="${u.id}">${avatarHTML(u,30)}@${esc(u.handle)}${d.tagged.includes(u.id)?icon('check_circle'):''}</button>`).join('')}</div>`:''}
         ${!b||b.kind!=='crew'?`<div class="row between mt20"><span class="eyebrow" style="color:var(--ink)">${icon('visibility')} Privacy scope</span><span class="hand">Scrapbook access</span></div>
-        <div class="mt12">${seg('priv',[['all','All Photos','photo_library'],['shared','Shared Only','groups'],['private','Private Only','lock']],d.privacy)}</div>`:''}
-        <div class="sheet-foot"><button class="btn btn-gold btn-block" data-x="apply">${icon('menu_book')}${b?`Show ${plural(n,'Photo')} (Apply)`:`Use ${plural(n,'photo')}`}</button><p class="center hand mt8">Matching ${plural(nV,'place')} in your scrapbook</p></div>`;
+        <div class="mt12">${seg('priv',[['all','All Pages','menu_book'],['shared','Shared','groups'],['private','Just me','lock']],d.privacy)}</div>`:''}
+        <div class="sheet-foot"><button class="btn btn-gold btn-block" data-x="apply">${icon('menu_book')}${b?`Show ${plural(n,'Page')} (Apply)`:`Use ${plural(n,'page')}`}</button><p class="center hand mt8">Matching ${plural(nV,'place')} in your scrapbook</p></div>`;
       const qi=body.querySelector('#bfQ'); qi.oninput=()=>{ q=qi.value; const pos=qi.selectionStart; keep(); const n2=body.querySelector('#bfQ'); n2.focus(); n2.setSelectionRange(pos,pos); };
       bindSeg(body,'priv',v=>{ d.privacy=v; keep(); });
     };
@@ -460,87 +472,31 @@ function viewer(ids, index){
 go.viewer = viewer;
 
 /* =========================================================
-   21. ADD PHOTOS
+   ADD PHOTOS: pick from the camera roll, then log the visit they're from
+   (there's one flow: the photos arrive already in the log form)
    ========================================================= */
 function addPhotos(opts){
   opts=opts||{};
-  const me=S.me();
-  const picked=[];        // {blob, url, caption, time, on}
-  let venue = opts.venueId ? S.venue(opts.venueId) : null;
-  // added from a crew's book: it's for that crew (you can still change it)
   const fromBook = opts.bookId ? S.book(opts.bookId) : null;
-  const bookCrew = fromBook && fromBook.kind==='crew' ? S.myCrews().find(c=>c.id===fromBook.crewId) : null;
-  let kind='visit', who = bookCrew ? [bookCrew.id] : whoDefault(), q='';
+  const who = fromBook && fromBook.kind==='crew' && S.myCrews().some(c=>c.id===fromBook.crewId) ? [fromBook.crewId] : undefined;
   const input=document.createElement('input'); input.type='file'; input.accept='image/*'; input.multiple=true;
-  openScreen(el=>{
-    const paint=()=>{
-      const sel=picked.filter(p=>p.on), crew=S.myCrew(), members=crew?S.crewMembers(crew).filter(u=>u.id!==me.id):[];
-      const step = !sel.length ? 1 : !venue ? 2 : 3;
-      const room = APP.photoLimit - S.myPhotoCount();
-      const visitsHere = venue ? S.entries({venueId:venue.id, userId:me.id, kind:'visit'}).length : 0;
-      const hits = q ? S.searchVenues(q, 5) : [];
-      el.innerHTML = topbar({title:'Add Scrapbook Memory', eyebrow:'Scrapbook and notes', actions:''}) + `<div class="screen-body">
-        <div class="row between mt8"><button class="row btn-ghost" data-act="back" style="gap:4px;color:var(--ink-2)">${icon('close')}Cancel</button>
-          <div class="center"><span class="hand">Memory entry</span><div class="h-sm">${bookCrew?esc(bookCrew.name)+' book':'Add to Photobook'}</div></div>
-          <button class="btn btn-gold btn-sm" id="apNext" style="border-radius:999px">Next <span class="tag soft" style="background:rgba(255,255,255,.5)">${sel.length}</span></button></div>
-        <div class="stepper mt16"><span class="${step>=1?'on':''}"><i>1</i>Photos</span><b></b><span class="${step>=2?'on':''}"><i>2</i>Place</span><b></b><span class="${step>=3?'on':''}"><i>3</i>Review</span></div>
-        <div class="row between mt24"><span class="row h-md" style="gap:8px">${icon('photo_library')}1. Selected Photos <span class="tag">${sel.length} of ${picked.length}</span></span><button class="hand" id="apPick">${picked.length?'Reselect roll ›':'Choose ›'}</button></div>
-        ${picked.length?`<div class="sel-grid mt12">${picked.map((p,i)=>`<div style="position:relative" data-toggle="${i}">${p.on?`<span class="tick" style="position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;z-index:3">${icon('check')}</span>`:''}${polaroidHTML({src:p.url, id:'s'+i, tape:false, rot:0, badge:`<span class="pol-badge" style="left:6px;bottom:6px">${esc(p.time)}</span>`, sub:`<input data-cap="${i}" value="${esc(p.caption)}" placeholder="caption" maxlength="40" style="width:100%;border:0;background:none;font-family:var(--f-mono);font-size:12px;text-align:center;outline:none">`, cls:p.on?'':'dim'})}</div>`).join('')}</div>`
-          : `<label class="add-photo mt12" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;height:150px;border:2px dashed var(--outline-v);border-radius:16px;background:var(--sc-low);color:var(--rust)">${icon('add_photo_alternate')}<b>Choose photos from your roll</b><span class="muted small">Up to ${Math.min(24, room)} at a time</span></label>`}
-        <div class="row between mt24"><span class="row h-md" style="gap:8px">${icon('storefront')}2. Choose Place</span>${venue&&typeof venue.lat==='number'?'<span class="mono" style="color:var(--green);font-size:12px;font-weight:700">● EXACT SPOT</span>':''}</div>
-        ${venue?`<div class="card mt12"><div class="row" style="background:var(--sc);border-radius:14px;padding:12px">${`<span class="stamp st-visited"><span class="st-paper"><span class="st-ico">${iconSvg(M.primaryCat(venue),'#7e5700')}</span></span></span>`}<div class="grow"><b class="h-sm">${esc(venue.name)} ${icon('verified')}</b><div class="muted small">${esc(zoneLabel(venue.zone))}</div><span class="tag rust mt4">${esc(catById(M.primaryCat(venue)).label)}</span></div><span style="width:40px;height:40px;border-radius:50%;background:var(--gold-deep);color:var(--on-deep);display:flex;align-items:center;justify-content:center">${icon('check')}</span></div>
-            <div class="row between mt8"><span class="hand">Not the right branch?</span><button class="mono" id="apChange" style="color:var(--gold-deep);font-weight:700;font-size:12px">Change location</button></div></div>`
-          : `<label class="search mt12">${icon('search')}<input id="apQ" placeholder="Search a place" value="${esc(q)}" autocomplete="off"></label>
-            <div class="stack mt12">${hits.map(v=>`<button class="search-result" data-v="${v.id}"><span class="sr-ico">${iconSvg(M.primaryCat(v), catById(M.primaryCat(v)).color)}</span><span class="grow"><b>${esc(v.name)}</b><span class="muted small" style="display:block">${esc(zoneLabel(v.zone))}</span></span>${icon('chevron_right')}</button>`).join('')}</div>`}
-        ${venue?`<div class="card-peach mt20" style="border-radius:var(--r-xl)"><div class="row" style="align-items:flex-start"><span style="width:44px;height:44px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;flex:none;box-shadow:0 3px 0 var(--gold-deep)">${icon('push_pin')}</span><div><b class="h-md">This adds a visit to ${esc(venue.name)}</b><p class="muted">Have you been there today or collecting notes for next time?</p></div></div>
-          <div class="stack mt16"><button class="radio-card${kind==='visit'?' on':''}" data-kind="visit"><span class="rc-head"><span class="dot"></span>Been here ${icon('verified')}<span class="grow"></span><span class="tag">Visit #${visitsHere+1}</span></span><p>Adds visit #${visitsHere+1} to your log with today's date <span class="mono">(${esc(fmtDate(todayISO()))})</span>.</p></button>
-          <button class="radio-card${kind==='want'?' on':''}" data-kind="want"><span class="rc-head"><span class="dot"></span>Want to try ${icon('bookmark')}<span class="grow"></span><span class="tag soft">Wishlist</span></span><p>Saves photos as inspiration for an upcoming visit or tasting route.</p></button></div></div>
-        <div class="card mt20" style="border-radius:var(--r-xl)"><span class="hand">Crew photobooks</span><div class="h-md">Who's this for?</div>
-          <div class="mt12" id="apWho">${whoHTML(who)}</div></div>`:''}
-        <button class="btn btn-gold btn-block mt24" id="apGo" style="min-height:64px">${icon('menu_book')}${sel.length?`Add ${plural(sel.length,'Photo')} to ${esc(venue?venue.name:'a place')}${venue?' Chapter':''}`:'Add photos'}</button>
-        <p class="center hand mt12">Memory will be stamped in your ${esc(APP.name)} Shelf</p>
-      </div>`;
-      const keep=fn=>{ const s=el.scrollTop; fn(); el.scrollTop=s; };
-      el.querySelector('#apPick')?.addEventListener('click', ()=>input.click());
-      el.querySelector('label.add-photo')?.addEventListener('click', e=>{ e.preventDefault(); input.click(); });
-      el.querySelectorAll('[data-toggle]').forEach(t=>t.addEventListener('click', e=>{ if (e.target.closest('input')) return; const k=+t.dataset.toggle; picked[k].on=!picked[k].on; keep(paint); }));
-      el.querySelectorAll('[data-cap]').forEach(c=>c.oninput=()=>{ picked[+c.dataset.cap].caption=c.value; });
-      const aq=el.querySelector('#apQ'); if (aq) aq.oninput=()=>{ q=aq.value; const pos=aq.selectionStart; keep(paint); const n=el.querySelector('#apQ'); n.focus(); n.setSelectionRange(pos,pos); };
-      el.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{ venue=S.venue(b.dataset.v); q=''; keep(paint); });
-      const ch=el.querySelector('#apChange'); if (ch) ch.onclick=()=>{ venue=null; keep(paint); };
-      el.querySelectorAll('[data-kind]').forEach(b=>b.onclick=()=>{ kind=b.dataset.kind; keep(paint); });
-      bindWho(el, ()=>who, v=>{ who=v; keep(paint); });
-      const go2=async()=>{
-        const list=picked.filter(p=>p.on);
-        // say what's missing instead of a greyed-out button
-        if (!list.length) return toast('Choose a photo first');
-        if (!venue){ el.querySelector('#apQ')?.scrollIntoView({ block:'center', behavior:'smooth' }); el.querySelector('#apQ')?.focus(); return toast('Pick the place first'); }
-        if (list.length > room) return toast(`Your photo roll only has room for ${room} more`);
-        if (who===null){ el.querySelector('#apWho').scrollIntoView({ block:'center', behavior:'smooth' }); return toast('Choose who it’s for'); }
-        el.querySelector('#apGo').disabled=true;
-        const e=S.addEntry({venueId:venue.id, kind, rating:0, date:todayISO(), notes:'', crewIds:who});
-        await S.addPhotos(list.map(p=>({blob:p.blob, caption:p.caption.trim(), venueId:venue.id, entryId:e.id, date:e.date})));
-        picked.forEach(p=>URL.revokeObjectURL(p.url));
-        back(); go.refresh();
-        const shownIn = fromBook && (fromBook.kind!=='crew' || (who||[]).includes(fromBook.crewId)) ? fromBook : S.books().find(x=>x.kind==='personal');
-        toast(`${plural(list.length,'photo')} added to ${venue.name}`, 'Open book', ()=>openBook(shownIn.id));
-        if (opts.after) opts.after();
-      };
-      el.querySelector('#apGo').onclick=go2; el.querySelector('#apNext').onclick=go2;
-    };
-    input.onchange=async()=>{
-      const files=[...input.files].slice(0,24);
-      for (const f of files){
-        try{
-          const blob=await compressImage(f, 1400, 0.8);
-          const t=new Date(f.lastModified||Date.now());
-          picked.push({blob, url:URL.createObjectURL(blob), caption:'', time:t.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}), on:true});
-        }catch(_){ toast(`Couldn't read ${f.name}`); }
-      }
-      input.value=''; paint();
-    };
-    paint();
-    setTimeout(()=>{ if (!picked.length) input.click(); }, 350);
-  });
+  input.style.display='none'; document.body.appendChild(input);
+  input.onchange=async()=>{
+    const files=[...input.files]; input.remove();
+    if (files.length > APP.photosPerLog) toast(`One visit holds ${APP.photosPerLog} photos; the first ${APP.photosPerLog} are in`);
+    const photos=[];
+    for (const f of files.slice(0, APP.photosPerLog)){
+      try{
+        const blob=await compressImage(f, 1400, 0.8);
+        const t=new Date(f.lastModified||Date.now()), iso=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
+        photos.push({ blob, url:URL.createObjectURL(blob), caption:'', date: iso <= todayISO() ? iso : todayISO() });
+      }catch(_){ toast(`Couldn't read ${f.name}`); }
+    }
+    if (!photos.length) return;
+    // the visit's date: when the earliest photo was taken
+    const date = photos.map(p=>p.date).sort()[0];
+    go.log({ venueId:opts.venueId, who, photos, date });
+  };
+  input.click();
 }
 go.addPhotos = addPhotos;

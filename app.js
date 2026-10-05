@@ -24,6 +24,8 @@ import { registerSW, scheduleReminders } from './notify.js';
 import { maybeStartTour, paintEmptyMap } from './tour.js';
 import { readIncoming, pendingShares, takeShare, takeAllShares, shareText } from './incoming.js';
 import './errors.js';
+import './tapein.js';
+import { paintStrip, onThisDay, openMemory } from './memories.js';
 
 const scopeKey = 'bites-scope';
 state.scope = (()=>{ const s=M.defaultScope(); try{ const p=JSON.parse(localStorage.getItem(scopeKey)); if (p && p.mode) s.mode=p.mode; }catch(_){} return s; })();
@@ -85,6 +87,7 @@ function rebuild(){
   const crewN = sc.mode==='crew' ? modelCache.filter(s=>s.state!=='unlit').length : M.mapModel({...sc, mode:'crew'}).filter(s=>s.state!=='unlit').length;
   $('#mapMode').innerHTML = `<button data-v="me" class="${sc.mode==='me'?'on':''}">Me <em>${meN}</em></button><button data-v="crew" class="${sc.mode==='crew'?'on':''}"${S.myCrews().length>1?` aria-label="${esc(S.myCrew().name)}: tap again to switch crew"`:''}>${crewLabel()} <em>${crewN}</em></button>`;
   paintBell();
+  paintStrip();
   paintEmptyMap(meN + crewN);
   // filter dot
   const filtered = isFiltered();
@@ -123,7 +126,9 @@ function crewActivity(){
   // someone tagged you: "Maya tagged you at Ravi" (from any of your crews)
   const tags = S.taggedMe().map(e=>({ e, tag:true, u:S.user(e.userId), v:S.venue(e.venueId), at:e.createdAt })).filter(a=>a.u && a.v);
   const tagged = new Set(tags.map(a=>a.e.id));
-  return [...plans, ...tags, ...logs.filter(a=>!tagged.has(a.e.id))].sort((a,b)=>b.at-a.at).slice(0,20);
+  // a memory from this day in an earlier month or year (yours, or a visit you were tagged on)
+  const m = onThisDay(true), otd = m ? [{ otd:m, u:me, v:m.venue, at:new Date(new Date().toDateString()).getTime() }] : [];
+  return [...otd, ...[...plans, ...tags, ...logs.filter(a=>!tagged.has(a.e.id))].sort((a,b)=>b.at-a.at).slice(0,20)];
 }
 function paintBell(){
   const acts=crewActivity(), fresh=acts.filter(a=>a.at>seenAt()).length;
@@ -138,6 +143,8 @@ function openActivity(){
     body.innerHTML = `<div class="sheet-head"><div class="grow"><h2 class="h-md">Crew activity</h2><span class="hand">${crew?esc(crew.name):'Your crew'}, newest first</span></div></div>
       ${acts.length ? `<div class="act-list">${acts.map(a=>{
         const z=MAP.zoneById(a.v.zone);
+        if (a.otd){ return `<button class="act-row otd${a.at>since?' new':''}" data-otd="1"><span class="act-ico">${icon('history')}</span>
+          <span class="grow"><span class="act-text"><b>${esc(a.otd.when)}</b> ${esc(a.otd.text)}</span><span class="act-sub">On this day • tap to open the page</span></span>${icon('auto_stories')}</button>`; }
         if (a.ev){ const d=new Date(a.ev.when); return `<button class="act-row${a.at>since?' new':''}" data-event="${a.ev.id}">${avatarHTML(a.u,40)}
           <span class="grow"><span class="act-text"><b>${esc(a.u.name||a.u.handle)}</b> planned <b>${esc(a.v.name)}</b></span>
           <span class="act-sub">${esc(d.toLocaleDateString('en-GB',{weekday:'short', day:'numeric', month:'short'}))} • ${esc(d.toLocaleTimeString('en-GB',{hour:'numeric', minute:'2-digit', hour12:true}).toLowerCase())} • tap to RSVP</span></span>${icon('event')}</button>`; }
@@ -147,6 +154,7 @@ function openActivity(){
           <span class="act-sub">${a.tag?'You were there together • ':''}${esc(z?z.label:APP.city)} • ${ago(a.e.createdAt)}${a.e.rating?` • ★ ${fmtRating(a.e.rating)}`:''}</span></span>${icon('chevron_right')}</button>`; }).join('')}</div>`
         : `<div class="empty">${icon('notifications_none')}<p class="muted">${crew?'When your crew logs or saves a place, it shows up here.':'Start a crew and their new places will show up here.'}</p></div>`}`;
     body.querySelectorAll('[data-venue]').forEach(r=>r.addEventListener('click', ()=>{ back(); setTimeout(()=>go.showOnMap(r.dataset.venue), 60); }));
+    body.querySelectorAll('[data-otd]').forEach(r=>r.addEventListener('click', ()=>{ const m=acts.find(a=>a.otd)?.otd; back(); if (m) setTimeout(()=>openMemory(m), 60); }));
     body.querySelectorAll('[data-event]').forEach(r=>r.addEventListener('click', ()=>{ back(); setTimeout(()=>eventSheet(r.dataset.event), 60); }));
   });
 }

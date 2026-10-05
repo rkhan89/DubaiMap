@@ -16,7 +16,7 @@ export default async function p3(h){
   await step('page editor', async ()=>{
     await h.load(); await h.click('[data-tab="shelf"]'); await h.sleep(600);
     await h.js(()=>document.querySelectorAll('.book-spine')[1].click()); await h.sleep(900);
-    await h.js(()=>document.querySelector('[data-editpage]').click()); await h.sleep(600);
+    await h.js(()=>document.querySelector('.feed .page:not(.layout-plain) [data-editpage]').click()); await h.sleep(600);
     await h.js(()=>document.querySelector('[data-seg="playout"] [data-v="grid"]').click());
     await h.js(()=>{ const b=document.querySelector('[data-st]'); if (b) b.click(); });
     await h.sleep(200); await p.type('#pgNote', 'Karak crawl, round two');

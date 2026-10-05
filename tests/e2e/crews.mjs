@@ -49,12 +49,14 @@ export default async function crews(h){
     await h.js(()=>{ const n=document.querySelector('#lNotes'); n.value='Matcha with @omar'; n.dispatchEvent(new Event('input')); });
     const input = await p.$('#lPh'); await input.uploadFile(path.resolve('fixture.jpg')); await h.sleep(1500);
     await h.js(()=>document.querySelector('#lWho').scrollIntoView({block:'start'})); await h.sleep(200); await h.shot('c-log-who');
+    if (!/Tagging shares this visit with/.test(await text())) throw new Error('no note that tagging shares it');
     await h.js(()=>document.querySelector('#lSave').click()); await h.sleep(1500);
     const e = await store((S, a)=>{ const e=S.entries({venueId:a[0], userId:S.me().id}).sort((x,y)=>y.createdAt-x.createdAt)[0]; return { crews:e.crewIds, tags:e.taggedIds, priv:e.private, here:S.sharedHere(e) }; }, raviId);
     const fam = await store(S=>S.myCrews().find(c=>c.name==='Family').id);
-    if (e.crews.length!==1 || e.crews[0]!==fam || e.priv) throw new Error('crews '+JSON.stringify(e));
+    // tagging @maya (not in Family) also shares it with the crew you're both in
+    const both = await store(S=>S.myCrews().find(c=>c.memberIds.includes('demo-maya')).id);
+    if (e.crews.length!==2 || e.crews[0]!==fam || e.crews[1]!==both || e.priv) throw new Error('crews '+JSON.stringify(e));
     if (!(e.tags.includes('demo-maya') && e.tags.includes('demo-omar'))) throw new Error('tags '+JSON.stringify(e.tags));
-    if (e.here) throw new Error('shows as shared with Karak');
   });
   await step('meals: the visit is tagged Breakfast; the map filter finds it', async ()=>{
     const meals = await store((S, a)=>S.entries({venueId:a[0], userId:S.me().id}).sort((x,y)=>y.createdAt-x.createdAt)[0].meals, raviId);
@@ -98,7 +100,7 @@ export default async function crews(h){
     await h.js(()=>document.querySelector('[data-with="demo-maya"]').click()); await h.sleep(300);
     await h.shot('c-book-filter');
     const btn = await h.js(()=>document.querySelector('[data-x="apply"]').textContent);
-    if (!/1 Photo/.test(btn)) throw new Error('apply says '+btn);
+    if (!/1 Page/.test(btn)) throw new Error('apply says '+btn);
     await h.js(()=>document.querySelector('[data-x="apply"]').click()); await h.sleep(800); await h.shot('c-book-tagged');
     await back();
   });

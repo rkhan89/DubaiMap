@@ -21,6 +21,7 @@
 import { APP } from './config.js';
 import { uid, todayISO } from './data.js';
 import * as C from './cloud.js';
+import { legacyPageRows, pageId } from './pages.js';
 
 export const cloud = C.enabled();          // accounts on the server (false = this device only)
 const isLocal = id => typeof id==='string' && id.startsWith('demo-');   // the sample crew never syncs
@@ -42,7 +43,7 @@ const listeners = new Set();
 export function onChange(fn){ listeners.add(fn); return ()=>listeners.delete(fn); }
 function emit(what){ listeners.forEach(f=>{ try{ f(what); }catch(e){ console.error(e); } }); }
 
-function fresh(){ return { version:2, meId:null, users:{}, crews:{}, venues:{}, entries:{}, photos:{}, books:{}, events:{}, inbox:{}, flags:{} }; }
+function fresh(){ return { version:2, meId:null, users:{}, crews:{}, venues:{}, entries:{}, photos:{}, books:{}, events:{}, inbox:{}, pages:{}, flags:{} }; }
 function load(){
   try{ const d=JSON.parse(localStorage.getItem(KEY)); if (d && d.version===2) return {...fresh(), ...d}; }catch(_){}
   return fresh();
@@ -116,11 +117,12 @@ export async function pullNow(){
   db.books   = { ...Object.fromEntries(Object.entries(db.books||{}).filter(([k,b])=>isLocal(k) || isLocal(b.crewId))), ...fresh.books };
   db.events  = { ...keep(db.events), ...fresh.events };
   db.inbox   = { ...(fresh.inbox||{}) };
+  db.pages   = { ...Object.fromEntries(Object.entries(db.pages||{}).filter(([k])=>isLocal(k.split('|')[0]) || /^(crewbook-demo|loose)/.test(k))), ...(fresh.pages||{}) };
   // no profile row yet (an account made before the database was set up): make it from this phone's copy
   if (!db.users[db.meId] && meRec){ db.users[db.meId] = meRec; C.queue({ k:'put', t:'profiles', id:meRec.id, row:C.MAP.profiles.to(meRec) }); }
   if (db.users[db.meId] && meRec) db.users[db.meId].email = meRec.email;
   // replay what hasn't reached the server yet, so nothing flickers back
-  const T = { profiles:'users', crews:'crews', venues:'venues', entries:'entries', photos:'photos', books:'books', events:'events', share_inbox:'inbox' };
+  const T = { profiles:'users', crews:'crews', venues:'venues', entries:'entries', photos:'photos', books:'books', events:'events', share_inbox:'inbox', book_pages:'pages' };
   C.pending().forEach(o=>{
     const map = T[o.t] && db[T[o.t]]; if (!map) return;
     if (o.k==='put' || o.k==='ins'){ const rec = C.MAP[o.t].from ? C.MAP[o.t].from({ ...o.row, created_at:o.row.created_at || new Date().toISOString() }) : null; if (rec && !(o.k==='ins' && map[o.id])) map[o.id] = { ...(map[o.id]||{}), ...rec, src: map[o.id]?.src==='idb' ? 'idb' : rec.src }; }
@@ -455,9 +457,27 @@ export function entries(filter){
     (filter.includeHidden || canSee(e)));
 }
 export function entry(id){ return db.entries[id]||null; }
+// tagging someone shares the visit with a crew you're both in (only people newly tagged; a visit
+// already saved keeps who it was for unless you tag someone new). The server does the same.
+function shareWithTagged(rec, before){
+  if (rec.kind!=='visit' || !(rec.taggedIds||[]).length) return;
+  const had = new Set(before||[]), active = myCrew();
+  rec.taggedIds.forEach(t=>{
+    if (had.has(t) || (rec.crewIds||[]).some(id=>db.crews[id] && db.crews[id].memberIds.includes(t))) return;
+    const c = active && active.memberIds.includes(t) ? active : myCrews().find(x=>x.memberIds.includes(t));
+    if (c) rec.crewIds = [...(rec.crewIds||[]), c.id];
+  });
+  rec.private = !(rec.crewIds||[]).length;
+}
+// the crews tagging these people would add (for the note in the log form)
+export function crewsForTags(tagIds, crewIds, before){
+  const r = { kind:'visit', taggedIds:tagsOf(tagIds), crewIds:(crewIds||[]).slice() }; shareWithTagged(r, before);
+  return r.crewIds.filter(id=>!(crewIds||[]).includes(id)).map(id=>db.crews[id]).filter(Boolean);
+}
 export function addEntry(data){
   const m=me();
   const e = { id:uid(), userId:m.id, kind:'visit', rating:0, notes:'', date:todayISO(), createdAt:Date.now(), ...data, ...audience(data), taggedIds:tagsOf(data.taggedIds), meals:mealsOf(data.meals) };
+  shareWithTagged(e, []);
   db.entries[e.id]=e; save('entries'); push('entries', e);
   // where it came from: the link is private to you, so it goes to its own owner-only table
   if (e.sourceUrl && cloud && !volatile) C.queue({ k:'put', t:'entry_sources', id:e.id, row:{ entry_id:e.id, user_id:m.id, source_url:String(e.sourceUrl).slice(0,2000) } });
@@ -468,7 +488,9 @@ export function updateEntry(id, patch){
   if ('crewIds' in patch || 'private' in patch) patch = { ...patch, ...audience('crewIds' in patch ? patch : { private:patch.private }) };
   if ('taggedIds' in patch) patch = { ...patch, taggedIds:tagsOf(patch.taggedIds) };
   if ('meals' in patch) patch = { ...patch, meals:mealsOf(patch.meals) };
+  const tagsBefore = (e.taggedIds||[]).slice();
   Object.assign(e, patch);
+  if ('taggedIds' in patch) shareWithTagged(e, tagsBefore);
   // a visit's photos go to the same people
   Object.values(db.photos).filter(p=>p.entryId===id && p.userId===e.userId).forEach(p=>{
     if (p.private===e.private && String(p.crewIds||[])===String(e.crewIds||[])) return;
@@ -543,16 +565,64 @@ export function books(){
     db.books[b.id] = b; push('books', b, 'ins');
   }
   const crew=myCrew();
-  if (crew && !Object.values(db.books).some(b=>b.kind==='crew' && b.crewId===crew.id)){
-    const b = { id:'crewbook-'+crew.id, ownerId:m.id, crewId:crew.id, kind:'crew', title:`${crew.name} Scrapbook`, byline:'', texture:'cloth', tint:'#486636', pin:'karak', coverPhotoId:null, filter:{}, pages:{} };
+  // every crew you're in has its book (the shelf shows the one you're looking at)
+  myCrews().forEach(c=>{ if (Object.values(db.books).some(b=>b.kind==='crew' && b.crewId===c.id)) return;
+    const b = { id:'crewbook-'+c.id, ownerId:m.id, crewId:c.id, kind:'crew', title:`${c.name} Scrapbook`, byline:'', texture:'cloth', tint:'#486636', pin:'karak', coverPhotoId:null, filter:{}, pages:{} };
+    db.books[b.id] = b; push('books', b, 'ins'); });
+  // visits someone tagged you on get a book of their own
+  if (taggedMe().some(e=>e.kind==='visit') && !Object.values(db.books).some(b=>b.ownerId===m.id && b.kind==='tagged')){
+    const b = { id:'tagged-'+m.id, ownerId:m.id, kind:'tagged', title:'Tagged', byline:'Visits friends tagged you on', texture:'paperback', tint:'#f2cfb4', pin:'dessert', coverPhotoId:null, filter:{}, pages:{} };
     db.books[b.id] = b; push('books', b, 'ins');
   }
   Object.entries(db.books).forEach(([k,b])=>{ if (!b.id) b.id=k; });
+  // books kept on this phone: their old per-day page settings move onto each day's visit, once
+  // (on the server, migration 0008 does this)
+  Object.values(db.books).forEach(b=>{ if ((!cloud || isLocal(b.crewId)) && !b.pagesMoved && b.pages && Object.keys(b.pages).length){ legacyPageRows(b, pagesWorld()).forEach(r=>{ db.pages[r.id] = r; }); b.pagesMoved = true; } });
   // the app was renamed: personal books still carrying the old default title follow the new name
   Object.values(db.books).forEach(b=>{ if (b.kind==='personal' && b.title==='Dubai Bites • Vol. 1') b.title=APP.name+' • Vol. 1'; });
   return Object.values(db.books).filter(b=> b.ownerId===m.id && b.kind!=='crew' || (b.kind==='crew' && crew && b.crewId===crew.id));
 }
 export function book(id){ books(); return db.books[id]||null; }
+
+/* ---------- pages: every visit is a page; only how it's dressed up is stored ---------- */
+// can I see this at all (through any of my crews, not just the one I'm looking at)?
+function visibleAnywhere(rec){
+  const m=me(); if (!m || !rec) return false;
+  if (rec.userId===m.id) return true;
+  const tagged = rec.taggedIds || (rec.entryId && db.entries[rec.entryId] && db.entries[rec.entryId].taggedIds);
+  if (tagged && tagged.includes(m.id)) return true;
+  if (rec.private) return false;
+  return myCrews().some(c=>c.memberIds.includes(rec.userId) && (!(rec.crewIds&&rec.crewIds.length) || rec.crewIds.includes(c.id)));
+}
+// everything pages.js needs to lay out books
+export function pagesWorld(){
+  return { meId:db.meId, entries:Object.values(db.entries).filter(visibleAnywhere), photos:Object.values(db.photos).filter(visibleAnywhere),
+           pages:db.pages||{}, crews:db.crews, venue };
+}
+export function pageCfg(id){ return (db.pages||{})[id] || null; }
+export function savePage(bookId, entryId, cfg){
+  const b=db.books[bookId], m=me(); if (!b || !m) return;
+  const id = pageId(bookId, entryId);
+  const rec = { id, bookId, entryId, layout:cfg.layout||'scrapbook', order:(cfg.order||[]).slice(0,12), stickers:(cfg.stickers||[]).slice(0,3), note:String(cfg.note||'').slice(0,160), updatedBy:m.id, updatedAt:Date.now() };
+  db.pages[id] = rec; save('pages');
+  if (!isLocal(b.crewId) && !String(entryId).startsWith('loose-') && !isLocal(entryId)) push('book_pages', rec);
+  return rec;
+}
+export function resetPage(bookId, entryId){
+  const id = pageId(bookId, entryId), rec = db.pages[id], b = db.books[bookId]; if (!rec) return;
+  delete db.pages[id]; save('pages');
+  if (b && !isLocal(b.crewId) && !isLocal(entryId)) push('book_pages', rec, 'del');
+}
+// the book a new visit's page is taped into: the crew you're looking at if it's shared there,
+// else the first crew it's shared with, else your personal book. Plus how many other books.
+export function homeBookFor(e){
+  const bs = books(), active = myCrew();
+  const crewIds = e && !e.private ? (e.crewIds||[]) : [];
+  const personal = bs.find(b=>b.kind==='personal');
+  let crewId = crewIds.length ? (active && crewIds.includes(active.id) ? active.id : crewIds[0]) : null;
+  const target = crewId ? Object.values(db.books).find(b=>b.kind==='crew' && b.crewId===crewId) : null;
+  return { book: target || personal, crew: crewId ? db.crews[crewId] : null, others: Math.max(0, crewIds.length - 1) };
+}
 export function saveBook(id, patch){ const b=db.books[id]; if (!b) return; Object.assign(b, patch); save('books'); push('books', { id, patch, crewId:b.crewId }, 'upd'); return b; }
 export function addAlbum(data){ const m=me(); const id=uid(); db.books[id]={ id, ownerId:m.id, kind:'album', texture:'paperback', tint:'#e5a93c', pin:'dessert', coverPhotoId:null, filter:{}, pages:{}, ...data }; save('books'); push('books', db.books[id]); return db.books[id]; }
 export function deleteBook(id){ const b=db.books[id]; if (b && b.kind==='album' && b.ownerId===me()?.id){ delete db.books[id]; save('books'); push('books', b, 'del'); } }

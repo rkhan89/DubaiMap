@@ -3,10 +3,11 @@
 // except which unlocks you've already seen (per person, on this device).
 import * as S from './store.js';
 import { userStats } from './stats.js';
-import { esc } from './data.js';
+import { esc, CATEGORIES, monthKey } from './data.js';
 import { icon, openScreen, topbar, back } from './ui.js';
 import { go } from './go.js';
 
+const CAT_ICONS = { restaurant:'restaurant', shisha:'smoking_rooms', icecream:'icecream', coffee:'coffee', matcha:'emoji_food_beverage', dessert:'cake', burger:'lunch_dining', fastfood:'fastfood', cafeteria:'storefront', karak:'local_cafe', pizza:'local_pizza', acai:'nutrition', froyo:'icecream' };
 const OLD_DUBAI = ['deira','burdubai','alseef','karama','oudmetha'];
 const has = (s, ...cats)=>{ const set = new Set(); cats.forEach(c=>(s.catPlaces.get(c)||new Set()).forEach(v=>set.add(v))); return set.size; };
 // progress(s) -> [have, need]
@@ -26,7 +27,18 @@ export const BADGES = [
   { id:'omnivore',  name:'Omnivore',          desc:'Try all 10 kinds of place',                ic:'lunch_dining',    color:'#D64545', progress:s=>[s.cats.size, 10] },
   { id:'cartographer', name:'Cartographer',   desc:'Eat in 15 different areas',                ic:'map',             color:'#1E6B8F', progress:s=>[s.areaCount, 15] },
   { id:'legend',    name:'Local legend',      desc:'Visit 50 different places',                ic:'workspace_premium', color:'#7E5700', progress:s=>[s.places, 50] },
+  // earned through the scrapbook: a busy month, a visit with the whole crew, a first of each kind
+  { id:'busymonth', name:'Full scrapbook',    desc:'Log 8 visits in one month',                ic:'auto_stories',    color:'#B5451B', progress:s=>[busiestMonth(s), 8] },
+  { id:'wholecrew', name:'Whole crew',        desc:'A visit with everyone in your crew tagged', ic:'diversity_3',     color:'#486636', progress:s=>[wholeCrew(s), 1] },
+  ...CATEGORIES.map(c=>({ id:'cat-'+c.id, name:'First '+c.label.toLowerCase(), desc:`Your first ${c.label.toLowerCase()} visit`, ic:CAT_ICONS[c.id]||'restaurant', color:c.color, cat:true, progress:s=>[has(s, c.id), 1] })),
 ];
+// the busiest month: most visits logged in one month
+function busiestMonth(s){ const n=new Map(); s.visitList.forEach(e=>{ const k=monthKey(e.date); n.set(k, (n.get(k)||0)+1); }); return Math.max(0, ...n.values()); }
+// visits where whoever logged it plus everyone tagged is a whole crew (of two or more) you're in
+function wholeCrew(s){
+  const crews = S.myCrews().filter(c=>c.memberIds.length>=2 && c.memberIds.includes(s.userId));
+  return s.visitList.filter(e=>{ const there=new Set([e.userId, ...(e.taggedIds||[])]); return crews.some(c=>c.memberIds.every(id=>there.has(id))); }).length;
+}
 
 export function badgeStatus(userId){
   const s = userStats(userId);
@@ -80,8 +92,12 @@ const markSeen = ids=>{ try{ localStorage.setItem(seenKey(), JSON.stringify([...
 // first run: whatever you already have counts as seen, so nobody gets a flood of confetti
 export function primeBadges(){
   if (!S.me()) return;
-  try{ if (localStorage.getItem(seenKey())!==null) return; }catch(_){ return; }
-  markSeen(badgeStatus(S.me().id).filter(b=>b.done).map(b=>b.id));
+  try{
+    const v2 = seenKey()+'-v2';
+    if (localStorage.getItem(seenKey())===null){ markSeen(badgeStatus(S.me().id).filter(b=>b.done).map(b=>b.id)); localStorage.setItem(v2, '1'); return; }
+    // stickers added later (the scrapbook ones) that you'd already earned count as seen, quietly
+    if (!localStorage.getItem(v2)){ const s0 = seen(); badgeStatus(S.me().id).filter(b=>b.done).forEach(b=>s0.add(b.id)); markSeen(s0); localStorage.setItem(v2, '1'); }
+  }catch(_){}
 }
 // after something you did: celebrate anything newly unlocked, one at a time
 export function checkBadges(){
@@ -90,8 +106,19 @@ export function checkBadges(){
   const s = seen(), fresh = badgeStatus(S.me().id).filter(b=>b.done && !s.has(b.id));
   if (!fresh.length) return;
   fresh.forEach(b=>s.add(b.id)); markSeen(s);
-  const next = ()=>{ const b = fresh.shift(); if (b) celebrate(b, next); };
-  next();
+  peel(fresh);
+}
+// the small moment: a sticker peels onto a card at the top; tap it for the full sticker
+function peel(list){
+  document.querySelectorAll('.sticker-peel').forEach(x=>x.remove());
+  const b = list[0], el = document.createElement('button');
+  el.className = 'sticker-peel'; el.type = 'button';
+  el.innerHTML = `${stickerHTML(b, 50, {progress:false, cls:'pop'})}<span class="sp-text"><span class="eyebrow">${list.length>1 ? list.length+' stickers unlocked' : 'Sticker unlocked'}</span><b>${esc(list.map(x=>x.name).join(', '))}</b><span class="sp-hint">Stick it on a page with the page’s ✦ button</span></span>`;
+  document.body.appendChild(el);
+  requestAnimationFrame(()=>el.classList.add('in'));
+  const hide = ()=>{ el.classList.remove('in'); setTimeout(()=>el.remove(), 300); };
+  const t = setTimeout(hide, 4200);
+  el.onclick = ()=>{ clearTimeout(t); hide(); const queue = list.slice(); const next = ()=>{ const x = queue.shift(); if (x) celebrate(x, next); }; next(); };
 }
 function celebrate(b, done){
   const wrap = document.createElement('div'); wrap.className = 'unlock celebrate';

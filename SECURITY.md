@@ -20,6 +20,7 @@ Supabase with the user's session and is checked by row level security (RLS) in t
 | 9 | Low | The server function answered errors with HTTP 200, and read the whole body before checking its size. | 500 with a generic message; size checked from `Content-Length` first. |
 | 10 | Low | Test-only dependency `puppeteer-core@23` pulled in `extract-zip` with 2 known high advisories (never deployed). | `puppeteer-core@25.12.0`; versions pinned exactly; `npm audit`: 0. |
 | 11 | Info | Google Places results were shown without the required Google Maps attribution. | "Place details from Google Maps" on the confirm sheet and results list. |
+| 12 | Info | New: scrapbook page extras (stickers, layout, notes) on shared pages, and tagging that shares a visit. | `0008_pages.sql`: `book_pages` has RLS on every action through `page_fits` (runs as the person asking, so it only finds books and visits they can already see; crew-book pages need the visit shared with that crew). Rows go when a visit is un-shared or someone leaves. `share_with_tagged` only adds crews the owner is in (insert check still applies). Checked in `tests/e2e/sqltest.mjs`. |
 
 ## Checked and fine
 

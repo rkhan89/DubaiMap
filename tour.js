@@ -24,7 +24,7 @@ const STEPS = [
     ctx:()=>has('#vfN') || has('#lStars'), done:()=>has('#lStars'), skipIf:()=>has('#lStars') },
   { id:'rate', target:'#lStars', title:'How was it?', body:'Tap a star. Tap the left half of one for a half star.', next:true,
     ctx:()=>has('#lStars'), done:()=>has('#lStars .on, #lStars .half') },
-  { id:'photo', target:'.reel .add-photo', title:'Add a photo (optional)', body:'Photos go into your photobook, one page per day.', next:true, ctx:()=>has('#lSave') },
+  { id:'photo', target:'.reel .add-photo', title:'Add a photo (optional)', body:'Photos go on this visit’s scrapbook page. No photos? It still gets a page.', next:true, ctx:()=>has('#lSave') },
   { id:'share', target:'#lWho', title:'Who sees it?', body:'Pick Just me, or one of your crews to put it on their map. You choose every time.', next:true, ctx:()=>has('#lSave') },
   { id:'save', target:'#lSave', title:'Save it', body:'That’s it. Watch it land on your map.', ctx:()=>has('#lSave') || tourSaved, done:()=>tourSaved },
   { id:'stamp', target:'.stamp-anchor.dropped .stamp, .stamp-anchor.selected .stamp, .stamp-anchor .stamp', title:'Your first stamp', body:'Every place you log becomes a stamp. Tap one any time for its card, notes and photos.', next:true, wait:1500 },
@@ -32,7 +32,7 @@ const STEPS = [
   { id:'filter', target:'#btnFilter', title:'Filters', body:'Filter by friend or kind of place, or colour the areas you’ve explored.', next:true },
   { id:'bell', target:'#btnBell', title:'Crew news', body:'A dot here means a friend logged somewhere new or planned a bite. The map itself stays clean.', next:true },
   { id:'crew', target:'#nav [data-tab="crew"]', title:'Bring your crew', body:'Invite friends with a link. Your map fills up fast when they log too.', next:true },
-  { id:'shelf', target:'#nav [data-tab="shelf"]', title:'Your photobook', body:'Every photo you log becomes a page you can decorate with stickers.', next:true, last:true },
+  { id:'shelf', target:'#nav [data-tab="shelf"]', title:'Your scrapbook', body:'Every visit you log becomes a page, taped in automatically. Add stickers if you like.', next:true, last:true },
 ];
 
 let tourSaved = false, root = null, raf = 0, idx = -1, since = 0, missingSince = 0, scrolledFor = -1;

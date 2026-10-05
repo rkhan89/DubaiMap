@@ -217,5 +217,65 @@ for (let i=2;i<=50;i++) await as(F1, `insert into client_errors(id,message) valu
 await expectErr('the 51st error report in a day', F1, `insert into client_errors(id,message) values ('ce51','e')`);
 let ph; for (let i=0;i<3;i++) ph=(await as(F1, `select places_rate_hit() as n`)).rows[0].n;
 ph===3 ? ok('place-suggestion counter counts per person') : bad('places rate '+ph);
+
+// ---- scrapbook pages (0008): a page is as visible as its visit, in the books it belongs to ----
+await db.exec('reset role');
+const sql8 = fs.readFileSync(new URL('../../supabase/migrations/0008_pages.sql', import.meta.url),'utf8');
+try{ await db.exec(sql8); await db.exec(sql8); ok('pages migration runs (twice)'); } catch(e){ bad('pages migration: '+e.message); }
+await db.exec(`grant all on all tables in schema public to authenticated;`);
+const P1='80000000-0000-0000-0000-0000000000f1', P2='80000000-0000-0000-0000-0000000000f2', P3='80000000-0000-0000-0000-0000000000f3';
+await db.exec(`reset role; insert into auth.users values ('${P1}','p1@x'),('${P2}','p2@x'),('${P3}','p3@x');`);
+const cx = (await as(P1, `select * from create_crew('Crew X','')`)).rows[0], cy = (await as(P1, `select * from create_crew('Crew Y','')`)).rows[0];
+await as(P2, `select join_crew($1)`, [cx.code]); await as(P3, `select join_crew($1)`, [cy.code]);
+await as(P1, `insert into venues(id,name,zone) values ('pv1','Ravi','satwa')`);
+await as(P1, `insert into entries(id,venue_id,kind,private,crew_ids,date) values
+  ('pe1','pv1','visit',false,array['${cx.id}']::uuid[],'2026-09-01'),('pe2','pv1','visit',true,'{}','2026-09-02'),('pe3','pv1','visit',false,array['${cy.id}']::uuid[],'2026-09-03')`);
+await as(P1, `insert into books(id,crew_id,kind,title) values ('cb-x','${cx.id}','crew','X book'),('cb-y','${cy.id}','crew','Y book')`);
+await as(P1, `insert into books(id,kind,title) values ('pb-1','personal','Mine')`);
+await as(P2, `insert into books(id,kind,title) values ('tb-2','tagged','Tagged')`);
+const pg = (b, e, extra)=>`insert into book_pages(id,book_id,entry_id,layout,note) values ('${b}|${e}','${b}','${e}','grid','${extra||'hi'}')`;
+await as(P1, pg('cb-x','pe1'));
+(await count(P2, `select * from book_pages where id='cb-x|pe1'`))===1 ? ok('a crewmate sees the dressed-up page in the crew book') : bad('P2 crew page');
+(await count(P3, `select * from book_pages`))===0 ? ok("someone in another crew sees none of crew X's pages") : bad('P3 pages');
+await expectErr('a Just me visit as a crew-book page', P1, pg('cb-x','pe2'));
+await expectErr('a visit shared with crew Y as a page in crew X’s book', P1, pg('cb-x','pe3'));
+await expectErr("a crewmate adding a page to someone's personal book", P2, pg('pb-1','pe1'));
+await as(P1, pg('pb-1','pe2','just me'));
+(await count(P2, `select * from book_pages where book_id='pb-1'`))===0 ? ok('personal-book pages are yours only') : bad('personal pages leak');
+(await as(P2, `update book_pages set note='nice', updated_by=auth.uid() where id='cb-x|pe1' returning id`)).rows.length===1 ? ok('a crewmate can write the crew page note') : bad('crew note');
+await expectErr('writing a page note as someone else', P2, `update book_pages set updated_by='${P1}' where id='cb-x|pe1'`);
+// tagging shares with a crew you're both in
+await as(P1, `insert into entries(id,venue_id,kind,private,crew_ids,tagged_ids,date) values ('pe4','pv1','visit',true,'{}',array['${P2}']::uuid[],'2026-09-04')`);
+{ const r=(await as(P1, `select private, crew_ids from entries where id='pe4'`)).rows[0]; !r.private && r.crew_ids.length===1 && r.crew_ids[0]===cx.id ? ok('tagging a crewmate on a Just me visit shares it with the crew you are both in') : bad('tag share '+JSON.stringify(r)); }
+await as(P2, pg('tb-2','pe4')); await as(P2, pg('cb-x','pe4'));
+(await count(P2, `select * from book_pages where id in ('tb-2|pe4','cb-x|pe4')`))===2 ? ok('the tagged visit is a page in the crew book and in their Tagged book') : bad('tagged pages');
+(await count(P3, `select * from entries where id='pe4'`))===0 ? ok('the tagged visit is not shown to the other crew') : bad('pe4 leak');
+// an older private visit with a tag stays private when edited without adding anyone
+await db.exec(`reset role; alter table entries disable trigger entries_share_with_tagged;
+  insert into entries(id,venue_id,user_id,kind,private,crew_ids,tagged_ids,date) values ('pe5','pv1','${P1}','visit',true,'{}',array['${P2}']::uuid[],'2026-09-05');
+  alter table entries enable trigger entries_share_with_tagged;`);
+await as(P1, `update entries set notes='edited', tagged_ids=array['${P2}']::uuid[], private=true where id='pe5'`);
+(await as(P1, `select private from entries where id='pe5'`)).rows[0].private===true ? ok('an existing private tagged visit keeps who it was for') : bad('pe5 shared');
+(await count(P2, `select * from entries where id='pe5'`))===1 && (await count(P3, `select * from entries where id='pe5'`))===0 ? ok('…the tagged person still sees it, nobody else') : bad('pe5 visibility');
+// taking yourself off, un-sharing, leaving: the page rows go with the visit
+await as(P2, `select untag_me('pe4')`);
+await db.exec('reset role');
+(await db.query(`select count(*)::int n from book_pages where id='tb-2|pe4'`)).rows[0].n===0 ? ok('untagging yourself removes the page from your Tagged book') : bad('tagged page stays');
+await as(P1, `update entries set crew_ids='{}', private=true where id='pe1'`);
+await db.exec('reset role');
+(await db.query(`select count(*)::int n from book_pages where id='cb-x|pe1'`)).rows[0].n===0 ? ok('un-sharing a visit removes its crew-book page') : bad('crew page stays after unshare');
+await as(P2, `insert into entries(id,venue_id,kind,private,crew_ids,date) values ('pe6','pv1','visit',false,array['${cx.id}']::uuid[],'2026-09-06')`);
+await as(P1, pg('cb-x','pe6'));
+await as(P2, `select leave_crew($1)`, [cx.id]);
+await db.exec('reset role');
+(await db.query(`select count(*)::int n from book_pages where id='cb-x|pe6'`)).rows[0].n===0 ? ok("leaving a crew takes your visits' pages out of its book") : bad('page stays after leave');
+(await count(P1, `select * from entries where id='pe6'`))===0 ? ok('…and the crew no longer sees that visit') : bad('pe6 visible');
+// the old per-day settings: copied once, never twice
+await db.exec(`reset role; delete from book_pages where book_id='pb-1';
+  update books set pages='{"2026-09-02":{"layout":"hero","note":"old note","stickers":["first"]},"2026-01-01":{"layout":"grid"}}' where id='pb-1';`);
+const n1=(await db.query(`select backfill_book_pages() n`)).rows[0].n, n2=(await db.query(`select backfill_book_pages() n`)).rows[0].n;
+const bp=(await db.query(`select * from book_pages where book_id='pb-1'`)).rows;
+n2===0 && bp.length===1 && bp[0].entry_id==='pe2' && bp[0].layout==='hero' && bp[0].note==='old note' ? ok(`old page settings copied onto the day's visit once (${n1} then ${n2})`) : bad('backfill '+JSON.stringify({n1,n2,bp}));
+(await db.query(`select pages from books where id='pb-1'`)).rows[0].pages['2026-09-02'] ? ok('the old settings are left in place') : bad('old pages removed');
 console.log(process.exitCode ? '\nSOME CHECKS FAILED' : '\nall checks passed');
 

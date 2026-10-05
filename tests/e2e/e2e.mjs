@@ -28,7 +28,7 @@ export default async function e2e(h){
     const meals = await h.js(async ()=>{ const S=await import('/store.js'); const v=S.venues().find(v=>v.name==='Ravi Restaurant'); return S.entries({venueId:v.id, userId:S.me().id})[0]?.meals; });
     if (String(meals)!=='lunch') throw new Error('meal from the new-place form: '+meals);
   });
-  await step('first-bite sticker unlocks', async ()=>{ await h.sleep(2500); const u=await h.js(()=>!!document.querySelector('.unlock')); if (!u) throw new Error('no unlock'); await h.shot('e-09b-unlock'); await h.js(()=>document.querySelector('.unlock [data-x="ok"]').click()); await h.sleep(400); });
+  await step('first-bite sticker unlocks', async ()=>{ await h.sleep(2500); const u=await h.js(()=>!!document.querySelector('.sticker-peel')); if (!u) throw new Error('no unlock'); await h.shot('e-09b-unlock'); await h.sleep(4600); });
   await step('Me count is 1', async ()=>{ const t=await h.js(()=>document.querySelector('#mapMode').innerText); if (!/Me\s*1/i.test(t)) throw new Error('mode text: '+t); });
   await step('list shows it', async ()=>{ await tap('[data-tab="list"]'); if (!(await text()).includes('Ravi Restaurant')) throw new Error('not in list'); await h.shot('e-10-list'); });
   await step('place sheet', async ()=>{ await h.js(()=>document.querySelector('[data-venue]').click()); await h.sleep(800); const t=await text(); if (!t.includes('Butter chicken')) throw new Error('note missing'); await h.shot('e-11-place'); await h.js(()=>history.back()); await h.sleep(400); });
