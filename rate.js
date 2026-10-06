@@ -23,7 +23,7 @@ function personHTML(p, e, opts){
   let tail = '';
   if (p.rating) tail = miniStars(p.rating) + `<b class="rp-n">${R.fmt(p.rating)}</b>`;
   else if (isMe && opts.nudge) tail = `<button class="rp-add" data-rate="${esc(e.id)}">${icon('add')}Add yours</button>`;
-  return `<span class="rater${isMe?' me':''}" title="${esc(name(u))}">${avatarHTML(u, 28)}<span class="rp-who">${esc(name(u))}</span>${tail}</span>`;
+  return `<span class="rater${isMe?' rater-me':''}" title="${esc(name(u))}">${avatarHTML(u, 28)}<span class="rp-who">${esc(name(u))}</span>${tail}</span>`;
 }
 // the people on a visit with their ratings for it; 5+ people: the first four and "+N"
 export function ratersRowHTML(e, scope, opts){
