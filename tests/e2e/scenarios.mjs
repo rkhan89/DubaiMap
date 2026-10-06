@@ -37,7 +37,8 @@ import shelf from './shelf.mjs';
 import scrap from './scrap.mjs';
 import scrap2 from './scrap2.mjs';
 import ratings from './ratings.mjs';
-const dflt = { screens, baa, perf2:perf, show, e2e, p2, p3, tour, brand, share1, crews, bookadd, gallery, gv, legal, share2, share3, places, share4, shelf, scrap, scrap2, ratings,
+import mapfull from './mapfull.mjs';
+const dflt = { screens, baa, perf2:perf, show, e2e, p2, p3, tour, brand, share1, crews, bookadd, gallery, gv, legal, share2, share3, places, share4, shelf, scrap, scrap2, ratings, mapfull,
   async fonts(h){
     await h.seed({mode:'crew'});
     await h.click('[data-tab="shelf"]'); await h.sleep(600); await h.shot('f-shelf');
