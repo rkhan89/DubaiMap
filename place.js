@@ -9,6 +9,8 @@ import { $, icon, toast, openScreen, openSheet, back, closeAll, topbar, stampHTM
 import { go, state } from './go.js';
 import { sharePlace, eventRowHTML, planBite, eventSheet, checkIn } from './events.js';
 import { placesApi, zoneFor } from './share.js';
+import { overallHTML, miniStars, rateSheet } from './rate.js';
+import * as RT from './ratings.js';
 
 function whenText(e){
   const d=new Date(e.createdAt), days=Math.floor((Date.now()-e.createdAt)/864e5);
@@ -28,6 +30,14 @@ function mapsURL(v){
 /* =========================================================
    13. PLACE SHEET
    ========================================================= */
+// ratings from the people tagged on a visit, and "Your rating" if you're one of them
+function taggedRatingsHTML(e, me){
+  const people = RT.visitPeople(e, { kind:'friends' }, { meId:me.id, ratingsOf:S.ratingsOf }).filter(p=>!p.logger && p.rating && p.userId!==me.id);
+  const mine = S.canRate(e) ? S.myRatingOn(e.id) : null;
+  const rows = people.map(p=>{ const u=S.user(p.userId); return u ? `<div class="rv-rate">${avatarHTML(u,24)}<b>${esc(u.name||u.handle)}</b>${miniStars(p.rating)}${p.note?`<q>${esc(p.note)}</q>`:''}</div>` : ''; }).join('');
+  const you = S.canRate(e) ? `<button class="rv-rate rv-mine" data-rate="${e.id}">${avatarHTML(me,24)}<b>You</b>${mine ? miniStars(mine.rating)+(mine.note?`<q>${esc(mine.note)}</q>`:'')+icon('edit') : `<span class="rp-add">${icon('add')}Add your rating</span>`}</button>` : '';
+  return rows || you ? `<div class="rv-rates">${rows}${you}</div>` : '';
+}
 // "with @maya, @omar" under a visit; the person tagged can take themselves off
 function withHTML(e, me){
   const ids=e.taggedIds||[]; if (!ids.length) return '';
@@ -59,13 +69,14 @@ function placeScreen(venueId){
           <div class="grow"><b class="h-sm">${minePrivate?'Only you can see your log':esc(whoText(mineWho).replace(/.$/,''))}</b>
           <div class="muted small">${minePrivate?'Your notes & rating stay in your own scrapbook.':'They can see your notes, rating and photos here.'}</div></div>
           <button class="btn btn-soft btn-sm" id="pShare">Change</button></div>`:''}
-        <div class="row between mt24"><span class="row h-md" style="gap:8px"><i style="width:9px;height:9px;border-radius:50%;background:var(--gold-deep);display:inline-block"></i>Who's Been <span class="tag soft">${plural(visits.length,'visit')}</span></span>${sum.rating?`<span class="hand">Crew avg <span style="color:var(--gold-deep)">★ ${fmtRating(sum.rating)}</span></span>`:''}</div>
+        <div class="row between mt24"><span class="row h-md" style="gap:8px"><i style="width:9px;height:9px;border-radius:50%;background:var(--gold-deep);display:inline-block"></i>Who's Been <span class="tag soft">${plural(visits.length,'visit')}</span></span>${overallHTML({ rating:sum.rating, raters:sum.raters }, sum.ratingScope==='crew'?'Crew':'Your')}</div>
         <div class="stack mt12">${visits.map(e=>{
           const u=S.user(e.userId), isMe=u.id===me.id;
           return `<div class="review" ${isMe?`data-edit="${e.id}" style="cursor:pointer"`:''}>
             <div class="review-head">${avatarHTML(u,44)}<div class="grow"><div class="rv-name">${isMe?'You':esc(u.name||u.handle)}<span>@${esc(u.handle)}</span>${e.private?` <span class="tag dark" style="margin-left:6px">${icon('lock')}Only me</span>`:''}</div><div class="rv-when">${whenText(e)}</div></div>${e.rating?ratingPill(e.rating):''}${isMe?icon('edit','','').replace('class="ms"','class="ms" style="color:var(--outline);font-size:18px"'):''}</div>
             ${e.notes?`<q>${esc(e.notes)}</q>`:''}
             ${withHTML(e, me)}
+            ${taggedRatingsHTML(e, me)}
           </div>`;
         }).join('') || `<div class="card-soft center"><span class="hand">Nobody in your crew has stamped this yet.</span><p class="muted small mt8">Be the first: +5 points for first in the crew.</p></div>`}</div>
         ${wanters.length?`<div class="card-soft row mt16">${icon('bookmark')}<div class="grow"><b>Wants to try</b><div class="muted small">${plural(wanters.length,'crew friend')}${(()=>{ const L={google_maps:'from Google Maps',tiktok:'from TikTok',instagram:'from Instagram',text:'from a name'}; const ls=[...new Set(sum.wants.map(e=>L[e.sourceType]).filter(Boolean))]; return ls.length?' ('+ls.join(', ')+')':''; })()} saved this spot</div></div>${avatarStack(wanters,34,3)}</div>`:''}
@@ -81,7 +92,8 @@ ${S.events({venueId:v.id, upcoming:true}).length?`<div class="card mt16"><span c
       MAP.whenReady(()=>requestAnimationFrame(()=>{ const c=el.querySelector('#pSnap'); if (c) MAP.drawSnapshot(c, MAP.placeWorld(v), 6); }));
       const sh=el.querySelector('#pShare');
       if (sh) sh.onclick=()=>{ const mine=S.entries({venueId:v.id, userId:S.me().id}); askWho({ title:'Your log at '+v.name, action:'Save', sel:mineWho }, sel=>{ mine.forEach(e=>S.updateEntry(e.id,{crewIds:sel})); toast(whoText(sel)); go.refresh(); setTimeout(paint, 250); }); };
-      el.querySelectorAll('[data-edit]').forEach(r=>r.onclick=e=>{ if (e.target.closest('[data-untag]')) return; logFlow({entryId:r.dataset.edit}); });
+      el.querySelectorAll('[data-edit]').forEach(r=>r.onclick=e=>{ if (e.target.closest('[data-untag],[data-rate]')) return; logFlow({entryId:r.dataset.edit}); });
+      el.querySelectorAll('[data-rate]').forEach(b=>b.onclick=ev=>{ ev.stopPropagation(); rateSheet(b.dataset.rate, paint); });
       el.querySelectorAll('[data-untag]').forEach(b=>b.onclick=()=>{ S.untagMe(b.dataset.untag); toast('You’re off that visit'); go.refresh(); paint(); });
       el.querySelectorAll('.strip [data-photo]').forEach(f=>f.onclick=()=>go.viewer(photos.map(p=>p.id), photos.findIndex(p=>p.id===f.dataset.photo)));
       el.querySelector('#pLog').onclick=()=>logFlow({venueId:v.id});

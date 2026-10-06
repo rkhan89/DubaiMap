@@ -3,6 +3,7 @@
 // query here goes through, so private records can't leak into crew views or totals.
 import * as S from './store.js';
 import { avg, catById } from './data.js';
+import { placeRating } from './ratings.js';
 
 // scope: { mode:'me'|'crew', members:Set<userId>|null (null = everyone in crew), privacy:'all'|'shared'|'private',
 //          cats:Set|null, meals:Set|null, status:{been:bool, want:bool} }
@@ -26,7 +27,11 @@ export function venueSummary(v, scope, pre){
   const mineV = visits.filter(e=>e.userId===meId), mineW = wants.filter(e=>e.userId===meId);
   const visitorIds = [...new Set(visits.map(e=>e.userId))];
   const wantIds = [...new Set(wants.map(e=>e.userId))].filter(id=>!visitorIds.includes(id));
-  const ratings = visits.filter(e=>e.rating).map(e=>e.rating);
+  // ratings: the one calculation (ratings.js). Me mode: yours; Crew mode: the crew you're looking at
+  const crew = scope.mode==='crew' ? S.myCrew() : null;
+  const rw = { meId, ratingsOf:S.ratingsOf };
+  const placeR = placeRating(visits, crew ? { kind:'crew', crew } : { kind:'me' }, rw);
+  const mineR = crew ? placeRating(visits, { kind:'me' }, rw) : placeR;
   const others = visitorIds.filter(id=>id!==meId);
   let state = 'unlit';
   if (visits.length){
@@ -39,8 +44,8 @@ export function venueSummary(v, scope, pre){
   return {
     v, state, entries:es, visits, wants, mineV, mineW,
     visitorIds, wantIds, others,
-    rating: ratings.length ? Math.round(avg(ratings)*10)/10 : 0,
-    myRating: mineV.filter(e=>e.rating).sort((a,b)=>b.createdAt-a.createdAt)[0]?.rating || 0,
+    rating: placeR.rating, raters: placeR.raters, ratingPeople: placeR.people, ratingScope: crew ? 'crew' : 'me',
+    myRating: mineR.rating,
     visitCount: visits.length, myVisitCount: mineV.length,
     latest, noteEntry,
     meals: [...new Set(es.flatMap(e=>e.meals||[]))],

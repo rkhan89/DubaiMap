@@ -43,7 +43,7 @@ const listeners = new Set();
 export function onChange(fn){ listeners.add(fn); return ()=>listeners.delete(fn); }
 function emit(what){ listeners.forEach(f=>{ try{ f(what); }catch(e){ console.error(e); } }); }
 
-function fresh(){ return { version:2, meId:null, users:{}, crews:{}, venues:{}, entries:{}, photos:{}, books:{}, events:{}, inbox:{}, pages:{}, flags:{} }; }
+function fresh(){ return { version:2, meId:null, users:{}, crews:{}, venues:{}, entries:{}, photos:{}, books:{}, events:{}, inbox:{}, pages:{}, ratings:{}, flags:{} }; }
 function load(){
   try{ const d=JSON.parse(localStorage.getItem(KEY)); if (d && d.version===2) return {...fresh(), ...d}; }catch(_){}
   return fresh();
@@ -117,12 +117,13 @@ export async function pullNow(){
   db.books   = { ...Object.fromEntries(Object.entries(db.books||{}).filter(([k,b])=>isLocal(k) || isLocal(b.crewId))), ...fresh.books };
   db.events  = { ...keep(db.events), ...fresh.events };
   db.inbox   = { ...(fresh.inbox||{}) };
+  db.ratings = { ...Object.fromEntries(Object.entries(db.ratings||{}).filter(([,r])=>isLocal(r.entryId))), ...(fresh.ratings||{}) }; ratingIdx = null;
   db.pages   = { ...Object.fromEntries(Object.entries(db.pages||{}).filter(([k])=>isLocal(k.split('|')[0]) || /^(crewbook-demo|loose)/.test(k))), ...(fresh.pages||{}) };
   // no profile row yet (an account made before the database was set up): make it from this phone's copy
   if (!db.users[db.meId] && meRec){ db.users[db.meId] = meRec; C.queue({ k:'put', t:'profiles', id:meRec.id, row:C.MAP.profiles.to(meRec) }); }
   if (db.users[db.meId] && meRec) db.users[db.meId].email = meRec.email;
   // replay what hasn't reached the server yet, so nothing flickers back
-  const T = { profiles:'users', crews:'crews', venues:'venues', entries:'entries', photos:'photos', books:'books', events:'events', share_inbox:'inbox', book_pages:'pages' };
+  const T = { profiles:'users', crews:'crews', venues:'venues', entries:'entries', photos:'photos', books:'books', events:'events', share_inbox:'inbox', book_pages:'pages', visit_ratings:'ratings' };
   C.pending().forEach(o=>{
     const map = T[o.t] && db[T[o.t]]; if (!map) return;
     if (o.k==='put' || o.k==='ins'){ const rec = C.MAP[o.t].from ? C.MAP[o.t].from({ ...o.row, created_at:o.row.created_at || new Date().toISOString() }) : null; if (rec && !(o.k==='ins' && map[o.id])) map[o.id] = { ...(map[o.id]||{}), ...rec, src: map[o.id]?.src==='idb' ? 'idb' : rec.src }; }
@@ -337,6 +338,7 @@ export function taggedMe(){ const m=me(); if (!m) return []; return Object.value
 export function untagMe(entryId){
   const e=db.entries[entryId], m=me(); if (!e || !m) return;
   e.taggedIds=(e.taggedIds||[]).filter(x=>x!==m.id); save('entries');
+  if (db.ratings && db.ratings[entryId+'|'+m.id]){ delete db.ratings[entryId+'|'+m.id]; ratingIdx = null; }   // the server removes it too
   if (cloud && !isLocal(entryId)) C.queue({ k:'rpc', fn:'untag_me', args:{ p_entry:entryId } });
 }
 // the crews a post is shared with, by name (yours only)
@@ -597,7 +599,33 @@ function visibleAnywhere(rec){
 // everything pages.js needs to lay out books
 export function pagesWorld(){
   return { meId:db.meId, entries:Object.values(db.entries).filter(visibleAnywhere), photos:Object.values(db.photos).filter(visibleAnywhere),
-           pages:db.pages||{}, crews:db.crews, venue };
+           pages:db.pages||{}, crews:db.crews, venue, ratingsOf };
+}
+/* ---------- ratings from people tagged on a visit (the logger's is on the visit itself) ----------
+   One per person per visit (id: visit | person), so saving again, even offline, replaces it;
+   the server keeps whichever change is newest. */
+let ratingIdx = null;
+export function ratingsOf(entryId){
+  if (!ratingIdx){ ratingIdx = new Map(); Object.values(db.ratings||{}).forEach(r=>{ if (!ratingIdx.has(r.entryId)) ratingIdx.set(r.entryId, []); ratingIdx.get(r.entryId).push(r); }); }
+  return ratingIdx.get(entryId) || [];
+}
+// can I add my own rating to this visit? (I'm tagged on it and didn't log it)
+export function canRate(e){ const m=me(); return !!(m && e && e.kind==='visit' && e.userId!==m.id && (e.taggedIds||[]).includes(m.id)); }
+export function myRatingOn(entryId){ const m=me(); return m ? (db.ratings||{})[entryId+'|'+m.id] || null : null; }
+export function rateVisit(entryId, rating, note){
+  const e=db.entries[entryId], m=me(); if (!canRate(e)) return null;
+  rating = Math.round((+rating||0)*2)/2;
+  if (!rating) return unrateVisit(entryId);
+  const r = { id:entryId+'|'+m.id, entryId, userId:m.id, rating:Math.min(5, Math.max(0.5, rating)), note:String(note||'').trim().slice(0,400), updatedAt:Date.now() };
+  db.ratings[r.id] = r; ratingIdx = null; save('ratings');
+  if (!isLocal(entryId)) push('visit_ratings', r);
+  return r;
+}
+export function unrateVisit(entryId){
+  const m=me(), id=entryId+'|'+(m&&m.id), r=(db.ratings||{})[id]; if (!r) return null;
+  delete db.ratings[id]; ratingIdx = null; save('ratings');
+  if (!isLocal(entryId)) push('visit_ratings', r, 'del');
+  return null;
 }
 export function pageCfg(id){ return (db.pages||{})[id] || null; }
 export function savePage(bookId, entryId, cfg){

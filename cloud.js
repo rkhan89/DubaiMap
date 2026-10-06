@@ -95,6 +95,11 @@ export const MAP = {
     to: p => ({ id:p.id, book_id:p.bookId, entry_id:p.entryId, layout:p.layout||'scrapbook', photo_order:p.order||[], stickers:p.stickers||[], note:p.note||'', updated_by:p.updatedBy, updated_at:ts(p.updatedAt) }),
     from: r => ({ id:r.id, bookId:r.book_id, entryId:r.entry_id, layout:r.layout, order:r.photo_order||[], stickers:r.stickers||[], note:r.note||'', updatedBy:r.updated_by, updatedAt:ms(r.updated_at) }),
   },
+  // ratings from people tagged on a visit (one per person per visit)
+  visit_ratings: {
+    to: r => ({ id:r.id, entry_id:r.entryId, user_id:r.userId, rating:r.rating, note:r.note||'', updated_at:ts(r.updatedAt) }),
+    from: r => ({ id:r.id, entryId:r.entry_id, userId:r.user_id, rating:+r.rating, note:r.note||'', updatedAt:ms(r.updated_at) }),
+  },
   events: {
     to: ev => ({ id:ev.id, crew_id:ev.crewId||null, created_by:ev.createdBy, venue_id:ev.venueId, starts_at:ev.when, note:ev.note||'', rsvps:ev.rsvps||{}, created_at:ts(ev.createdAt) }),
     from: r => ({ id:r.id, crewId:r.crew_id, createdBy:r.created_by, venueId:r.venue_id, when:r.starts_at, note:r.note||'', rsvps:r.rsvps||{}, createdAt:ms(r.created_at) }),
@@ -126,7 +131,9 @@ export async function pull(){
   const inboxRows = await c.from('share_inbox').select('*').eq('status','pending').then(r=>r.data||[], ()=>[]);
   // page settings (missing until migration 0008 runs)
   const pageRows = await c.from('book_pages').select('*').then(r=>r.data||[], ()=>[]);
-  return { pages:by(pageRows,'book_pages'), inbox:by(inboxRows,'share_inbox'), users:by(profiles,'profiles'), crews:crewMap, venues:by(venues,'venues'), entries:ents,
+  // ratings from people tagged on visits you can see (missing until migration 0009 runs)
+  const ratingRows = await c.from('visit_ratings').select('*').then(r=>r.data||[], ()=>[]);
+  return { ratings:by(ratingRows,'visit_ratings'), pages:by(pageRows,'book_pages'), inbox:by(inboxRows,'share_inbox'), users:by(profiles,'profiles'), crews:crewMap, venues:by(venues,'venues'), entries:ents,
            photos:by(photos,'photos'), books:by(books,'books'), events:by(events,'events') };
 }
 

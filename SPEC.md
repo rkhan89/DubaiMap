@@ -328,3 +328,13 @@ Steps 2–4: Android share target and /share, TikTok captions, Inbox and offline
 **Crew challenges** (the goals screen): three a month per crew, picked from the crew and the month (so nothing is stored and everyone sees the same), e.g. "Try 4 new cafeterias"; progress counts the crew's shared visits, with who chipped in. Your own goals are below, as before.
 
 **The monthly recap is a spread**: an open book, 1080 × 1350. Left page: the month, visits / new / places, top places, who was there. Right page: three photos taped in (or the places' stamps). For you, or your crew; save or share as an image.
+
+## Everyone's ratings
+
+**One calculation** (`ratings.js`), used by scrapbook pages, Place Details, the map's stamps and peek, list cards and the monthly recap. Per person: the average of their ratings for the place. Overall: the average of the per-person ratings, to one decimal, with the number of people who rated ("Crew avg ★ 4.3 · 3 ratings"; one rater: "★ 4.5 · 1 rating"; nobody: nothing).
+
+Which ratings count: **Me** (map Me mode, your recap): yours only. **A crew** (map Crew mode, Place Details, that crew's book and recap): visits shared with that crew by people in it, and ratings from people still in it; your Just me visits don't count there. **Friends** (your personal and Tagged books): everything you can see, across all your crews.
+
+**Tagged friends rate** (`visit_ratings`, migration 0009): someone tagged on a visit adds or edits their own rating and an optional note, from the page ("Add yours"), Place Details ("Add your rating"), or the bell ("Rahman tagged you at Banc · Add your rating"). The logger's rating stays on the visit and only they can change it. One rating per person per visit (`visit | person`): saving again replaces it, offline changes go out as one write, and the server keeps the newest. Who sees a rating: the rater, the logger, the others tagged, and crewmates who can see the visit while the rater is still in one of its crews. Being untagged removes it.
+
+**On a page**: the people on the visit, each with their own stars for that visit (you first; "Add yours" if you haven't rated; nothing for others who haven't); after four people, "+N" lists everyone. Above them, the place's overall rating in that book's terms.

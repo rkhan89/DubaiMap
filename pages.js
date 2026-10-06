@@ -8,6 +8,7 @@
 //   crew      visits shared with that crew, by someone still in it
 //   album     any visit you can see (an album is a filter)
 //
+import { placeRating } from './ratings.js';
 // No DOM and no store here, so the rules can be tested on their own (tests/pages.test.mjs).
 // "world" is { meId, entries (the visits you can see), photos, pages, crews, venue(id) }.
 
@@ -192,7 +193,9 @@ export function recapData(scope, month, w){
   const inM = vs.filter(e=>(e.date||'').slice(0,7)===month).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
   const before = new Set(vs.filter(e=>(e.date||'') < month+'-01').map(e=>e.venueId));
   const per = new Map();
-  inM.forEach(e=>{ const p = per.get(e.venueId) || { venueId:e.venueId, visits:0, best:0, entries:[] }; p.visits++; p.best=Math.max(p.best, e.rating||0); p.entries.push(e); per.set(e.venueId, p); });
+  inM.forEach(e=>{ const p = per.get(e.venueId) || { venueId:e.venueId, visits:0, best:0, entries:[] }; p.visits++; p.entries.push(e); per.set(e.venueId, p); });
+  // the place's rating this month, the same way every screen works it out (ratings.js)
+  per.forEach(p=>{ p.best = placeRating(p.entries, scope.crew ? { kind:'crew', crew:scope.crew } : { kind:'me' }, w).rating; });
   const top = [...per.values()].sort((a,b)=>b.visits-a.visits || b.best-a.best).slice(0,3);
   const photos = (w.photos||[]).filter(p=>inM.some(e=>e.id===p.entryId)).sort((a,b)=>{ const ra=(inM.find(e=>e.id===a.entryId)||{}).rating||0, rb=(inM.find(e=>e.id===b.entryId)||{}).rating||0; return rb-ra || (b.createdAt||0)-(a.createdAt||0); });
   // one photo per place where possible

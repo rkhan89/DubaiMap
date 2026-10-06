@@ -1192,3 +1192,29 @@ html.still .sticker-peel{transform:translate(-50%, 0) rotate(-1deg);}
 .mem-strip.in{opacity:1;transform:none;pointer-events:auto;}
 @media (prefers-reduced-motion: reduce){ .mem-strip{transform:none;} }
 html.still .mem-strip.in{opacity:1;}
+
+/* ===== Ratings: people on a visit with their own stars, and the overall line (rate.js) ===== */
+.mini-stars{display:inline-flex;gap:1px;flex:none;}
+.mini-stars i{width:11px;height:11px;background:#e4d3bd;clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);}
+.mini-stars i.on{background:#e5a93c;}
+.mini-stars i.half{background:linear-gradient(90deg,#e5a93c 50%,#e4d3bd 50%);}
+.raters{display:flex;flex-wrap:wrap;gap:8px;width:100%;margin-top:10px;}
+.rater{display:inline-flex;align-items:center;gap:6px;min-width:0;max-width:100%;padding:4px 10px 4px 4px;border-radius:999px;background:#fbf1e4;color:var(--ink-on-light);font-size:13px;}
+.rater.me{background:#ffe9c4;}
+.rater .rp-who{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:92px;}
+.rater .rp-n{font-family:var(--f-mono);font-size:12px;color:#504535;}
+.rp-add{display:inline-flex;align-items:center;gap:2px;font-family:var(--f-mono);font-size:11.5px;font-weight:700;color:#7e5700;border:1.5px dashed #c9a65b;border-radius:999px;padding:2px 8px 2px 4px;}
+.rp-add .ms{font-size:15px;}
+.rp-more{font-family:var(--f-mono);font-weight:700;padding:4px 12px;color:#7e5700;}
+.overall{display:inline-flex;align-items:center;font-family:var(--f-mono);font-size:12px;font-weight:700;letter-spacing:.02em;color:#7e5700;background:#fff3dc;border-radius:8px;padding:4px 8px;}
+.pg-foot{flex-direction:column;align-items:flex-start;}
+.pg-foot .pg-from{margin-left:0;}
+.place-body .overall{background:var(--gold-fixed);color:var(--gold-fixed-ink);}
+.rv-rates{display:flex;flex-direction:column;gap:6px;margin-top:10px;}
+.rv-rate{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:14px;text-align:left;color:var(--ink);}
+.rv-rate q{flex-basis:100%;margin-left:32px;font-size:14px;color:var(--ink-2);}
+.rv-rate.rv-mine{border-radius:12px;padding:6px 8px;background:var(--sc-low);}
+.rv-rate.rv-mine .ms{font-size:16px;color:var(--outline);margin-left:auto;}
+.rv-rate .rp-add{color:var(--gold-deep);border-color:var(--gold);}
+.star-input.big button{font-size:40px;}
+.act-cta{color:var(--gold-deep);}

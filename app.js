@@ -26,6 +26,7 @@ import { readIncoming, pendingShares, takeShare, takeAllShares, shareText } from
 import './errors.js';
 import './tapein.js';
 import { paintStrip, onThisDay, openMemory } from './memories.js';
+import './rate.js';
 
 const scopeKey = 'bites-scope';
 state.scope = (()=>{ const s=M.defaultScope(); try{ const p=JSON.parse(localStorage.getItem(scopeKey)); if (p && p.mode) s.mode=p.mode; }catch(_){} return s; })();
@@ -149,10 +150,11 @@ function openActivity(){
           <span class="grow"><span class="act-text"><b>${esc(a.u.name||a.u.handle)}</b> planned <b>${esc(a.v.name)}</b></span>
           <span class="act-sub">${esc(d.toLocaleDateString('en-GB',{weekday:'short', day:'numeric', month:'short'}))} • ${esc(d.toLocaleTimeString('en-GB',{hour:'numeric', minute:'2-digit', hour12:true}).toLowerCase())} • tap to RSVP</span></span>${icon('event')}</button>`; }
         const verb=a.tag?'tagged you at':a.e.kind==='want'?'saved':(a.e.checkin?'checked in at':'visited');
-        return `<button class="act-row${a.at>since?' new':''}" data-venue="${a.v.id}">${avatarHTML(a.u,40)}
+        return `<button class="act-row${a.at>since?' new':''}" ${a.tag && a.e.kind==='visit' && !S.myRatingOn(a.e.id) ? `data-rate-tag="${a.e.id}"` : ''} data-venue="${a.v.id}">${avatarHTML(a.u,40)}
           <span class="grow"><span class="act-text"><b>${esc(a.u.name||a.u.handle)}</b> ${verb} <b>${esc(a.v.name)}</b></span>
-          <span class="act-sub">${a.tag?'You were there together • ':''}${esc(z?z.label:APP.city)} • ${ago(a.e.createdAt)}${a.e.rating?` • ★ ${fmtRating(a.e.rating)}`:''}</span></span>${icon('chevron_right')}</button>`; }).join('')}</div>`
+          <span class="act-sub">${a.tag && !S.myRatingOn(a.e.id) && a.e.kind==='visit' ? '<b class="act-cta">Add your rating</b> • ' : (a.tag?'You were there together • ':'')}${esc(z?z.label:APP.city)} • ${ago(a.e.createdAt)}${a.e.rating?` • ★ ${fmtRating(a.e.rating)}`:''}</span></span>${icon('chevron_right')}</button>`; }).join('')}</div>`
         : `<div class="empty">${icon('notifications_none')}<p class="muted">${crew?'When your crew logs or saves a place, it shows up here.':'Start a crew and their new places will show up here.'}</p></div>`}`;
+    body.querySelectorAll('[data-rate-tag]').forEach(r=>r.addEventListener('click', ev=>{ ev.stopImmediatePropagation(); back(); setTimeout(()=>go.rate(r.dataset.rateTag, ()=>paintBell()), 60); }));
     body.querySelectorAll('[data-venue]').forEach(r=>r.addEventListener('click', ()=>{ back(); setTimeout(()=>go.showOnMap(r.dataset.venue), 60); }));
     body.querySelectorAll('[data-otd]').forEach(r=>r.addEventListener('click', ()=>{ const m=acts.find(a=>a.otd)?.otd; back(); if (m) setTimeout(()=>openMemory(m), 60); }));
     body.querySelectorAll('[data-event]').forEach(r=>r.addEventListener('click', ()=>{ back(); setTimeout(()=>eventSheet(r.dataset.event), 60); }));

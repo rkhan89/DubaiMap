@@ -11,6 +11,13 @@ import { CATEGORIES, MEALS, catById, iconSvg, esc, fmtDate, fmtDay, monthKey, fm
 import { avatarHTML, avatarStack } from './avatar.js';
 import { $, icon, toast, openScreen, openSheet, back, closeAll, topbar, polaroidHTML, share, compressImage, toggleHTML, bindToggle, seg, bindSeg, whoText } from './ui.js';
 import { go, state } from './go.js';
+import * as RT from './ratings.js';
+import { ratersRowHTML, overallHTML, ratersSheet, rateSheet } from './rate.js';
+
+// whose ratings a book shows: a crew's book, that crew's; your own books, everyone you can see
+function rateScope(b){ const c = b.kind==='crew' && S.myCrews().find(x=>x.id===b.crewId); return c ? { kind:'crew', crew:c, label:'Crew' } : { kind:'friends', label:'Friends' }; }
+// the place's overall rating in this book's terms
+function placeRatingFor(b, venueId){ const w = S.pagesWorld(), sc = rateScope(b); return { ...RT.placeRating(w.entries.filter(e=>e.venueId===venueId), sc, w), label:sc.label }; }
 
 const TINTS = ['#e5a93c','#8B5A2B','#486636','#3b2717','#f2cfb4','#fdae7e'];
 const TEXTURES = [['leather','Leather','layers'],['cloth','Cloth Loom','grid_4x4'],['paperback','Paperback','menu_book']];
@@ -247,13 +254,13 @@ function pageHTML(b, pg){
       <div class="grow" style="min-width:0">
         <h3 class="pg-place" ${v?`data-venue="${v.id}"`:''}>${esc(v?.name||'A day out')}</h3>
         <div class="pg-meta">${esc(catById(cat)?.label||'')}${e&&e.kind==='visit'&&by?` • logged by ${esc(by.name||by.handle)}`:''}</div>
-        <div class="pg-chips">${starsHTML(e&&e.rating)}${meals.map(m=>`<span class="tag soft">${icon(m.icon)}${esc(m.label)}</span>`).join('')}${e&&e.private?`<span class="tag dark">${icon('lock','',true)}Only you</span>`:''}${e&&e.checkin?`<span class="tag green">${icon('where_to_vote')}Checked in</span>`:''}</div>
+        <div class="pg-chips">${meals.map(m=>`<span class="tag soft">${icon(m.icon)}${esc(m.label)}</span>`).join('')}${e&&e.private?`<span class="tag dark">${icon('lock','',true)}Only you</span>`:''}${e&&e.checkin?`<span class="tag green">${icon('where_to_vote')}Checked in</span>`:''}</div>
       </div>
     </div>
     ${cfg.note?`<div class="page-note"><span class="tape"></span>${esc(cfg.note)}</div>`:''}
     ${photos?`<div class="page-photos">${photos}</div>`:''}
     ${e&&e.notes?`<p class="pg-notes">“${esc(e.notes)}”</p>`:''}
-    <div class="pg-foot">${people.length?`${avatarStack(people, 30, 5)}<span class="hand">${esc(people.length===1 && people[0].id===me.id ? 'Just you' : P.withText(people.map(u=>u.id===me.id?'you':(u.name||u.handle))).replace(/^with /,''))}</span>`:''}
+    <div class="pg-foot">${e ? (()=>{ const pr = placeRatingFor(b, e.venueId); const row = ratersRowHTML(e, rateScope(b)); return `${overallHTML(pr, pr.label)}${row}`; })() : `${avatarStack(people, 30, 5)}<span class="hand">Just you</span>`}
       ${fromCrews.length?`<span class="tag soft pg-from">${icon('groups')}From ${esc(fromCrews.join(', '))}</span>`:''}</div>
   </article>`;
 }
@@ -287,7 +294,7 @@ function openBook(bookId, opts){
       return `<section class="page chapter mt16" data-chapter="${esc(c.venueId)}">
         <div class="chapter-head"><div class="grow"><span class="hand">Chapter ${ROMAN(n+1)}</span><h2 ${v?`data-venue="${v.id}"`:''} style="cursor:pointer">${esc(v?.name||'Somewhere')}</h2></div>
           <span class="cat-tile"><span class="ct-ico">${iconSvg(cat.id,'#7e5700')}</span><b>${esc(cat.label)}</b></span></div>
-        <div class="chapter-meta"><div>${icon('near_me')}<b>${esc(zoneLabel(v?.zone))}</b></div>
+        <div class="chapter-meta"><div>${icon('near_me')}<b>${esc(zoneLabel(v?.zone))}</b></div>${(()=>{ const pr = placeRatingFor(b, c.venueId); return pr.raters ? `<div>${overallHTML(pr, pr.label)}</div>` : ''; })()}
           <div>${icon('calendar_month')}${plural(c.pages.length,'visit')}${dates.length?` • ${esc(fmtDate(dates[0],{month:'short',year:'numeric'}))}${monthKey(dates[0])!==monthKey(dates[dates.length-1])?` – ${esc(fmtDate(dates[dates.length-1],{month:'short',year:'numeric'}))}`:''}`:''}</div></div>
         ${people.length?`<div class="visited-by">${avatarStack(people,32,4)}<span>${esc(people.map(u=>u.id===S.me().id?'you':(u.name||u.handle)).join(', '))}</span></div>`:''}
         ${c.pages.map(p=>`<div class="visit-rule">${esc(fmtDate(p.date,{day:'numeric',month:'short',year:'numeric'}).toUpperCase())}${p.entry&&p.entry.rating?` • ★ ${p.entry.rating}`:''}</div>
@@ -336,10 +343,12 @@ function openBook(bookId, opts){
       const ed=t.closest('[data-editpage]'); if (ed){ const pg=pgs.find(p=>p.id===ed.dataset.editpage); if (pg) pageEditor(b, pg, ()=>{ const s=el.scrollTop; paint(); el.scrollTop=s; }); return; }
       const ph=t.closest('[data-photo]'); if (ph){ const ids = mode==='date' ? photoIdsOf(pgs, ph.dataset.photo) : pgs.flatMap(p=>p.photos).filter(p=>p.venueId===S.photo(ph.dataset.photo)?.venueId).map(p=>p.id); go.viewer(ids, ids.indexOf(ph.dataset.photo)); return; }
       const ap=t.closest('[data-addplace]'); if (ap){ go.log({ venueId:ap.dataset.addplace, ...(b.kind==='crew'?{ who:[b.crewId] }:{}) }); return; }
+      const rt=t.closest('[data-rate]'); if (rt){ rateSheet(rt.dataset.rate, ()=>{ const s=el.scrollTop; paint(); el.scrollTop=s; }); return; }
+      const rs=t.closest('[data-raters]'); if (rs){ const en=S.entry(rs.dataset.raters); if (en) ratersSheet(en, rateScope(b)); return; }
       const vn=t.closest('[data-venue]'); if (vn){ go.place(vn.dataset.venue); return; }
     });
     // repaint when something changes (a new page, a crewmate's edit), keeping your place
-    const off=S.onChange(w=>{ if (!el.isConnected){ off(); io && io.disconnect(); return; } if (['entries','photos','pages','sync','books'].includes(w)){ const s=el.scrollTop; paint(); el.scrollTop=s; } });
+    const off=S.onChange(w=>{ if (!el.isConnected){ off(); io && io.disconnect(); return; } if (['entries','photos','pages','sync','books','ratings'].includes(w)){ const s=el.scrollTop; paint(); el.scrollTop=s; } });
     // a quick tactile placeholder while the first photos decode
     el.innerHTML = topbar({title:b.title, eyebrow:'Scrapbook'}) + `<div class="screen-body"><div class="page mt16"><div class="skeleton" style="height:22px;width:60%"></div><div class="skeleton mt20" style="height:220px;border-radius:14px"></div><p class="row mono mt16" style="font-size:11px;gap:8px;justify-content:center;color:var(--green)">● Taping in your pages…</p></div></div>`;
     const first=bookPhotos(b).slice(0,3).map(p=>new Promise(r=>{ const i=new Image(); i.onload=i.onerror=r; i.src=S.photoURL(p); }));

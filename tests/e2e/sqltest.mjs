@@ -277,5 +277,50 @@ const n1=(await db.query(`select backfill_book_pages() n`)).rows[0].n, n2=(await
 const bp=(await db.query(`select * from book_pages where book_id='pb-1'`)).rows;
 n2===0 && bp.length===1 && bp[0].entry_id==='pe2' && bp[0].layout==='hero' && bp[0].note==='old note' ? ok(`old page settings copied onto the day's visit once (${n1} then ${n2})`) : bad('backfill '+JSON.stringify({n1,n2,bp}));
 (await db.query(`select pages from books where id='pb-1'`)).rows[0].pages['2026-09-02'] ? ok('the old settings are left in place') : bad('old pages removed');
+
+// ---- ratings from tagged friends (0009): who can rate, who can see, last write wins ----
+await db.exec('reset role');
+const sql9 = fs.readFileSync(new URL('../../supabase/migrations/0009_visit_ratings.sql', import.meta.url),'utf8');
+try{ await db.exec(sql9); await db.exec(sql9); ok('ratings migration runs (twice)'); } catch(e){ bad('ratings migration: '+e.message); }
+await db.exec(`grant all on all tables in schema public to authenticated;`);
+const R1='90000000-0000-0000-0000-0000000000a1', R2='90000000-0000-0000-0000-0000000000a2', R3='90000000-0000-0000-0000-0000000000a3', R4='90000000-0000-0000-0000-0000000000a4';
+await db.exec(`reset role; insert into auth.users values ('${R1}','r1@x'),('${R2}','r2@x'),('${R3}','r3@x'),('${R4}','r4@x');`);
+const rx = (await as(R1, `select * from create_crew('Rate X','')`)).rows[0], ry = (await as(R1, `select * from create_crew('Rate Y','')`)).rows[0];
+await as(R2, `select join_crew($1)`, [rx.code]); await as(R3, `select join_crew($1)`, [rx.code]); await as(R4, `select join_crew($1)`, [ry.code]);
+await as(R1, `insert into venues(id,name,zone) values ('rv1','Banc','difc')`);
+await as(R1, `insert into entries(id,venue_id,kind,rating,private,crew_ids,tagged_ids,date) values ('re1','rv1','visit',4,false,array['${rx.id}']::uuid[],array['${R2}']::uuid[],'2026-10-01')`);
+await as(R1, `insert into entries(id,venue_id,kind,rating,private,crew_ids,date) values ('re2','rv1','visit',2,true,'{}','2026-10-02')`);
+const rate = (u, e, r, at)=>`insert into visit_ratings(id,entry_id,user_id,rating,note,updated_at) values ('${e}|${u}','${e}','${u}',${r},'nice','${at||'2026-10-05T10:00:00Z'}')
+  on conflict (id) do update set rating=excluded.rating, note=excluded.note, updated_at=excluded.updated_at`;
+await as(R2, rate(R2, 're1', 4.5));
+(await count(R2, `select * from visit_ratings where id='re1|${R2}'`))===1 ? ok('a tagged friend rates the visit they were on (half stars)') : bad('R2 rating');
+(await count(R3, `select * from visit_ratings where entry_id='re1'`))===1 ? ok('their crewmate sees that rating') : bad('R3 sees');
+(await count(R4, `select * from visit_ratings`))===0 ? ok('someone in another crew sees no rating, so no average or count either') : bad('R4 leak');
+(await as(R2, `update entries set rating=1 where id='re1' returning id`)).rows.length===0 ? ok("a tagged friend can't change the logger's rating") : bad('R2 edited entry');
+await expectErr("a tagged friend writing the logger's rating row", R2, rate(R1, 're1', 1));
+await expectErr('a crewmate who wasn’t there rating the visit', R3, rate(R3, 're1', 5));
+await expectErr('rating a Just me visit you weren’t tagged on', R2, rate(R2, 're2', 3));
+await expectErr('half a star off the scale (5.5)', R2, `update visit_ratings set rating=5.5 where id='re1|${R2}'`);
+await expectErr('a rating that isn’t a half step (4.3)', R2, `update visit_ratings set rating=4.3 where id='re1|${R2}'`);
+// an older private visit with a tag: its ratings stay with the people on it
+await db.exec(`reset role; alter table entries disable trigger entries_share_with_tagged;
+  insert into entries(id,venue_id,user_id,kind,rating,private,crew_ids,tagged_ids,date) values ('re3','rv1','${R1}','visit',3,true,'{}',array['${R2}']::uuid[],'2026-10-03');
+  alter table entries enable trigger entries_share_with_tagged;`);
+await as(R2, rate(R2, 're3', 5));
+(await count(R1, `select * from visit_ratings where entry_id='re3'`))===1 && (await count(R3, `select * from visit_ratings where entry_id='re3'`))===0 ? ok('a Just me visit’s ratings are seen only by the people on it') : bad('re3 leak');
+// last write wins; replaying the same change adds nothing
+await as(R2, rate(R2, 're1', 2, '2026-10-01T00:00:00Z'));
+Number((await as(R2, `select rating from visit_ratings where id='re1|${R2}'`)).rows[0].rating)===4.5 ? ok('an older change arriving late doesn’t overwrite a newer one') : bad('LWW old won');
+await as(R2, rate(R2, 're1', 3.5, '2026-10-06T00:00:00Z')); await as(R2, rate(R2, 're1', 3.5, '2026-10-06T00:00:00Z'));
+const rr = (await as(R2, `select rating from visit_ratings where entry_id='re1' and user_id='${R2}'`)).rows;
+rr.length===1 && Number(rr[0].rating)===3.5 ? ok('a newer change wins; the same change twice is one rating') : bad('LWW new '+JSON.stringify(rr));
+// leaving the crew: their rating stops showing to it; the logger still sees it
+await as(R2, `select leave_crew($1)`, [rx.id]);
+(await count(R3, `select * from visit_ratings where entry_id='re1'`))===0 ? ok('after leaving the crew, their rating no longer shows to it') : bad('rating after leave');
+(await count(R1, `select * from visit_ratings where entry_id='re1'`))===1 ? ok('…the logger still sees it') : bad('logger lost it');
+// untagged: the rating goes
+await as(R1, `update entries set tagged_ids='{}' where id='re3'`);
+await db.exec('reset role');
+(await db.query(`select count(*)::int n from visit_ratings where entry_id='re3'`)).rows[0].n===0 ? ok('being untagged removes your rating from that visit') : bad('rating after untag');
 console.log(process.exitCode ? '\nSOME CHECKS FAILED' : '\nall checks passed');
 
