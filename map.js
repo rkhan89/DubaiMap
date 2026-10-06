@@ -22,7 +22,7 @@ function toLatLng(a,i){
 const G = (lat,lng)=>{ const p=toAI(lat,lng); return [p.a,p.i]; };
 
 const T = 0.2;                                   // km per tile
-const A_MIN=-6.0, A_MAX=36.0, I_MIN=-9.0, I_MAX=21.6;
+const A_MIN=-15.6, A_MAX=36.0, I_MIN=-9.0, I_MAX=21.6;
 const ROWS = Math.round((A_MAX-A_MIN)/T);        // along the coast
 const COLS = Math.round((I_MAX-I_MIN)/T);        // inland
 const TW=16, TH=8, LIP=3.5, SLAB=16;
@@ -84,7 +84,7 @@ function hashOffset(str, range){
 /* =========================================================
    CITY DATA  (all in a/i km; positions from real coordinates)
    ========================================================= */
-const COAST = [[-6,-1.0],[-3.4,-0.55],[-2.87,-0.49],[-1,-0.15],[0,0],[1.2,0.1],[2.24,0.05],[3.41,0.35],[5.4,0.6],[9,0.5],
+const COAST = [[-16,-2.5],[-14,-2.2],[-12,-1.9],[-10,-1.6],[-8,-1.3],[-6,-1.0],[-3.4,-0.55],[-2.87,-0.49],[-1,-0.15],[0,0],[1.2,0.1],[2.24,0.05],[3.41,0.35],[5.4,0.6],[9,0.5],
   [12,0.45],[15,0.45],[17.5,0.35],[19.6,0.25],[20.2,-0.2],[21.2,-0.25],[21.8,0.15],[23.5,0.05],[26.6,-0.2],
   [28,0.1],[30,0.35],[31.5,0.8],[32.6,1.9],[34,2.8],[36,3.3]];
 const coastIn = a => lerpPts(COAST,a) + 0.06*Math.sin(a*2.1);
@@ -190,7 +190,7 @@ const ROADS = [
   {k:0, pts:[G(25.030,55.140),G(25.050,55.165),G(25.080,55.195),G(25.115,55.225),G(25.150,55.245),G(25.175,55.270),G(25.190,55.300),G(25.2150,55.3300),G(25.2350,55.3450),G(25.2600,55.3480)]}, // Al Khail -> Garhoud
   {k:0, pts:[G(25.005,55.150),G(25.045,55.210),G(25.090,55.275),G(25.140,55.335),G(25.195,55.395),G(25.240,55.420),G(25.300,55.430)]}, // Mohammed bin Zayed (E311)
   {k:0, pts:[G(24.990,55.230),G(25.060,55.330),G(25.120,55.410),G(25.180,55.470),G(25.250,55.510),G(25.290,55.520)]}, // Emirates Rd (E611)
-  {k:1, pts:[G(25.200,55.320),G(25.160,55.370),G(25.120,55.420),G(25.080,55.470)]},                   // Al Ain Rd (E66)
+  {k:0, pts:[G(25.200,55.320),G(25.160,55.370),G(25.120,55.420),G(25.080,55.470),G(25.040,55.520)]}, // Dubai–Al Ain Rd (E66)
   {k:1, pts:[G(25.205,55.350),G(25.180,55.420),G(25.160,55.480),G(25.150,55.520)]},                   // Hatta Rd (E44)
   {k:1, pts:[G(25.258,55.365),G(25.245,55.420),G(25.235,55.480),G(25.230,55.520)]},                   // Al Khawaneej Rd
   {k:1, pts:[G(25.285,55.375),G(25.265,55.395),G(25.215,55.405),G(25.170,55.395)]},                   // Tripoli St / Mirdif
@@ -202,7 +202,15 @@ const ROADS = [
   {k:1, pts:[[11.4,0.92],[11.4,9.7]]}, {k:1, pts:[[14.9,0.9],[14.9,6.5]]}, {k:1, pts:[[21.3,0.62],[21.3,6.6]]},
   {k:1, pts:[[23.5,0.5],[23.5,5.5]]}, {k:1, pts:[[25.2,0.45],[25.2,6.0]]}, {k:1, pts:[[28.4,0.6],[28.4,5.4]]},
   {k:1, pts:[[30.6,0.8],[30.6,5.4]]},
-  {k:2, pts:[[10.5,1.6],[24.3,1.5]]},                                                                 // Al Wasl Rd
+  {k:1, pts:[G(25.2335,55.2725),G(25.2180,55.2580),G(25.2000,55.2450),G(25.1850,55.2350),G(25.1700,55.2230),G(25.1550,55.2120),G(25.1400,55.2000)]}, // Al Wasl Rd
+  {k:1, pts:[G(25.1530,55.2080),G(25.1350,55.2200),G(25.1180,55.2320),G(25.1000,55.2450),G(25.0800,55.2580),G(25.0600,55.2700)]}, // Umm Suqeim St
+  {k:1, pts:[G(25.2620,55.3240),G(25.2730,55.3420),G(25.2850,55.3580),G(25.2990,55.3720),G(25.3150,55.3850)]},                   // Al Ittihad Rd
+  {k:1, pts:[G(25.2520,55.3270),G(25.2480,55.3400),G(25.2440,55.3560),G(25.2380,55.3750),G(25.2300,55.3920)]},                   // Airport Rd
+  {k:0, pts:[G(25.035,55.085),G(25.000,55.040),G(24.960,54.990)]},                                                                   // SZR on to Jebel Ali
+  {k:0, pts:[G(25.005,55.150),G(24.960,55.090),G(24.930,55.060)]},                                                                   // E311 south
+  {k:0, pts:[G(24.990,55.230),G(24.950,55.170),G(24.910,55.130)]},                                                                   // E611 south
+  {k:1, pts:[G(25.000,55.110),G(24.970,55.150),G(24.930,55.170),G(24.890,55.175)]},                                                  // Expo Rd / Al Maktoum airport
+  {k:1, pts:[G(25.050,55.110),G(25.000,55.170),G(24.960,55.230)]},                                                                   // Jebel Ali–Lehbab Rd
   {k:2, pts:[[3.5,0.85],[3.56,-1.05]]},                                                                // Palm trunk
   {k:2, pts:(()=>{ const [a0,i0]=G(25.1412,55.1853), o=[]; for (let t=0;t<=1.001;t+=0.125){ const u=1-t; o.push([u*u*(a0+0.1)+2*u*t*(a0+0.5)+t*t*9.25, u*u*(i0+0.11)+2*u*t*(i0+0.24)+t*t*0.95]); } return o; })()}, // Burj Al Arab: curved causeway
   {k:2, pts:[G(25.0806,55.1205),[-0.1,0.2]]},                                                         // Bluewaters bridge
@@ -294,15 +302,162 @@ function nearestZone(a,i){
 /* =========================================================
    TERRAIN RASTER
    ========================================================= */
-const W_SEA=0, W_SHALLOW=1, L_BEACH=2, L_SAND=3, L_DUNE=4, L_URBAN=5, L_PARK=6, W_CANAL=7, L_TARMAC=8, L_PALM=9;
-const TILE_COLORS = ['#58C8BF','#78D7CC','#F6DDA8','#EDC586','#E0AE6C','#EBD3A7','#8CC46B','#4DB6B3','#CEC7BD','#F3D89F'];
-const isWaterT = t => t===W_SEA || t===W_SHALLOW || t===W_CANAL;
+const W_SEA=0, W_SHALLOW=1, L_BEACH=2, L_SAND=3, L_DUNE=4, L_URBAN=5, L_PARK=6, W_CANAL=7, L_TARMAC=8, L_PALM=9, L_LOT=10, L_GOLF=11, W_DEEP=12, L_FARM=13, L_CREST=14;
+const TILE_COLORS = ['#58C8BF','#78D7CC','#F6DDA8','#EDC586','#E0AE6C','#EBD3A7','#8CC46B','#4DB6B3','#CEC7BD','#F3D89F','#E2D2B4','#A4D47E','#46B3B2','#ACC877','#F3CF94'];
+const isWaterT = t => t===W_SEA || t===W_SHALLOW || t===W_CANAL || t===W_DEEP;
 const tType = new Uint8Array(ROWS*COLS);
 const roadMask = new Uint8Array(ROWS*COLS);
 const reserved = new Uint8Array(ROWS*COLS);
 const inRect = (a,i,R)=> a>=R.a[0] && a<=R.a[1] && i>=R.i[0] && i<=R.i[1];
 
+/* =========================================================
+   NEIGHBOURHOODS: the finer city fabric
+   Each has its own character: height, colours and how tightly it's packed. They fill
+   every gap the districts above leave; where a district is marked regen (Deira, Bur Dubai,
+   Karama, Jumeirah/Satwa) these neighbourhoods replace its buildings, and the district's
+   own style fills whatever they don't cover. Positions are real lat/lng (see the comments)
+   converted with toAI, so pins still land on the right blocks.
+   st: old (low, tight, cream and coral, some wind towers), busy (tight mid-rise), mid, glass,
+       low, villa (white, gaps, trees, pools), shed (wide flat warehouses), campus, resort,
+       golf, farm, marsh, port.   ground: what the land is (default city paving).
+   ========================================================= */
+const HOODS = [
+  // ---- Deira: souks, Naif, Al Ras, Rigga, Muraqqabat, Hor Al Anz, Abu Hail ----
+  {n:'Gold & Spice Souk, Naif', a:[26.8,28.3], i:[0.35,1.8], st:'old',  h:[5,10],  p:0.78},
+  {n:'Al Ras, Baniyas',         a:[28.3,29.6], i:[0.6,2.0],  st:'busy', h:[8,16],  p:0.66},
+  {n:'Al Rigga',                a:[27.0,28.4], i:[1.8,3.25], st:'busy', h:[10,24], p:0.66},
+  {n:'Al Murar',                a:[28.4,29.6], i:[2.0,3.3],  st:'busy', h:[7,15],  p:0.62},
+  {n:'Muraqqabat',              a:[27.9,29.3], i:[3.25,4.7], st:'busy', h:[8,18],  p:0.62},
+  {n:'Port Saeed, Clock Tower', a:[26.8,27.9], i:[3.25,5.3], st:'mid',  h:[9,20],  p:0.46},
+  {n:'Abu Hail',                a:[29.6,31.0], i:[1.8,3.0],  st:'low',  h:[6,12],  p:0.58},
+  {n:'Hor Al Anz',              a:[29.3,31.6], i:[3.0,5.3],  st:'busy', h:[6,14],  p:0.62},
+  {n:'Al Waheda, Waterfront',   a:[29.6,32.2], i:[0.4,1.8],  st:'mid',  h:[8,18],  p:0.42},
+  // ---- Bur Dubai, the creek's old side ----
+  {n:'Al Fahidi, Meena Bazaar', a:[25.6,26.5], i:[0.3,1.75], st:'old',  h:[5,10],  p:0.76},
+  {n:'Al Seef',                 a:[25.9,26.6], i:[1.75,2.7], st:'old',  h:[5,9],   p:0.62},
+  {n:'Mankhool',                a:[23.9,25.6], i:[0.9,1.7],  st:'busy', h:[8,18],  p:0.62},
+  {n:'Al Raffa, Al Hamriya',    a:[23.9,25.6], i:[0.3,0.9],  st:'old',  h:[6,12],  p:0.66},
+  // ---- Karama, Oud Metha ----
+  {n:'Karama',                  a:[24.4,25.9], i:[1.7,3.3],  st:'busy', h:[6,13],  p:0.72},
+  {n:'Oud Metha',               a:[24.7,26.0], i:[3.3,4.7],  st:'mid',  h:[8,18],  p:0.5},
+  // ---- Jumeirah, Satwa, City Walk ----
+  {n:'Satwa',                   a:[20.6,22.4], i:[1.1,2.35], st:'old',  h:[5,11],  p:0.74},
+  {n:'Al Bada’a, Jafiliya',a:[22.4,23.9], i:[1.1,2.35], st:'busy', h:[7,15],  p:0.62},
+  {n:'Jumeirah 1',              a:[21.2,23.9], i:[0.6,1.1],  st:'low',  h:[6,11],  p:0.5},
+  {n:'City Walk',               a:[18.8,19.9], i:[1.45,2.35],st:'mid',  h:[8,16],  p:0.5},
+  {n:'Jumeirah 2 and 3',        a:[16.8,21.2], i:[0.6,1.25], st:'villa',h:[5,7],   p:0.5},
+  {n:'Al Wasl',                 a:[17.6,20.6], i:[1.25,2.35],st:'villa',h:[5,8],   p:0.48},
+  // ---- north and the airport side ----
+  {n:'Al Mamzar',               a:[31.6,32.6], i:[3.0,3.6],  st:'low',  h:[6,11],  p:0.5},
+  {n:'Al Twar',                 a:[30.4,32.4], i:[6.6,9.0],  st:'villa',h:[5,7],   p:0.5},
+  {n:'Muhaisnah',               a:[32.4,35.8], i:[8.4,11.0], st:'busy', h:[5,10],  p:0.55},
+  {n:'Al Qusais industrial',    a:[33.6,35.8], i:[11.0,12.6],st:'shed', h:[4,8],   p:0.5},
+  {n:'Rashidiya',               a:[28.0,30.4], i:[9.8,11.6], st:'villa',h:[5,7],   p:0.5},
+  {n:'Nad Al Hamar',            a:[25.6,27.4], i:[11.6,13.4],st:'villa',h:[5,7],   p:0.46},
+  {n:'Ras Al Khor industrial',  a:[23.6,26.0], i:[10.4,12.0],st:'shed', h:[4,8],   p:0.5},
+  // ---- Dubai Islands (reclaimed, now resorts) ----
+  {n:'Dubai Islands',           a:[27.2,31.2], i:[-2.6,-0.8],st:'resort',h:[6,14], p:0.34},
+  // ---- the SZR side, Business Bay, D3 ----
+  {n:'Dubai Design District',   a:[19.4,20.6], i:[6.0,6.9],  st:'campus',h:[8,16], p:0.5},
+  {n:'Ras Al Khor wetlands',    a:[21.4,23.8], i:[8.4,10.6], st:'marsh', ground:L_PARK},
+  {n:'Al Quoz 4',               a:[12.6,16.6], i:[6.3,7.4],  st:'mid',  h:[6,12],  p:0.42},
+  // ---- the middle: Barsha South, Greens, Emirates Hills, Springs, Meadows ----
+  {n:'Al Barsha South',         a:[4.6,9.6],   i:[4.6,6.2],  st:'mid',  h:[6,14],  p:0.42},
+  {n:'The Greens',              a:[2.7,4.2],   i:[1.9,2.3],  st:'mid',  h:[8,16],  p:0.45},
+  {n:'Emirates Golf Club',      a:[2.0,3.2],   i:[2.3,3.4],  st:'golf', ground:L_GOLF},
+  {n:'Montgomerie',             a:[-0.4,0.6],  i:[3.6,4.8],  st:'golf', ground:L_GOLF},
+  {n:'Emirates Hills',          a:[0.6,3.0],   i:[3.4,4.6],  st:'villa',h:[6,8],   p:0.34, lush:true},
+  {n:'Jumeirah Islands, Park',  a:[-1.4,0.6],  i:[2.7,3.6],  st:'villa',h:[5,7],   p:0.42},
+  {n:'The Meadows',             a:[0.4,2.6],   i:[4.6,5.5],  st:'villa',h:[5,7],   p:0.45},
+  {n:'The Springs',             a:[1.2,3.6],   i:[5.5,6.1],  st:'villa',h:[5,7],   p:0.5},
+  {n:'Al Barsha 3',             a:[5.0,6.8],   i:[3.2,4.6],  st:'mid',  h:[6,12],  p:0.45},
+  // ---- south-west: Jebel Ali, the Gardens, DIP, Expo, Dubai South ----
+  {n:'The Gardens',             a:[-4.6,-2.6], i:[1.6,2.8],  st:'low',  h:[6,12],  p:0.5},
+  {n:'Jebel Ali Village',       a:[-7.6,-4.6], i:[0.0,1.8],  st:'villa',h:[5,7],   p:0.38},
+  {n:'Jebel Ali Free Zone',     a:[-12.4,-6.2],i:[0.6,6.6],  st:'shed', h:[5,10],  p:0.52},
+  {n:'Jebel Ali Port',          a:[-12.4,-7.6],i:[-3.6,0.4], st:'port', ground:L_TARMAC},
+  {n:'Dubai Investments Park',  a:[-6.2,-2.8], i:[7.0,10.4], st:'shed', h:[5,9],   p:0.46},
+  {n:'DIP homes',               a:[-6.2,-3.6], i:[6.2,7.0],  st:'mid',  h:[6,12],  p:0.45},
+  {n:'Expo City',               a:[-10.4,-7.8],i:[7.8,10.4], st:'campus',h:[8,16], p:0.42},
+  {n:'Dubai South',             a:[-12.6,-9.8],i:[10.6,13.0],st:'mid',  h:[6,14],  p:0.42},
+  {n:'Al Maktoum Airport',      a:[-15.4,-12.8],i:[12.6,17.4],st:'apron',ground:L_TARMAC},
+  {n:'Studio City',             a:[2.8,5.2],   i:[11.8,12.8],st:'campus',h:[8,14], p:0.45},
+  {n:'Al Barari',               a:[12.6,14.4], i:[13.0,14.6],st:'villa',h:[6,8],   p:0.32, lush:true},
+  // ---- farms out east and in the desert ----
+  {n:'Al Awir farms',           a:[30.0,32.0], i:[19.4,21.2],st:'farm', ground:L_FARM},
+  {n:'Lisaili farms',           a:[6.0,8.0],   i:[17.0,18.6],st:'farm', ground:L_FARM},
+  {n:'Margham farms',           a:[14.0,15.8], i:[19.2,20.8],st:'farm', ground:L_FARM},
+  {n:'Ghadeer farms',           a:[-6.0,-4.2], i:[15.0,16.6],st:'farm', ground:L_FARM},
+];
+// districts whose buildings the neighbourhoods above replace (their style fills any gaps)
+const REGEN = [10, 11, 12, 6];   // Karama/Oud Metha, Bur Dubai, Deira, Jumeirah/Satwa (indices in DISTRICTS)
+// lakes and ponds (km half-axes)
+const LAKES = [
+  {a:-0.6, i:2.05, rx:0.45, ry:0.22}, {a:0.45, i:2.1, rx:0.35, ry:0.2},  {a:1.2, i:1.95, rx:0.25, ry:0.16},   // JLT lakes
+  {a:-0.4, i:3.15, rx:0.32, ry:0.32},                                                                        // Jumeirah Islands
+  {a:1.4,  i:5.05, rx:0.3,  ry:0.14}, {a:2.4, i:5.8, rx:0.28, ry:0.12},                                      // Meadows, Springs
+  {a:1.8,  i:3.95, rx:0.22, ry:0.14}, {a:3.4, i:2.1, rx:0.16, ry:0.1},                                       // Emirates Hills, Greens
+  {a:13.6, i:13.7, rx:0.2,  ry:0.14},                                                                        // Al Barari
+  {a:-5.4, i:8.6, rx:0.18,  ry:0.12},                                                                        // DIP
+];
+// the land the port is built on, and its two basins
+const PORT_LAND = {a:[-12.4,-7.6], i:[-3.6,-0.8]};
+const PORT_BASINS = [{a:[-11.7,-10.7], i:[-3.0,-1.5]}, {a:[-9.8,-8.6], i:[-3.0,-1.5]}];
+const MAKTOUM_RUNWAYS = [{a:-14.6, i:[13.0,17.0]}, {a:-13.6, i:[13.0,17.0]}];
+// the city envelope: bare land this close to a neighbourhood becomes paved lots, not desert
+const LOT_KM = 0.8;
+
+// the Metro (elevated) and the Marina tram, through their real stations
+const METRO = [
+  { line:'red', col:'#D9443A', stations:[
+    [25.2300,55.3920,'Centrepoint'],[25.2415,55.3655,'Emirates'],[25.2485,55.3523,'Airport T3'],[25.2486,55.3455,'Airport T1'],
+    [25.2525,55.3390,'GGICO'],[25.2549,55.3299,'Deira City Centre'],[25.2662,55.3141,'Union'],[25.2546,55.3036,'BurJuman'],
+    [25.2445,55.2983,'ADCB'],[25.2337,55.2919,'Max'],[25.2253,55.2856,'World Trade Centre'],[25.2177,55.2799,'Emirates Towers'],
+    [25.2112,55.2763,'Financial Centre'],[25.2016,55.2694,'Burj Khalifa'],[25.1914,55.2604,'Business Bay'],[25.1815,55.2522,'Onpassive'],
+    [25.1580,55.2280,'Al Safa'],[25.1213,55.2003,'Mall of the Emirates'],[25.1099,55.1903,'Mashreq'],[25.1015,55.1734,'Internet City'],
+    [25.0889,55.1555,'Nakheel'],[25.0710,55.1386,'DMCC'],[25.0577,55.1267,'Jabal Ali'],[25.0446,55.1151,'Ibn Battuta'],
+    [25.0263,55.1015,'Energy'],[25.0080,55.0850,'Danube'],[24.9860,55.0650,'UAE Exchange'] ]},
+  { line:'red', col:'#D9443A', stations:[
+    [25.0577,55.1267,null],[25.0438,55.1452,'Discovery Gardens'],[25.0313,55.1536,'Al Furjan'],[25.0177,55.1611,'Jumeirah Golf Estates'],
+    [24.9894,55.1595,'Dubai Investment Park'],[24.9632,55.1475,'Expo 2020'] ]},
+  { line:'green', col:'#3FA34D', stations:[
+    [25.2944,55.3921,'E& by Etisalat'],[25.2879,55.3825,'Al Qusais'],[25.2780,55.3698,'Dubai Airport Free Zone'],[25.2732,55.3657,'Al Nahda'],
+    [25.2706,55.3590,'Stadium'],[25.2694,55.3514,'Al Qiyadah'],[25.2752,55.3471,'Abu Hail'],[25.2737,55.3375,'Abu Baker Al Siddique'],
+    [25.2702,55.3253,'Salah Al Din'],[25.2662,55.3141,null],[25.2697,55.3089,'Baniyas Square'],[25.2756,55.3006,'Gold Souk'],
+    [25.2690,55.2934,'Al Ras'],[25.2650,55.2900,'Al Ghubaiba'],[25.2585,55.2975,'Sharaf DG'],[25.2546,55.3036,null],
+    [25.2425,55.3164,'Oud Metha'],[25.2297,55.3226,'Dubai Healthcare City'],[25.2250,55.3330,'Al Jadaf'],[25.2190,55.3380,'Creek'] ]},
+];
+const TRAM = [G(25.0897,55.1495),G(25.0860,55.1470),G(25.0806,55.1446),G(25.0762,55.1412),G(25.0715,55.1360),G(25.0680,55.1300),G(25.0700,55.1250),G(25.0760,55.1290),G(25.0820,55.1350)];
+// new landmarks, at their real spots
+const LANDMARKS2 = [
+  {k:'goldsouk',  at:G(25.2700,55.2972)}, {k:'clocktower', at:G(25.2600,55.3200)}, {k:'dcc', at:G(25.2525,55.3300)},
+  {k:'waterfront',at:G(25.2890,55.3230)}, {k:'etihad', at:G(25.2390,55.2740)},    {k:'jmosque', at:[22.0,0.75]},
+  {k:'emtowers',  at:G(25.2170,55.2820)}, {k:'difcgate', at:G(25.2135,55.2795)},  {k:'wtc', at:G(25.2260,55.2865)},
+  {k:'opera',     at:G(25.1955,55.2720)}, {k:'cocacola', at:G(25.2040,55.2620)},  {k:'madinat', at:G(25.1325,55.1845)},
+  {k:'wildwadi',  at:G(25.1395,55.1890)}, {k:'ski', at:[G(25.1181,55.2006)[0]+0.45, G(25.1181,55.2006)[1]+0.05]},
+  {k:'dhmall',    at:[8.4,6.6]},          {k:'cricket', at:[2.6,9.6]},             {k:'autodrome', at:G(25.0520,55.2390)},
+  {k:'dragonmart',at:G(25.1750,55.4200)}, {k:'miracle', at:G(25.0600,55.2440)},    {k:'img', at:G(25.0810,55.3180)},
+  {k:'expo',      at:G(24.9630,55.1490)}, {k:'maktoum', at:[-13.0,15.0]},          {k:'sohq', at:G(25.1200,55.3820)},
+  {k:'mirdifcc',  at:G(25.2160,55.4070)}, {k:'theview', at:[3.5,-0.6]},            {k:'royal', at:G(25.1385,55.1300)},
+  {k:'pointe',    at:[ATLANTIS[0]+0.55, ATLANTIS[1]+0.5]},                        {k:'lamer', at:[20.9,-0.05]},
+  {k:'qe2',       at:[25.6,-1.3]},        {k:'festival', at:G(25.2220,55.3570)},   {k:'alserkal', at:G(25.1430,55.2250)},
+];
+
+RUNWAYS.push(...MAKTOUM_RUNWAYS);
+const HOODS_ALL = [...HOODS, ...REGEN.map(di=>({ ...DISTRICTS[di], n:'rest of the district' }))];
+const METRO_AI = METRO.map(l=>l.stations.map(([lat,lng])=>G(lat,lng)));
+// every tile of a rectangle (in km), with its centre: fn(r, c, a, i)
+function forRect(R, fn){
+  const gs = [aiToGrid(R.a[0],R.i[0]), aiToGrid(R.a[0],R.i[1]), aiToGrid(R.a[1],R.i[0]), aiToGrid(R.a[1],R.i[1])];
+  const c0 = Math.max(0, Math.floor(Math.min(...gs.map(g=>g.gx)))), c1 = Math.min(COLS-1, Math.ceil(Math.max(...gs.map(g=>g.gx))));
+  const r0 = Math.max(0, Math.floor(Math.min(...gs.map(g=>g.gy)))), r1 = Math.min(ROWS-1, Math.ceil(Math.max(...gs.map(g=>g.gy))));
+  for (let r=r0;r<=r1;r++) for (let c=c0;c<=c1;c++){ const {a,i} = gridToAI(c+0.5, r+0.5); if (inRect(a,i,R)) fn(r,c,a,i); }
+}
+
+
 function buildTerrain(){
+  // each road's bounding box (km), so the mask only measures roads nearby
+  ROADS.forEach(rd=>{ const pad=RD[rd.k].km+0.1, as=rd.pts.map(p=>p[0]), is=rd.pts.map(p=>p[1]); rd.bb=[Math.min(...as)-pad, Math.max(...as)+pad, Math.min(...is)-pad, Math.max(...is)+pad]; });
   for (let r=0;r<ROWS;r++) for (let c=0;c<COLS;c++){
     const {a,i} = gridToAI(c+0.5, r+0.5);
     const ci = coastIn(a);
@@ -322,7 +477,10 @@ function buildTerrain(){
       }
     } else {
       if (i-ci < 0.28) t = L_BEACH;
-      else if (vnoise(a*0.55+3, i*0.55+7)*0.65 + vnoise(a*1.3, i*1.3)*0.35 > 0.62) t = L_DUNE;
+      else { const dn = vnoise(a*0.55+3, i*0.55+7)*0.65 + vnoise(a*1.3, i*1.3)*0.35;
+        if (dn > 0.62) t = L_DUNE;
+        // dune crests: light ridges along the dunes' edges and in long wind-blown lines out in the desert
+        else if (dn > 0.585 || (i > 9 && Math.sin(a*1.9 + i*0.7 + vnoise(a*0.8,i*0.8)*4) > 0.94)) t = L_CREST; }
       if (t!==L_BEACH){
         if (DISTRICTS.some(d=>inRect(a,i,d))) t = L_URBAN;
         if (PARKS.some(p=>inRect(a,i,p))) t = L_PARK;
@@ -334,8 +492,23 @@ function buildTerrain(){
     }
     tType[r*COLS+c] = t;
     if (!isWaterT(t)){
-      for (const rd of ROADS){ if (distLine(a,i,rd.pts) < RD[rd.k].km+0.06){ roadMask[r*COLS+c]=1; break; } }
+      for (const rd of ROADS){ const bb=rd.bb; if (a<bb[0] || a>bb[1] || i<bb[2] || i>bb[3]) continue; if (distLine(a,i,rd.pts) < RD[rd.k].km+0.06){ roadMask[r*COLS+c]=1; break; } }
     }
+  }
+  // ---- the finer fabric: neighbourhood ground, the port, lakes, paved lots, deep water ----
+  HOODS_ALL.forEach(hd=>forRect(hd, (r,c)=>{ const k=r*COLS+c, t=tType[k]; if (t===L_SAND || t===L_DUNE || t===L_CREST) tType[k] = hd.ground!=null ? hd.ground : L_URBAN; }));
+  // Jebel Ali port: land built out into the sea around its two basins
+  forRect(PORT_LAND, (r,c)=>{ const k=r*COLS+c; if (isWaterT(tType[k])) tType[k] = L_TARMAC; });
+  PORT_BASINS.forEach(b=>forRect(b, (r,c)=>{ tType[r*COLS+c] = W_SHALLOW; roadMask[r*COLS+c] = 0; }));
+  // lakes and ponds
+  LAKES.forEach(l=>forRect({a:[l.a-l.rx,l.a+l.rx], i:[l.i-l.ry,l.i+l.ry]}, (r,c,a,i)=>{
+    if (((a-l.a)/l.rx)**2 + ((i-l.i)/l.ry)**2 < 1){ tType[r*COLS+c] = W_CANAL; roadMask[r*COLS+c] = 0; } }));
+  // bare land close to the city is paved lots and yards, not open desert
+  const near = [...DISTRICTS, ...HOODS.filter(h=>h.st!=='farm'), ...PARKS, AIRPORT].map(d=>({a0:d.a[0]-LOT_KM, a1:d.a[1]+LOT_KM, i0:d.i[0]-LOT_KM, i1:d.i[1]+LOT_KM}));
+  for (let r=0;r<ROWS;r++) for (let c=0;c<COLS;c++){
+    const k=r*COLS+c, t=tType[k]; if (t!==L_SAND && t!==L_DUNE && t!==L_CREST) continue;
+    const {a,i} = gridToAI(c+0.5, r+0.5);
+    if (near.some(d=>a>d.a0 && a<d.a1 && i>d.i0 && i<d.i1)) tType[k] = L_LOT;
   }
   // shallow water: open sea within ~0.4 km of land
   const R=2;
@@ -350,6 +523,12 @@ function buildTerrain(){
     }
     if (near) tType[r*COLS+c]=W_SHALLOW;
   }
+  // deep water: open sea more than ~1.6 km from land is darker
+  const dist = new Int16Array(ROWS*COLS).fill(-1), q = [];
+  for (let k=0;k<ROWS*COLS;k++) if (!isWaterT(tType[k])){ dist[k]=0; q.push(k); }
+  for (let h=0; h<q.length; h++){ const k=q[h], d=dist[k]; if (d>=9) continue; const r=Math.floor(k/COLS), c=k%COLS;
+    for (const [dr,dc] of [[1,0],[-1,0],[0,1],[0,-1]]){ const rr=r+dr, cc=c+dc; if (rr<0||cc<0||rr>=ROWS||cc>=COLS) continue; const kk=rr*COLS+cc; if (dist[kk]!==-1) continue; dist[kk]=d+1; q.push(kk); } }
+  for (let k=0;k<ROWS*COLS;k++) if (tType[k]===W_SEA && (dist[k]===-1 || dist[k]>8)) tType[k]=W_DEEP;
 }
 
 /* =========================================================
@@ -362,6 +541,11 @@ const PAL = {
   low:   ['#F1E3C9','#E9D3AE','#F4E8D4','#E2C8A2'],
   villa: ['#F7EEDC','#F2E4CB','#EFE0C6'],
   ind:   ['#D8CFC2','#CFC3B1','#E0D8CC','#C8BCA8'],
+  old:   ['#F4E6CC','#EFD6B4','#E9B496','#F1DCC0','#E6A88C','#F6EBD8'],   // cream and coral
+  busy:  ['#EAD7B7','#E7C3A4','#F0E2C8','#D9C3A6','#E3B49A','#CFC6B8'],
+  shed:  ['#D5D0C7','#C9C4BA','#DCD7CE','#BFC6CC'],
+  campus:['#F2EEE6','#E6EDF0','#A7D0E2','#F0E2C8'],
+  resort:['#F6E7CF','#F2D6BC','#FFFFFF','#EDE0C8'],
 };
 const ROOFS = ['#D98C5F','#C9764E','#E3A071','#F7EEDC','#F7EEDC'];
 
@@ -383,12 +567,12 @@ function buildObjects(){
 
   const addBox = (c,r,st,h,rng)=>{
     const p = tileWorld(c,r), pal = PAL[st], base = pal[Math.floor(rng()*pal.length)];
-    const s = st==='villa' ? 0.28 : st==='ind' ? 0.4 : st==='glass' ? 0.3 : 0.34;
-    const sx = st==='ind' ? s : s - rng()*0.05, sy = st==='ind' ? s*0.8 : s - rng()*0.05;
+    const s = st==='villa' ? 0.28 : st==='ind' ? 0.4 : st==='glass' ? 0.3 : st==='old' ? 0.37 : st==='busy' ? 0.35 : st==='shed' ? 0.46 : st==='resort' ? 0.32 : 0.34;
+    const sx = st==='ind'||st==='shed' ? s : s - rng()*0.05, sy = st==='ind' ? s*0.8 : st==='shed' ? s*0.86 : s - rng()*0.05;
     const roof = st==='villa' ? ROOFS[Math.floor(rng()*ROOFS.length)] : null;
     OBJECTS.push({k:'box', x:p.x, y:p.y, hx:sx, hy:sy, h, st, d:c+r+1,
       opts:{ top:roof||shade(base,1.07), left:shade(base,0.9), right:shade(base,0.72),
-             floors: st==='glass'?5 : st==='villa'?0 : 4, mullion: st==='glass',
+             floors: st==='glass'?5 : st==='villa'||st==='shed'?0 : st==='old'?3 : 4, mullion: st==='glass',
              floorColor: st==='glass'?'rgba(255,255,255,0.3)':undefined }});
   };
   const addTree = (c,r,rng)=>{
@@ -398,6 +582,7 @@ function buildObjects(){
   const free = (c,r)=>{ const k=r*COLS+c; return !roadMask[k] && !reserved[k]; };
 
   DISTRICTS.forEach((d,di)=>{
+    if (REGEN.includes(di)) return;      // rebuilt as finer neighbourhoods below
     const rng = mulberry32(100+di);
     for (let r=0;r<ROWS;r++) for (let c=0;c<COLS;c++){
       const {a,i} = gridToAI(c+0.5,r+0.5);
@@ -423,7 +608,7 @@ function buildObjects(){
         const roll=rng(); if (roll<0.3) addBox(c,r,'villa',5+rng()*2,rng); else if (roll<0.5) addTree(c,r,rng);
       }
     } else if (t===L_PARK && !roadMask[k] && rng()<0.45) addTree(c,r,rng);
-    else if (t===L_URBAN && free(c,r) && !DISTRICTS.some(d=>inRect(a,i,d))){
+    else if (t===L_URBAN && free(c,r) && !DISTRICTS.some(d=>inRect(a,i,d)) && !HOODS.some(h=>inRect(a,i,h))){
       // islands (Bluewaters, Dubai Harbour, Port Rashid)
       const roll=rng(); if (roll<0.45) addBox(c,r, a>20?'ind':'mid', 8+rng()*16, rng);
     } else if (t===L_BEACH && i>0 && rng()<0.07 && !roadMask[k]) addTree(c,r,rng);
@@ -438,6 +623,128 @@ function buildObjects(){
   boatAt(MARINA[1][0], MARINA[1][1], 'yacht'); boatAt(MARINA[3][0], MARINA[3][1], 'yacht');
   boatAt(6.2,-1.8,'yacht'); boatAt(13.2,-2.0,'dhow'); boatAt(21.5,-2.2,'yacht'); boatAt(26.4,-1.6,'dhow');
 
+
+  // ===== the finer fabric (neighbourhoods), then small life, transit and the new landmarks =====
+  // the new landmarks: their ground is cleared of whatever the districts put there (nothing else moves)
+  { const before = new Uint8Array(reserved);
+    LANDMARKS2.forEach(l=>{
+      const rad = ['dcc','mirdifcc','festival','dhmall','img','expo','cricket','autodrome','dragonmart','maktoum','miracle'].includes(l.k) ? 2 : 1;
+      reserveAround(l.at[0], l.at[1], rad);
+      const g=aiToGrid(l.at[0], l.at[1]), p=proj(g.gx,g.gy);
+      OBJECTS.push({k:'lm2', lm:l.k, x:p.x, y:p.y, d:g.gx+g.gy+0.9});
+    });
+    const tileOf = o=>{ const ai=worldToAI(o.x,o.y), g=aiToGrid(ai.a,ai.i), c=Math.floor(g.gx), r=Math.floor(g.gy); return (r>=0&&c>=0&&r<ROWS&&c<COLS) ? r*COLS+c : -1; };
+    for (let k=OBJECTS.length-1;k>=0;k--){ const o=OBJECTS[k]; if (o.k!=='box' && o.k!=='tree') continue; const t=tileOf(o); if (t>=0 && reserved[t] && !before[t]) OBJECTS.splice(k,1); }
+  }
+  // everything below uses its own random streams, so the districts above come out exactly as before
+  const occ = new Uint8Array(ROWS*COLS);
+  const markOcc = (a,i)=>{ const g=aiToGrid(a,i), c=Math.floor(g.gx), r=Math.floor(g.gy); if (r>=0&&c>=0&&r<ROWS&&c<COLS) occ[r*COLS+c]=1; };
+  // keep the elevated Metro's footprint clear of new buildings
+  METRO_AI.forEach(line=>{ for (let k=1;k<line.length;k++){ const [a0,i0]=line[k-1], [a1,i1]=line[k], n=Math.ceil(Math.hypot(a1-a0,i1-i0)/0.1);
+    for (let s=0;s<=n;s++) markOcc(a0+(a1-a0)*s/n, i0+(i1-i0)*s/n); } });
+  const addPalm = (c,r,rng)=>{ const p=tileWorld(c,r); OBJECTS.push({k:'palm', x:p.x+(rng()-0.5)*6, y:p.y+(rng()-0.5)*3, d:c+r+1.05, s:0.85+rng()*0.35}); };
+  const addPool = (c,r,rng)=>{ const p=tileWorld(c,r); OBJECTS.push({k:'pool', x:p.x+(rng()-0.5)*3, y:p.y+(rng()-0.5)*1.5, d:c+r+0.6}); };
+  const tileD = (c,r)=>c+r+1;
+  const claimed = new Uint8Array(ROWS*COLS);
+  HOODS_ALL.forEach((hd, hi)=>{
+    const rng = mulberry32(500+hi);
+    forRect(hd, (r,c,a,i)=>{
+      const k=r*COLS+c; if (claimed[k]) return; claimed[k]=1;
+      // tiles inside a district that keeps its own buildings are left alone
+      if (DISTRICTS.some((d,di)=>!REGEN.includes(di) && inRect(a,i,d))) return;
+      const t=tType[k];
+      if (roadMask[k] || reserved[k] || occ[k]) return;
+      const p = tileWorld(c,r);
+      if (hd.st==='golf'){ if (t===L_GOLF && rng()<0.12) addTree(c,r,rng); return; }
+      if (hd.st==='farm'){ if (t===L_FARM && (r%2===0) && rng()<0.85){ const o={k:'palm', x:p.x, y:p.y, d:tileD(c,r), s:0.8}; OBJECTS.push(o); } return; }
+      if (hd.st==='marsh'){ if (t===L_PARK && rng()<0.14) OBJECTS.push({k:'reed', x:p.x+(rng()-0.5)*6, y:p.y, d:tileD(c,r), near:true}); return; }
+      if (hd.st==='apron') return;
+      if (hd.st==='port'){
+        if (t!==L_TARMAC) return;
+        const roll=rng();
+        if (roll<0.34){ // container stacks
+          const cols=['#C9503A','#3F78B5','#E0A23B','#4E9A5E','#B9B4AC','#8F4FA0'];
+          const base=cols[Math.floor(rng()*cols.length)];
+          OBJECTS.push({k:'box', x:p.x, y:p.y, hx:0.36, hy:0.2, h:3+Math.floor(rng()*3)*1.6, st:'cont', d:tileD(c,r), opts:{ top:shade(base,1.1), left:shade(base,0.9), right:shade(base,0.72), floors:1.6, floorColor:'rgba(0,0,0,0.18)' }});
+        } else if (roll<0.4) OBJECTS.push({k:'box', x:p.x, y:p.y, hx:0.46, hy:0.4, h:5, st:'shed', d:tileD(c,r), opts:{ top:'#C3CBD2', left:'#D8D3CA', right:'#B6AFA4' }});
+        occ[k]=1; return;
+      }
+      if (t!==L_URBAN) return;
+      const roll = rng();
+      if (roll < hd.p){
+        const h = hd.h[0] + Math.pow(rng(),1.6)*(hd.h[1]-hd.h[0]);
+        addBox(c,r,hd.st,h,rng); occ[k]=1;
+        // wind towers on some of the old town's roofs
+        if (hd.st==='old' && rng()<0.16){ const o=OBJECTS[OBJECTS.length-1]; OBJECTS.push({k:'box', x:o.x, y:o.y, hx:0.1, hy:0.1, z0:h, h:4.5, st:'old', d:o.d+0.01, opts:{ top:'#E8D2AE', left:'#EEDCBC', right:'#D3B88E', floors:1.5, floorColor:'rgba(74,59,48,0.35)' }}); }
+      } else if (hd.st==='villa'){
+        const lush = hd.lush ? 0.5 : 0.3;
+        if (roll < hd.p+0.12) addPool(c,r,rng); else if (roll < hd.p+0.12+lush) addTree(c,r,rng);
+      } else if (hd.st==='campus' || hd.st==='low'){ if (roll < hd.p+0.22) addTree(c,r,rng); }
+      else if (hd.st==='resort'){ if (roll < hd.p+0.3) addPalm(c,r,rng); }
+      else if (hd.st==='old' || hd.st==='busy'){ if (roll < hd.p+0.05) addTree(c,r,rng); }
+    });
+  });
+  // pools in the gardens of the villa districts too (only on their empty plots)
+  { const rng = mulberry32(777), filled = new Uint8Array(ROWS*COLS);
+    OBJECTS.forEach(o=>{ if (o.k==='box' || o.k==='tree'){ const ai=worldToAI(o.x,o.y), g=aiToGrid(ai.a,ai.i), c=Math.floor(g.gx), r=Math.floor(g.gy); if (r>=0&&c>=0&&r<ROWS&&c<COLS) filled[r*COLS+c]=1; } });
+    DISTRICTS.forEach(d=>{ if (d.st!=='villa') return; forRect(d, (r,c)=>{ const k=r*COLS+c; if (tType[k]===L_URBAN && !filled[k] && !roadMask[k] && !reserved[k] && rng()<0.22) addPool(c,r,rng); }); }); }
+
+  // small life: palms and parasols on the beaches, shrubs, ghaf trees, camels and farms in the desert
+  { const rng = mulberry32(31337);
+    const PUBLIC_BEACH = [[-1.2,1.0],[11.0,12.6],[20.2,21.4],[32.0,33.2],[16.5,18.5],[8.4,9.4]];   // JBR, Kite Beach, La Mer, Mamzar, Jumeirah, Sunset
+    for (let r=0;r<ROWS;r++) for (let c=0;c<COLS;c++){
+      const k=r*COLS+c, t=tType[k]; if (roadMask[k] || reserved[k]) continue;
+      const {a,i} = gridToAI(c+0.5,r+0.5), p = tileWorld(c,r);
+      if (t===L_BEACH){
+        if (i>-0.5 && rng()<0.1) OBJECTS.push({k:'palm', x:p.x+(rng()-0.5)*6, y:p.y, d:c+r+1, s:0.8+rng()*0.3});
+        if (PUBLIC_BEACH.some(([x0,x1])=>a>x0 && a<x1) && rng()<0.3) OBJECTS.push({k:'parasol', x:p.x+(rng()-0.5)*8, y:p.y+(rng()-0.5)*3, d:c+r+0.9, near:true, col:['#E86A5C','#F2B84B','#5FA8D3','#FFFFFF','#8BC34A'][Math.floor(rng()*5)]});
+      } else if (t===L_SAND || t===L_DUNE || t===L_CREST){
+        const roll = rng();
+        if (roll<0.045) OBJECTS.push({k:'shrub', x:p.x+(rng()-0.5)*8, y:p.y+(rng()-0.5)*4, d:c+r+1, near:true});
+        else if (roll<0.056) OBJECTS.push({k:'ghaf', x:p.x+(rng()-0.5)*6, y:p.y+(rng()-0.5)*3, d:c+r+1, near:roll>0.052});
+        else if (roll<0.0575 && i>10) for (let q=0;q<2+Math.floor(rng()*2);q++) OBJECTS.push({k:'camel', x:p.x+q*5-4, y:p.y+q*1.5, d:c+r+1+q*0.01, near:true, f:rng()<0.5});
+      } else if (t===L_LOT && rng()<0.24){
+        // yards and plots round the edges of the city: low houses, sheds, a tree, a bit of scrub
+        const q = rng();
+        if (q<0.3) OBJECTS.push({k:'shrub', x:p.x+(rng()-0.5)*8, y:p.y+(rng()-0.5)*4, d:c+r+1, near:true});
+        else if (q<0.5) addTree(c,r,rng);
+        else if (q<0.75) addBox(c,r,'low',5+rng()*4,rng);
+        else OBJECTS.push({k:'box', x:p.x, y:p.y, hx:0.4, hy:0.32, h:3+rng()*3, st:'shed', d:c+r+1, opts:{ top:'#CBC3B5', left:'#DAD2C4', right:'#B9AE9C' }});
+      }
+    }
+    // flamingos at Ras Al Khor: pink flocks along the lagoon's edge
+    for (let q=0;q<9;q++){ const th=0.6+q*0.35, a=LAGOON.c[0]+Math.cos(th)*(LAGOON.r-0.12), i=LAGOON.c[1]+Math.sin(th)*(LAGOON.r-0.12), w=aiToWorld(a,i);
+      OBJECTS.push({k:'flamingo', x:w.x, y:w.y, d:aiToGrid(a,i).gx+aiToGrid(a,i).gy+0.5, near:true, n:3+q%3}); }
+  }
+
+  // the Metro: elevated track segments (depth-sorted so buildings in front cover it) and stations
+  METRO_AI.forEach((line, li)=>{
+    const col = METRO[li].col;
+    for (let k=1;k<line.length;k++){
+      const [a0,i0]=line[k-1], [a1,i1]=line[k], n=Math.max(1, Math.ceil(Math.hypot(a1-a0,i1-i0)/0.25));
+      for (let s=0;s<n;s++){
+        const pa=a0+(a1-a0)*s/n, pi=i0+(i1-i0)*s/n, qa=a0+(a1-a0)*(s+1)/n, qi=i0+(i1-i0)*(s+1)/n;
+        const P=aiToWorld(pa,pi), Q=aiToWorld(qa,qi), g=aiToGrid((pa+qa)/2,(pi+qi)/2);
+        OBJECTS.push({k:'rail', x:(P.x+Q.x)/2, y:(P.y+Q.y)/2, x0:P.x, y0:P.y, x1:Q.x, y1:Q.y, col, d:g.gx+g.gy+0.7});
+      }
+    }
+    METRO[li].stations.forEach(([lat,lng,name])=>{ if (!name) return; const [a,i]=G(lat,lng); if (!inMap(a,i)) return; const g=aiToGrid(a,i), p=proj(g.gx,g.gy);
+      OBJECTS.push({k:'station', x:p.x, y:p.y, col, d:g.gx+g.gy+0.75}); });
+  });
+
+  // boats: more abras and dhows on the creek, yachts in the marina and at Dubai Harbour
+  { const rng = mulberry32(2024);
+    for (let q=0;q<14;q++){ const f=0.04+q*0.05, n=CREEK.length-1, s=Math.min(n-1, Math.floor(f*n)), u=f*n-s, a=CREEK[s][0]+(CREEK[s+1][0]-CREEK[s][0])*u, i=CREEK[s][1]+(CREEK[s+1][1]-CREEK[s][1])*u;
+      boatAt(a+(rng()-0.5)*0.08, i+(rng()-0.5)*0.08, q%3===0?'dhow':'abra'); }
+    [[0.15,'yacht'],[0.4,'yacht'],[0.55,'yacht'],[0.75,'yacht'],[0.9,'yacht']].forEach(([f])=>{ const n=MARINA.length-1, s=Math.min(n-1,Math.floor(f*n)), u=f*n-s;
+      boatAt(MARINA[s][0]+(MARINA[s+1][0]-MARINA[s][0])*u+0.03, MARINA[s][1]+(MARINA[s+1][1]-MARINA[s][1])*u, 'yacht'); });
+    [[2.4,-0.75],[2.75,-0.8],[3.1,-0.7],[24.9,-1.15],[26.9,0.1],[27.3,0.12],[-9.2,-2.4],[-10.9,-2.5]].forEach(([a,i],q)=>boatAt(a,i, q<3?'yacht':'dhow'));
+  }
+  // planes at DXB and Al Maktoum; cranes at the ports
+  [[29.35,6.6,0],[29.35,7.2,0],[29.35,7.8,0],[29.0,8.6,1],[-13.3,14.2,0],[-13.3,14.9,0],[-14.6,15.6,1]].forEach(([a,i,taxi])=>{ const w=aiToWorld(a,i), g=aiToGrid(a,i); OBJECTS.push({k:'plane', x:w.x, y:w.y, d:g.gx+g.gy+0.8, taxi}); });
+  [[-11.75,-2.0],[-11.75,-2.5],[-10.65,-2.2],[-9.85,-2.0],[-9.85,-2.6],[-8.55,-2.3],[-11.2,-1.4],[-9.2,-1.4],[24.6,-0.95],[25.1,-0.95],[25.7,-0.95]].forEach(([a,i],q)=>{
+    const w=aiToWorld(a,i), g=aiToGrid(a,i); OBJECTS.push({k:'crane', x:w.x, y:w.y, d:g.gx+g.gy+0.9, col:q%2?'#3F78B5':'#D9443A'}); });
+
   OBJECTS.sort((p,q)=>p.d-q.d);
 }
 
@@ -450,7 +757,7 @@ const up = (p,h)=>[p[0], p[1]-h];
 
 /* ---------- night palette: deep navy sea, dusky blue-grey land and roads ---------- */
 let NIGHT = false;
-const TILE_NIGHT = ['#0B1830','#112442','#394052','#333A4B','#2E3446','#2A3041','#1E322D','#0F223D','#252A36','#394052'];
+const TILE_NIGHT = ['#0B1830','#112442','#394052','#333A4B','#2E3446','#2A3041','#1E322D','#0F223D','#252A36','#394052','#2B3142','#1F3530','#081428','#1F3328','#383E52'];
 const NIGHT_FIXED = {
   '#4A3B30':'#070B16', '#FFFFFF':'#4B5368', '#FBF4E6':'rgba(255,214,150,0.26)',
   'rgba(255,255,255,0.42)':'rgba(120,160,230,0.08)', 'rgba(110,80,50,0.14)':'rgba(0,0,0,0.22)', 'rgba(255,255,255,0.85)':'rgba(130,170,240,0.26)',
@@ -564,6 +871,9 @@ function drawRoads(ctx){
   ctx.setLineDash([3,3]); ctx.strokeStyle=C('#FBF4E6'); ctx.lineWidth=0.6;
   ROADS_W.filter(r=>r.k<2).forEach(r=>strokeLine(ctx,r.pts));
   ctx.setLineDash([]);
+  // the Dubai Tram round the Marina: twin rails in teal
+  const tram = TRAM.map(([a,i])=>{ const p=aiToWorld(a,i); return [p.x,p.y]; });
+  ctx.strokeStyle=C(OUT); ctx.lineWidth=3; strokeLine(ctx, tram); ctx.strokeStyle=C('#3FB8AF'); ctx.lineWidth=1.8; strokeLine(ctx, tram);
   ctx.restore();
 }
 
@@ -767,12 +1077,209 @@ function drawBoat(ctx,o){
     else face(ctx,[[x-3,y-4],[x+3,y-4],[x+3,y-1],[x-3,y-1]],'#E8C06A');
   }
 }
+
+/* ---------- small life (palms, pools, shrubs, ghaf, camels, parasols, reeds, flamingos) ---------- */
+function drawPalm(ctx,o){
+  const s=o.s||1, x=o.x, y=o.y, top=[x+1.2*s, y-9*s];
+  ctx.strokeStyle=C(OUT); ctx.lineWidth=LW*1.6; ctx.beginPath(); ctx.moveTo(x,y); ctx.quadraticCurveTo(x+0.2*s,y-5*s,top[0],top[1]); ctx.stroke();
+  ctx.strokeStyle=C('#9A6B3F'); ctx.lineWidth=LW*0.8; ctx.stroke();
+  ctx.lineCap='round';
+  [[-5,1.5],[-3.5,-2.5],[0.5,-3.2],[4,-2],[5,1.8]].forEach(([dx,dy])=>{
+    ctx.beginPath(); ctx.moveTo(top[0],top[1]); ctx.quadraticCurveTo(top[0]+dx*0.6*s, top[1]+dy*s-1.5*s, top[0]+dx*s, top[1]+dy*s+1.2*s);
+    ctx.strokeStyle=C(OUT); ctx.lineWidth=LW*2.2; ctx.stroke(); ctx.strokeStyle=C('#5FA84F'); ctx.lineWidth=LW*1.2; ctx.stroke();
+  });
+  ctx.lineCap='butt';
+}
+function drawPool(ctx,o){
+  const x=o.x, y=o.y, w=4.2, h=2.1;
+  ctx.lineWidth=LW*0.8; ctx.strokeStyle=C('#FFFFFF');
+  ctx.beginPath(); ctx.moveTo(x,y-h); ctx.lineTo(x+w,y); ctx.lineTo(x,y+h); ctx.lineTo(x-w,y); ctx.closePath();
+  ctx.fillStyle=C('#5CC6E0'); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle=C('rgba(255,255,255,0.45)'); ctx.beginPath(); ctx.moveTo(x-1.5,y-0.3); ctx.lineTo(x+1.2,y+0.6); ctx.stroke();
+}
+function drawShrub(ctx,o){ ctx.fillStyle=C('#9DA65A'); ctx.strokeStyle=C(OUT); ctx.lineWidth=LW*0.6; ctx.beginPath(); ctx.ellipse(o.x,o.y-1,2,1.2,0,0,Math.PI*2); ctx.fill(); ctx.stroke(); }
+function drawGhaf(ctx,o){
+  ctx.strokeStyle=C(OUT); ctx.lineWidth=LW; ctx.beginPath(); ctx.moveTo(o.x,o.y); ctx.lineTo(o.x,o.y-3.5); ctx.stroke();
+  ctx.fillStyle=C('#7FA05A'); ctx.beginPath(); ctx.ellipse(o.x,o.y-5.2,4.6,2.6,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle=C('rgba(255,255,255,0.28)'); ctx.beginPath(); ctx.ellipse(o.x-1.5,o.y-6,1.6,0.8,0,0,Math.PI*2); ctx.fill();
+}
+function drawCamel(ctx,o){
+  const x=o.x, y=o.y, f=o.f?-1:1;
+  ctx.strokeStyle=C(OUT); ctx.lineWidth=LW*0.8; ctx.fillStyle=C('#C99A5B');
+  ctx.beginPath(); ctx.moveTo(x-1.8*f,y); ctx.lineTo(x-1.8*f,y-2.5); ctx.moveTo(x+1.6*f,y); ctx.lineTo(x+1.6*f,y-2.5); ctx.stroke();   // legs
+  ctx.beginPath(); ctx.ellipse(x,y-3.2,2.6,1.3,0,0,Math.PI*2); ctx.fill(); ctx.stroke();                                              // body
+  ctx.beginPath(); ctx.ellipse(x-0.3*f,y-4.2,1.2,0.9,0,0,Math.PI*2); ctx.fill(); ctx.stroke();                                         // hump
+  ctx.beginPath(); ctx.moveTo(x+2.2*f,y-3.4); ctx.lineTo(x+3.6*f,y-5.6); ctx.lineWidth=LW*1.4; ctx.stroke();                          // neck
+  ctx.beginPath(); ctx.ellipse(x+3.9*f,y-5.8,0.9,0.55,0,0,Math.PI*2); ctx.lineWidth=LW*0.8; ctx.fill(); ctx.stroke();                 // head
+}
+function drawParasol(ctx,o){
+  ctx.strokeStyle=C(OUT); ctx.lineWidth=LW*0.7; ctx.beginPath(); ctx.moveTo(o.x,o.y); ctx.lineTo(o.x,o.y-4); ctx.stroke();
+  ctx.fillStyle=C(o.col); ctx.beginPath(); ctx.moveTo(o.x-3.2,o.y-3.6); ctx.quadraticCurveTo(o.x,o.y-6.6,o.x+3.2,o.y-3.6); ctx.closePath(); ctx.fill(); ctx.stroke();
+}
+function drawReed(ctx,o){ ctx.strokeStyle=C('#7D9A4E'); ctx.lineWidth=LW*0.8; ctx.beginPath(); for (let q=-2;q<=2;q++){ ctx.moveTo(o.x+q,o.y); ctx.lineTo(o.x+q*1.6,o.y-3-Math.abs(q)*0.3); } ctx.stroke(); }
+function drawFlamingo(ctx,o){
+  for (let q=0;q<o.n;q++){ const x=o.x+q*2.4-o.n, y=o.y+(q%2)*0.8;
+    ctx.strokeStyle=C('#B9576B'); ctx.lineWidth=LW*0.6; ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x,y-2.2); ctx.stroke();
+    ctx.fillStyle=C('#F28CA0'); ctx.beginPath(); ctx.ellipse(x,y-2.8,1.1,0.7,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(x+0.8,y-3); ctx.quadraticCurveTo(x+1.6,y-4.6,x+0.9,y-5); ctx.stroke(); }
+}
+/* ---------- the Metro: track on pillars, and stations ---------- */
+const RAIL_Z = 7;
+function drawRail(ctx,o){
+  ctx.strokeStyle=C('#B8B1A7'); ctx.lineWidth=LW*1.4; ctx.beginPath(); ctx.moveTo(o.x0,o.y0); ctx.lineTo(o.x0,o.y0-RAIL_Z); ctx.stroke();   // pillar
+  ctx.lineCap='round';
+  ctx.strokeStyle=C(OUT); ctx.lineWidth=3.4; ctx.beginPath(); ctx.moveTo(o.x0,o.y0-RAIL_Z); ctx.lineTo(o.x1,o.y1-RAIL_Z); ctx.stroke();
+  ctx.strokeStyle=C('#E8E4DD'); ctx.lineWidth=2.2; ctx.stroke();
+  ctx.strokeStyle=C(o.col); ctx.lineWidth=0.9; ctx.stroke();
+  ctx.lineCap='butt';
+}
+function drawStation(ctx,o){
+  ctx.strokeStyle=C(OUT); ctx.lineWidth=LW;
+  isoBox(ctx, o.x, o.y, 0.42, 0.24, RAIL_Z-2, 3.4, '#E8E4DD', {top:'#F2F0EB'});
+  // the shell-shaped roof in the line's colour
+  ctx.fillStyle=C(o.col); ctx.beginPath(); ctx.ellipse(o.x, o.y-RAIL_Z-2.2, 4.8, 2.2, 0, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
+}
+/* ---------- planes and cranes ---------- */
+function drawPlane(ctx,o){
+  const x=o.x, y=o.y;
+  ctx.strokeStyle=C(OUT); ctx.lineWidth=LW*0.8;
+  face(ctx, [[x-7,y+2.5],[x+7,y-3.5],[x+8,y-2.5],[x-6,y+3.5]], '#F4F6F8');                // fuselage, along the stand
+  face(ctx, [[x-1,y-1.5],[x+4,y+2.5],[x+2.5,y+3],[x-3,y+0.5]], '#DDE3E8');               // wings
+  face(ctx, [[x-6.5,y+2.4],[x-7.2,y-1],[x-5.4,y+1.4]], '#C9503A');                       // tail fin
+}
+function drawCrane(ctx,o){
+  const x=o.x, y=o.y, h=26;
+  ctx.strokeStyle=C(OUT); ctx.lineWidth=LW*2.2; ctx.beginPath(); ctx.moveTo(x-3,y+1); ctx.lineTo(x-3,y-h); ctx.moveTo(x+3,y-1); ctx.lineTo(x+3,y-h-2); ctx.stroke();
+  ctx.strokeStyle=C(o.col); ctx.lineWidth=LW*1.2; ctx.stroke();
+  // the boom out over the water and the back stay
+  ctx.strokeStyle=C(OUT); ctx.lineWidth=LW*2; ctx.beginPath(); ctx.moveTo(x-10,y-h+4); ctx.lineTo(x+8,y-h-5); ctx.stroke();
+  ctx.strokeStyle=C(o.col); ctx.lineWidth=LW*1.1; ctx.stroke();
+  ctx.strokeStyle=C(OUT); ctx.lineWidth=LW*0.6; ctx.beginPath(); ctx.moveTo(x-8,y-h+3); ctx.lineTo(x-8,y-h+9); ctx.stroke();
+  isoBox(ctx, x+4, y-2, 0.18, 0.14, h-1, 3, '#E9E4DA');
+}
+
+/* ---------- the new landmarks (simple, in the same style) ---------- */
+const at2 = (x,y,gx,gy)=>[x+(gx-gy)*TW/2, y+(gx+gy)*TH/2];
+function flag(ctx, x, y, h){
+  ctx.strokeStyle=C(OUT); ctx.lineWidth=LW*1.4; ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x,y-h); ctx.stroke();
+  const fx=x+0.5, fy=y-h;
+  ctx.lineWidth=LW*0.6;
+  [['#2E8B57',0],['#FFFFFF',1.8],['#1F1F1F',3.6]].forEach(([c,o])=>{ ctx.fillStyle=C(c); ctx.fillRect(fx+2.2, fy+o, 8, 1.8); });
+  ctx.fillStyle=C('#D9443A'); ctx.fillRect(fx, fy, 2.2, 5.4); ctx.strokeRect(fx, fy, 10.2, 5.4);
+}
+function dome(ctx, x, y, r, col){ ctx.fillStyle=C(col); ctx.beginPath(); ctx.ellipse(x, y, r, r*0.9, 0, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+function drawLandmark2(ctx, o){
+  const x=o.x, y=o.y; ctx.strokeStyle=C(OUT); ctx.lineWidth=LW;
+  switch(o.lm){
+    case 'goldsouk':   // the covered souk: a long arcade under a timber roof
+      isoBox(ctx,x,y,1.4,0.32,0,7,'#E9D2A8',{floors:3});
+      isoBox(ctx,x,y,1.45,0.36,7,2.5,'#9A6B3F',{top:'#B98450'}); break;
+    case 'clocktower': // Deira Clock Tower: four legs and the clock on top, on its roundabout
+      isoDisc(ctx,x,y,12,6,1.5,'#8CC46B');
+      [[-0.15,-0.15],[0.15,-0.15],[0.15,0.15],[-0.15,0.15]].forEach(([gx,gy])=>{ const [px,py]=at2(x,y,gx,gy); isoBox(ctx,px,py,0.06,0.06,1.5,12,'#E9E4DA'); });
+      isoBox(ctx,x,y,0.26,0.26,13.5,7,'#F2EEE6',{top:'#D9C9A8'});
+      ctx.fillStyle=C('#FFFFFF'); ctx.beginPath(); ctx.arc(x-2,y-17,1.6,0,Math.PI*2); ctx.fill(); ctx.stroke(); break;
+    case 'dcc': case 'mirdifcc': case 'festival': case 'dhmall':   // malls: big low boxes with a skylight band
+      isoBox(ctx,x,y,1.5,0.9,0,8,o.lm==='mirdifcc'?'#EBDCC4':o.lm==='dhmall'?'#EFE6D6':'#E6D5BC',{floors:4});
+      isoBox(ctx,x,y,1.0,0.25,8,1.6,'#A7D0E2',{top:'#C8E4F0'}); break;
+    case 'waterfront': isoBox(ctx,x,y,1.2,0.5,0,5,'#E9DCC6',{top:'#5FA8D3'}); break;
+    case 'etihad':     // Etihad Museum: a low white pavilion like an open manuscript, and the Union flag
+      isoBox(ctx,x,y,0.9,0.6,0,3,'#9BC98A');
+      isoBox(ctx,x,y,0.7,0.45,3,5,'#F4F2EE',{top:'#E6ECEF'});
+      flag(ctx, x+12, y+4, 34); break;
+    case 'jmosque':    // Jumeirah Mosque: cream, a central dome, twin minarets
+      isoBox(ctx,x,y,0.6,0.5,0,7,'#F1E3C9');
+      dome(ctx,x,y-8,4.2,'#F7EEDC');
+      [-1,1].forEach(s=>{ const [px,py]=at2(x,y,0.45*s,-0.4*s); isoBox(ctx,px,py,0.07,0.07,0,19,'#F1E3C9'); dome(ctx,px,py-19,1.4,'#F7EEDC'); }); break;
+    case 'emtowers':   // Emirates Towers: two tall steel-grey towers with sloped tops
+      [[0,0,62],[0.55,0.45,48]].forEach(([gx,gy,h])=>{ const [px,py]=at2(x,y,gx,gy);
+        isoBox(ctx,px,py,0.24,0.24,0,h,'#9AA9B5',{mullion:true,floors:5,floorColor:'rgba(255,255,255,0.25)'});
+        ctx.fillStyle=C('#C7D2DA'); ctx.beginPath(); ctx.moveTo(px-3.6,py-h-0.5); ctx.lineTo(px+0.2,py-h-9); ctx.lineTo(px+3.6,py-h-0.5); ctx.closePath(); ctx.fill(); ctx.stroke(); }); break;
+    case 'difcgate':   // The Gate: a square arch
+      isoBox(ctx,x-5,y,0.25,0.4,0,22,'#E6E1D6',{floors:4}); isoBox(ctx,x+5,y+2,0.25,0.4,0,22,'#E6E1D6',{floors:4});
+      isoBox(ctx,x,y+1,0.95,0.42,22,9,'#E6E1D6',{floors:3}); break;
+    case 'wtc':        // the World Trade Centre: the old honeycomb tower
+      isoBox(ctx,x,y,0.34,0.34,0,40,'#E9E1CF',{floors:2.6,floorColor:'rgba(74,59,48,0.35)'}); break;
+    case 'opera':      // Dubai Opera: a glass dhow
+      isoBox(ctx,x,y,0.8,0.45,0,8,'#9FC8DD',{mullion:true});
+      ctx.fillStyle=C('#B9D9E8'); ctx.beginPath(); ctx.moveTo(x+6,y-8); ctx.lineTo(x+14,y-14); ctx.lineTo(x+11,y-2); ctx.closePath(); ctx.fill(); ctx.stroke(); break;
+    case 'cocacola':   // Coca-Cola Arena: a box with a red stripe
+      isoBox(ctx,x,y,0.9,0.8,0,10,'#E5E2DC',{floors:5}); isoBox(ctx,x,y,0.92,0.82,10,1.6,'#D9443A'); break;
+    case 'madinat':    // Madinat Jumeirah: sand-coloured, with wind towers; the Jumeirah Beach Hotel's wave beside it
+      [[0,0],[0.6,0.3],[-0.5,0.4]].forEach(([gx,gy])=>{ const [px,py]=at2(x,y,gx,gy); isoBox(ctx,px,py,0.35,0.3,0,7,'#E3C496'); isoBox(ctx,px,py,0.08,0.08,7,5,'#E9D2A8'); });
+      { const [wx,wy]=at2(x,y,1.2,-0.9); ctx.fillStyle=C('#8FC3DB'); ctx.beginPath(); ctx.moveTo(wx-8,wy); ctx.quadraticCurveTo(wx-6,wy-30,wx+8,wy-34); ctx.lineTo(wx+8,wy); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+      break;
+    case 'wildwadi':   // Wild Wadi: twisty slides
+      isoBox(ctx,x,y,0.6,0.5,0,4,'#7FD0D8',{top:'#9FE3E8'});
+      ctx.save(); ctx.lineWidth=2; [['#F2B84B',0],['#E86A5C',3]].forEach(([c,o])=>{ ctx.strokeStyle=C(c); ctx.beginPath(); ctx.moveTo(x-6+o,y-4); ctx.bezierCurveTo(x+4+o,y-16,x-8+o,y-20,x+2+o,y-26); ctx.stroke(); }); ctx.restore(); break;
+    case 'ski':        // Ski Dubai: the long slanted slope on the mall's roof
+      ctx.fillStyle=C('#EEF4F7'); ctx.beginPath(); ctx.moveTo(x-12,y-6); ctx.lineTo(x+8,y-22); ctx.lineTo(x+14,y-19); ctx.lineTo(x+14,y-4); ctx.lineTo(x-6,y+4); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=C('#C9D6DD'); ctx.beginPath(); ctx.moveTo(x+8,y-22); ctx.lineTo(x+14,y-19); ctx.lineTo(x+14,y-4); ctx.lineTo(x+8,y-7); ctx.closePath(); ctx.fill(); ctx.stroke(); break;
+    case 'cricket':    // the cricket stadium: an oval bowl round a green pitch
+      isoDisc(ctx,x,y,22,11,6,'#E5E1D8'); ctx.fillStyle=C('#8CC46B'); ctx.beginPath(); ctx.ellipse(x,y-6,16,8,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=C('#E2C79A'); ctx.fillRect(x-1.2,y-8,2.4,4); break;
+    case 'autodrome':  // the Autodrome: a grey ribbon of track with a pit building
+      ctx.save(); ctx.lineJoin='round'; ctx.strokeStyle=C(OUT); ctx.lineWidth=4.2; const tr=[[-30,4],[-12,-8],[10,-6],[26,2],[14,10],[-4,6],[-16,12],[-30,4]];
+      ctx.beginPath(); tr.forEach(([dx,dy],k)=>k?ctx.lineTo(x+dx,y+dy):ctx.moveTo(x+dx,y+dy)); ctx.stroke(); ctx.strokeStyle=C('#8E8A86'); ctx.lineWidth=2.8; ctx.stroke(); ctx.restore();
+      isoBox(ctx,x-6,y+1,0.9,0.2,0,5,'#E9E4DA'); break;
+    case 'dragonmart': // Dragon Mart: a long, long curving shed
+      for (let q=0;q<7;q++){ const [px,py]=at2(x,y,q*0.5-1.5, Math.sin(q*0.9)*0.4); isoBox(ctx,px,py,0.32,0.36,0,5,'#E4D9C8',{top:q%2?'#C9503A':'#E0A23B'}); } break;
+    case 'miracle':    // Miracle Garden: beds of flowers and a heart arch; the Butterfly Garden's domes beside
+      [[0,0,'#E86A5C'],[0.6,0,'#F2B84B'],[0,0.6,'#F28CB1'],[0.6,0.6,'#B57EDC'],[-0.6,0.3,'#FF9E5E']].forEach(([gx,gy,c])=>{ const [px,py]=at2(x,y,gx,gy); isoBox(ctx,px,py,0.28,0.28,0,1.5,c); });
+      ctx.save(); ctx.lineWidth=2.2; ctx.strokeStyle=C('#E86A5C'); ctx.beginPath(); ctx.moveTo(x,y-2); ctx.bezierCurveTo(x-10,y-12,x-4,y-18,x,y-12); ctx.bezierCurveTo(x+4,y-18,x+10,y-12,x,y-2); ctx.stroke(); ctx.restore();
+      { const [bx,by]=at2(x,y,1.3,-0.4); [0,6].forEach(o=>dome(ctx,bx+o,by,3.2,'#BFE3EE')); } break;
+    case 'img':        // IMG Worlds: a huge box with a colourful front
+      isoBox(ctx,x,y,1.6,1.1,0,12,'#3F78B5',{top:'#5FA8D3'});
+      ['#E86A5C','#F2B84B','#8BC34A'].forEach((c,k)=>{ const [px,py]=at2(x,y,-1.1+k*0.8,1.12); ctx.fillStyle=C(c); ctx.beginPath(); ctx.arc(px,py-7,2.4,0,Math.PI*2); ctx.fill(); ctx.stroke(); }); break;
+    case 'expo':       // Expo City: the Al Wasl dome, a trellis hemisphere
+      isoBox(ctx,x,y,1.3,1.3,0,1.5,'#E9E4DA');
+      ctx.fillStyle=C('rgba(255,255,255,0.45)'); ctx.beginPath(); ctx.ellipse(x,y-1.5,18,18,0,Math.PI,0); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.save(); ctx.strokeStyle=C('#A7A099'); ctx.lineWidth=LW*0.6; ctx.beginPath();
+      for (let q=1;q<6;q++){ ctx.moveTo(x-18,y-1.5); ctx.ellipse(x,y-1.5,18,18*q/6,0,Math.PI,0); }
+      for (let q=-3;q<=3;q++){ ctx.moveTo(x+q*5,y-1.5); ctx.lineTo(x+q*2.2,y-17); } ctx.stroke(); ctx.restore(); break;
+    case 'maktoum':    // Al Maktoum airport's terminal and tower
+      isoBox(ctx,x,y,1.4,0.35,0,7,'#E5EBEE',{floors:4}); isoBox(ctx,x+26,y+8,0.12,0.12,0,24,'#E5EBEE'); isoBox(ctx,x+26,y+8,0.22,0.22,24,4,'#9FC0D6'); break;
+    case 'sohq':       // Silicon Oasis headquarters: a tall blue tower with a crown
+      isoBox(ctx,x,y,0.3,0.3,0,46,'#6FAACB',{mullion:true,floors:5,floorColor:'rgba(255,255,255,0.25)'});
+      ctx.fillStyle=C('#B7C9D6'); ctx.beginPath(); ctx.moveTo(x-4,y-46); ctx.lineTo(x,y-54); ctx.lineTo(x+4,y-46); ctx.closePath(); ctx.fill(); ctx.stroke(); break;
+    case 'theview':    // the Palm Tower (The View at the Palm) over Nakheel Mall
+      isoBox(ctx,x,y,1.0,0.6,0,7,'#E9DCC6',{floors:4}); isoBox(ctx,x,y,0.34,0.3,7,50,'#A7D0E2',{mullion:true,floors:5,floorColor:'rgba(255,255,255,0.25)'}); break;
+    case 'royal':      // Atlantis The Royal: stacked, shifted blocks
+      [[0,0,0.8,14],[0.15,-0.1,0.65,12],[-0.1,0.1,0.7,12],[0.1,0,0.5,10]].reduce((z,[gx,gy,s,h])=>{ const [px,py]=at2(x,y,gx,gy); isoBox(ctx,px,py,s,0.3,z,h,'#E9E4DA',{floors:4,top:'#9BC98A'}); return z+h; },0); break;
+    case 'pointe':     // The Pointe: a curved row of low shops facing Atlantis
+      for (let q=0;q<5;q++){ const [px,py]=at2(x,y,q*0.35-0.7,Math.abs(q-2)*0.18); isoBox(ctx,px,py,0.2,0.22,0,5,'#F1E3C9',{top:'#E3A071'}); } break;
+    case 'lamer':      // La Mer: low beach-shack blocks in bright colours
+      ['#5FA8D3','#F2B84B','#E86A5C','#8BC34A'].forEach((c,k)=>{ const [px,py]=at2(x,y,k*0.45-0.6,(k%2)*0.3); isoBox(ctx,px,py,0.2,0.2,0,4,'#F4E8D4',{top:c}); }); break;
+    case 'qe2':        // the QE2, moored at Port Rashid
+      face(ctx,[[x-18,y+3],[x+18,y-12],[x+20,y-9],[x-16,y+7]],'#2B2B2F');
+      face(ctx,[[x-14,y+1],[x+14,y-11],[x+14,y-15],[x-14,y-3]],'#F4F2EE');
+      isoBox(ctx,x+2,y-7,0.25,0.2,6,5,'#D9443A',{top:'#1F1F1F'}); break;
+    case 'alserkal':   // Alserkal Avenue: warehouses painted as galleries
+      ['#E86A5C','#5FA8D3','#F2B84B','#2B2B2F'].forEach((c,k)=>{ const [px,py]=at2(x,y,(k%2)*0.9-0.45,Math.floor(k/2)*0.8-0.4); isoBox(ctx,px,py,0.4,0.34,0,5,'#D8D3CA',{left:c}); }); break;
+  }
+}
+
 function drawObjects(ctx, view){
   ctx.lineJoin='round';
   for (const o of OBJECTS){
+    // small life (shrubs, camels, parasols…) only once you're close; the wide shot stays calm
+    if (o.near && !view) continue;
     if (view && (o.x<view.x0-40 || o.x>view.x1+40 || o.y<view.y0-10 || o.y>view.y1+280)) continue;
     ctx.strokeStyle=C(OUT); ctx.lineWidth=LW;
-    if (o.k==='box') isoBox(ctx,o.x,o.y,o.hx,o.hy,0,o.h,null,o.opts);
+    if (o.k==='box') isoBox(ctx,o.x,o.y,o.hx,o.hy,o.z0||0,o.h,null,o.opts);
+    else if (o.k==='lm2') drawLandmark2(ctx,o);
+    else if (o.k==='palm') drawPalm(ctx,o);
+    else if (o.k==='pool') drawPool(ctx,o);
+    else if (o.k==='rail') drawRail(ctx,o);
+    else if (o.k==='station') drawStation(ctx,o);
+    else if (o.k==='shrub') drawShrub(ctx,o);
+    else if (o.k==='ghaf') drawGhaf(ctx,o);
+    else if (o.k==='camel') drawCamel(ctx,o);
+    else if (o.k==='parasol') drawParasol(ctx,o);
+    else if (o.k==='reed') drawReed(ctx,o);
+    else if (o.k==='flamingo') drawFlamingo(ctx,o);
+    else if (o.k==='plane') drawPlane(ctx,o);
+    else if (o.k==='crane') drawCrane(ctx,o);
     else if (o.k==='tree') drawTree(ctx,o);
     else if (o.k==='boat') drawBoat(ctx,o);
     else drawLandmark(ctx,o);
@@ -815,8 +1322,20 @@ function buildLights(){
     if (o.k==='box'){
       const {W,S,E} = corners(o.x,o.y,o.hx,o.hy), st=o.st;
       if (st==='villa'){ if (rnd()<0.65){ const u=0.3+rnd()*0.4; add(W[0]+(S[0]-W[0])*u, W[1]+(S[1]-W[1])*u-2.3, WARM[Math.floor(rnd()*4)], 0, twk(0.08)); } continue; }
-      const p = st==='glass'?0.4 : st==='mid'?0.32 : st==='low'?0.28 : 0.1, cols = st==='glass'?3:2, step = st==='glass'?3.4:3.2;
+      const p = st==='glass'?0.4 : st==='mid'||st==='busy'?0.32 : st==='low'||st==='old'||st==='campus'?0.28 : st==='resort'?0.36 : 0.1, cols = st==='glass'?3:2, step = st==='glass'?3.4:3.2;
       faceLights(W,S,o.h,p,step,cols); faceLights(S,E,o.h,p*0.8,step,cols);
+    } else if (o.k==='lm2'){
+      // the new landmarks: warm windows, plus their own touches
+      for (let k=0;k<12;k++) add(o.x+(rnd()-0.5)*20, o.y-3-rnd()*14, WARM[k%4], 0, twk(0.2));
+      if (o.lm==='expo') for (let t=0;t<Math.PI;t+=Math.PI/14) add(o.x+Math.cos(t)*18, o.y-1.5-Math.sin(t)*18, '#FFE3AD', 2, t%0.6<0.3?1:0);
+      if (o.lm==='etihad') add(o.x+12, o.y+4-34, '#FFFFFF', 2);
+      if (o.lm==='emtowers' || o.lm==='sohq' || o.lm==='theview' || o.lm==='wtc') add(o.x, o.y-60, '#FF3B30', 2, 2);
+      if (o.lm==='qe2') for (let k=0;k<10;k++) add(o.x-12+k*2.6, o.y-1-k*1.2, '#FFE0A3', 0, twk(0.2));
+    } else if (o.k==='station'){ add(o.x-2,o.y-RAIL_Z-1,'#FFF4D6',2); add(o.x+2,o.y-RAIL_Z-1,'#FFF4D6',2);
+    } else if (o.k==='rail'){ if (rnd()<0.5) add(o.x, o.y-RAIL_Z, o.col==='#D9443A'?'#FF8A7A':'#8DF0A0', 1);
+    } else if (o.k==='crane'){ add(o.x+8, o.y-31, '#FF3B30', 2, 2);
+    } else if (o.k==='plane'){ add(o.x+7, o.y-3, '#FF3B30', 2, 1); add(o.x-6, o.y+3, '#FFFFFF', 2, 2);
+    } else if (o.k==='pool'){ add(o.x, o.y, '#7FE3F0', 1);
     } else if (o.k==='boat'){ add(o.x-3,o.y-2,'#FFE9B8',2); add(o.x+3,o.y-2, rnd()<0.5?'#FF6B5E':'#7CFFB2',2,1); }
     else if (o.k==='lm' && o.lm==='burj'){
       // the tower's lit column, then the spire: a white strobe and a red beacon at the tip
@@ -845,6 +1364,8 @@ function buildLights(){
       carry = (carry+len)%gap;
     }
   }
+  // the tram line: soft teal lamps
+  for (let k=1;k<TRAM.length;k++) for (let t=0;t<1;t+=0.34){ const a=TRAM[k-1][0]+(TRAM[k][0]-TRAM[k-1][0])*t, i=TRAM[k-1][1]+(TRAM[k][1]-TRAM[k-1][1])*t, p=aiToWorld(a,i); add(p.x,p.y,'#9FF2E8',1); }
   // DXB: blue edge lights and a warm centre line on both runways
   RUNWAYS.forEach(rw=>{ for (let i=rw.i[0]; i<=rw.i[1]; i+=0.1){
     [-0.09,0.09].forEach(da=>{ const p=aiToWorld(rw.a+da,i); add(p.x,p.y,'#8FCBFF',2); });
@@ -1175,7 +1696,7 @@ function aiBounds(pts){
   return { x0:Math.min(...xs), x1:Math.max(...xs), y0:Math.min(...ys)-60, y1:Math.max(...ys) };
 }
 // how far the camera may roam (all the land), and what "fit city" frames (palm crescent to the airport)
-const FRAME = aiBounds([[-5.6,-4.8],[35.8,-4.8],[35.8,21.2],[-5.6,21.2]]);
+const FRAME = aiBounds([[-15.2,-4.8],[35.8,-4.8],[35.8,21.2],[-15.2,21.2]]);
 const CORE  = aiBounds([[-2.4,-4.8],[31.8,-4.8],[31.8,9.9],[-2.4,9.9]]);
 function clampCam(){
   cam.s = Math.max(MIN_S, Math.min(MAX_S, cam.s));
@@ -1666,6 +2187,9 @@ function resumeTracking(){
 }
 
 /* ---------- public API ---------- */
+// how long the city took to build, for performance checks (tests/e2e/mapperf.mjs)
+let BUILD_STATS = null;
+function buildStats(){ return BUILD_STATS; }
 function initMap(o){
   opts = o; wrap = o.wrap; canvas = o.canvas; ctx = canvas.getContext('2d');
   twinkles = ['a','b'].map(k=>{ const c=document.createElement('canvas'); c.className='map-twinkle '+k; c.setAttribute('aria-hidden','true'); canvas.after(c); return c; });
@@ -1691,9 +2215,11 @@ function initMap(o){
   document.addEventListener('visibilitychange', ()=>{ if (!document.hidden) requestRender(); });
   // a timer, not rAF: rAF never fires in a background tab, and the city should be ready when you switch to it
   setTimeout(()=>{
-    buildTerrain(); buildObjects(); prepRoads(); prepCarRoads();
+    const t0 = performance.now();
+    buildTerrain(); const t1 = performance.now(); buildObjects(); prepRoads(); prepCarRoads(); const t2 = performance.now();
     if (NIGHT) buildLights();
     buildCache();
+    BUILD_STATS = { terrainMs:Math.round(t1-t0), objectsMs:Math.round(t2-t1), cacheMs:Math.round(performance.now()-t2), objects:OBJECTS.length, lights:LIGHTS?LIGHTS.length:0, tiles:ROWS*COLS, cachePx:cache.width+'x'+cache.height };
     if (NIGHT) buildLightBitmaps();
     built = true;
     if (resizeCanvas()) initialView();
@@ -1788,7 +2314,7 @@ function setTheme(t){
 }
 function resize(){ if (cache && resizeCanvas()){ if (needsCenter) initialView(); requestRender(); } }
 
-export {
+export { buildStats,
   initMap, whenReady, setStamps, setAreaCounts, placeWorld, fitPoints, fitCity, flyToWorld, flyToSeparate,
   centerLatLng, viewZone, zoomRatio, setPicking, highlight, markDropped, setMeSprite, setSelected, startTracking,
   stopTracking, isTracking, drawSnapshot, refresh, resize, visible, setTheme, setShow, setZoneTint, setCars,
