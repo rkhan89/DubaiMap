@@ -338,3 +338,13 @@ Which ratings count: **Me** (map Me mode, your recap): yours only. **A crew** (m
 **Tagged friends rate** (`visit_ratings`, migration 0009): someone tagged on a visit adds or edits their own rating and an optional note, from the page ("Add yours"), Place Details ("Add your rating"), or the bell ("Rahman tagged you at Banc · Add your rating"). The logger's rating stays on the visit and only they can change it. One rating per person per visit (`visit | person`): saving again replaces it, offline changes go out as one write, and the server keeps the newest. Who sees a rating: the rater, the logger, the others tagged, and crewmates who can see the visit while the rater is still in one of its crews. Being untagged removes it.
 
 **On a page**: the people on the visit, each with their own stars for that visit (you first; "Add yours" if you haven't rated; nothing for others who haven't); after four people, "+N" lists everyone. Above them, the place's overall rating in that book's terms.
+
+## Pins say whose they are
+
+Every person has a pin colour (, , migration 0010). Yours is coral until you pick one of twelve in Settings → Map → Your pin colour; it's the same in all your crews. Friends who haven't picked get a free colour (never coral, never one someone in your crews uses), so everyone on your map is distinct.
+
+A pin's ring is the colour of the most recent visitor in the view (or whoever saved it, for a place to try). In Crew view, close up, it also carries that person's face top-right, outlined in their colour; in the wide shot the faces drop and colour alone carries it. The Just me lock and the to-try ribbon stay; the owner colour replaces the old green crew look. Pins stay an overlay above the map, so towers never hide them.
+
+## The map, filled in
+
+Around 55 neighbourhoods from real lat/lng, each with its own character (old town low, tight, cream and coral with wind towers; busy mid-rise; villas with gaps, trees and pools; wide sheds), paved lots round the city, golf, lakes, farms, dune crests and deeper sea; the Metro Red and Green lines on pillars with their stations, the Marina tram; about 30 more landmarks; and small life (palms, parasols, abras, dhows, yachts, planes, cranes, flamingos, camels, ghaf; the smallest only close up). The board reaches south-west to Jebel Ali Port, Expo City, Dubai South and Al Maktoum airport. Districts that were already there generate exactly as before, except Deira, Bur Dubai, Karama and Satwa, rebuilt as finer neighbourhoods. Build time and frame rate: .

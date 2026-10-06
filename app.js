@@ -27,6 +27,7 @@ import './errors.js';
 import './tapein.js';
 import { paintStrip, onThisDay, openMemory } from './memories.js';
 import './rate.js';
+import { colorOf } from './pincolor.js';
 
 const scopeKey = 'bites-scope';
 state.scope = (()=>{ const s=M.defaultScope(); try{ const p=JSON.parse(localStorage.getItem(scopeKey)); if (p && p.mode) s.mode=p.mode; }catch(_){} return s; })();
@@ -66,12 +67,17 @@ function renderStamp(cl){
     return stampHTML('cluster', {count:cl.items.length, cats});
   }
   const sum=cl.items[0].data, v=sum.v, st=sum.state;
-  const others = sum.visitorIds.map(S.user).filter(Boolean);
+  // whose pin: the latest visit in this view (or the latest save, for a place to try)
+  const last = sum.visits.slice().sort((a,b)=>b.createdAt-a.createdAt)[0] || sum.latest;
+  const owner = st!=='unlit' && last ? S.user(last.userId) : null;
+  const ring = owner ? colorOf(owner.id) : null;
   return stampHTML(st, {
     cat:M.primaryCat(v),
     visits: st==='visited' ? (sum.myVisitCount||sum.visitCount) : 0,
     rating: st==='crew' ? sum.rating : (sum.myRating||sum.rating),
-    avatars: st==='crew' ? avatarStack(others, 20, 2) : '',
+    ring,
+    // faces only in crew view (in Me view they're all yours)
+    head: owner && scope().mode==='crew' ? avatarHTML(owner, 18) : '',
   });
 }
 function rebuild(){

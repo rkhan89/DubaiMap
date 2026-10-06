@@ -56,9 +56,9 @@ const ms = iso => iso ? Date.parse(iso) : Date.now();
 const uuids = a => (a||[]).filter(id=>/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id));
 export const MAP = {
   profiles: {
-    to: u => ({ id:u.id, handle:u.handle||null, name:u.name||'', tagline:u.tagline||'', avatar:u.avatar||{}, share_default:u.shareDefault||'crew', points:u.points||0, onboarded:!!u.onboarded }),
-    from: r => ({ id:r.id, handle:r.handle||'', name:r.name||'', tagline:r.tagline||'', avatar:r.avatar||{}, shareDefault:r.share_default, points:r.points||0, onboarded:r.onboarded, createdAt:ms(r.created_at) }),
-    fields: { handle:'handle', name:'name', tagline:'tagline', avatar:'avatar', shareDefault:'share_default', points:'points', onboarded:'onboarded' },
+    to: u => ({ id:u.id, handle:u.handle||null, name:u.name||'', tagline:u.tagline||'', avatar:u.avatar||{}, share_default:u.shareDefault||'crew', points:u.points||0, onboarded:!!u.onboarded, ...(u.pinColor ? { pin_color:u.pinColor } : {}) }),
+    from: r => ({ id:r.id, handle:r.handle||'', name:r.name||'', tagline:r.tagline||'', avatar:r.avatar||{}, shareDefault:r.share_default, points:r.points||0, onboarded:r.onboarded, pinColor:r.pin_color||null, createdAt:ms(r.created_at) }),
+    fields: { handle:'handle', name:'name', tagline:'tagline', avatar:'avatar', shareDefault:'share_default', points:'points', onboarded:'onboarded', pinColor:'pin_color' },
   },
   crews: {
     from: r => ({ id:r.id, name:r.name, tagline:r.tagline||'', code:r.code, ownerId:r.owner_id, memberIds:[], createdAt:ms(r.created_at) }),

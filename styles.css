@@ -1218,3 +1218,20 @@ html.still .mem-strip.in{opacity:1;}
 .rv-rate .rp-add{color:var(--gold-deep);border-color:var(--gold);}
 .star-input.big button{font-size:40px;}
 .act-cta{color:var(--gold-deep);}
+
+/* ===== Pins: whose it is (pincolor.js) ===== */
+/* the ring is the owner's colour; the paper stays the same cream for everyone */
+.stamp.owned .st-paper{border-color:var(--ring);border-width:3px;box-shadow:0 0 0 1.5px #fff, 0 3px 6px rgba(var(--shade),.25);}
+.stamp.owned.st-crew .st-paper{background:var(--sc);}
+/* their face, top right, outlined in their colour */
+.st-head{position:absolute;top:-9px;right:-9px;z-index:2;line-height:0;}
+.st-head .av{width:20px !important;height:20px !important;font-size:8px !important;border:2px solid var(--ring) !important;box-shadow:0 1px 2px rgba(0,0,0,.25);}
+.stamp.big .st-head .av{width:26px !important;height:26px !important;}
+/* the wide shot: colour alone carries it */
+.stamps-layer[data-lod="0"] .st-head,.stamps-layer[data-lod="1"] .st-head{display:none;}
+/* the score sits bottom centre, the face top right: move the visit count badge to the left so nothing collides */
+.stamp.owned .st-badge{top:-9px;left:-9px;}
+/* Settings: pick your colour */
+.pin-swatches{display:grid;grid-template-columns:repeat(6, 1fr);gap:8px;width:100%;margin-top:10px;}
+.pin-sw{aspect-ratio:1;border-radius:50%;background:var(--c);border:3px solid var(--surface);box-shadow:0 0 0 1px var(--outline-v);}
+.pin-sw.on{box-shadow:0 0 0 3px var(--ink);}

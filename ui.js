@@ -150,7 +150,7 @@ export function starInput(el, value, onChange){
 export function stampHTML(state, o){
   o=o||{};
   const cat = catById(o.cat) || CATEGORIES[0];
-  const ico = iconSvg(cat.id, state==='unlit' ? '#a8957c' : (state==='crew' ? '#486636' : '#7e5700'));
+  const ico = iconSvg(cat.id, state==='unlit' ? '#a8957c' : (state==='crew' && !o.ring ? '#486636' : '#7e5700'));
   let inner='', marks='';
   if (state==='cluster'){
     inner = `<span class="st-count">${o.count}</span><span class="st-mini">${(o.cats||[]).slice(0,4).map(c=>iconSvg(c,'#7e5700')).join('')}</span>`;
@@ -162,7 +162,9 @@ export function stampHTML(state, o){
   if ((state==='visited' || state==='crew') && o.rating) marks += `<span class="st-score">★${fmtRating(o.rating)}</span>`;
   if (state==='private') marks += `<span class="st-lock">${icon('lock','',true)}</span>`;
   if (state==='crew' && o.avatars) marks += `<span class="st-avs">${o.avatars}</span>`;
-  return `<span class="stamp st-${state}${o.big?' big':''}"><span class="st-paper">${inner}</span>${marks}</span>`;
+  // whose it is: the ring in their pin colour, and their face in a small circle (crew view, close up)
+  if (o.head) marks += `<span class="st-head">${o.head}</span>`;
+  return `<span class="stamp st-${state}${o.big?' big':''}${o.ring?' owned':''}"${o.ring?` style="--ring:${o.ring}"`:''}><span class="st-paper">${inner}</span>${marks}</span>`;
 }
 
 /* ---------- polaroid ---------- */
