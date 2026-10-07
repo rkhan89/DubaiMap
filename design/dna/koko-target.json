@@ -1,0 +1,455 @@
+{
+  "meta": {
+    "name": "Koko target",
+    "description": "Keep what only Koko has (the pixel city, pixel avatars, critters, the scrapbook pages) and make everything around it as quiet and confident as the references. Implemented in styles.css 2026.10.07c.",
+    "source_references": [
+      "design/dna/koko-current.json",
+      "design/dna/references.json"
+    ],
+    "created_at": "2026-10-07"
+  },
+  "design_system": {
+    "color": {
+      "palette_type": "monochromatic",
+      "primary": {
+        "hex": "#1d1712",
+        "role": "primary buttons, selected chips, active tab, toasts (light); flips to #f3ede4 at night"
+      },
+      "secondary": {
+        "hex": "#e5a93c",
+        "role": "Koko gold: stars, the + button, the map selection, tape. Used sparingly so it means something"
+      },
+      "accent": {
+        "hex": "#e5a93c",
+        "role": "single brand accent"
+      },
+      "neutral": {
+        "scale": [
+          "#ffffff",
+          "#f7f3ec",
+          "#f1ece3",
+          "#ece5da",
+          "#e7dfd2",
+          "#ded5c6",
+          "#8b8176",
+          "#6c6258",
+          "#4b4239",
+          "#1d1712"
+        ],
+        "usage": "Warm-neutral paper replaces peach; ink #1d1712 for text and primary actions"
+      },
+      "semantic": {
+        "success": "#486636",
+        "warning": "#e5a93c",
+        "error": "#ba1a1a",
+        "info": "#2f7de1"
+      },
+      "surface": {
+        "background": "#f7f3ec",
+        "card": "#ffffff",
+        "elevated": "#ffffff"
+      },
+      "contrast_strategy": "high contrast: ink on warm paper; white cards with a soft shadow; dark mode #141210 with cream ink",
+      "measurement": {
+        "k": 8,
+        "sampling": {
+          "method": "deterministic_stratified",
+          "max_pixels": 160000,
+          "sampled_pixels": 160000
+        },
+        "source": "tests/e2e/shots/e-08-log-380-light.png after the paint pass (the implementation, not a reference)"
+      },
+      "measured_palette": [
+        {
+          "hex": "#fdfcfa",
+          "coverage": 0.8332,
+          "role": "background"
+        },
+        {
+          "hex": "#eae3d8",
+          "coverage": 0.1114,
+          "role": "unassigned"
+        },
+        {
+          "hex": "#201914",
+          "coverage": 0.0211,
+          "role": "text"
+        },
+        {
+          "hex": "#796758",
+          "coverage": 0.0085,
+          "role": "unassigned"
+        },
+        {
+          "hex": "#e1a94a",
+          "coverage": 0.0078,
+          "role": "accent"
+        },
+        {
+          "hex": "#584430",
+          "coverage": 0.0073,
+          "role": "unassigned"
+        },
+        {
+          "hex": "#ccbba6",
+          "coverage": 0.0054,
+          "role": "unassigned"
+        },
+        {
+          "hex": "#a49280",
+          "coverage": 0.0053,
+          "role": "unassigned"
+        }
+      ]
+    },
+    "typography": {
+      "type_scale": {
+        "display": {
+          "size": "30px",
+          "weight": 800,
+          "line_height": 1.12,
+          "tracking": "-0.035em"
+        },
+        "heading_1": {
+          "size": "25px",
+          "weight": 800,
+          "line_height": 1.16,
+          "tracking": "-0.03em"
+        },
+        "heading_2": {
+          "size": "20px",
+          "weight": 700,
+          "line_height": 1.25,
+          "tracking": "-0.02em"
+        },
+        "heading_3": {
+          "size": "17px",
+          "weight": 700,
+          "line_height": 1.3,
+          "tracking": "-0.01em"
+        },
+        "body": {
+          "size": "14-16px",
+          "weight": 400,
+          "line_height": 1.5,
+          "tracking": "0"
+        },
+        "body_small": {
+          "size": "13px",
+          "weight": 400,
+          "line_height": 1.4,
+          "tracking": "0"
+        },
+        "caption": {
+          "size": "12.5px",
+          "weight": 500,
+          "line_height": 1.35,
+          "tracking": "0"
+        },
+        "overline": {
+          "size": "13px",
+          "weight": 600,
+          "line_height": 1.3,
+          "tracking": "0 (sentence case)"
+        }
+      },
+      "font_families": {
+        "heading": "Plus Jakarta Sans 800",
+        "body": "Plus Jakarta Sans",
+        "mono": "Space Mono only on paper: postage stamps, page dates, the recap spread. Silkscreen only on map labels"
+      },
+      "font_style_notes": "One family. Tight tracking on headings, sentence case labels, no uppercase mono in the chrome. The typewriter face is a property of the scrapbook pages, not of the app."
+    },
+    "spacing": {
+      "base_unit": "4px",
+      "scale": [
+        "4px",
+        "8px",
+        "12px",
+        "16px",
+        "20px",
+        "24px",
+        "32px"
+      ],
+      "content_density": "comfortable",
+      "section_rhythm": "Fewer boxes; groups separated by space, not by nested tinted cards"
+    },
+    "layout": {
+      "grid_system": "single column",
+      "max_content_width": "560px",
+      "columns": 1,
+      "gutter": "20px",
+      "breakpoints": [
+        "360px",
+        "390px",
+        "600px"
+      ],
+      "alignment_tendency": "left for content, centered for onboarding"
+    },
+    "shape": {
+      "border_radius": {
+        "small": "8px",
+        "medium": "12px",
+        "large": "18px",
+        "pill": "999px"
+      },
+      "border_usage": "subtle 1px on inputs, search and secondary buttons",
+      "divider_style": "hairline under the frosted top bar"
+    },
+    "elevation": {
+      "shadow_style": "soft diffused",
+      "levels": {
+        "low": "0 1px 3px rgba(29,23,18,.06), 0 2px 8px rgba(29,23,18,.05)",
+        "medium": "0 1px 2px rgba(29,23,18,.08), 0 8px 24px rgba(29,23,18,.10)",
+        "high": "0 -10px 34px rgba(29,23,18,.2)"
+      },
+      "depth_cues": "soft shadows and the frosted top bar; no offset slabs"
+    },
+    "iconography": {
+      "style": "outlined",
+      "stroke_weight": "400",
+      "size_scale": [
+        "20px",
+        "22px",
+        "32px"
+      ],
+      "preferred_set": "Material Symbols Outlined"
+    },
+    "motion": {
+      "easing": "cubic-bezier(.2,.8,.2,1); spring cubic-bezier(.34,1.36,.64,1) for the two signature moments only",
+      "duration_scale": {
+        "micro": "120-140ms",
+        "normal": "320ms",
+        "macro": "550-900ms"
+      },
+      "entrance_pattern": "screens glide in from the right, sheets rise; catch: pop, then sparkles and text rise in sequence",
+      "exit_pattern": "reverse glide",
+      "philosophy": "minimal functional, with two signature moments (taped in, critter caught)"
+    },
+    "components": {
+      "button_style": "pill; primary is ink with paper text and a soft lift; secondary is white with a hairline",
+      "input_style": "white field, 1px hairline, ink border on focus",
+      "card_style": "white or neutral card, 18px radius, soft shadow, no card-in-card",
+      "navigation_pattern": "bottom bar, sentence-case labels, ink for the active tab, one gold + as the only colour",
+      "modal_style": "bottom sheet, 28px top radius, frosted scrim",
+      "list_style": "neutral rows with avatars",
+      "component_notes": "Selected = ink fill (chips) or white pill on a neutral track (segments). Gold is never a selection colour."
+    }
+  },
+  "design_style": {
+    "aesthetic": {
+      "mood": [
+        "warm",
+        "calm",
+        "personal",
+        "crafted"
+      ],
+      "visual_metaphor": "a good notebook: quiet cover, lively pages",
+      "era_influence": "2025-26 editorial iOS with a pixel-art heart",
+      "genre": "premium consumer with a playful core",
+      "personality_traits": [
+        "confident",
+        "warm",
+        "unfussy"
+      ],
+      "adjectives": [
+        "paper",
+        "ink",
+        "pixel",
+        "tactile"
+      ]
+    },
+    "visual_language": {
+      "complexity": "moderate",
+      "ornamentation": "subtle accents (tape and stamps live on the pages only)",
+      "whitespace_usage": "generous",
+      "visual_weight_distribution": "the map or the page is the hero; chrome recedes",
+      "focal_strategy": "single hero element",
+      "contrast_level": "high",
+      "texture_usage": "none in the chrome; paper and tape on scrapbook pages"
+    },
+    "composition": {
+      "hierarchy_method": "typographic hierarchy",
+      "balance_type": "asymmetric",
+      "flow_direction": "top to bottom",
+      "grouping_strategy": "proximity and hairlines",
+      "negative_space_role": "lets the pixel art and photos breathe"
+    },
+    "imagery": {
+      "photo_treatment": "polaroid with tape inside the scrapbook; plain rounded elsewhere",
+      "illustration_style": "isometric pixel city, pixel avatars, pixel critters (unchanged)",
+      "graphic_elements": [
+        "washi tape on pages",
+        "postage stamp on pages",
+        "pixel sparkles on a catch"
+      ],
+      "pattern_usage": "none",
+      "image_shape": "rounded rectangle; square polaroid on pages"
+    },
+    "interaction_feel": {
+      "feedback_style": "subtle scale (0.94-0.98)",
+      "hover_behavior": "n/a (touch)",
+      "transition_personality": "smooth glide",
+      "loading_style": "shimmer skeleton",
+      "microinteraction_density": "low, except the two signature moments"
+    },
+    "brand_voice_in_ui": {
+      "tone": "plain and warm; say what it is (\"Notes\", \"Photos\", \"Who’s been\")",
+      "formality": "casual",
+      "cta_style": "direct imperative",
+      "empty_state_approach": "one line, one action",
+      "error_tone": "plain, says what to do next"
+    }
+  },
+  "visual_effects": {
+    "overview": {
+      "effect_intensity": "subtle-accent",
+      "performance_tier": "medium",
+      "fallback_strategy": "reduce to CSS; reduced motion and calm mode remove all animation",
+      "primary_technology": "Canvas 2D (map) + CSS keyframes"
+    },
+    "background_effects": {
+      "type": "none",
+      "description": "Flat warm paper",
+      "technology": "CSS",
+      "params": {
+        "color_palette": [],
+        "speed": "static",
+        "density": "n/a",
+        "opacity": 1,
+        "blend_mode": "normal"
+      }
+    },
+    "particle_systems": {
+      "enabled": true,
+      "type": "custom",
+      "description": "Three pixel sparkles on the critter catch, staggered 100 ms apart",
+      "technology": "CSS keyframes",
+      "params": {
+        "count": 3,
+        "shape": "four-point star (clip-path)",
+        "size_range": "10-14px",
+        "movement_pattern": "scale and rotate in place",
+        "color_behavior": "gold and sage, static",
+        "interaction": "none",
+        "spawn_area": "around the critter"
+      }
+    },
+    "3d_elements": {
+      "enabled": false,
+      "type": "none",
+      "description": "The isometric map is drawn in 2D, not WebGL",
+      "technology": "none",
+      "params": {
+        "renderer": "n/a",
+        "lighting": "n/a",
+        "camera": "n/a",
+        "materials": "n/a",
+        "geometry": "n/a",
+        "post_processing": [],
+        "interaction_model": "n/a"
+      }
+    },
+    "shader_effects": {
+      "enabled": false,
+      "type": "none",
+      "description": "Not present",
+      "technology": "none",
+      "params": {
+        "uniforms": [],
+        "vertex_manipulation": "n/a",
+        "fragment_output": "n/a",
+        "noise_type": "n/a",
+        "distortion": "n/a"
+      }
+    },
+    "scroll_effects": {
+      "parallax": {
+        "enabled": false,
+        "layers": "0",
+        "depth_range": "n/a",
+        "speed_curve": "n/a"
+      },
+      "scroll_triggered_animations": {
+        "enabled": false,
+        "trigger_points": "n/a",
+        "animation_type": "none",
+        "scrub_behavior": "n/a"
+      },
+      "scroll_morphing": {
+        "enabled": false,
+        "description": "Not present"
+      }
+    },
+    "text_effects": {
+      "type": "none",
+      "description": "Not present",
+      "technology": "none",
+      "params": {
+        "split_strategy": "n/a",
+        "animation_per_unit": "n/a",
+        "stagger": "n/a",
+        "effect_style": "n/a"
+      }
+    },
+    "cursor_effects": {
+      "enabled": false,
+      "type": "none",
+      "description": "Touch-first app",
+      "params": {
+        "shape": "n/a",
+        "size": "n/a",
+        "blend_mode": "n/a",
+        "trail": false,
+        "interaction_zone": "n/a"
+      }
+    },
+    "image_effects": {
+      "type": "none",
+      "description": "Photos sit in polaroid frames with tape, rotated a degree or two",
+      "technology": "CSS",
+      "params": {
+        "filter_pipeline": "none",
+        "hover_transform": "none",
+        "reveal_animation": "none",
+        "distortion_type": "none"
+      }
+    },
+    "glassmorphism_neumorphism": {
+      "enabled": true,
+      "style": "frosted-layers",
+      "params": {
+        "blur_radius": "16px",
+        "transparency": 0.88,
+        "border_treatment": "1px hairline under the top bar",
+        "shadow_type": "none",
+        "light_source_angle": "n/a"
+      }
+    },
+    "canvas_drawings": {
+      "enabled": true,
+      "type": "pattern-fill",
+      "description": "The pixel city map, unchanged: it is the hero",
+      "technology": "Canvas 2D",
+      "params": {
+        "draw_method": "isometric tiles, sprites and labels redrawn on pan and zoom",
+        "animation_loop": "on demand, plus a slow twinkle at night",
+        "color_scheme": "pixel palette: sand, sea teal, tower blue, park green",
+        "responsiveness": "device-pixel-ratio aware, fills the viewport",
+        "interaction": "pan, pinch, tap pins"
+      }
+    },
+    "svg_animations": {
+      "enabled": false,
+      "type": "none",
+      "description": "Icons are a font; no SVG animation",
+      "params": {
+        "animation_method": "n/a",
+        "path_morphing": false,
+        "stroke_animation": false,
+        "filter_effects": "n/a"
+      }
+    },
+    "composite_notes": "Restraint everywhere except the map and the two signature moments. Taped in: tape is pulled across (scaleX from the left) and the page settles under it. Critter caught: spring pop, two-step pixel breathing, three sparkles twinkling in sequence, name and fact rising after. All off under prefers-reduced-motion and calm mode."
+  }
+}

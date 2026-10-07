@@ -37,7 +37,7 @@ function collection(userId){
     const paint = ()=>{
       const have = S.caughtIds(userId), fav = S.favouriteOf(userId);
       const list = CRITTERS.filter(c=>theme==='All' || c.theme===theme);
-      el.innerHTML = topbar({ title: mine ? 'Critters' : (u?.name||u?.handle||'Their')+'’s critters', eyebrow:'Field guide' }) + `<div class="screen-body">
+      el.innerHTML = topbar({ title: mine ? 'Critters' : (u?.name||u?.handle||'Their')+'’s critters', eyebrow:'' }) + `<div class="screen-body">
         <div class="row between mt8"><p class="hand grow">Critters live at real places around Dubai. Check in where they are to find them.</p>
           <span class="tag soft found-count">${have.size} of ${CRITTERS.length} found</span></div>
         <div class="chip-scroll mt12" role="tablist">${['All', ...Object.keys(THEMES)].map(t=>`<button class="person-chip${theme===t?' on':''}" data-theme="${t}" role="tab" aria-selected="${theme===t}">${esc(t)}</button>`).join('')}</div>
@@ -67,7 +67,7 @@ function detail(id, userId){
   openScreen(el=>{
     const paint = ()=>{
       const fav = S.favouriteOf(userId) === id;
-      el.innerHTML = topbar({ title:cr.name, eyebrow:'Field guide' }) + `<div class="screen-body">
+      el.innerHTML = topbar({ title:'' }) + `<div class="screen-body">
         <div class="critter-hero mt8"><span class="tape"></span>${critterArt(id, 192)}</div>
         <div class="center mt16"><h1 class="h-lg critter-name">${esc(cr.name)}</h1><div class="mt8">${themeChip(cr.theme)}</div></div>
         <div class="field-log mt20">

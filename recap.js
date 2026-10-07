@@ -68,7 +68,7 @@ async function drawRecap(canvas, month, scope){
   const mark = await loadImg(APP.brand.wordmark.light);
   if (mark) c.drawImage(mark, L.x+L.w-40-150, L.y+34, 150, 58);
   c.fillStyle = DEEP; c.font = '700 24px "Space Mono"'; c.fillText(fmtMonth(month).toUpperCase(), lx, L.y+150);
-  c.fillStyle = INK; c.font = '900 64px "Nunito Sans"';
+  c.fillStyle = INK; c.font = '800 64px "Plus Jakarta Sans"';
   const title = scope.crew ? scope.crew.name : 'My month';
   let y = wrap(c, title, lx, L.y+222, lw, 66, 2);
   c.fillStyle = SOFT; c.font = '500 26px "Plus Jakarta Sans"'; c.fillText(scope.crew ? 'in bites, together' : 'in bites', lx, y-14);
@@ -79,7 +79,7 @@ async function drawRecap(canvas, month, scope){
     const sx = lx + k*(lw/3), sw = lw/3 - 14;
     c.save(); c.translate(sx + sw/2, y + 64); c.rotate((k-1)*0.04);
     rr(c, -sw/2, -64, sw, 128, 16); c.fillStyle = k===1 ? GOLD : '#ffe3d0'; c.fill();
-    c.fillStyle = k===1 ? '#3d2900' : INK; c.textAlign = 'center'; c.font = '900 56px "Nunito Sans"'; c.fillText(String(n), 0, 6);
+    c.fillStyle = k===1 ? '#3d2900' : INK; c.textAlign = 'center'; c.font = '800 56px "Plus Jakarta Sans"'; c.fillText(String(n), 0, 6);
     c.font = '700 20px "Space Mono"'; c.fillText(l.toUpperCase(), 0, 44); c.restore();
   });
   c.textAlign = 'left'; y += 172;
@@ -91,7 +91,7 @@ async function drawRecap(canvas, month, scope){
     y += 18; c.strokeStyle = 'rgba(126,87,0,0.18)'; c.lineWidth = 2; c.beginPath(); c.moveTo(lx, y); c.lineTo(lx+lw, y); c.stroke();
     const ki = catById(M.primaryCat(v)), ic = await svgImg(iconSvg(ki.id, ki.color), 44);
     if (ic) c.drawImage(ic, lx, y+16, 44, 44);
-    c.fillStyle = INK; c.font = '800 30px "Nunito Sans"'; c.fillText(fit(c, `${k+1}. ${v.name}`, lw-60), lx+58, y+44);
+    c.fillStyle = INK; c.font = '800 30px "Plus Jakarta Sans"'; c.fillText(fit(c, `${k+1}. ${v.name}`, lw-60), lx+58, y+44);
     c.fillStyle = SOFT; c.font = '500 21px "Plus Jakarta Sans"';
     c.fillText(fit(c, `${MAP.zoneById(v.zone)?.label||APP.city} • ${plural(t.visits,'visit')}${t.best?' • ★ '+t.best:''}`, lw-60), lx+58, y+74);
     y += 88;
@@ -106,7 +106,7 @@ async function drawRecap(canvas, month, scope){
       c.save(); c.beginPath(); c.arc(ax+28, ay+28, 28, 0, 7); c.closePath(); c.fillStyle = '#f2cfb4'; c.fill(); c.clip();
       const im = await avatarImg(u);
       if (im) c.drawImage(im, ax+2, ay+2, 52, 52);
-      else { c.fillStyle = INK; c.font = '800 22px "Nunito Sans"'; c.textAlign = 'center'; c.fillText((u.name||u.handle||'?').slice(0,2).toUpperCase(), ax+28, ay+36); c.textAlign = 'left'; }
+      else { c.fillStyle = INK; c.font = '800 22px "Plus Jakarta Sans"'; c.textAlign = 'center'; c.fillText((u.name||u.handle||'?').slice(0,2).toUpperCase(), ax+28, ay+36); c.textAlign = 'left'; }
       c.restore(); c.strokeStyle = PAPER; c.lineWidth = 4; c.beginPath(); c.arc(ax+28, ay+28, 28, 0, 7); c.stroke();
     }
   }
@@ -130,7 +130,7 @@ async function drawRecap(canvas, month, scope){
     } else {
       c.shadowColor = 'transparent';
       await stampAt(c, it.venue ? M.primaryCat(it.venue) : 'coffee', -pw/2, -ph/2, pw, ph-30);
-      c.fillStyle = INK; c.font = '800 24px "Nunito Sans"'; c.textAlign = 'center'; c.fillText(fit(c, it.venue ? it.venue.name : '', pw), 0, ph/2+4); c.textAlign = 'left';
+      c.fillStyle = INK; c.font = '800 24px "Plus Jakarta Sans"'; c.textAlign = 'center'; c.fillText(fit(c, it.venue ? it.venue.name : '', pw), 0, ph/2+4); c.textAlign = 'left';
     }
     tape(c, 0, -ph/2, 120, -s.rot*3);
     c.restore();

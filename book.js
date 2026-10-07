@@ -57,12 +57,11 @@ function shelf(){
         .sort((a,b)=>(b[0].date||'').localeCompare(a[0].date||'') || (b[0].createdAt||0)-(a[0].createdAt||0))
         .forEach(([p, b])=>{ const k = p.entry ? p.entry.id : p.id; if (!seen.has(k) && latest.length<4){ seen.add(k); latest.push([p, b]); } });
       const members = crew ? S.crewMembers(crew) : [];
-      el.innerHTML = topbar({title:'Scrapbook Shelf', eyebrow:'Every visit, a page', back:true, actions:`<button class="icon-btn" id="shNew" aria-label="Log a visit">${icon('add_a_photo')}</button>`}) + `<div class="screen-body">
+      el.innerHTML = topbar({title:'Scrapbooks', back:true, actions:`<button class="icon-btn" id="shNew" aria-label="Log a visit">${icon('add_a_photo')}</button>`}) + `<div class="screen-body">
         <div class="deck mt8">
           ${critterSpine()}
-          <div class="deck-head"><span class="ms" style="color:var(--gold-deep)">book_2</span><span class="eyebrow grow" style="color:var(--ink);font-size:13px">Vol. ${new Date().getFullYear()} Archival Deck</span>${topZ.length?`<span class="tag soft">${esc(topZ.join(' • '))}</span>`:''}</div>
-          ${spineHTML(personal, { kind:'Personal scrapbook', kicon:'auto_stories', corner:'Keeper copy', hand: personal.byline || (topZ.length>1?`${topZ[1]} bites to ${topZ[0]} spice trails`:'Your city, one bite at a time'), meta:[`${icon('menu_book')}${plural(mine.length,'page')}`, photoN(mine)?`${icon('photo_library')}${plural(photoN(mine),'photo')}`:''] })}
-          ${crewBook?spineHTML(crewBook, { kind:'Crew scrapbook', kicon:'groups', corner:'Shared trail', cornerCls:'green', hand: crew.tagline || `Shared spots across ${plural(members.length-1,'friend')}`, meta:[`${avatarStack(members,30,6)} ${members.length} members`, `${icon('menu_book')}${plural(crewPgs.length,'page')}`], foot:'Shared visits only, never Just me ones' }):''}
+          ${spineHTML(personal, { kind:'Personal scrapbook', kicon:'auto_stories', hand: personal.byline || (topZ.length ? `Mostly ${topZ.slice(0,2).join(' and ')}` : 'Everywhere you’ve been'), meta:[`${icon('menu_book')}${plural(mine.length,'page')}`, photoN(mine)?`${icon('photo_library')}${plural(photoN(mine),'photo')}`:''] })}
+          ${crewBook?spineHTML(crewBook, { kind:'Crew scrapbook', kicon:'groups', hand: crew.tagline || (members.length>1 ? `You and ${plural(members.length-1,'friend')}` : 'Just you so far'), meta:[`${avatarStack(members,30,6)} ${plural(members.length,'member')}`, `${icon('menu_book')}${plural(crewPgs.length,'page')}`] }):''}
           ${!crewBook?`<button class="book-spine" id="shNoCrew" style="background:var(--sc-highest);color:var(--ink);box-shadow:none;border:2px dashed var(--outline-v)"><span class="rings" style="background:rgba(0,0,0,.05)"><i style="background:var(--outline-v)"></i><i style="background:var(--outline-v)"></i><i style="background:var(--outline-v)"></i></span><span class="grow"><span class="bs-kind">${icon('group_add')}Crew scrapbook</span><h3 style="font-size:20px">Start a crew to share a book</h3><span class="hand">Every visit you share becomes a page in it</span></span></button>`:''}
           ${taggedBook?spineHTML(taggedBook, { kind:'Tagged', kicon:'sell', hand: taggedBook.byline || 'Visits friends tagged you on', meta:[`${icon('menu_book')}${plural(tagPgs.length,'page')}`] }):''}
           ${albums.map(a=>spineHTML(a, { kind:'Custom album', kicon:'collections_bookmark', hand: a.byline || describeFilter(a.filter), meta:[`${icon('menu_book')}${plural(pagesOf(a).length,'page')}`] })).join('')}
@@ -89,7 +88,7 @@ function shelf(){
 // the critters: how many you've found, the ones you have peeking out
 function critterSpine(){
   const have = S.caughtIds(), shown = CRITTERS.filter(c=>have.has(c.id)).slice(0,3);
-  return `<button class="critter-spine" id="shCritters"><span class="grow" style="min-width:0"><span class="bs-kind">${icon('pets')}Field guide</span><h3>Critters</h3>
+  return `<button class="critter-spine" id="shCritters"><span class="grow" style="min-width:0"><span class="bs-kind">${icon('pets')}Collection</span><h3>Critters</h3>
     <span class="hand">${have.size ? `${have.size} of ${CRITTERS.length} found around Dubai` : 'Animals living at real places in Dubai. Check in where they are.'}</span></span>
     <span class="cs-art">${shown.length ? shown.map(c=>critterArt(c.id, 32)).join('') : critterArt('street_cat', 32, { silhouette:true })}</span></button>`;
 }
@@ -205,7 +204,7 @@ function coverScreen(bookId){
     const paint=()=>{
       const b={...b0, ...d};
       const count=pagesOf(b0).length;
-      el.innerHTML = topbar({title:'Book Cover', eyebrow:'Scrapbook page', actions:`<button class="icon-btn" id="cvOpen" aria-label="Open book">${icon('menu_book')}</button>`, profile:true}) + `<div class="screen-body">
+      el.innerHTML = topbar({title:'Cover', actions:`<button class="icon-btn" id="cvOpen" aria-label="Open book">${icon('menu_book')}</button>`, profile:true}) + `<div class="screen-body">
         <div class="row between mt8"><span class="tag rust">${icon('menu_book')}Closed book preview</span><button class="btn btn-dark btn-sm" id="cvSave" style="border-radius:999px">${icon('check')}Save Cover</button></div>
         <div class="card-peach mt16" style="padding:20px 18px 14px"><button id="cvTap" style="display:block;width:100%">${coverHTML(b, count)}</button><p class="center hand mt12">☝ Tap book cover to open spread 📖</p></div>
         <div class="panel mt16"><div class="panel-head">${icon('texture')}<h3>Material Texture</h3><span class="eyebrow" style="color:var(--rust)">${esc(TEXTURES.find(t=>t[0]===d.texture)[1])}</span></div>
@@ -388,8 +387,8 @@ function bookFilters(b, current, apply){
       const vHits = q ? S.searchVenues(q, 6).filter(v=>base.some(p=>p.venueId===v.id)) : [];
       const topVenues = [...new Set(base.map(p=>p.venueId))].slice(0,6).filter(id=>!d.venues.includes(id));
       const nV = new Set(pageRecs(b||{kind:'album', id:'_all'}, d).map(p=>p.venueId)).size;
-      body.innerHTML = `<div class="sheet-head"><div class="grow"><h2 class="h-lg">Filter Scrapbook <span class="hand">Al-Daftar</span></h2><p class="muted">Refine memories across ${esc(APP.city)} pages</p></div><button class="btn btn-ghost btn-sm mono" data-x="clear" style="font-size:13px;letter-spacing:.08em">CLEAR<br>ALL</button></div>
-        <div class="row between mt8"><span class="eyebrow" style="color:var(--ink)">${icon('calendar_month')} Time range / month</span></div>
+      body.innerHTML = `<div class="sheet-head"><div class="grow"><h2 class="h-lg">Filter pages</h2></div><button class="btn btn-ghost btn-sm" data-x="clear">Clear all</button></div>
+        <div class="row between mt8"><span class="eyebrow" style="color:var(--ink)">${icon('calendar_month')} Month</span></div>
         <div class="month-row mt12"><button class="month-chip${!d.months.length?' on':''}" data-month="">All Time</button>${months.map(m=>`<button class="month-chip${d.months.includes(m)?' on':''}" data-month="${m}">${d.months.includes(m)?icon('check'):''}${esc(fmtMonth(m))}</button>`).join('')}</div>
         <div class="row between mt20"><span class="eyebrow" style="color:var(--ink)">${icon('local_cafe')} Category (taste &amp; mood)</span>${d.cats.length?`<span class="tag" style="background:var(--rust);color:var(--on-deep);text-transform:none">${d.cats.length} Selected</span>`:''}</div>
         <div class="cat-grid5 mt12">${CATEGORIES.map(c=>`<button class="cat-cell${d.cats.includes(c.id)?' on':''}" data-cat="${c.id}"><span class="cc">${iconSvg(c.id, d.cats.includes(c.id)?'#fff':c.color)}</span><span>${esc(c.label)}</span></button>`).join('')}</div>
@@ -400,8 +399,8 @@ function bookFilters(b, current, apply){
         <div class="chip-scroll mt12"><button class="person-chip${!d.members.length?' on':''}" data-mem="">${icon('groups')}Everyone</button>${people.map(u=>`<button class="person-chip${d.members.includes(u.id)?' on':''}" data-mem="${u.id}">${avatarHTML(u,30)}@${esc(u.id===S.me().id?'you':u.handle)}${d.members.includes(u.id)?icon('check_circle'):''}</button>`).join('')}</div>`:''}
         ${withPeople.length?`<div class="row between mt20"><span class="eyebrow" style="color:var(--ink)">${icon('group')} Tagged with</span></div><p class="muted small mt4">Visits you went on together</p>
         <div class="chip-scroll mt12" data-f="tagged">${withPeople.map(u=>`<button class="person-chip${d.tagged.includes(u.id)?' on':''}" data-with="${u.id}">${avatarHTML(u,30)}@${esc(u.handle)}${d.tagged.includes(u.id)?icon('check_circle'):''}</button>`).join('')}</div>`:''}
-        ${!b||b.kind!=='crew'?`<div class="row between mt20"><span class="eyebrow" style="color:var(--ink)">${icon('visibility')} Privacy scope</span><span class="hand">Scrapbook access</span></div>
-        <div class="mt12">${seg('priv',[['all','All Pages','menu_book'],['shared','Shared','groups'],['private','Just me','lock']],d.privacy)}</div>`:''}
+        ${!b||b.kind!=='crew'?`<div class="row between mt20"><span class="eyebrow" style="color:var(--ink)">${icon('visibility')} Who can see</span></div>
+        <div class="mt12">${seg('priv',[['all','All pages','menu_book'],['shared','Shared','groups'],['private','Just me','lock']],d.privacy)}</div>`:''}
         <div class="sheet-foot"><button class="btn btn-gold btn-block" data-x="apply">${icon('menu_book')}${b?`Show ${plural(n,'Page')} (Apply)`:`Use ${plural(n,'page')}`}</button><p class="center hand mt8">Matching ${plural(nV,'place')} in your scrapbook</p></div>`;
       const qi=body.querySelector('#bfQ'); qi.oninput=()=>{ q=qi.value; const pos=qi.selectionStart; keep(); const n2=body.querySelector('#bfQ'); n2.focus(); n2.setSelectionRange(pos,pos); };
       bindSeg(body,'priv',v=>{ d.privacy=v; keep(); });
@@ -436,7 +435,7 @@ function viewer(ids, index){
       const p=S.photo(ids[i]); if (!p){ back(); return; }
       const me=S.me(), mine=p.userId===me.id, v=S.venue(p.venueId), u=S.user(p.userId);
       const bm=(p.bookmarkedBy||[]).includes(me.id);
-      el.innerHTML = topbar({title:'Photo Detail Viewer', eyebrow:'Scrapbook page', actions:''}) + `<div class="screen-body">
+      el.innerHTML = topbar({title:'Photo', actions:''}) + `<div class="screen-body">
         <div class="viewer-bar"><button class="icon-btn" data-act="back" aria-label="Close">${icon('close')}</button><span class="count"><span>${icon('photo_library')}${i+1} OF ${ids.length}</span></span>
           <button class="icon-btn" id="vShare" aria-label="Share">${icon('ios_share')}</button><button class="icon-btn" id="vBm" aria-label="Bookmark">${icon(bm?'bookmark':'bookmark_border','',bm)}</button></div>
         <div class="viewer-card mt16"><span class="tape-label">${esc(APP.city.toUpperCase())} MEMORY</span>

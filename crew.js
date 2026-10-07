@@ -25,25 +25,25 @@ function crewSetup(opts){
     const paint=()=>{
       const me=S.me();
       const preview = { name: name.trim() || 'My Crew', code: made?.code || ((name.toUpperCase().replace(/[^A-Z]/g,'').slice(0,5)||'CREW')+'··') };
-      el.innerHTML = topbar({title:'Crew Setup Invitation', center:true, profile:false, progress:opts.onboarding?[0,4]:null}) + `<div class="screen-body">
-        <div class="row between mt8">${opts.onboarding?`<span class="step">STEP 6 OF 6 • CREW</span>`:'<span></span>'}<span class="hand">Almost ready to feast! 🫖</span></div>
+      el.innerHTML = topbar({title:'Your crew', center:true, profile:false, progress:opts.onboarding?[0,4]:null}) + `<div class="screen-body">
+        <div class="row between mt8">${opts.onboarding?`<span class="step">Step 6 of 6</span>`:'<span></span>'}</div>
         <h1 class="h-xl mt12">Set up your food crew</h1>
-        <p class="muted mt8" style="font-size:16px">Scrapbook hidden spice dens in Deira and secret beach shacks together in one living logbook.</p>
+        <p class="muted mt8" style="font-size:16px">Share places with up to ${APP.crewMax-1} friends. Everything you share lands in one crew scrapbook.</p>
         <div class="mt20">${seg('ctab', [['create','Create Crew','group_add'],['join','Join Crew','key']], tab)}</div>
         ${tab==='create' && full ? `<div class="alert warn mt20">${icon('groups')}<div class="grow"><b>You're in ${APP.crewsPerPerson} crews</b>That's the most one person can be in. Leave one from the Crew tab to start another.</div></div>` : ''}
         ${tab==='create' ? `
         <div class="card mt20">
-          <div class="field-label"><span class="eyebrow">${icon('local_cafe')} Crew log name</span><span class="hand">Personalised stamp</span></div>
+          <div class="field-label"><span class="eyebrow">${icon('local_cafe')} Crew name</span></div>
           <div class="input-wrap mt8"><input class="input" id="cName" maxlength="32" placeholder="My Crew" value="${esc(name)}" style="padding-left:16px;font-size:18px;font-weight:600"><span class="trail ms">edit</span></div>
-          <p class="muted mt8">This title adorns your communal polaroid book and map pins across ${esc(APP.city)}.</p>
+          <p class="muted mt8">It’s the name on your crew scrapbook.</p>
         </div>
         <div class="card mt16">
-          <div class="row between"><span class="eyebrow" style="color:var(--rust)">${icon('link')} Secret invite link</span><span class="tag soft">Up to ${APP.crewMax}</span></div>
+          <div class="row between"><span class="eyebrow" style="color:var(--rust)">${icon('link')} Invite link</span><span class="tag soft">Up to ${APP.crewMax}</span></div>
           <div class="link-box mt12">${icon('link')}<span>${esc(APP.inviteUrl(preview.code).replace(/^https?:\/\//,''))}</span><button class="btn btn-white btn-sm" id="cCopy">${icon('content_copy')}Copy</button></div>
-          <div class="row between mt12"><span class="row" style="gap:8px">${icon('verified')}<span>AirDrop &amp; WhatsApp ready</span></span><span class="hand">No app download needed!</span></div>
+          <div class="row between mt12"><span class="row" style="gap:8px">${icon('verified')}<span>Works in any browser, no download</span></span></div>
         </div>
-        <button class="btn btn-gold btn-block mt20" id="cInvite">${icon('share')}Invite Friends to Logbook</button>
-        <div class="row between mt24"><span class="eyebrow">${icon('visibility')} Preview for recipients</span><span class="hand">Real-time RSVP card</span></div>
+        <button class="btn btn-gold btn-block mt20" id="cInvite">${icon('share')}Invite friends</button>
+        <div class="row between mt24"><span class="eyebrow">${icon('visibility')} What they’ll see</span></div>
         <div class="invite-card mt12"><span class="tag rust" style="position:absolute;top:-10px;left:50%;transform:translateX(-50%)">${esc(APP.name)}</span>
           <div style="width:64px;height:64px;border-radius:50%;background:var(--gold-fixed);margin:6px auto 0;display:flex;align-items:center;justify-content:center">${icon('restaurant','', true)}</div>
           <span class="hand mt8" style="display:block">Special table invitation</span>
@@ -131,7 +131,7 @@ function crewScreen(){
         <div class="passport mt16"><span class="tape"></span>
           <div class="row" style="align-items:flex-start">
             <span class="pp-icon">${icon('local_cafe','',true)}</span>
-            <div class="grow"><div class="row" style="gap:8px"><span class="eyebrow" style="color:var(--rust)">Crew passport</span><span class="hand">Est. ${est}</span></div>
+            <div class="grow"><div class="row" style="gap:8px"><span class="eyebrow">Since ${est}</span></div>
               <div class="pp-code">CODE: <b>${esc(crew.code)}</b></div></div>
             <button class="btn btn-white btn-sm" id="cpCopy" style="border-radius:999px">${icon('content_copy')}COPY</button>
           </div>
@@ -179,8 +179,8 @@ function crewScreen(){
       const me=S.me();
       el.innerHTML = topbar({title:'Your Crew', eyebrow:'', center:true, profile:false, actions:`<span class="tag soft" style="width:48px;height:48px;border-radius:50%;justify-content:center;padding:0;font-size:13px">1/${APP.crewMax}</span>`}).replace('<span class="tb-eyebrow"></span>','<span class="eyebrow" style="color:var(--rust)">Food journal</span>') + `<div class="screen-body">
         ${switcherHTML()}
-        <div class="solo-art mt24"><span class="label">solo table #01</span>
-          <div class="solo-card"><div class="inner">${avatarHTML(me,86)}<span class="mono" style="font-weight:700">YOU (CAPTAIN)</span><span class="hand">Table for one</span></div>
+        <div class="solo-art mt24">
+          <div class="solo-card"><div class="inner">${avatarHTML(me,86)}<b>You</b></div>
             <div class="row mt8" style="gap:6px;justify-content:center"><i style="width:9px;height:9px;border-radius:50%;background:var(--green);display:inline-block"></i><span class="mono muted" style="font-size:12px">Ready to share</span></div>
             <span class="cup"><span>${icon('coffee','',true)}</span></span></div>
           <span class="tag rust" style="font-family:var(--f-mono);font-size:12px;text-transform:none;letter-spacing:0;padding:6px 16px">${icon('local_cafe')} Karak poured, waiting for the crew</span>

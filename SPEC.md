@@ -16,10 +16,9 @@ photos, and share a photobook. Private logs are visible to their owner only.
 - The live URL is still dubai-bites-pi.vercel.app (Vercel project name); rename it in Vercel if you want a new address.
 
 ## Type
-- Titles: **Nunito Sans** (700–900).
-- Body, subtitles, taglines, ribbons, footnotes: **Plus Jakarta Sans** (400–700). Subtitles and
-  footnotes use it at regular or medium weight, in sentence case, in the softer `--ink-3` colour.
-- Small uppercase labels, numbers, photo captions and date labels: **Space Mono** (400/700).
+- One family for the app: **Plus Jakarta Sans**. Titles 700–800 with tight tracking (-0.01 to
+  -0.035em); body 400–600. Labels are sentence case at 13 px in `--ink-3`, never uppercase mono.
+- **Space Mono** only on paper: postage stamps, page dates and coordinates, the monthly recap spread.
 - Map area names and the map's loading text: **Silkscreen** (pixel font).
 - Icons: Material Symbols Outlined.
 - No handwriting or script font anywhere.
@@ -30,8 +29,16 @@ photos, and share a photobook. Private logs are visible to their owner only.
 - Setting: **Light / Dark / Auto** (Auto follows the phone), in Profile → Appearance. There is no
   theme button on the map. `theme.js` resolves the choice to `data-theme` on `<html>`, and an
   inline script in `index.html` does the same before first paint, so there's no flash.
-- Browser/PWA theme colour: `#fff8f5` (light), `#1b1612` (dark).
-- Dark UI: warm charcoal surfaces (header, sheets, nav, toasts, cards) with the same gold accent.
+- Look (design/dna/koko-target.json, from the references in design/dna/references.json): warm
+  neutral paper (`#f7f3ec`) instead of peach, ink (`#1d1712`) for text, primary buttons and selected
+  chips, white cards with soft shadows (no hard offset shadows, no card inside a card), pill buttons.
+  Koko gold is the one accent: stars, the + button, the map selection, tape. Segments select with a
+  white pill. The pixel map, avatars, critters and the scrapbook pages keep their own look.
+- Copy says what things are ("Notes", "Photos", "Who's been"), in sentence case, without themed
+  filler ("Archival deck", "Gourmet notes") or emoji in the chrome.
+- Browser/PWA theme colour: `#f7f3ec` (light), `#141210` (dark).
+- Dark UI: warm charcoal surfaces (header, sheets, nav, cards); primary buttons flip to cream with
+  dark text.
   Paper surfaces stay cream: stamps, polaroids, photobook pages, book spines and covers keep the
   light palette. The photobook shelf becomes a dark desk. Photos and avatars are unchanged.
 - Text contrast meets WCAG AA (4.5:1) for every text/background token pair in both themes.
@@ -361,4 +368,6 @@ Points, levels, the leaderboard and every counter toward a reward are gone (migr
 
 ## Onboarding (current)
 
-Welcome → sign in (email code or Google) → 2 handle → 3 avatar and pin colour → 4 who sees each place (crews, Just me, tagging shares with a crew you're both in) → 5 three things you'll collect (pages, critters, stickers; no points) → 6 crew setup. The first-run guide then walks through pinning a first place and the map: Me/Crew (pin colours and faces), filters, the bell (tags to rate, On this day), crew invites, the Shelf, and finding critters with + → Check in where I am.
+Welcome (the app's pixel city around Downtown, Satwa and Old Dubai, drifting slowly while crew pins, a
+pixel face in its owner's colour, drop onto real places one after another and lift away again; still with
+every pin placed under reduced motion) → sign in (email code or Google) → 2 handle → 3 avatar and pin colour → 4 who sees each place (crews, Just me, tagging shares with a crew you're both in) → 5 three things you'll collect (pages, critters, stickers; no points) → 6 crew setup. The first-run guide then walks through pinning a first place and the map: Me/Crew (pin colours and faces), filters, the bell (tags to rate, On this day), crew invites, the Shelf, and finding critters with + → Check in where I am.

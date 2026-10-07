@@ -1,0 +1,456 @@
+{
+  "meta": {
+    "name": "Koko, before the paint pass",
+    "description": "Koko 2026.10.07b as measured from its own e2e screenshots at 380 px.",
+    "source_references": [
+      "tests/e2e/shots/e-11-place-380-light.png",
+      "tests/e2e/shots/e-08-log-380-light.png",
+      "tests/e2e/shots/e-12-shelf-380-light.png",
+      "tests/e2e/shots/e-11-place-380-dark.png"
+    ],
+    "created_at": "2026-10-07"
+  },
+  "design_system": {
+    "color": {
+      "palette_type": "analogous",
+      "primary": {
+        "hex": "#e5a940",
+        "role": "every primary button, selected chip and segment"
+      },
+      "secondary": {
+        "hex": "#8e5f31",
+        "role": "brown book spines, map pin labels"
+      },
+      "accent": {
+        "hex": "#e5a940",
+        "role": "same gold as primary: nothing stands out from the rest"
+      },
+      "neutral": {
+        "scale": [
+          "#fffbf9",
+          "#fff5f0",
+          "#ffe2cd",
+          "#feddc1",
+          "#d2c0a8",
+          "#6d512c",
+          "#392a1d",
+          "#2d1d13"
+        ],
+        "usage": "Peach tints (#ffe2cd, #feddc1) fill almost every control, card and field; the darkest ink covers only 1-4% of a screen"
+      },
+      "semantic": {
+        "success": "#486636",
+        "warning": "#e5a93c",
+        "error": "#ba1a1a",
+        "info": "#2f7de1"
+      },
+      "surface": {
+        "background": "#fffbf9",
+        "card": "#ffffff",
+        "elevated": "#ffe3d0"
+      },
+      "contrast_strategy": "subtle layers: peach on cream on white, low contrast between surfaces",
+      "measurement": {
+        "k": 8,
+        "sampling": {
+          "method": "deterministic_stratified",
+          "max_pixels": 160000,
+          "sampled_pixels": 160000
+        }
+      },
+      "measured_palette": [
+        {
+          "hex": "#fffbf9",
+          "coverage": 0.7546,
+          "role": "background"
+        },
+        {
+          "hex": "#ffe2cd",
+          "coverage": 0.159,
+          "role": "unassigned"
+        },
+        {
+          "hex": "#e5a940",
+          "coverage": 0.0372,
+          "role": "accent"
+        },
+        {
+          "hex": "#6d512c",
+          "coverage": 0.0163,
+          "role": "unassigned"
+        },
+        {
+          "hex": "#2d1d13",
+          "coverage": 0.012,
+          "role": "text"
+        },
+        {
+          "hex": "#d2c0a8",
+          "coverage": 0.0108,
+          "role": "unassigned"
+        },
+        {
+          "hex": "#a97952",
+          "coverage": 0.0065,
+          "role": "unassigned"
+        },
+        {
+          "hex": "#7084a4",
+          "coverage": 0.0036,
+          "role": "unassigned"
+        }
+      ]
+    },
+    "typography": {
+      "type_scale": {
+        "display": {
+          "size": "30px",
+          "weight": 800,
+          "line_height": 1.18,
+          "tracking": "-0.02em"
+        },
+        "heading_1": {
+          "size": "25px",
+          "weight": 800,
+          "line_height": 1.2,
+          "tracking": "0"
+        },
+        "heading_2": {
+          "size": "20px",
+          "weight": 700,
+          "line_height": 1.3,
+          "tracking": "0"
+        },
+        "heading_3": {
+          "size": "17px",
+          "weight": 700,
+          "line_height": 1.3,
+          "tracking": "0"
+        },
+        "body": {
+          "size": "14px",
+          "weight": 400,
+          "line_height": 1.5,
+          "tracking": "0"
+        },
+        "body_small": {
+          "size": "13px",
+          "weight": 400,
+          "line_height": 1.4,
+          "tracking": "0"
+        },
+        "caption": {
+          "size": "13.5px",
+          "weight": 500,
+          "line_height": 1.35,
+          "tracking": "0"
+        },
+        "overline": {
+          "size": "11px",
+          "weight": 700,
+          "line_height": 1.3,
+          "tracking": "0.06em"
+        }
+      },
+      "font_families": {
+        "heading": "Nunito Sans",
+        "body": "Plus Jakarta Sans",
+        "mono": "Space Mono (labels, chips, tabs, dates, counts) plus Silkscreen on the map"
+      },
+      "font_style_notes": "Three families on every screen. Uppercase letter-spaced Space Mono labels (\"YOUR STAMP\", \"POLAROID REEL\") on top of a rounded heading face read as a theme rather than a voice."
+    },
+    "spacing": {
+      "base_unit": "4px",
+      "scale": [
+        "4px",
+        "8px",
+        "12px",
+        "16px",
+        "20px",
+        "24px",
+        "32px"
+      ],
+      "content_density": "comfortable",
+      "section_rhythm": "Even 16-24 px everywhere; nothing is given room to breathe"
+    },
+    "layout": {
+      "grid_system": "single column",
+      "max_content_width": "560px",
+      "columns": 1,
+      "gutter": "20px",
+      "breakpoints": [
+        "360px",
+        "390px",
+        "600px"
+      ],
+      "alignment_tendency": "mixed"
+    },
+    "shape": {
+      "border_radius": {
+        "small": "8px",
+        "medium": "12px",
+        "large": "16px",
+        "pill": "999px"
+      },
+      "border_usage": "none; fills do the separating",
+      "divider_style": "none"
+    },
+    "elevation": {
+      "shadow_style": "hard drop",
+      "levels": {
+        "low": "0 2px 0 #d4c4b0",
+        "medium": "0 3px 0 #d4c4b0",
+        "high": "0 4px 0 #7e5700"
+      },
+      "depth_cues": "solid offset shadows under buttons, chips and cards (39 of them)"
+    },
+    "iconography": {
+      "style": "outlined",
+      "stroke_weight": "400",
+      "size_scale": [
+        "20px",
+        "22px",
+        "32px"
+      ],
+      "preferred_set": "Material Symbols Outlined"
+    },
+    "motion": {
+      "easing": "cubic-bezier(.2,.8,.3,1)",
+      "duration_scale": {
+        "micro": "80ms",
+        "normal": "260ms",
+        "macro": "550ms"
+      },
+      "entrance_pattern": "screens slide in from the right, sheets rise",
+      "exit_pattern": "reverse slide",
+      "philosophy": "playful bouncy"
+    },
+    "components": {
+      "button_style": "gold slab with a 4px brown offset shadow, 16px radius, 17px 800",
+      "input_style": "peach fill with a 2px bottom border",
+      "card_style": "peach card inside a peach card inside cream",
+      "navigation_pattern": "bottom bar with mono uppercase labels and a raised gold +",
+      "modal_style": "bottom sheet, 28px top radius",
+      "list_style": "peach rows",
+      "component_notes": "Every selected state is the same gold slab, so selection, primary action and decoration all look alike"
+    }
+  },
+  "design_style": {
+    "aesthetic": {
+      "mood": [
+        "cheerful",
+        "busy",
+        "warm",
+        "toy-like"
+      ],
+      "visual_metaphor": "travel journal with airmail stamps, passes and polaroids",
+      "era_influence": "2020s gamified apps",
+      "genre": "gamified consumer",
+      "personality_traits": [
+        "eager",
+        "chatty",
+        "decorated"
+      ],
+      "adjectives": [
+        "peachy",
+        "chunky",
+        "themed",
+        "dense"
+      ]
+    },
+    "visual_language": {
+      "complexity": "rich",
+      "ornamentation": "decorative",
+      "whitespace_usage": "tight",
+      "visual_weight_distribution": "evenly heavy",
+      "focal_strategy": "distributed interest",
+      "contrast_level": "low",
+      "texture_usage": "paper grain on the shelf deck"
+    },
+    "composition": {
+      "hierarchy_method": "color weight",
+      "balance_type": "symmetric",
+      "flow_direction": "top to bottom",
+      "grouping_strategy": "nested tinted cards",
+      "negative_space_role": "filler between boxes"
+    },
+    "imagery": {
+      "photo_treatment": "polaroid frame with tape",
+      "illustration_style": "isometric pixel art map, pixel avatars and critters",
+      "graphic_elements": [
+        "washi tape",
+        "postage stamps",
+        "airmail labels",
+        "ribbons",
+        "corner banners"
+      ],
+      "pattern_usage": "paper grain",
+      "image_shape": "square polaroid"
+    },
+    "interaction_feel": {
+      "feedback_style": "press-down into the offset shadow",
+      "hover_behavior": "n/a (touch)",
+      "transition_personality": "bouncy elastic",
+      "loading_style": "shimmer",
+      "microinteraction_density": "high"
+    },
+    "brand_voice_in_ui": {
+      "tone": "whimsical, theme-heavy (\"Gourmet notes\", \"Archival deck\", \"Almost ready to feast! 🫖\")",
+      "formality": "casual",
+      "cta_style": "friendly invitation",
+      "empty_state_approach": "jokey aside in a handwritten-style caption",
+      "error_tone": "plain"
+    }
+  },
+  "visual_effects": {
+    "overview": {
+      "effect_intensity": "subtle-accent",
+      "performance_tier": "medium",
+      "fallback_strategy": "reduce to CSS; prefers-reduced-motion and the in-app calm mode switch every animation off",
+      "primary_technology": "Canvas 2D"
+    },
+    "background_effects": {
+      "type": "none",
+      "description": "Flat cream page",
+      "technology": "CSS",
+      "params": {
+        "color_palette": [],
+        "speed": "static",
+        "density": "n/a",
+        "opacity": 1,
+        "blend_mode": "normal"
+      }
+    },
+    "particle_systems": {
+      "enabled": false,
+      "type": "none",
+      "description": "Only a three-sparkle accent on the critter catch; not a particle system",
+      "technology": "none",
+      "params": {
+        "count": 0,
+        "shape": "n/a",
+        "size_range": "n/a",
+        "movement_pattern": "n/a",
+        "color_behavior": "n/a",
+        "interaction": "none",
+        "spawn_area": "n/a"
+      }
+    },
+    "3d_elements": {
+      "enabled": false,
+      "type": "none",
+      "description": "The isometric map is drawn in 2D, not WebGL",
+      "technology": "none",
+      "params": {
+        "renderer": "n/a",
+        "lighting": "n/a",
+        "camera": "n/a",
+        "materials": "n/a",
+        "geometry": "n/a",
+        "post_processing": [],
+        "interaction_model": "n/a"
+      }
+    },
+    "shader_effects": {
+      "enabled": false,
+      "type": "none",
+      "description": "Not present",
+      "technology": "none",
+      "params": {
+        "uniforms": [],
+        "vertex_manipulation": "n/a",
+        "fragment_output": "n/a",
+        "noise_type": "n/a",
+        "distortion": "n/a"
+      }
+    },
+    "scroll_effects": {
+      "parallax": {
+        "enabled": false,
+        "layers": "0",
+        "depth_range": "n/a",
+        "speed_curve": "n/a"
+      },
+      "scroll_triggered_animations": {
+        "enabled": false,
+        "trigger_points": "n/a",
+        "animation_type": "none",
+        "scrub_behavior": "n/a"
+      },
+      "scroll_morphing": {
+        "enabled": false,
+        "description": "Not present"
+      }
+    },
+    "text_effects": {
+      "type": "none",
+      "description": "Not present",
+      "technology": "none",
+      "params": {
+        "split_strategy": "n/a",
+        "animation_per_unit": "n/a",
+        "stagger": "n/a",
+        "effect_style": "n/a"
+      }
+    },
+    "cursor_effects": {
+      "enabled": false,
+      "type": "none",
+      "description": "Touch-first app",
+      "params": {
+        "shape": "n/a",
+        "size": "n/a",
+        "blend_mode": "n/a",
+        "trail": false,
+        "interaction_zone": "n/a"
+      }
+    },
+    "image_effects": {
+      "type": "none",
+      "description": "Photos sit in polaroid frames with tape, rotated a degree or two",
+      "technology": "CSS",
+      "params": {
+        "filter_pipeline": "none",
+        "hover_transform": "none",
+        "reveal_animation": "none",
+        "distortion_type": "none"
+      }
+    },
+    "glassmorphism_neumorphism": {
+      "enabled": true,
+      "style": "frosted-layers",
+      "params": {
+        "blur_radius": "16px",
+        "transparency": 0.88,
+        "border_treatment": "1px hairline under the top bar",
+        "shadow_type": "none",
+        "light_source_angle": "n/a"
+      }
+    },
+    "canvas_drawings": {
+      "enabled": true,
+      "type": "pattern-fill",
+      "description": "The pixel city map (map.js): the strongest, most original thing in the app",
+      "technology": "Canvas 2D",
+      "params": {
+        "draw_method": "isometric tiles, sprites and labels redrawn on pan and zoom",
+        "animation_loop": "on demand, plus a slow twinkle at night",
+        "color_scheme": "pixel palette: sand, sea teal, tower blue, park green",
+        "responsiveness": "device-pixel-ratio aware, fills the viewport",
+        "interaction": "pan, pinch, tap pins"
+      }
+    },
+    "svg_animations": {
+      "enabled": false,
+      "type": "none",
+      "description": "Icons are a font; no SVG animation",
+      "params": {
+        "animation_method": "n/a",
+        "path_morphing": false,
+        "stroke_animation": false,
+        "filter_effects": "n/a"
+      }
+    },
+    "composite_notes": "The map, pixel avatars and critters are distinctive. Almost everything around them (peach fills, hard shadows, mono caps, decorative captions, emoji) is the generic \"playful app\" kit and is what makes it read as generated."
+  }
+}

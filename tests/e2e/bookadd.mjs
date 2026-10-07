@@ -14,7 +14,7 @@ export default async function bookadd(h){
     await h.shot('b-crewbook');
     const [chooser] = await Promise.all([p.waitForFileChooser({timeout:4000}), h.js(()=>document.querySelector('#bkAddTop').click())]);
     await chooser.accept([path.resolve('fixture.jpg')]); await h.sleep(1500);
-    if (!/Log Entry/i.test(await text())) throw new Error('not the log form');
+    if (!/Log a visit/i.test(await text())) throw new Error('not the log form');
     await h.shot('b-add-1');
   });
   await step('pick the place: the photo is there and the crew is picked; save', async ()=>{

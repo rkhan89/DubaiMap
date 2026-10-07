@@ -48,7 +48,7 @@ export default async function share1(h){
   });
   await step('the same link again → "Already saved", opens the place', async ()=>{
     await openAdd(); await submit(FULL); await wait(async ()=>/Already saved/.test(await toastText()));
-    await wait(async ()=>/Place Details/.test(await text())); await h.shot('s1-already-saved');
+    await wait(async ()=>/Who’s been/.test(await text())); await h.shot('s1-already-saved');
     await h.js(()=>history.back()); await h.sleep(400); await h.js(()=>history.back()); await h.sleep(400);
   });
   await step('a place already on the crew map (by name) → offered first, no duplicate', async ()=>{

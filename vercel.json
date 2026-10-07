@@ -27,7 +27,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'sha256-RtvFatB8ojojP7xeNUY5yqQeZVA8ootGW/w9YvD6jeM=' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://crvadsjnqnxlkqzpywva.supabase.co; connect-src 'self' blob: data: https://crvadsjnqnxlkqzpywva.supabase.co wss://crvadsjnqnxlkqzpywva.supabase.co https://cdn.jsdelivr.net; worker-src 'self'; manifest-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
+          "value": "default-src 'self'; script-src 'self' 'sha256-lkzRPqnLJm3uhVQcL/nWEoMM8H5liS7FfP1t6SwAxeQ=' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://crvadsjnqnxlkqzpywva.supabase.co; connect-src 'self' blob: data: https://crvadsjnqnxlkqzpywva.supabase.co wss://crvadsjnqnxlkqzpywva.supabase.co https://cdn.jsdelivr.net; worker-src 'self'; manifest-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
         },
         {
           "key": "Strict-Transport-Security",

@@ -58,7 +58,7 @@ function placeScreen(venueId){
       const mineWho = [...new Set(mine.flatMap(e=>e.private?[]:(e.crewIds&&e.crewIds.length?e.crewIds:(crew?[crew.id]:[]))))];
       const photos=S.photos({venueId:v.id});
       const wanters=sum.wantIds.map(S.user).filter(Boolean);
-      el.innerHTML = topbar({title:'Place Details', center:true, actions:`<button class="icon-btn" id="pMore" aria-label="More">${icon('more_vert')}</button>`}) + `
+      el.innerHTML = topbar({title:'', center:true, actions:`<button class="icon-btn" id="pMore" aria-label="More">${icon('more_vert')}</button>`}) + `
       <div class="snap"><canvas id="pSnap"></canvas><span class="snap-pin">${icon('storefront')}${esc(v.name)}</span></div>
       <div class="place-body">
         <div class="sheet-handle" style="margin:0 auto 12px"></div>
@@ -69,7 +69,7 @@ function placeScreen(venueId){
           <div class="grow"><b class="h-sm">${minePrivate?'Only you can see your log':esc(whoText(mineWho).replace(/.$/,''))}</b>
           <div class="muted small">${minePrivate?'Your notes & rating stay in your own scrapbook.':'They can see your notes, rating and photos here.'}</div></div>
           <button class="btn btn-soft btn-sm" id="pShare">Change</button></div>`:''}
-        <div class="row between mt24"><span class="row h-md" style="gap:8px"><i style="width:9px;height:9px;border-radius:50%;background:var(--gold-deep);display:inline-block"></i>Who's Been <span class="tag soft">${plural(visits.length,'visit')}</span></span>${overallHTML({ rating:sum.rating, raters:sum.raters }, sum.ratingScope==='crew'?'Crew':'Your')}</div>
+        <div class="row between mt24"><span class="row h-md" style="gap:8px">Who’s been <span class="tag soft">${plural(visits.length,'visit')}</span></span>${overallHTML({ rating:sum.rating, raters:sum.raters }, sum.ratingScope==='crew'?'Crew':'Your')}</div>
         <div class="stack mt12">${visits.map(e=>{
           const u=S.user(e.userId), isMe=u.id===me.id;
           return `<div class="review" ${isMe?`data-edit="${e.id}" style="cursor:pointer"`:''}>
@@ -78,15 +78,15 @@ function placeScreen(venueId){
             ${withHTML(e, me)}
             ${taggedRatingsHTML(e, me)}
           </div>`;
-        }).join('') || `<div class="card-soft center"><span class="hand">Nobody in your crew has stamped this yet.</span><p class="muted small mt8">Be the first to log it.</p></div>`}</div>
+        }).join('') || `<div class="card-soft center"><b>Nobody in your crew has been yet</b><p class="muted small mt8">Be the first to log it.</p></div>`}</div>
         ${wanters.length?`<div class="card-soft row mt16">${icon('bookmark')}<div class="grow"><b>Wants to try</b><div class="muted small">${plural(wanters.length,'crew friend')}${(()=>{ const L={google_maps:'from Google Maps',tiktok:'from TikTok',instagram:'from Instagram',text:'from a name'}; const ls=[...new Set(sum.wants.map(e=>L[e.sourceType]).filter(Boolean))]; return ls.length?' ('+ls.join(', ')+')':''; })()} saved this spot</div></div>${avatarStack(wanters,34,3)}</div>`:''}
 ${S.events({venueId:v.id, upcoming:true}).length?`<div class="card mt16"><span class="h-sm">${icon('event')} Crew plans here</span><div class="stack mt8">${S.events({venueId:v.id, upcoming:true}).map(eventRowHTML).join('')}</div></div>`:''}
         <div class="btn-grid mt16"><button class="btn btn-soft" id="pCheck">${icon('where_to_vote')}Check in</button><button class="btn btn-soft" id="pPlan">${icon('event')}Plan a bite</button></div>
         <button class="btn btn-soft btn-block mt12" id="pLog">${icon('add_a_photo')}${mine.some(e=>e.kind==='visit')?'Log another visit':'Log your visit'}</button>
-        ${photos.length?`<div class="row between mt24"><span class="row h-md" style="gap:8px">${icon('photo_camera')}Crew Photo Strip</span><span class="mono muted" style="font-size:12px">${plural(photos.length,'snap')}</span></div>
+        ${photos.length?`<div class="row between mt24"><span class="row h-md" style="gap:8px">${icon('photo_camera')}Photos</span><span class="muted small">${photos.length}</span></div>
         <div class="strip">${photos.map(p=>polaroidHTML({src:S.photoURL(p), caption:p.caption, id:p.id, badge:p.private?`<span class="pol-badge tr">${icon('lock')}Only me</span>`:''})).join('')}</div>`:''}
-        <button class="btn btn-gold btn-block mt16" id="pSend">${icon('send')}Send to Crew</button>
-        <div class="btn-grid mt12"><a class="btn btn-soft" href="${mapsURL(v)}" target="_blank" rel="noopener">${icon('directions')}Directions</a><button class="btn btn-soft" id="pMap">${icon('map')}Show on Map</button></div>
+        <button class="btn btn-gold btn-block mt16" id="pSend">${icon('send')}Send to crew</button>
+        <div class="btn-grid mt12"><a class="btn btn-soft" href="${mapsURL(v)}" target="_blank" rel="noopener">${icon('directions')}Directions</a><button class="btn btn-soft" id="pMap">${icon('map')}Show on map</button></div>
         ${!mine.some(e=>e.kind==='want') && !mine.some(e=>e.kind==='visit')?`<button class="btn btn-ghost btn-block mt8" id="pWant">${icon('bookmark_add')}Save to try later</button>`:''}
       </div>`;
       MAP.whenReady(()=>requestAnimationFrame(()=>{ const c=el.querySelector('#pSnap'); if (c) MAP.drawSnapshot(c, MAP.placeWorld(v), 6); }));
@@ -153,7 +153,7 @@ function venueForm(initial, onSave, title){
   openSheet((body)=>{
     const paint=()=>{
       const z=MAP.zoneById(d.zone);
-      body.innerHTML = `<div class="sheet-head"><div class="grow"><span class="hand">New stamp on the map</span><h2 class="h-md">${esc(title||'Add a new place')}</h2></div></div>
+      body.innerHTML = `<div class="sheet-head"><div class="grow"><h2 class="h-md">${esc(title||'Add a new place')}</h2></div></div>
         ${initial.fromGoogle?`<p class="g-attr" style="text-align:left">Place details from <b>Google Maps</b>: check them and pick what kind of place it is.</p>`:''}
         <div class="field mt8"><label class="eyebrow" for="vfN">Name</label><input class="input" id="vfN" maxlength="60" value="${esc(d.name)}" placeholder="e.g. Sunset Karak Corner"></div>
         <div class="field mt16"><label class="eyebrow" for="vfZ">Area</label><select class="input" id="vfZ">${MAP.ZONES.slice().sort((a,b)=>a.label.localeCompare(b.label)).map(x=>`<option value="${x.id}"${x.id===d.zone?' selected':''}>${esc(x.label)}</option>`).join('')}</select></div>
@@ -224,7 +224,7 @@ function logFlow(opts){
     let stars=null;
     const paint=()=>{
       const crew=S.myCrew();
-      const header = topbar({title: editing?'Edit Entry':'Log Entry', center:true, actions:`<button class="icon-btn" id="lMore" aria-label="More">${icon('more_vert')}</button>`});
+      const header = topbar({title: editing?'Edit visit':'Log a visit', center:true, actions:`<button class="icon-btn" id="lMore" aria-label="More">${icon('more_vert')}</button>`});
       const stepRow = `<div class="row between mt8"><span class="row" style="gap:6px"><i style="width:14px;height:14px;border-radius:50%;background:${venue?'var(--gold-deep)':'var(--gold)'};display:inline-block"></i><i style="width:46px;height:8px;border-radius:4px;background:var(--gold);display:inline-block"></i><i style="width:14px;height:14px;border-radius:50%;background:${venue?'var(--gold)':'var(--sc-highest)'};display:inline-block"></i></span><span class="hand">${venue?'Step 2: details and memories':'Step 1: find the place'}</span></div>`;
       if (!venue){
         const results = S.searchVenues(query, 10);
@@ -260,14 +260,14 @@ function logFlow(opts){
           <p class="muted mt4">Adding your visit will link your notes and photos to ${others.slice(0,2).map(u=>`<span class="hl">${esc(u.name||u.handle)}</span>`).join(' and ')}${others.length>2?` +${others.length-2}`:''}'s log.</p>
           <div class="row mt8">${avatarStack(others,30,3)}<span class="hand">Visited ${lastOther?whenText(lastOther).toLowerCase().replace(/ •.*/,''):''}</span></div></div>`:''}
         <div class="card mt16" style="border-radius:var(--r-xl)">
-          <div class="seg"><button data-k="visit" class="${d.kind==='visit'?'on':''}">Been here ✓</button><button data-k="want" class="${d.kind==='want'?'on':''}">Want to try 🔖</button></div>
-          ${d.kind==='visit'?`<div class="row between mt20" style="align-items:flex-end;flex-wrap:wrap;gap:12px"><div><span class="eyebrow">Your stamp</span><div class="star-input mt8" id="lStars"></div></div>
-            <div style="text-align:right"><span class="eyebrow">Logged on</span><label class="date-pill mt8">${icon('calendar_month')}<span id="lDateTxt">${d.date===todayISO()?'Today, ':''}${fmtDate(d.date,{day:'numeric',month:'short'})}</span><input type="date" id="lDate" value="${d.date}" max="${todayISO()}"></label></div></div>`:''}
+          <div class="seg"><button data-k="visit" class="${d.kind==='visit'?'on':''}">Been here</button><button data-k="want" class="${d.kind==='want'?'on':''}">Want to try</button></div>
+          ${d.kind==='visit'?`<div class="row between mt20" style="align-items:flex-end;flex-wrap:wrap;gap:12px"><div><span class="eyebrow">Rating</span><div class="star-input mt8" id="lStars"></div></div>
+            <div><span class="eyebrow">Date</span><label class="date-pill mt8">${icon('calendar_month')}<span id="lDateTxt">${d.date===todayISO()?'Today, ':''}${fmtDate(d.date,{day:'numeric',month:'short'})}</span><input type="date" id="lDate" value="${d.date}" max="${todayISO()}"></label></div></div>`:''}
           <div class="row between mt20"><span class="eyebrow">Meal</span><span class="hand">Optional</span></div>
           <div class="chip-wrap mt8" id="lMeals">${MEALS.map(m=>`<button type="button" class="person-chip meal-chip${d.meals.includes(m.id)?' on':''}" data-meal="${m.id}" aria-pressed="${d.meals.includes(m.id)}">${icon(m.icon)}${m.label}</button>`).join('')}</div>
-          <div class="field-label mt20"><span class="eyebrow">${d.kind==='visit'?'Gourmet notes':'Why you want to go'}</span><span class="hand">Add your own words</span></div>
+          <div class="field-label mt20"><span class="eyebrow">${d.kind==='visit'?'Notes':'Why you want to go'}</span><span class="hand">Optional</span></div>
           <textarea class="input mt8" id="lNotes" maxlength="400" placeholder="${d.kind==='visit'?'Tasting notes, hidden gems, dish recommendations…':'Who recommended it, what to order…'}">${esc(d.notes)}</textarea>
-          <div class="row between mt20"><span class="eyebrow">Polaroid reel (${allPhotos})</span><span class="mono" style="color:var(--rust);font-weight:700;font-size:12px">${allPhotos}/${APP.photosPerLog}</span></div>
+          <div class="row between mt20"><span class="eyebrow">Photos</span><span class="muted small">${allPhotos} of ${APP.photosPerLog}</span></div>
           <div class="reel mt12">
             ${existingPhotos.map(p=>polaroidHTML({src:S.photoURL(p), caption:p.caption, id:p.id, tape:false, rot:0})).join('')}
             ${newPhotos.map((p,i)=>`<div style="position:relative"><button class="rm" data-rm="${i}" aria-label="Remove photo">${icon('close')}</button>${polaroidHTML({src:p.url, id:'n'+i, tape:false, rot:0, sub:`<input data-cap="${i}" value="${esc(p.caption)}" placeholder="caption" maxlength="40">`})}</div>`).join('')}

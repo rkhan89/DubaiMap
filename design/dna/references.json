@@ -1,0 +1,532 @@
+{
+  "meta": {
+    "name": "Koko references",
+    "description": "Four Dribbble shots the owner liked. Dominant pattern: neutral warm paper, near-black ink and buttons, one accent, photos and type doing the work. Variants noted per field.",
+    "source_references": [
+      "https://dribbble.com/shots/27686880-AI-Location-Discovery-App-UI-Design-Find-Places-Anywhere",
+      "https://dribbble.com/shots/26894339-Movie-discovery-app-concept",
+      "https://dribbble.com/shots/27657572-NearBite-Restaurant-Discovery-App",
+      "https://dribbble.com/shots/24966786--New-Project-Digital-Scrapbook-Landing-Page"
+    ],
+    "created_at": "2026-10-07"
+  },
+  "design_system": {
+    "color": {
+      "palette_type": "monochromatic",
+      "primary": {
+        "hex": "#130805",
+        "role": "primary buttons, headings, selected tabs (all four)"
+      },
+      "secondary": {
+        "hex": "#3d2721",
+        "role": "deep warm brown for secondary pills (Location); deep teal #1f4a4a in its CTAs"
+      },
+      "accent": {
+        "hex": "#d6b06a",
+        "role": "one accent per product: honey (Location), orange #f66b2e (NearBite), violet #7733b6 (Scrapbook)"
+      },
+      "neutral": {
+        "scale": [
+          "#ffffff",
+          "#fbf4f0",
+          "#f1ebe0",
+          "#e5e5e5",
+          "#c1c8c3",
+          "#97817a",
+          "#3d2721",
+          "#130805"
+        ],
+        "usage": "Warm paper backgrounds; near-black text and CTAs take 6-14% of the frame"
+      },
+      "semantic": {
+        "success": "#2e7d4f",
+        "warning": "#d6b06a",
+        "error": "#c43d2b",
+        "info": "#1f4a4a"
+      },
+      "surface": {
+        "background": "#f1ebe0",
+        "card": "#ffffff",
+        "elevated": "#ffffff"
+      },
+      "contrast_strategy": "high contrast: near-black on warm paper, white cards lifted by soft shadow",
+      "measurement": {
+        "k": 8,
+        "sampling": {
+          "method": "deterministic_stratified",
+          "max_pixels": 160000,
+          "sampled_pixels": 160000
+        }
+      },
+      "measured_palette": [
+        {
+          "hex": "#f1ebe0",
+          "coverage": 0.5464,
+          "role": "background",
+          "source": "AI Location Discovery (dribbble 27686880)"
+        },
+        {
+          "hex": "#c1c8c3",
+          "coverage": 0.1532,
+          "role": "unassigned",
+          "source": "AI Location Discovery (dribbble 27686880)"
+        },
+        {
+          "hex": "#130805",
+          "coverage": 0.144,
+          "role": "text",
+          "source": "AI Location Discovery (dribbble 27686880)"
+        },
+        {
+          "hex": "#3d2721",
+          "coverage": 0.0596,
+          "role": "accent",
+          "source": "AI Location Discovery (dribbble 27686880)"
+        },
+        {
+          "hex": "#6f5046",
+          "coverage": 0.0354,
+          "role": "unassigned",
+          "source": "AI Location Discovery (dribbble 27686880)"
+        },
+        {
+          "hex": "#fbf4f0",
+          "coverage": 0.4344,
+          "role": "background",
+          "source": "NearBite (dribbble 27657572)"
+        },
+        {
+          "hex": "#fab491",
+          "coverage": 0.2135,
+          "role": "unassigned",
+          "source": "NearBite (dribbble 27657572)"
+        },
+        {
+          "hex": "#f66b2e",
+          "coverage": 0.1603,
+          "role": "unassigned",
+          "source": "NearBite (dribbble 27657572)"
+        },
+        {
+          "hex": "#0a0804",
+          "coverage": 0.0647,
+          "role": "text",
+          "source": "NearBite (dribbble 27657572)"
+        },
+        {
+          "hex": "#94754e",
+          "coverage": 0.0356,
+          "role": "unassigned",
+          "source": "NearBite (dribbble 27657572)"
+        },
+        {
+          "hex": "#e5e5e5",
+          "coverage": 0.7476,
+          "role": "background",
+          "source": "Movie discovery (dribbble 26894339)"
+        },
+        {
+          "hex": "#191513",
+          "coverage": 0.0948,
+          "role": "text",
+          "source": "Movie discovery (dribbble 26894339)"
+        },
+        {
+          "hex": "#5f3419",
+          "coverage": 0.0353,
+          "role": "accent",
+          "source": "Movie discovery (dribbble 26894339)"
+        },
+        {
+          "hex": "#885e3f",
+          "coverage": 0.0327,
+          "role": "unassigned",
+          "source": "Movie discovery (dribbble 26894339)"
+        },
+        {
+          "hex": "#7a8789",
+          "coverage": 0.0316,
+          "role": "unassigned",
+          "source": "Movie discovery (dribbble 26894339)"
+        },
+        {
+          "hex": "#ffffff",
+          "coverage": 0.5037,
+          "role": "background",
+          "source": "Digital scrapbook landing (dribbble 24966786)"
+        },
+        {
+          "hex": "#d7d8db",
+          "coverage": 0.4082,
+          "role": "unassigned",
+          "source": "Digital scrapbook landing (dribbble 24966786)"
+        },
+        {
+          "hex": "#1a151c",
+          "coverage": 0.0272,
+          "role": "text",
+          "source": "Digital scrapbook landing (dribbble 24966786)"
+        },
+        {
+          "hex": "#bcb1af",
+          "coverage": 0.0191,
+          "role": "unassigned",
+          "source": "Digital scrapbook landing (dribbble 24966786)"
+        },
+        {
+          "hex": "#928389",
+          "coverage": 0.0137,
+          "role": "unassigned",
+          "source": "Digital scrapbook landing (dribbble 24966786)"
+        }
+      ]
+    },
+    "typography": {
+      "type_scale": {
+        "display": {
+          "size": "34px",
+          "weight": 700,
+          "line_height": 1.1,
+          "tracking": "-0.03em"
+        },
+        "heading_1": {
+          "size": "28px",
+          "weight": 700,
+          "line_height": 1.15,
+          "tracking": "-0.025em"
+        },
+        "heading_2": {
+          "size": "20px",
+          "weight": 600,
+          "line_height": 1.25,
+          "tracking": "-0.015em"
+        },
+        "heading_3": {
+          "size": "17px",
+          "weight": 600,
+          "line_height": 1.3,
+          "tracking": "-0.01em"
+        },
+        "body": {
+          "size": "15px",
+          "weight": 400,
+          "line_height": 1.5,
+          "tracking": "0"
+        },
+        "body_small": {
+          "size": "13px",
+          "weight": 400,
+          "line_height": 1.45,
+          "tracking": "0"
+        },
+        "caption": {
+          "size": "12px",
+          "weight": 500,
+          "line_height": 1.35,
+          "tracking": "0"
+        },
+        "overline": {
+          "size": "12px",
+          "weight": 500,
+          "line_height": 1.3,
+          "tracking": "0"
+        }
+      },
+      "font_families": {
+        "heading": "neo-grotesk sans (SF Pro / Inter class); a high-contrast serif only as a brand wordmark (Location \"PALATE\")",
+        "body": "same sans",
+        "mono": "none"
+      },
+      "font_style_notes": "One sans family, tight negative tracking at display sizes, sentence case. Handwriting appears only inside the scrapbook pages and as one circled word."
+    },
+    "spacing": {
+      "base_unit": "4px",
+      "scale": [
+        "4px",
+        "8px",
+        "12px",
+        "16px",
+        "24px",
+        "32px",
+        "48px"
+      ],
+      "content_density": "spacious",
+      "section_rhythm": "Large gaps between sections, tight inside groups"
+    },
+    "layout": {
+      "grid_system": "single column with full-bleed media",
+      "max_content_width": "430px (phone)",
+      "columns": 1,
+      "gutter": "16-20px",
+      "breakpoints": [
+        "390px"
+      ],
+      "alignment_tendency": "centered for onboarding, left for content"
+    },
+    "shape": {
+      "border_radius": {
+        "small": "10px",
+        "medium": "16px",
+        "large": "24px",
+        "pill": "999px"
+      },
+      "border_usage": "subtle 1px on secondary buttons and inputs",
+      "divider_style": "hairline"
+    },
+    "elevation": {
+      "shadow_style": "soft diffused",
+      "levels": {
+        "low": "0 1px 2px rgba(0,0,0,.06)",
+        "medium": "0 6px 20px rgba(0,0,0,.08)",
+        "high": "0 20px 40px rgba(0,0,0,.14)"
+      },
+      "depth_cues": "shadows, overlapping layers (cards fanned, photos tucked into books)"
+    },
+    "iconography": {
+      "style": "outlined",
+      "stroke_weight": "1.5px",
+      "size_scale": [
+        "18px",
+        "20px",
+        "24px"
+      ],
+      "preferred_set": "SF Symbols / Lucide"
+    },
+    "motion": {
+      "easing": "ease-out (inferred from stills)",
+      "duration_scale": {
+        "micro": "120ms",
+        "normal": "280ms",
+        "macro": "500ms"
+      },
+      "entrance_pattern": "not observable (stills)",
+      "exit_pattern": "not observable (stills)",
+      "philosophy": "minimal functional"
+    },
+    "components": {
+      "button_style": "near-black pill, white label; secondary is white with a hairline or a soft tint",
+      "input_style": "white field on paper, hairline or no border, pill search",
+      "card_style": "white or photo card, 16-24px radius, soft shadow, no nesting",
+      "navigation_pattern": "plain text tab bar (Location) or minimal icon bar",
+      "modal_style": "full-bleed detail with floating close",
+      "list_style": "photo-led cards in horizontal rows",
+      "component_notes": "Selected state is either near-black fill or white pill on a grey track. Nothing else is filled."
+    }
+  },
+  "design_style": {
+    "aesthetic": {
+      "mood": [
+        "calm",
+        "confident",
+        "warm",
+        "editorial"
+      ],
+      "visual_metaphor": "a well-made object: printed menu, photo book",
+      "era_influence": "2025-26 iOS editorial",
+      "genre": "premium consumer",
+      "personality_traits": [
+        "quiet",
+        "assured",
+        "tasteful"
+      ],
+      "adjectives": [
+        "restrained",
+        "tactile",
+        "photographic",
+        "spacious"
+      ]
+    },
+    "visual_language": {
+      "complexity": "minimal",
+      "ornamentation": "subtle accents",
+      "whitespace_usage": "generous",
+      "visual_weight_distribution": "one heavy element per screen",
+      "focal_strategy": "single hero element",
+      "contrast_level": "high",
+      "texture_usage": "real photography and paper, no fake grain"
+    },
+    "composition": {
+      "hierarchy_method": "scale contrast",
+      "balance_type": "asymmetric",
+      "flow_direction": "top to bottom",
+      "grouping_strategy": "proximity, not boxes",
+      "negative_space_role": "frames the hero"
+    },
+    "imagery": {
+      "photo_treatment": "full-bleed or rounded, untreated; polaroids only inside the scrapbook",
+      "illustration_style": "none, or one line motif (NearBite dotted path)",
+      "graphic_elements": [
+        "one circled word",
+        "a dotted route line",
+        "tape only on scrapbook photos"
+      ],
+      "pattern_usage": "none",
+      "image_shape": "rounded rectangle"
+    },
+    "interaction_feel": {
+      "feedback_style": "subtle scale",
+      "hover_behavior": "n/a",
+      "transition_personality": "smooth glide",
+      "loading_style": "skeleton",
+      "microinteraction_density": "low"
+    },
+    "brand_voice_in_ui": {
+      "tone": "plain and warm",
+      "formality": "casual",
+      "cta_style": "direct imperative (\"Start matching\", \"Reserve table\", \"Start creating\")",
+      "empty_state_approach": "one line and one action",
+      "error_tone": "plain"
+    }
+  },
+  "visual_effects": {
+    "overview": {
+      "effect_intensity": "none",
+      "performance_tier": "lightweight",
+      "fallback_strategy": "n/a",
+      "primary_technology": "CSS only"
+    },
+    "background_effects": {
+      "type": "none",
+      "description": "Flat warm paper, or a soft vertical gradient behind device mockups",
+      "technology": "CSS",
+      "params": {
+        "color_palette": [],
+        "speed": "static",
+        "density": "n/a",
+        "opacity": 1,
+        "blend_mode": "normal"
+      }
+    },
+    "particle_systems": {
+      "enabled": false,
+      "type": "none",
+      "description": "Only a three-sparkle accent on the critter catch; not a particle system",
+      "technology": "none",
+      "params": {
+        "count": 0,
+        "shape": "n/a",
+        "size_range": "n/a",
+        "movement_pattern": "n/a",
+        "color_behavior": "n/a",
+        "interaction": "none",
+        "spawn_area": "n/a"
+      }
+    },
+    "3d_elements": {
+      "enabled": false,
+      "type": "none",
+      "description": "The isometric map is drawn in 2D, not WebGL",
+      "technology": "none",
+      "params": {
+        "renderer": "n/a",
+        "lighting": "n/a",
+        "camera": "n/a",
+        "materials": "n/a",
+        "geometry": "n/a",
+        "post_processing": [],
+        "interaction_model": "n/a"
+      }
+    },
+    "shader_effects": {
+      "enabled": false,
+      "type": "none",
+      "description": "Not present",
+      "technology": "none",
+      "params": {
+        "uniforms": [],
+        "vertex_manipulation": "n/a",
+        "fragment_output": "n/a",
+        "noise_type": "n/a",
+        "distortion": "n/a"
+      }
+    },
+    "scroll_effects": {
+      "parallax": {
+        "enabled": false,
+        "layers": "0",
+        "depth_range": "n/a",
+        "speed_curve": "n/a"
+      },
+      "scroll_triggered_animations": {
+        "enabled": false,
+        "trigger_points": "n/a",
+        "animation_type": "none",
+        "scrub_behavior": "n/a"
+      },
+      "scroll_morphing": {
+        "enabled": false,
+        "description": "Not present"
+      }
+    },
+    "text_effects": {
+      "type": "none",
+      "description": "Not present",
+      "technology": "none",
+      "params": {
+        "split_strategy": "n/a",
+        "animation_per_unit": "n/a",
+        "stagger": "n/a",
+        "effect_style": "n/a"
+      }
+    },
+    "cursor_effects": {
+      "enabled": false,
+      "type": "none",
+      "description": "Touch-first app",
+      "params": {
+        "shape": "n/a",
+        "size": "n/a",
+        "blend_mode": "n/a",
+        "trail": false,
+        "interaction_zone": "n/a"
+      }
+    },
+    "image_effects": {
+      "type": "none",
+      "description": "Photos sit in polaroid frames with tape, rotated a degree or two",
+      "technology": "CSS",
+      "params": {
+        "filter_pipeline": "none",
+        "hover_transform": "none",
+        "reveal_animation": "none",
+        "distortion_type": "none"
+      }
+    },
+    "glassmorphism_neumorphism": {
+      "enabled": true,
+      "style": "frosted-layers",
+      "params": {
+        "blur_radius": "20px",
+        "transparency": 0.7,
+        "border_treatment": "none",
+        "shadow_type": "soft",
+        "light_source_angle": "top"
+      }
+    },
+    "canvas_drawings": {
+      "enabled": false,
+      "type": "none",
+      "description": "Maps are images",
+      "technology": "none",
+      "params": {
+        "draw_method": "n/a",
+        "animation_loop": "n/a",
+        "color_scheme": "n/a",
+        "responsiveness": "n/a",
+        "interaction": "n/a"
+      }
+    },
+    "svg_animations": {
+      "enabled": false,
+      "type": "none",
+      "description": "Icons are a font; no SVG animation",
+      "params": {
+        "animation_method": "n/a",
+        "path_morphing": false,
+        "stroke_animation": false,
+        "filter_effects": "n/a"
+      }
+    },
+    "composite_notes": "Effects are nearly absent; the premium feel comes from restraint, contrast and real images. The scrapbook shot shows the one place decoration is earned: inside the book."
+  }
+}

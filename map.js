@@ -2299,6 +2299,11 @@ function drawSnapshot(target, w, zoomMult){
   LW=prevLW;
   return true;
 }
+// where a world point lands on a canvas drawn by drawSnapshot(target, w, zoomMult), in CSS px
+function snapshotPoint(target, w, zoomMult, p){
+  const s=baseFit*(zoomMult||5);
+  return { x: target.clientWidth/2 + (p.x-w.x)*s, y: target.clientHeight/2 + (p.y-w.y)*s };
+}
 function refresh(){ clustersDirty=true; requestRender(); }
 // day or night: rebuild the city bitmap in the new palette (and the lights, the first time)
 function setTheme(t){
@@ -2317,6 +2322,6 @@ function resize(){ if (cache && resizeCanvas()){ if (needsCenter) initialView();
 export { buildStats,
   initMap, whenReady, setStamps, setAreaCounts, placeWorld, fitPoints, fitCity, flyToWorld, flyToSeparate,
   centerLatLng, viewZone, zoomRatio, setPicking, highlight, markDropped, setMeSprite, setSelected, startTracking,
-  stopTracking, isTracking, drawSnapshot, refresh, resize, visible, setTheme, setShow, setZoneTint, setCars,
+  stopTracking, isTracking, drawSnapshot, snapshotPoint, refresh, resize, visible, setTheme, setShow, setZoneTint, setCars,
   ZONES, zoneById, nearestZone, toAI, toLatLng, inMap, onLand,
 };

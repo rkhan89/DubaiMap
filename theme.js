@@ -2,7 +2,7 @@
 // on <html>; every colour in styles.css hangs off it. index.html sets it before first
 // paint with the same rule, so there's no flash.
 const KEY = 'bites-theme';
-const COLORS = { light:'#FFF4E8', dark:'#1C1410' };   // browser / PWA chrome (brand cream / dark)
+const COLORS = { light:'#F7F3EC', dark:'#141210' };   // browser / PWA chrome (the app's paper / night surface)
 const mq = window.matchMedia ? matchMedia('(prefers-color-scheme: dark)') : { matches:false, addEventListener(){} };
 const listeners = new Set();
 

@@ -6,13 +6,13 @@ export default async function e2e(h){
   const tap = async sel=>{ await p.waitForSelector(sel, {visible:true, timeout:5000}); await p.click(sel); await h.sleep(500); };
   const text = ()=>h.js(()=>document.body.innerText);
   await h.load();
-  await step('welcome shows', async ()=>{ if (!(await text()).includes('Continue with Email')) throw new Error('no welcome'); await h.shot('e-01-welcome'); });
+  await step('welcome shows', async ()=>{ if (!(await text()).includes('Continue with Email')) throw new Error('no welcome'); await h.sleep(2600); const w = await h.js(()=>({ drawn: document.querySelector('.w-city.ready #wCity')?.width > 300, pins: document.querySelectorAll('.wc-pin.in').length, photos: document.querySelectorAll('.welcome .polaroid').length })); if (!w.drawn || w.pins < 5 || w.photos) throw new Error('splash: '+JSON.stringify(w)); await h.shot('e-01-welcome'); });
   await step('email', async ()=>{ await tap('#wEmail'); await typeIn('#eIn', 'tester@example.test'); await tap('#eGo'); });
   await step('code', async ()=>{ await p.waitForSelector('.code-box input', {visible:true, timeout:5000}); await p.click('.code-box input'); await p.keyboard.type('123456'); await h.sleep(300); await h.shot('e-02-code'); await tap('#vfyGo'); });
   await step('handle', async ()=>{ await typeIn('#hIn', 'tester_'+Math.floor(Math.random()*1e4)); await h.sleep(300); await h.shot('e-03-handle'); await tap('#hGo'); });
   await step('avatar', async ()=>{ await p.waitForSelector('#aGo', {visible:true}); await p.click('[data-k="skin"] button:nth-child(3)'); await h.sleep(200); await h.shot('e-04-avatar'); await tap('#aGo'); });
   await step('share default', async ()=>{ await h.shot('e-05-share'); await tap('#sGo'); });
-  await step('what you will collect: pages, critters, stickers', async ()=>{ const t=await h.js(()=>document.body.innerText); if (!/Critters to find/.test(t) || !/Stickers for milestones/.test(t) || !/STEP 5 OF 6/.test(t)) throw new Error('collect step'); await h.shot('e-05b-collect'); await tap('#clGo'); });
+  await step('what you will collect: pages, critters, stickers', async ()=>{ const t=await h.js(()=>document.body.innerText); if (!/Critters to find/.test(t) || !/Stickers for milestones/.test(t) || !/Step 5 of 6/i.test(t)) throw new Error('collect step'); await h.shot('e-05b-collect'); await tap('#clGo'); });
   await step('crew create', async ()=>{ await typeIn('#cName', 'Test Crew'); await h.shot('e-06-crew'); await tap('#cGo'); await h.sleep(600); });
   await step('lands on map (+coach)', async ()=>{ await h.sleep(1200); await h.shot('e-07-after-onboarding'); const t=await text(); if (!/me/i.test(t) || !/crew/i.test(t)) throw new Error('no map controls'); });
   await step('skip the guide', async ()=>{ for (let i=0;i<20 && !(await h.js(()=>!!document.querySelector('.tour [data-t="skip"]')));i++) await h.sleep(200); await h.js(()=>document.querySelector('.tour [data-t="skip"]').click()); await h.sleep(400); if (!(await h.js(()=>!!document.querySelector('#emptyMap')))) throw new Error('no empty-map card'); });

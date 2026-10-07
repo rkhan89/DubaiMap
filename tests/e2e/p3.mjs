@@ -25,7 +25,7 @@ export default async function p3(h){
     const t=await text(); if (!/round two/.test(t)) throw new Error('note not on page');
     await h.shot('p3-page');
   });
-  await step('share link opens the place', async ()=>{ await h.load(`place=${ravi.id}`); await h.sleep(1500); const t=await text(); if (!/Ravi Restaurant/.test(t) || !/Place Details/.test(t)) throw new Error('not opened'); await h.shot('p3-sharelink'); });
+  await step('share link opens the place', async ()=>{ await h.load(`place=${ravi.id}`); await h.sleep(1500); const t=await text(); if (!/Ravi Restaurant/.test(t) || !/Who’s been/.test(t)) throw new Error('not opened'); await h.shot('p3-sharelink'); });
   await step('share link for a new custom place', async ()=>{ await h.load('place=abc123&n=Secret%20Shawarma&z=deira&c=fastfood&lat=25.2705&lng=55.3075'); await h.sleep(1500); const t=await text(); if (!/Secret Shawarma/.test(t)) throw new Error('not created'); });
   await step('manifest + sw', async ()=>{ const r=await h.js(async ()=>({ m:(await fetch('manifest.webmanifest')).ok, i:(await fetch('/icons/icon-192.png')).ok, sw: !!(await navigator.serviceWorker.getRegistration()) })); if (!r.m||!r.i||!r.sw) throw new Error(JSON.stringify(r)); });
 }

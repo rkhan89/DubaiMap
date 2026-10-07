@@ -253,7 +253,7 @@ function openArea(zoneId){
   const unlit = inZone.filter(s=>s.state==='unlit');
   openSheet(body=>{
     body.innerHTML = `<div class="sheet-head"><div class="grow"><span class="eyebrow">${scope().mode==='me'?'Your':'Crew'} places in</span><h2 class="h-lg">${esc(z.label)}</h2><span class="hand">${plural(lit.length,'spot')} stamped${unlit.length?`, ${unlit.length} undiscovered`:''}</span></div></div>
-      <div class="stack">${lit.map(venueRowHTML).join('') || '<div class="empty"><span class="hand">Nothing stamped here yet</span></div>'}</div>
+      <div class="stack">${lit.map(venueRowHTML).join('') || '<div class="empty"><span class="hand">Nobody’s been here yet</span></div>'}</div>
       ${unlit.length?`<div class="eyebrow mt24">Undiscovered nearby</div><div class="stack mt12">${unlit.slice(0,30).map(venueRowHTML).join('')}</div>`:''}
       <div class="sheet-foot btn-grid"><button class="btn btn-soft" id="aShow">${icon('map')}Show on map</button><button class="btn btn-gold" id="aAdd">${icon('add')}Log here</button></div>`;
     body.querySelectorAll('[data-venue]').forEach(r=>r.addEventListener('click', ()=>{ back(); setTimeout(()=>go.place(r.dataset.venue), 60); }));
@@ -275,7 +275,7 @@ function openFilters(){
       const n = M.mapModel({...draft}).filter(s=>s.state!=='unlit').length;
       body.innerHTML = `
       <div class="sheet-head"><span class="round-btn" style="width:44px;height:44px;box-shadow:none;background:var(--gold-fixed)">${icon('filter_list')}</span>
-        <div class="grow"><h2 class="h-md">Filter Scrapbook</h2><span class="hand">Refine street discoveries</span></div>
+        <div class="grow"><h2 class="h-md">Filter the map</h2></div>
         <button class="btn btn-ghost btn-sm" data-f="clear">Clear all</button></div>
       <div class="eyebrow">1. View mode</div>
       <div class="seg seg-white mt8" data-f="mode"><button data-v="me" class="${draft.mode==='me'?'on':''}">${icon('person')}Me Mode</button><button data-v="crew" class="${draft.mode==='crew'?'on':''}">${icon('groups')}Crew View</button></div>

@@ -108,7 +108,7 @@ export function topbar({title, eyebrow, back:showBack=true, actions='', profile=
     ${showBack?`<button class="icon-btn" data-act="back" aria-label="Back">${icon('arrow_back')}</button>`:''}
     <div class="tb-title">
       ${eyebrow?`<span class="tb-eyebrow">${esc(eyebrow)}</span>`:''}
-      <h1>${esc(title)}</h1>
+      ${title?`<h1>${esc(title)}</h1>`:''}
       ${progress?`<span class="tb-progress">${Array.from({length:progress[1]},(_,i)=>`<i class="${i===progress[0]?'on':''}"></i>`).join('')}</span>`:''}
     </div>
     <div class="tb-actions">${actions}${profile?`<button class="profile-btn" data-act="profile" aria-label="Your profile">${currentUser()?avatarHTML(currentUser(),44):icon('person')}</button>`:''}</div>
