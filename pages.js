@@ -122,40 +122,8 @@ export function withText(names){
   return `with ${names[0]}, ${names[1]} and ${names.length-2} more`;
 }
 
-/* ---------- the crew leaderboard: this month, playful categories ----------
-   Counts only visits shared with this crew by people in it, so everyone in the crew sees
-   the same board. Each category: { id, title, unit, ic, winner:{userId,n}, runnerUp }. */
-const SWEET = ['dessert','icecream','froyo','acai'];
-export const CATEGORIES_LB = [
-  { id:'dessert', title:'Most dessert runs', unit:['run','runs'], ic:'icecream' },
-  { id:'first',   title:'First to find',     unit:['new place','new places'], ic:'flag' },
-  { id:'tagged',  title:'Most tagged',       unit:['tag','tags'], ic:'sell' },
-  { id:'checkin', title:'Most check-ins',    unit:['check-in','check-ins'], ic:'where_to_vote' },
-  { id:'visits',  title:'Most visits',       unit:['visit','visits'], ic:'restaurant' },
-];
+// the visits shared with a crew, by people in it (its book, its challenges, its recap)
 export function crewVisits(crew, w){ return (w.entries||[]).filter(e=>belongs({ kind:'crew', crewId:crew.id }, e, { ...w, crews:{ ...(w.crews||{}), [crew.id]:crew } })); }
-export function leaderboardCategories(crew, month, w){
-  const all = crewVisits(crew, w), inM = all.filter(e=>(e.date||'').slice(0,7)===month);
-  const tally = () => new Map(crew.memberIds.map(id=>[id, 0]));
-  const t = Object.fromEntries(CATEGORIES_LB.map(c=>[c.id, tally()]));
-  const add = (k, id, n=1) => { if (t[k].has(id)) t[k].set(id, t[k].get(id)+n); };
-  // first crew visit ever at each place (by date, then when it was logged)
-  const first = new Map();
-  all.slice().sort((a,b)=>(a.date||'').localeCompare(b.date||'') || (a.createdAt||0)-(b.createdAt||0)).forEach(e=>{ if (!first.has(e.venueId)) first.set(e.venueId, e); });
-  inM.forEach(e=>{
-    const v = w.venue ? w.venue(e.venueId) : null;
-    add('visits', e.userId);
-    if (e.checkin) add('checkin', e.userId);
-    if (v && (v.categories||[]).some(c=>SWEET.includes(c))) add('dessert', e.userId);
-    if (first.get(e.venueId) === e) add('first', e.userId);
-    (e.taggedIds||[]).forEach(id=>add('tagged', id));
-  });
-  return CATEGORIES_LB.map(c=>{
-    const rows = [...t[c.id]].filter(([,n])=>n>0).sort((a,b)=>b[1]-a[1] || String(a[0]).localeCompare(String(b[0])));
-    return { ...c, winner: rows[0] ? { userId:rows[0][0], n:rows[0][1] } : null, runnerUp: rows[1] ? { userId:rows[1][0], n:rows[1][1] } : null };
-  });
-}
-
 /* ---------- crew challenges: three a month, the same for everyone in the crew ----------
    Picked from the crew's id and the month, so nothing needs storing; progress counts the
    crew's shared visits this month. */
@@ -183,7 +151,8 @@ export function crewChallenges(crew, month, w){
     { id:'kind-'+cat, ic:'category', cat, name:`Try ${target} new ${label}`, target, have:newInCat.length, who:[...new Set(newInCat.map(e=>e.userId))] },
     ...others.map(c=>({ id:c.id, ic:c.ic, name:c.name(c.n), target:c.n, hint:c.hint||'', have:c.count(inM, w, firstOrig), who:[...new Set(inM.map(e=>e.userId))] })),
   ];
-  return list.map(c=>({ ...c, have:Math.min(c.have, c.target), pct:Math.min(1, c.have/c.target), done:c.have>=c.target }));
+  // just done or not done: no counts on screen
+  return list.map(({ have, target, ...c })=>({ ...c, done:have>=target }));
 }
 
 /* ---------- the monthly recap spread ----------

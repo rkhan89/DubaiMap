@@ -5,8 +5,9 @@ import * as MAP from './map.js';
 import { esc, plural, todayISO, fmtDate } from './data.js';
 import { avatarHTML, avatarStack } from './avatar.js';
 import { icon, toast, openSheet, back, seg, bindSeg, share, askWho } from './ui.js';
-import { POINTS } from './stats.js';
 import { go } from './go.js';
+import { whereAmI, locationError } from './locate.js';
+import { haversine } from './catch.js';
 
 /* =========================================================
    SHARE LINKS: <origin>/?place=<id>, carrying the place's name, area, kind and spot so
@@ -157,45 +158,27 @@ go.bindEventsCard = (el, repaint)=>{
    ========================================================= */
 const CHECKIN_M = 300;             // metres from the exact spot
 const AREA_M = 1500;               // places without an exact spot: within the area
-// development only: ?at=lat,lng fakes your location (never on the live site, or check-ins could be faked)
-function devLocation(){ if (!/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) return null; const at = new URLSearchParams(location.search).get('at'); if (!at) return null; const [lat,lng] = at.split(',').map(Number); return isNaN(lat)||isNaN(lng) ? null : {lat,lng}; }
-function whereAmI(){
-  const fake = devLocation(); if (fake) return Promise.resolve(fake);      // development: ?at=lat,lng
-  return new Promise((res, rej)=>{
-    if (!navigator.geolocation) return rej(new Error('unsupported'));
-    navigator.geolocation.getCurrentPosition(p=>res({lat:p.coords.latitude, lng:p.coords.longitude}), e=>rej(e), {enableHighAccuracy:true, timeout:15000, maximumAge:30000});
-  });
-}
-function metres(a, b){
-  const R = 6371e3, t = x=>x*Math.PI/180, dLat = t(b.lat-a.lat), dLng = t(b.lng-a.lng);
-  const h = Math.sin(dLat/2)**2 + Math.cos(t(a.lat))*Math.cos(t(b.lat))*Math.sin(dLng/2)**2;
-  return 2*R*Math.asin(Math.sqrt(h));
-}
 export async function checkIn(venueId, after){
   const v = S.venue(venueId), me = S.me(); if (!v || !me) return;
   if (S.entries({venueId, userId:me.id, kind:'visit'}).some(e=>e.checkin && e.date===todayISO())) return toast('Already checked in here today');
   toast('Finding you…');
   let here;
   try{ here = await whereAmI(); }
-  catch(e){ return toast(e && e.code===1 ? 'Location permission is off for this site' : "Couldn't get your location"); }
+  catch(e){ return toast(locationError(e), null, null, 4500); }
   const exact = typeof v.lat==='number', z = MAP.zoneById(v.zone);
   const target = exact ? {lat:v.lat, lng:v.lng} : (z ? {lat:z.lat, lng:z.lng} : null);
-  const d = target ? metres(here, target) : Infinity, limit = exact ? CHECKIN_M : AREA_M;
+  const d = target ? haversine(here, target) : Infinity, limit = exact ? CHECKIN_M : AREA_M;
   if (d > limit){
     const km = d>=1000 ? (d/1000).toFixed(1)+' km' : Math.round(d)+' m';
     return toast(`You're ${km} away. Check-ins work when you're there.`, 'Log it', ()=>go.log({venueId}), 5000);
   }
-  const firstHere = !S.entries({venueId, userId:me.id, kind:'visit'}).length;
   askWho({ title:'Check in at '+v.name, action:'Check in' }, sel=>{
-  const crew = S.myCrew(), firstCrew = S.firstInCrew(venueId) && !!crew && sel.includes(crew.id);
   const e = S.addEntry({ venueId, kind:'visit', checkin:true, date:todayISO(), crewIds:sel });
-  const parts = [firstHere?[POINTS.newPlace,'New place']:[POINTS.repeat,'Repeat visit'], [POINTS.checkin,'Checked in']];
-  if (firstCrew) parts.push([POINTS.firstInCrew,'First in the crew']);
-  S.addPoints(parts.reduce((s,p)=>s+p[0],0));
   go.quietStrip && go.quietStrip();
   go.refresh();
   // the check-in is a visit, so it's a page: tape it in, then offer to add a rating and photos
-  go.tapeIn(e, ()=>setTimeout(()=>{ toast('Checked in! Add a rating and photos?', 'Add', ()=>go.log({entryId:e.id}), 5000); setTimeout(()=>go.checkBadges && go.checkBadges(), 5200); }, 4200));
+  // then any critter living here (a place check-in counts for venue-only spots too), then the nudge to rate it
+  go.tapeIn(e, ()=>go.critterCatch({ ...here, venue:true }, { venueId }, caught=>setTimeout(()=>{ toast('Checked in! Add a rating and photos?', 'Add', ()=>go.log({entryId:e.id}), 5000); setTimeout(()=>go.checkBadges && go.checkBadges(), 5200); }, caught ? 300 : 4200)));
   after && after();
   });
 }

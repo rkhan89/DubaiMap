@@ -56,9 +56,9 @@ const ms = iso => iso ? Date.parse(iso) : Date.now();
 const uuids = a => (a||[]).filter(id=>/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id));
 export const MAP = {
   profiles: {
-    to: u => ({ id:u.id, handle:u.handle||null, name:u.name||'', tagline:u.tagline||'', avatar:u.avatar||{}, share_default:u.shareDefault||'crew', points:u.points||0, onboarded:!!u.onboarded, ...(u.pinColor ? { pin_color:u.pinColor } : {}) }),
-    from: r => ({ id:r.id, handle:r.handle||'', name:r.name||'', tagline:r.tagline||'', avatar:r.avatar||{}, shareDefault:r.share_default, points:r.points||0, onboarded:r.onboarded, pinColor:r.pin_color||null, createdAt:ms(r.created_at) }),
-    fields: { handle:'handle', name:'name', tagline:'tagline', avatar:'avatar', shareDefault:'share_default', points:'points', onboarded:'onboarded', pinColor:'pin_color' },
+    to: u => ({ id:u.id, handle:u.handle||null, name:u.name||'', tagline:u.tagline||'', avatar:u.avatar||{}, share_default:u.shareDefault||'crew', onboarded:!!u.onboarded, ...(u.pinColor ? { pin_color:u.pinColor } : {}), ...(u.favouriteCritterId ? { favourite_critter_id:u.favouriteCritterId } : {}) }),
+    from: r => ({ id:r.id, handle:r.handle||'', name:r.name||'', tagline:r.tagline||'', avatar:r.avatar||{}, shareDefault:r.share_default, onboarded:r.onboarded, pinColor:r.pin_color||null, favouriteCritterId:r.favourite_critter_id||null, createdAt:ms(r.created_at) }),
+    fields: { handle:'handle', name:'name', tagline:'tagline', avatar:'avatar', shareDefault:'share_default', onboarded:'onboarded', pinColor:'pin_color', favouriteCritterId:'favourite_critter_id' },
   },
   crews: {
     from: r => ({ id:r.id, name:r.name, tagline:r.tagline||'', code:r.code, ownerId:r.owner_id, memberIds:[], createdAt:ms(r.created_at) }),
@@ -94,6 +94,11 @@ export const MAP = {
   book_pages: {
     to: p => ({ id:p.id, book_id:p.bookId, entry_id:p.entryId, layout:p.layout||'scrapbook', photo_order:p.order||[], stickers:p.stickers||[], note:p.note||'', updated_by:p.updatedBy, updated_at:ts(p.updatedAt) }),
     from: r => ({ id:r.id, bookId:r.book_id, entryId:r.entry_id, layout:r.layout, order:r.photo_order||[], stickers:r.stickers||[], note:r.note||'', updatedBy:r.updated_by, updatedAt:ms(r.updated_at) }),
+  },
+  // critters caught: one per person per critter, never edited
+  critter_catches: {
+    to: c => ({ id:c.id, user_id:c.userId, critter_id:c.critterId, caught_at:ts(c.caughtAt), lat:c.lat, lng:c.lng, accuracy_m:c.accuracy, spot:c.spot||'', venue_id:c.venueId||null }),
+    from: r => ({ id:r.id, userId:r.user_id, critterId:r.critter_id, caughtAt:ms(r.caught_at), lat:r.lat, lng:r.lng, accuracy:r.accuracy_m, spot:r.spot||'', venueId:r.venue_id||null }),
   },
   // ratings from people tagged on a visit (one per person per visit)
   visit_ratings: {
@@ -133,7 +138,9 @@ export async function pull(){
   const pageRows = await c.from('book_pages').select('*').then(r=>r.data||[], ()=>[]);
   // ratings from people tagged on visits you can see (missing until migration 0009 runs)
   const ratingRows = await c.from('visit_ratings').select('*').then(r=>r.data||[], ()=>[]);
-  return { ratings:by(ratingRows,'visit_ratings'), pages:by(pageRows,'book_pages'), inbox:by(inboxRows,'share_inbox'), users:by(profiles,'profiles'), crews:crewMap, venues:by(venues,'venues'), entries:ents,
+  // critters caught by you and your crewmates (missing until migration 0011 runs)
+  const catchRows = await c.from('critter_catches').select('*').then(r=>r.data||[], ()=>[]);
+  return { catches:by(catchRows,'critter_catches'), ratings:by(ratingRows,'visit_ratings'), pages:by(pageRows,'book_pages'), inbox:by(inboxRows,'share_inbox'), users:by(profiles,'profiles'), crews:crewMap, venues:by(venues,'venues'), entries:ents,
            photos:by(photos,'photos'), books:by(books,'books'), events:by(events,'events') };
 }
 

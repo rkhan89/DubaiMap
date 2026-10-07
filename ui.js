@@ -100,14 +100,6 @@ export function toast(msg, action, fn, ms){
   el.classList.toggle('multi', actions.length>1); el.classList.add('show');
   clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.remove('show'), ms||(actions.length?5000:2400));
 }
-// the dark "points" bar from the log screen
-export function pointsToast(parts){
-  const el=$('#points');
-  el.innerHTML = `${icon('auto_awesome','',true)}<span class="pts">${parts.map(p=>`<b>+${p[0]}</b> ${esc(p[1])}`).join('<i>•</i>')}</span>${parts.length>1?'<em>Combo!</em>':''}`;
-  el.classList.add('show');
-  setTimeout(()=>el.classList.remove('show'), 3200);
-}
-
 /* =========================================================
    COMPONENTS
    ========================================================= */
@@ -260,11 +252,11 @@ export function askWho({ title, action, sel }, done){
 }
 
 /* ---------- category picker: the 3 most used (plus anything picked), "+N more" for the rest ---------- */
-const CAT_RANK = ['restaurant','coffee','karak','dessert','shisha','burger','icecream','pizza','fastfood','cafeteria','matcha','acai','froyo'];
+const CAT_ORDER = ['restaurant','coffee','karak','dessert','shisha','burger','icecream','pizza','fastfood','cafeteria','matcha','acai','froyo'];
 export function topCategories(n){
   const count = {}; allVenues().forEach(v=>(v.categories||[]).forEach(c=>{ count[c]=(count[c]||0)+1; }));
-  const rank = id => { const i=CAT_RANK.indexOf(id); return i<0 ? 99 : i; };
-  return CATEGORIES.map(c=>c.id).sort((a,b)=>(count[b]||0)-(count[a]||0) || rank(a)-rank(b)).slice(0, n||3);
+  const order = id => { const i=CAT_ORDER.indexOf(id); return i<0 ? 99 : i; };
+  return CATEGORIES.map(c=>c.id).sort((a,b)=>(count[b]||0)-(count[a]||0) || order(a)-order(b)).slice(0, n||3);
 }
 // on: ids shown selected; keep: ids always visible (e.g. picked ones); open: show everything
 export function catPickerHTML(on, opts){

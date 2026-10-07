@@ -1,5 +1,5 @@
 // Playful features around the scrapbook: the small "sticker unlocked" moment after the
-// taped-in one, sticking a sticker on a page, the crew leaderboard in categories, crew
+// taped-in one, sticking a sticker on a page, crew
 // challenges, and the monthly recap as a scrapbook spread.
 export default async function scrap2(h){
   const p = h.page, step = async (name, fn)=>{ try{ await fn(); console.log('ok  ', name); } catch(e){ console.log('FAIL', name, '-', (e.message||'').split('\n')[0]); await h.shot('sc2fail-'+name.replace(/\W+/g,'-')); } };
@@ -36,20 +36,12 @@ export default async function scrap2(h){
     await h.shot('sc2-page-sticker');
     await close();
   });
-  await step('leaderboard: crew-only, this month, categories with winner and runner-up', async ()=>{
-    await h.js(async ()=>{ const {go}=await import('/go.js'); go.leaderboard(); }); await h.sleep(700);
-    const t = await text();
-    for (const c of ['Most dessert runs','First to find','Most tagged','Most check-ins']) if (!t.includes(c)) throw new Error('missing '+c);
-    if (/All time/i.test(t) || / pts/.test(t)) throw new Error('points ranking still shown');
-    if (!/Winner/i.test(t)) throw new Error('no winners');
-    await h.shot('sc2-leaderboard');
-    await close();
-  });
-  await step('crew challenges with shared progress, and your own goals below', async ()=>{
+  await step('crew challenges and your own goals: done or not done, no counters or steppers', async ()=>{
     await h.js(async ()=>{ const {go}=await import('/go.js'); go.goals(); }); await h.sleep(700);
     const n = await h.js(()=>document.querySelectorAll('.goal-card.challenge').length);
     if (n !== 3) throw new Error('challenges: '+n);
     if (!/Just me/.test(await text())) throw new Error('no personal goals');
+    if (/d+ of d+|d+%/.test(await text()) || await h.js(()=>!!document.querySelector('.stepper-mini, .ring, [data-g]'))) throw new Error('counters or steppers still shown');
     await h.shot('sc2-challenges');
     await close();
   });

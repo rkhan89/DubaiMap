@@ -7,7 +7,7 @@
 // stays on this device, as in the preview. Photo files are cached in IndexedDB either way.
 //
 // Records
-//   users    {id, name, handle, email, tagline, avatar:{pixel|photo}, shareDefault:'crew'|'private', points, createdAt}
+//   users    {id, name, handle, email, tagline, avatar:{pixel|photo}, shareDefault:'crew'|'private', pinColor, favouriteCritterId, createdAt}
 //   crews    {id, name, tagline, code, ownerId, memberIds[], createdAt}
 //   venues   {id, name, zone, categories[], lat, lng, address, createdBy, createdAt, demo}
 //   entries  {id, venueId, userId, kind:'visit'|'want', rating, notes, date, private, createdAt}
@@ -43,7 +43,7 @@ const listeners = new Set();
 export function onChange(fn){ listeners.add(fn); return ()=>listeners.delete(fn); }
 function emit(what){ listeners.forEach(f=>{ try{ f(what); }catch(e){ console.error(e); } }); }
 
-function fresh(){ return { version:2, meId:null, users:{}, crews:{}, venues:{}, entries:{}, photos:{}, books:{}, events:{}, inbox:{}, pages:{}, ratings:{}, flags:{} }; }
+function fresh(){ return { version:2, meId:null, users:{}, crews:{}, venues:{}, entries:{}, photos:{}, books:{}, events:{}, inbox:{}, pages:{}, ratings:{}, catches:{}, flags:{} }; }
 function load(){
   try{ const d=JSON.parse(localStorage.getItem(KEY)); if (d && d.version===2) return {...fresh(), ...d}; }catch(_){}
   return fresh();
@@ -117,13 +117,14 @@ export async function pullNow(){
   db.books   = { ...Object.fromEntries(Object.entries(db.books||{}).filter(([k,b])=>isLocal(k) || isLocal(b.crewId))), ...fresh.books };
   db.events  = { ...keep(db.events), ...fresh.events };
   db.inbox   = { ...(fresh.inbox||{}) };
+  db.catches = { ...Object.fromEntries(Object.entries(db.catches||{}).filter(([,c])=>isLocal(c.userId))), ...(fresh.catches||{}) };
   db.ratings = { ...Object.fromEntries(Object.entries(db.ratings||{}).filter(([,r])=>isLocal(r.entryId))), ...(fresh.ratings||{}) }; ratingIdx = null;
   db.pages   = { ...Object.fromEntries(Object.entries(db.pages||{}).filter(([k])=>isLocal(k.split('|')[0]) || /^(crewbook-demo|loose)/.test(k))), ...(fresh.pages||{}) };
   // no profile row yet (an account made before the database was set up): make it from this phone's copy
   if (!db.users[db.meId] && meRec){ db.users[db.meId] = meRec; C.queue({ k:'put', t:'profiles', id:meRec.id, row:C.MAP.profiles.to(meRec) }); }
   if (db.users[db.meId] && meRec) db.users[db.meId].email = meRec.email;
   // replay what hasn't reached the server yet, so nothing flickers back
-  const T = { profiles:'users', crews:'crews', venues:'venues', entries:'entries', photos:'photos', books:'books', events:'events', share_inbox:'inbox', book_pages:'pages', visit_ratings:'ratings' };
+  const T = { profiles:'users', crews:'crews', venues:'venues', entries:'entries', photos:'photos', books:'books', events:'events', share_inbox:'inbox', book_pages:'pages', visit_ratings:'ratings', critter_catches:'catches' };
   C.pending().forEach(o=>{
     const map = T[o.t] && db[T[o.t]]; if (!map) return;
     if (o.k==='put' || o.k==='ins'){ const rec = C.MAP[o.t].from ? C.MAP[o.t].from({ ...o.row, created_at:o.row.created_at || new Date().toISOString() }) : null; if (rec && !(o.k==='ins' && map[o.id])) map[o.id] = { ...(map[o.id]||{}), ...rec, src: map[o.id]?.src==='idb' ? 'idb' : rec.src }; }
@@ -144,7 +145,7 @@ async function startCloud(){
   if (!uidNow){ if (db.meId) resetFor(null); return; }
   if (db.meId !== uidNow) resetFor(uidNow);
   db.meId = uidNow;
-  if (!db.users[uidNow]) db.users[uidNow] = { id:uidNow, handle:'', name:'', avatar:{}, shareDefault:'crew', points:0, onboarded:false, createdAt:Date.now() };
+  if (!db.users[uidNow]) db.users[uidNow] = { id:uidNow, handle:'', name:'', avatar:{}, shareDefault:'crew', onboarded:false, createdAt:Date.now() };
   db.users[uidNow].email = s.user.email || '';
   C.setOutboxOwner(uidNow, { blob:getBlob, failed:()=>{ emit('sync-error'); schedulePull(); }, synced:()=>emit('synced') });
   await pullNow();
@@ -217,7 +218,7 @@ export function signIn({email, provider}){
     const legacyAv = (()=>{ try{ return JSON.parse(localStorage.getItem(LEGACY_AVATAR)); }catch(_){ return null; } })();
     m = { id:uid(), name:'', handle:'', email:email||'', provider:provider||'email', tagline:'',
           avatar:{ pixel: legacyAv || {skin:2, hair:'short', hairColor:'#1F1612', outfit:'tee', top:'#E8B84B'} },
-          shareDefault:'crew', points:0, createdAt:Date.now(), onboarded:false };
+          shareDefault:'crew', createdAt:Date.now(), onboarded:false };
     db.users[m.id] = m; db.meId = m.id;
   } else if (email) m.email = email;
   save('me'); return m;
@@ -290,7 +291,6 @@ export async function deleteAccount(){
   db = fresh(); db.flags = { seedsRemoved:true, cloudUser:!!cloud }; save('me');
 }
 export function updateMe(patch){ const m=me(); if (!m) return; Object.assign(m, patch); save('me'); push('profiles', { id:m.id, patch }, 'upd'); return m; }
-export function addPoints(n){ const m=me(); if (m){ m.points=(m.points||0)+n; save('me'); push('profiles', { id:m.id, patch:{points:m.points} }, 'upd'); } }
 const RESERVED = ['admin','support','dubaibites','bites','crew','you','me','help'];
 export function handleStatus(h){
   h = (h||'').trim().replace(/^@/,'').toLowerCase();
@@ -428,9 +428,9 @@ export function searchVenues(q, limit){
   const words=q.split(/\s+/);
   return venues().map(v=>{
     const n=v.name.toLowerCase();
-    let score = n.startsWith(q) ? 3 : n.includes(q) ? 2 : words.every(w=>n.includes(w)) ? 1 : 0;
-    return {v, score};
-  }).filter(x=>x.score).sort((a,b)=>b.score-a.score || a.v.name.localeCompare(b.v.name)).slice(0,limit||8).map(x=>x.v);
+    let fit = n.startsWith(q) ? 3 : n.includes(q) ? 2 : words.every(w=>n.includes(w)) ? 1 : 0;
+    return {v, fit};
+  }).filter(x=>x.fit).sort((a,b)=>b.fit-a.fit || a.v.name.localeCompare(b.v.name)).slice(0,limit||8).map(x=>x.v);
 }
 
 /* =========================================================
@@ -508,10 +508,6 @@ export async function deleteEntry(id){
   return { entry:e, photos:ps };
 }
 export function restoreEntry(snapshot){ db.entries[snapshot.entry.id]=snapshot.entry; save('entries'); push('entries', snapshot.entry); }
-// is this visit the first by anyone in my crew at this venue?
-export function firstInCrew(venueId){
-  return !Object.values(db.entries).some(e=>e.venueId===venueId && e.kind==='visit' && canSee(e) && sharedHere(e));
-}
 
 /* =========================================================
    PHOTOS
@@ -601,6 +597,32 @@ export function pagesWorld(){
   return { meId:db.meId, entries:Object.values(db.entries).filter(visibleAnywhere), photos:Object.values(db.photos).filter(visibleAnywhere),
            pages:db.pages||{}, crews:db.crews, venue, ratingsOf };
 }
+/* ---------- critters: who caught what, and your favourite ----------
+   One catch per person per critter (id: person | critter), never edited; the server refuses a
+   second one too. Catches are read by you and your crewmates. */
+export function catchesOf(userId){ return Object.values(db.catches||{}).filter(c=>c.userId===userId); }
+export function caughtIds(userId){ return new Set(catchesOf(userId || db.meId).map(c=>c.critterId)); }
+export function catchOf(userId, critterId){ return (db.catches||{})[userId+'|'+critterId] || null; }
+export function recordCatch(critterId, { lat, lng, accuracy, spot, venueId }){
+  const m=me(); if (!m) return null;
+  const id = m.id+'|'+critterId;
+  if (db.catches[id]) return null;                                  // already caught: never twice
+  // roughly where (to about 100 m), not your exact spot: your crewmates can read it
+  const r3 = x => typeof x==='number' ? Math.round(x*1000)/1000 : null;
+  const c = { id, userId:m.id, critterId, caughtAt:Date.now(), lat:r3(lat), lng:r3(lng), accuracy:accuracy==null?null:Math.round(accuracy),
+              spot:String(spot||'').slice(0,80), venueId: venueId && !isLocal(venueId) ? venueId : null };
+  db.catches[id] = c; save('catches');
+  if (!isLocal(m.id)) push('critter_catches', c, 'ins');
+  return c;
+}
+// your favourite: one you've caught, or none
+export function favouriteOf(userId){ const u = db.users[userId]; const f = u && u.favouriteCritterId; return f && catchOf(userId, f) ? f : null; }
+export function setFavourite(critterId){
+  const m=me(); if (!m) return;
+  if (critterId && !catchOf(m.id, critterId)) return;
+  updateMe({ favouriteCritterId: critterId || null });
+}
+
 /* ---------- ratings from people tagged on a visit (the logger's is on the visit itself) ----------
    One per person per visit (id: visit | person), so saving again, even offline, replaces it;
    the server keeps whichever change is newest. */
@@ -777,6 +799,8 @@ export async function setDemo(on){
   Object.keys(db.venues).forEach(k=>{ if (k.startsWith('demo-v') && !keep.has(k)) delete db.venues[k]; });
   Object.keys(db.entries).forEach(k=>{ if (k.startsWith('demo-')) delete db.entries[k]; });
   Object.keys(db.photos).forEach(k=>{ if (k.startsWith('demo-')) delete db.photos[k]; });
+  db.catches = db.catches||{};
+  Object.keys(db.catches).forEach(k=>{ if (k.startsWith('demo-')) delete db.catches[k]; });
   db.events = db.events||{};
   Object.keys(db.events).forEach(k=>{ if (k.startsWith('demo-')) delete db.events[k]; });
   Object.values(db.crews).forEach(c=>{ c.memberIds = c.memberIds.filter(id=>!id.startsWith('demo-')); });
@@ -784,6 +808,9 @@ export async function setDemo(on){
   db.flags.demo = !!on;
   if (on){
     DEMO.users.forEach(u=>{ db.users[u.id]={...u, createdAt:Date.now()}; });
+    // a few critters already found by the sample friends, and their favourites
+    const SAMPLE_CATCHES = { 'demo-maya':['flamingo','falcon'], 'demo-omar':['falcon'], 'demo-kabir':['street_cat','gecko'] };
+    Object.entries(SAMPLE_CATCHES).forEach(([uid, ids], k)=>{ if (!db.users[uid]) return; ids.forEach((cid, j)=>{ const id=uid+'|'+cid; db.catches[id]={ id, userId:uid, critterId:cid, caughtAt:Date.now()-(k*5+j+2)*864e5, lat:null, lng:null, accuracy:null, spot:'', venueId:null }; }); db.users[uid].favouriteCritterId = ids[0]; });
     DEMO.venues.forEach(([name, zone, cat], i)=>{
       const id = 'demo-v'+i;
       if (!db.venues[id] && !venues().some(v=>v.name===name)) db.venues[id] = { id, name, zone, categories:[cat], lat:null, lng:null, address:'', createdBy:null, createdAt:Date.now(), demo:true };

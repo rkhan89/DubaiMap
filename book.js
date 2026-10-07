@@ -13,6 +13,8 @@ import { $, icon, toast, openScreen, openSheet, back, closeAll, topbar, polaroid
 import { go, state } from './go.js';
 import * as RT from './ratings.js';
 import { ratersRowHTML, overallHTML, ratersSheet, rateSheet } from './rate.js';
+import { CRITTERS } from './critters.js';
+import { critterArt } from './critterui.js';
 
 // whose ratings a book shows: a crew's book, that crew's; your own books, everyone you can see
 function rateScope(b){ const c = b.kind==='crew' && S.myCrews().find(x=>x.id===b.crewId); return c ? { kind:'crew', crew:c, label:'Crew' } : { kind:'friends', label:'Friends' }; }
@@ -57,6 +59,7 @@ function shelf(){
       const members = crew ? S.crewMembers(crew) : [];
       el.innerHTML = topbar({title:'Scrapbook Shelf', eyebrow:'Every visit, a page', back:true, actions:`<button class="icon-btn" id="shNew" aria-label="Log a visit">${icon('add_a_photo')}</button>`}) + `<div class="screen-body">
         <div class="deck mt8">
+          ${critterSpine()}
           <div class="deck-head"><span class="ms" style="color:var(--gold-deep)">book_2</span><span class="eyebrow grow" style="color:var(--ink);font-size:13px">Vol. ${new Date().getFullYear()} Archival Deck</span>${topZ.length?`<span class="tag soft">${esc(topZ.join(' • '))}</span>`:''}</div>
           ${spineHTML(personal, { kind:'Personal scrapbook', kicon:'auto_stories', corner:'Keeper copy', hand: personal.byline || (topZ.length>1?`${topZ[1]} bites to ${topZ[0]} spice trails`:'Your city, one bite at a time'), meta:[`${icon('menu_book')}${plural(mine.length,'page')}`, photoN(mine)?`${icon('photo_library')}${plural(photoN(mine),'photo')}`:''] })}
           ${crewBook?spineHTML(crewBook, { kind:'Crew scrapbook', kicon:'groups', corner:'Shared trail', cornerCls:'green', hand: crew.tagline || `Shared spots across ${plural(members.length-1,'friend')}`, meta:[`${avatarStack(members,30,6)} ${members.length} members`, `${icon('menu_book')}${plural(crewPgs.length,'page')}`], foot:'Shared visits only, never Just me ones' }):''}
@@ -77,10 +80,18 @@ function shelf(){
       el.querySelector('#shNew').onclick=()=>addPhotos({});
       const first=el.querySelector('#shFirst'); if (first) first.onclick=()=>go.log();
       const nc=el.querySelector('#shNoCrew'); if (nc) nc.onclick=()=>go.crew();
+      const cs=el.querySelector('#shCritters'); if (cs) cs.onclick=()=>go.critters();
     };
     paint(); el._repaint=paint;
     const off=S.onChange(()=>{ if (el.isConnected) paint(); else off(); });
   });
+}
+// the critters: how many you've found, the ones you have peeking out
+function critterSpine(){
+  const have = S.caughtIds(), shown = CRITTERS.filter(c=>have.has(c.id)).slice(0,3);
+  return `<button class="critter-spine" id="shCritters"><span class="grow" style="min-width:0"><span class="bs-kind">${icon('pets')}Field guide</span><h3>Critters</h3>
+    <span class="hand">${have.size ? `${have.size} of ${CRITTERS.length} found around Dubai` : 'Animals living at real places in Dubai. Check in where they are.'}</span></span>
+    <span class="cs-art">${shown.length ? shown.map(c=>critterArt(c.id, 32)).join('') : critterArt('street_cat', 32, { silhouette:true })}</span></button>`;
 }
 function spineHTML(b, o){
   const cover = b.coverPhotoId && S.photo(b.coverPhotoId);
@@ -167,7 +178,7 @@ function pageEditor(b, pg, after){
       body.innerHTML = `<div class="sheet-head"><div class="grow"><h2 class="h-md">Dress up this page</h2><span class="hand">${esc(v?.name||'')} • ${esc(fmtDay(pg.date))}</span></div></div>
         <p class="muted small">Optional. Every page already looks finished.</p>
         <div class="row between mt16"><span class="eyebrow">Stickers</span><span class="mono muted small">${chosen.length} of 3</span></div>
-        ${earned.length ? `<div class="sticker-pick mt8">${earned.map(x=>`<button class="${chosen.includes(x.id)?'on':''}" data-st="${x.id}" aria-label="${esc(x.name)}">${stickerHTML(x, 46, {progress:false})}</button>`).join('')}</div>` : `<p class="muted small mt8">Log places to earn stickers, then stick them on your pages.</p>`}
+        ${earned.length ? `<div class="sticker-pick mt8">${earned.map(x=>`<button class="${chosen.includes(x.id)?'on':''}" data-st="${x.id}" aria-label="${esc(x.name)}">${stickerHTML(x, 46)}</button>`).join('')}</div>` : `<p class="muted small mt8">Log places to earn stickers, then stick them on your pages.</p>`}
         ${pg.photos.length ? `<div class="eyebrow mt20">Layout</div>
         ${seg('playout', [['scrapbook','Scrapbook','auto_awesome_mosaic'],['grid','Grid','grid_view'],['hero','Hero','photo_size_select_large']], cfg.layout).replace('class="seg"','class="seg mt8"')}` : ''}
         ${pg.photos.length>1 ? `<div class="eyebrow mt20">Photo order</div>
@@ -247,7 +258,7 @@ function pageHTML(b, pg){
   }).join('');
   return `<article class="page layout-${layout}" data-page-id="${esc(pg.id)}"><span class="bookmark"></span>
     ${e?`<button class="icon-btn page-edit" data-editpage="${esc(pg.id)}" aria-label="Dress up this page">${icon('auto_fix_high')}</button>`:''}
-    ${stickers.map((st,i)=>`<span class="page-sticker ps-${i}">${stickerHTML(st, 58, {progress:false})}</span>`).join('')}
+    ${stickers.map((st,i)=>`<span class="page-sticker ps-${i}">${stickerHTML(st, 58)}</span>`).join('')}
     <div class="page-date"><span class="cap">${esc(fmtDay(pg.date))}</span><div class="page-geo">${esc((z?z.label:APP.city).toUpperCase())}${z?` • ${z.lat.toFixed(4)}° N, ${z.lng.toFixed(4)}° E`:''}</div></div>
     <div class="pg-head">
       ${pg.photos.length ? '' : `<span class="pg-stamp">${postageHTML(cat, pg.date, 92)}</span>`}

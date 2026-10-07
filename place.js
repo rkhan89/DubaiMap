@@ -78,7 +78,7 @@ function placeScreen(venueId){
             ${withHTML(e, me)}
             ${taggedRatingsHTML(e, me)}
           </div>`;
-        }).join('') || `<div class="card-soft center"><span class="hand">Nobody in your crew has stamped this yet.</span><p class="muted small mt8">Be the first: +5 points for first in the crew.</p></div>`}</div>
+        }).join('') || `<div class="card-soft center"><span class="hand">Nobody in your crew has stamped this yet.</span><p class="muted small mt8">Be the first to log it.</p></div>`}</div>
         ${wanters.length?`<div class="card-soft row mt16">${icon('bookmark')}<div class="grow"><b>Wants to try</b><div class="muted small">${plural(wanters.length,'crew friend')}${(()=>{ const L={google_maps:'from Google Maps',tiktok:'from TikTok',instagram:'from Instagram',text:'from a name'}; const ls=[...new Set(sum.wants.map(e=>L[e.sourceType]).filter(Boolean))]; return ls.length?' ('+ls.join(', ')+')':''; })()} saved this spot</div></div>${avatarStack(wanters,34,3)}</div>`:''}
 ${S.events({venueId:v.id, upcoming:true}).length?`<div class="card mt16"><span class="h-sm">${icon('event')} Crew plans here</span><div class="stack mt8">${S.events({venueId:v.id, upcoming:true}).map(eventRowHTML).join('')}</div></div>`:''}
         <div class="btn-grid mt16"><button class="btn btn-soft" id="pCheck">${icon('where_to_vote')}Check in</button><button class="btn btn-soft" id="pPlan">${icon('event')}Plan a bite</button></div>
@@ -312,8 +312,6 @@ function logFlow(opts){
         toast('Log deleted', snap && !snap.photos.length ? 'Undo' : null, ()=>{ S.restoreEntry(snap); go.refresh(); });
       };
     };
-    // shared with the crew you're looking at? (for "first in the crew")
-    const hereToo=()=>{ const c=S.myCrew(); return !!(c && d.who && d.who.includes(c.id)); };
     // the "On Google Maps" list (places already on the map show above instead)
     const googleHTML = ()=>{
       if (!query.trim() || g.off) return '';
@@ -356,21 +354,12 @@ function logFlow(opts){
       if (d.who===null){ el.querySelector('#lWho').scrollIntoView({ block:'center', behavior:'smooth' }); return toast('Choose who it’s for'); }
       const btn=el.querySelector('#lSave'); btn.disabled=true;
       go.tourSaved && go.tourSaved();
-      const firstHere = !S.entries({venueId:venue.id, userId:me.id}).length;
-      const firstCrew = S.firstInCrew(venue.id) && hereToo() && d.kind==='visit';
       const data={ kind:d.kind, rating:d.kind==='visit'?d.rating:0, date:d.kind==='visit'?d.date:todayISO(), notes:d.notes.trim(), crewIds:d.who, meals:d.meals, taggedIds:d.kind==='visit' ? [...new Set([...d.tags, ...S.mentionIds(d.notes)])] : [] };
       let e;
       if (editing){ e=S.updateEntry(editing.id, data); }
       else e=S.addEntry({venueId:venue.id, ...data});
       if (newPhotos.length) await S.addPhotos(newPhotos.map(p=>({blob:p.blob, caption:p.caption.trim(), venueId:venue.id, entryId:e.id, date:e.date})));
       newPhotos.forEach(p=>URL.revokeObjectURL(p.url));
-      let parts=[];
-      if (!editing){
-        parts.push(firstHere?[10,'New place']:[4,'Repeat visit']);
-        if (firstCrew) parts.push([5,'First in the crew']);
-        if (newPhotos.length) parts.push([newPhotos.length*2,'Photos']);
-        S.addPoints(parts.reduce((s,p)=>s+p[0],0));
-      }
       closeAll();
       go.quietStrip && go.quietStrip();
       go.switchView('map'); go.refresh();
@@ -378,7 +367,7 @@ function logFlow(opts){
         const w=MAP.placeWorld(venue);
         MAP.markDropped(venue.id);
         MAP.flyToSeparate(w, S.venues().filter(x=>x.id!==venue.id).map(x=>MAP.placeWorld(x)).filter(p=>Math.hypot(p.x-w.x,p.y-w.y)<60));
-        // a new visit is taped into its book; then any sticker it earned (points count quietly)
+        // a new visit is taped into its book; then any sticker it earned
         if (!editing && e.kind==='visit') go.tapeIn(e, ()=>go.checkBadges && go.checkBadges());
         else { toast(editing ? 'Saved' : 'Saved to try'); setTimeout(()=>go.checkBadges && go.checkBadges(), 600); }
       }, 120);

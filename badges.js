@@ -1,9 +1,10 @@
-// Badge stickers: what they are, the sticker page, and the unlock moment.
-// Badges are derived from your visible logs (stats.js), so there's nothing extra to store
-// except which unlocks you've already seen (per person, on this device).
+// Stickers: milestones for what you've done (your first new place, ten visits, your first coffee).
+// Each one is simply earned or not: no progress bars, no counts. They're worked out from your own
+// visible logs (stats.js), so nothing is stored except which ones you've already seen (on this phone).
+// Stickers never come from a location: that's what critters are for.
 import * as S from './store.js';
 import { userStats } from './stats.js';
-import { esc, CATEGORIES, monthKey } from './data.js';
+import { esc, CATEGORIES, monthKey, fmtDate } from './data.js';
 import { icon, openScreen, topbar, back } from './ui.js';
 import { go } from './go.js';
 
@@ -40,9 +41,19 @@ function wholeCrew(s){
   return s.visitList.filter(e=>{ const there=new Set([e.userId, ...(e.taggedIds||[])]); return crews.some(c=>c.memberIds.every(id=>there.has(id))); }).length;
 }
 
+const earned = (b, s)=>{ const [have, need] = b.progress(s); return have >= need; };
 export function badgeStatus(userId){
   const s = userStats(userId);
-  return BADGES.map(b=>{ const [have, need] = b.progress(s); return { ...b, have:Math.min(have, need), need, done:have>=need }; });
+  return BADGES.map(b=>({ ...b, done:earned(b, s) }));
+}
+// which visit earned a sticker: the first moment it was true (found by halving the timeline)
+export function earnedBy(userId, b){
+  const times = [...new Set([...S.entries({userId}).map(e=>e.createdAt), ...S.photos({userId}).map(p=>p.createdAt)])].sort((x,y)=>x-y);
+  if (!times.length || !earned(b, userStats(userId, null, times[times.length-1]))) return null;
+  let lo = 0, hi = times.length-1;
+  while (lo < hi){ const mid = (lo+hi)>>1; if (earned(b, userStats(userId, null, times[mid]))) hi = mid; else lo = mid+1; }
+  const at = times[lo], visit = S.entries({userId, kind:'visit'}).filter(e=>e.createdAt<=at).sort((x,y)=>y.createdAt-x.createdAt)[0];
+  return visit ? { venue:S.venue(visit.venueId), date:visit.date } : null;
 }
 
 // the sticker itself: a die-cut round sticker with a white edge; locked ones are a dashed outline
@@ -51,32 +62,36 @@ export function stickerHTML(b, size, opts){
   const tilt = ((b.id.charCodeAt(0)+b.id.length*7)%9-4)*1.2;
   return `<span class="sticker${b.done?'':' locked'}${opts.cls?' '+opts.cls:''}" style="--s:${size}px;--c:${b.color};--t:${b.done?tilt:0}deg" title="${esc(b.name)}">
     <span class="st-disc">${icon(b.done?b.ic:'lock', '', b.done)}</span>
-    ${!b.done && b.need>1 && opts.progress!==false ? `<span class="st-prog"><i style="width:${Math.round(b.have/b.need*100)}%"></i></span>` : ''}
   </span>`;
 }
 
-/* ---------- sticker page ---------- */
+/* ---------- the sticker book ---------- */
 function stickerPage(userId){
   const me = S.me(); userId = userId || me.id;
   const u = S.user(userId), mine = userId===me.id;
+  let tab = 'all';
   openScreen(el=>{
-    const list = badgeStatus(userId), got = list.filter(b=>b.done).length;
-    el.innerHTML = topbar({title: mine ? 'Your stickers' : `${u.name||u.handle}'s stickers`, eyebrow:'Sticker book'}) + `<div class="screen-body">
-      <div class="sticker-sheet paper mt16"><span class="tape"></span>
-        <div class="row between"><div><span class="eyebrow">Collected</span><div class="h-lg">${got} of ${list.length}</div></div>
-          <span class="mono muted small">${mine?'Peel them all':'Their collection'}</span></div>
-        <div class="sticker-grid mt16">${list.map(b=>`<button class="sticker-cell" data-b="${b.id}">${stickerHTML(b, 72)}<b>${esc(b.name)}</b><small>${b.done?'Unlocked':`${b.have} / ${b.need}`}</small></button>`).join('')}</div>
-      </div>
-      <p class="center muted small mt16">Stickers come from your own logs. Private logs count for you, but friends only see what you share.</p>
-    </div>`;
-    el.querySelectorAll('[data-b]').forEach(c=>c.onclick=()=>{ const b=list.find(x=>x.id===c.dataset.b); showBadge(b, mine); });
+    const paint = ()=>{
+      const list = badgeStatus(userId).filter(x=>tab==='all' || (tab==='earned') === x.done);
+      el.innerHTML = topbar({title: mine ? 'Your stickers' : `${u.name||u.handle}'s stickers`, eyebrow:'Sticker book'}) + `<div class="screen-body">
+        <div class="sticker-intro mt8"><span class="eyebrow">Milestones</span><p>Little seals for things you've done around Dubai. No scores, nothing to compete for.</p></div>
+        <div class="seg mt16" data-seg="stab">${[['all','All'],['earned','Earned'],['todo','To find']].map(([v,l])=>`<button data-v="${v}" class="${tab===v?'on':''}">${l}</button>`).join('')}</div>
+        <div class="sticker-grid book mt16">${list.map(x=>{ const by = x.done ? earnedBy(userId, x) : null;
+          return `<button class="sticker-cell${x.done?' earned':''}" data-b="${x.id}">${stickerHTML(x, 72)}<b>${esc(x.name)}</b>
+            ${x.done ? `<small class="st-when">${by && by.venue ? esc(by.venue.name)+' · ' : ''}${by ? esc(fmtDate(by.date,{day:'numeric', month:'short'})) : 'Earned'}</small>` : `<small class="st-rule">${esc(x.desc)}</small>`}</button>`; }).join('')}</div>
+        <p class="center muted small mt16">Stickers come from your own logs. Private logs count for you, but friends only see what you share.</p>
+      </div>`;
+      el.querySelectorAll('[data-seg="stab"] [data-v]').forEach(x=>x.onclick=()=>{ tab = x.dataset.v; paint(); });
+      el.querySelectorAll('[data-b]').forEach(c=>c.onclick=()=>{ const x=badgeStatus(userId).find(y=>y.id===c.dataset.b); showBadge(x, x.done ? earnedBy(userId, x) : null); });
+    };
+    paint();
   });
 }
-function showBadge(b, mine){
+function showBadge(b, by){
   const wrap = document.createElement('div'); wrap.className = 'unlock';
-  wrap.innerHTML = `<div class="unlock-card paper">${stickerHTML(b, 132, {progress:false})}
+  wrap.innerHTML = `<div class="unlock-card paper">${stickerHTML(b, 132)}
     <h2 class="h-lg mt16">${esc(b.name)}</h2><p class="muted mt8">${esc(b.desc)}</p>
-    ${b.done ? '' : `<div class="cap-bar mt16" style="width:180px;margin-inline:auto"><i style="width:${Math.round(b.have/b.need*100)}%"></i></div><p class="mono small muted mt8">${b.have} of ${b.need}${mine?'':' (shared logs only)'}</p>`}
+    <p class="mono small mt8">${b.done ? (by && by.venue ? `Earned at ${esc(by.venue.name)}, ${esc(fmtDate(by.date))}` : 'Earned') : 'Not earned yet'}</p>
     <button class="btn btn-soft btn-block mt20">Close</button></div>`;
   document.body.appendChild(wrap);
   requestAnimationFrame(()=>wrap.classList.add('in'));
@@ -113,7 +128,7 @@ function peel(list){
   document.querySelectorAll('.sticker-peel').forEach(x=>x.remove());
   const b = list[0], el = document.createElement('button');
   el.className = 'sticker-peel'; el.type = 'button';
-  el.innerHTML = `${stickerHTML(b, 50, {progress:false, cls:'pop'})}<span class="sp-text"><span class="eyebrow">${list.length>1 ? list.length+' stickers unlocked' : 'Sticker unlocked'}</span><b>${esc(list.map(x=>x.name).join(', '))}</b><span class="sp-hint">Stick it on a page with the page’s ✦ button</span></span>`;
+  el.innerHTML = `${stickerHTML(b, 50, {cls:'pop'})}<span class="sp-text"><span class="eyebrow">${list.length>1 ? list.length+' stickers unlocked' : 'Sticker unlocked'}</span><b>${esc(list.map(x=>x.name).join(', '))}</b><span class="sp-hint">Stick it on a page with the page’s ✦ button</span></span>`;
   document.body.appendChild(el);
   requestAnimationFrame(()=>el.classList.add('in'));
   const hide = ()=>{ el.classList.remove('in'); setTimeout(()=>el.remove(), 300); };
@@ -124,7 +139,7 @@ function celebrate(b, done){
   const wrap = document.createElement('div'); wrap.className = 'unlock celebrate';
   const bits = Array.from({length:18}, (_,k)=>`<i style="--a:${k*20}deg;--d:${60+(k%4)*18}px;--c:${['#E5A93C','#E1699A','#3F7FD9','#5F8D4E','#fff'][k%5]}"></i>`).join('');
   wrap.innerHTML = `<div class="unlock-card paper"><span class="eyebrow" style="color:var(--rust)">New sticker</span>
-    <div class="peel">${bits}${stickerHTML(b, 140, {progress:false, cls:'pop'})}</div>
+    <div class="peel">${bits}${stickerHTML(b, 140, {cls:'pop'})}</div>
     <h2 class="h-lg mt8">${esc(b.name)}</h2><p class="muted mt8">${esc(b.desc)}</p>
     <div class="btn-grid mt20"><button class="btn btn-soft" data-x="book">See stickers</button><button class="btn btn-gold" data-x="ok">Nice!</button></div></div>`;
   document.body.appendChild(wrap);

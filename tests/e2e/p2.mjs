@@ -5,7 +5,6 @@ export default async function p2(h){
   await h.click('.app-header .profile-btn'); await h.sleep(700); await h.shot('p2-profile');
   await h.js(()=>{ const s=[...document.querySelectorAll('.screen')].pop(); s.scrollTop=700; }); await h.shot('p2-profile2');
   await go('stickers'); await h.sleep(600); await h.shot('p2-stickers'); await back();
-  await go('leaderboard'); await h.sleep(600); await h.shot('p2-board'); await back();
   await go('goals'); await h.sleep(600); await h.shot('p2-goals'); await back();
   await go('recap'); await h.sleep(1500); await h.shot('p2-recap'); await back();
   await go('settings'); await h.sleep(600); await h.shot('p2-settings');

@@ -51,7 +51,7 @@ filter sheet's Members section.
 **Nothing about crew activity is persistent on the map.** The bell shows a small dot when
 something new has happened since you last looked. Tapping it opens a short sheet of recent crew
 activity (newest first); tapping a row flies to that place and opens its card. Toasts only appear
-after something you did (for example the points toast after logging) and disappear on their own
+after something you did (for example the taped-in toast after logging) and disappear on their own
 after a few seconds.
 
 **Level of detail** (by zoom relative to the whole-city view):
@@ -128,7 +128,7 @@ designs are listed in the README and the review reports.
   Google. New people go through onboarding; someone signing in on a new phone goes straight in.
 - A private visit or photo is visible to its owner only; everything else is visible to the
   owner's crew. This is enforced by the database (row level security), not just the app. Crew
-  views, counts, the feed, the bell, the leaderboard and the crew book only include visible
+  views, counts, the feed, the bell and the crew book only include visible
   records. Photos are in a private bucket and are opened with short-lived signed links.
 - One crew per person, up to 15. Creating, joining (by code or invite link), leaving and removing
   members go through checked server functions; so do RSVPs and photo bookmarks.
@@ -165,7 +165,7 @@ Steps 2–4: Android share target and /share, TikTok captions, Inbox and offline
   *Add to want-to-try* saves it; *I've been here* goes to logging. Already saved → "Already
   saved" and the place opens. Already on the crew map → it says so and no second place is made.
 - **After adding**: a toast with *Undo* (5 s; also removes a place it just made) and *View on
-  map* (flies there and drops the pin). Saves from shares earn no points.
+  map* (flies there and drops the pin).
 - **Data**: `venues.google_place_id` (+ `places_fetched_at`); `entries.source_type`
   (google_maps, tiktok, instagram, text, manual). The shared **link** is kept in
   `entry_sources`, readable by its owner only — not on `entries`, which crewmates can read. The
@@ -192,7 +192,7 @@ Steps 2–4: Android share target and /share, TikTok captions, Inbox and offline
   visits there and their photos). Onboarding step 4 explains this instead of asking for a
   default; the Settings default is gone.
 - **What others see**: a crewmate sees your visit only if you shared it with a crew you're both
-  in right now. The crew screens (map, list, feed, leaderboard, crew book, plans) show the
+  in right now. The crew screens (map, list, feed, crew book, plans) show the
   active crew. Leaving a crew (or being removed) takes your posts out of it; anything shared
   only with that crew becomes just yours.
 - **Tagging**: *Who were you with?* on the log screen lists everyone in your crews; typing
@@ -317,15 +317,13 @@ Steps 2–4: Android share target and /share, TikTok captions, Inbox and offline
 
 **The open book is a feed**: newest first under month headings, six pages at a time as you scroll (no next-page buttons). By Place shows a chapter per place. Opening a page from anywhere scrolls to it and flashes it.
 
-**Taped in** (`tapein.js`): after saving a visit (or checking in), its page drops onto the cover of the book it went to (the crew's if shared there, else your own) and two strips of tape hold it; about a second, tap to skip, a fade with reduced motion. Then a toast, "Taped into Karak Crew Scrapbook and 1 more · Open page", then any sticker it earned. The points bar after logging is gone; points still count.
+**Taped in** (`tapein.js`): after saving a visit (or checking in), its page drops onto the cover of the book it went to (the crew's if shared there, else your own) and two strips of tape hold it; about a second, tap to skip, a fade with reduced motion. Then a toast, "Taped into Karak Crew Scrapbook and 1 more · Open page", then any sticker it earned. 
 
 **On the map** (`memories.js`): a strip above the bottom nav, left of the map buttons, opening the newest page for the view you're on (Me: your book; Crew: the crew's). On days you have one, it's an "On this day" card instead: your visits and ones you were tagged on, on this day of an earlier month or year (whole years first, the longest ago; then months; then ones with photos, the best rated). One a day, dismissible (on this phone). It's also an entry in the bell. In the app only.
 
-**Stickers**: 15 more (Full scrapbook: 8 visits in a month; Whole crew: a visit with everyone in your crew tagged; a "First …" for each kind of place). Stickers you'd already earned arrive quietly. A new one shows as a small card at the top; tap it for the full sticker.
+**Stickers**: milestones for what you've done, simply earned or not (no counts or bars); the sticker book says which visit earned each. A new one shows as a small card at the top; tap it for the full sticker.
 
-**Leaderboard**: your crew, this month: Most dessert runs, First to find (places new to the crew), Most tagged, Most check-ins, Most visits; a winner and runner-up each. Only visits shared with that crew count, so everyone sees the same board.
-
-**Crew challenges** (the goals screen): three a month per crew, picked from the crew and the month (so nothing is stored and everyone sees the same), e.g. "Try 4 new cafeterias"; progress counts the crew's shared visits, with who chipped in. Your own goals are below, as before.
+**Crew challenges** (the goals screen): three a month per crew, picked from the crew and the month, the same for everyone; each is done or not done. Your own goals sit below, also done or not done.
 
 **The monthly recap is a spread**: an open book, 1080 × 1350. Left page: the month, visits / new / places, top places, who was there. Right page: three photos taped in (or the places' stamps). For you, or your crew; save or share as an image.
 
@@ -348,3 +346,15 @@ A pin's ring is the colour of the most recent visitor in the view (or whoever sa
 ## The map, filled in
 
 Around 55 neighbourhoods from real lat/lng, each with its own character (old town low, tight, cream and coral with wind towers; busy mid-rise; villas with gaps, trees and pools; wide sheds), paved lots round the city, golf, lakes, farms, dune crests and deeper sea; the Metro Red and Green lines on pillars with their stations, the Marina tram; about 30 more landmarks; and small life (palms, parasols, abras, dhows, yachts, planes, cranes, flamingos, camels, ghaf; the smallest only close up). The board reaches south-west to Jebel Ali Port, Expo City, Dubai South and Al Maktoum airport. Districts that were already there generate exactly as before, except Deira, Bur Dubai, Karama and Satwa, rebuilt as finer neighbourhoods. Build time and frame rate: tests/e2e/mapperf.mjs.
+
+## Critters (no more points)
+
+Points, levels, the leaderboard and every counter toward a reward are gone (migration 0011 backs up `profiles.points` to `archive.profiles_points`, then drops it). Stickers stay as milestones; critters are the collectible.
+
+**Critters** are 12 pixel animals living at real places (`critters.js`: name, theme, area, fact; `critters/<id>.png`, 32 px art drawn only at whole multiples). You catch one by checking in while your phone is inside one of its spots (`config.js` CRITTER_SPOTS: lat, lng, radius, trigger; ALL PLACEHOLDERS until checked on the ground). Check-ins: "Check in where I am" on the + menu (anywhere, trigger `checkin`) or a place's Check in (also counts for `venue` spots). The location is asked once, on tap, never tracked. A catch needs the fix to be at least as good as half the spot's radius (50 m floor); a fuzzy fix gets the same "your location is fuzzy" message everywhere, so it never hints a critter is near. Once per critter per person (the phone checks, the database refuses a second).
+
+**No hints**: nothing on the map; uncaught critters are grey silhouettes and "? ? ?" in the collection (Shelf → Critters, and your profile).
+
+**Catch moment**: a takeover with the critter, its theme, where you found it and its fact (facts still marked needsVerification say "Fact being checked", or are hidden with APP.critters.hideUnverifiedFacts). Once per critter.
+
+**Favourite**: one caught critter or none (profiles.favourite_critter_id; the database refuses one you haven't caught). It shows at 32 px beside your face on your pins (crew view, close up; hidden in the wide shot) and at 64 px on your profile. Crewmates read each other's catches and favourites (critter_catches: you and your crews).

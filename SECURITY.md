@@ -15,13 +15,14 @@ Supabase with the user's session and is checked by row level security (RLS) in t
 | 4 | Medium | The link cache was shared by everyone; any user could call `share_cache_put` and plant a wrong answer for other people's links. | Cache entries are per person (`0006`). |
 | 5 | Medium | A plan's host could move it into a crew they're not in. | Update policy now requires a crew you're in (`0006`). |
 | 6 | Medium | No way to delete an account (UAE PDPL / GDPR right to erasure). | `delete_me()` (`0006`) + Settings → Delete my account. Shared things are handed over first (crews, crew books, places friends logged); photo files are removed through the storage API. |
-| 7 | Low | `?at=lat,lng` faked your location on the live site, so check-ins (and their points) could be faked. | Only works on localhost now. |
+| 7 | Low | `?at=lat,lng` faked your location on the live site, so check-ins (and now critters) could be faked. | Only works on localhost now. |
 | 8 | Low | Signing out left photos cached on the phone. | Cleared on sign-out unless uploads are still pending. |
 | 9 | Low | The server function answered errors with HTTP 200, and read the whole body before checking its size. | 500 with a generic message; size checked from `Content-Length` first. |
 | 10 | Low | Test-only dependency `puppeteer-core@23` pulled in `extract-zip` with 2 known high advisories (never deployed). | `puppeteer-core@25.12.0`; versions pinned exactly; `npm audit`: 0. |
 | 11 | Info | Google Places results were shown without the required Google Maps attribution. | "Place details from Google Maps" on the confirm sheet and results list. |
 | 12 | Info | New: scrapbook page extras (stickers, layout, notes) on shared pages, and tagging that shares a visit. | `0008_pages.sql`: `book_pages` has RLS on every action through `page_fits` (runs as the person asking, so it only finds books and visits they can already see; crew-book pages need the visit shared with that crew). Rows go when a visit is un-shared or someone leaves. `share_with_tagged` only adds crews the owner is in (insert check still applies). Checked in `tests/e2e/sqltest.mjs`. |
 | 13 | Info | New: ratings from people tagged on a visit. | `0009_visit_ratings.sql`: insert/update only your own row on a visit you're tagged on (`can_rate`); read through `rating_visible` (the rater, the logger, others tagged, or a crewmate sharing one of the visit's crews with both the logger and the rater). Newest write wins (trigger); untagging deletes the rating. Checked in `tests/e2e/sqltest.mjs`. |
+| 14 | Low | Critters are caught by a location check on the phone, so a modified client could claim a catch without being there. | Accepted at friend-tester stage: nothing is at stake (no points or rankings). The database allows one catch per person per critter, only in your own name, never edited; a favourite must be one you caught (trigger). Catch coordinates are rounded to about 100 m because crewmates can read them. `?at=` faking works on localhost only. |
 
 ## Checked and fine
 

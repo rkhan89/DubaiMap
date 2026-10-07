@@ -315,7 +315,7 @@ function confirmPlace(place, src, ctx){
       closeAll();
       doneWithInbox(ctx);
       if (been){ setTimeout(()=>go.log({ venueId:v.id, who:d.who, meals:d.meals }), 300); return; }
-      // a want-to-try from a share earns no points (logging the visit later does)
+      // a want-to-try from a share is just a save (logging the visit later makes the page)
       const e = S.addEntry({ venueId:v.id, kind:'want', crewIds:d.who, meals:d.meals, sourceType:src.sourceType, sourceUrl:src.sourceUrl });
       go.switchView('map'); go.refresh();
       const show = ()=>{ const w = MAP.placeWorld(v); MAP.markDropped(v.id); MAP.flyToSeparate(w, S.venues().filter(x=>x.id!==v.id).map(x=>MAP.placeWorld(x)).filter(p=>Math.hypot(p.x-w.x,p.y-w.y)<60)); };

@@ -27,6 +27,8 @@ import './errors.js';
 import './tapein.js';
 import { paintStrip, onThisDay, openMemory } from './memories.js';
 import './rate.js';
+import './critterui.js';
+import { favouriteBadge } from './critterui.js';
 import { colorOf } from './pincolor.js';
 
 const scopeKey = 'bites-scope';
@@ -77,7 +79,7 @@ function renderStamp(cl){
     rating: st==='crew' ? sum.rating : (sum.myRating||sum.rating),
     ring,
     // faces only in crew view (in Me view they're all yours)
-    head: owner && scope().mode==='crew' ? avatarHTML(owner, 18) : '',
+    head: owner && scope().mode==='crew' ? avatarHTML(owner, 18) + favouriteBadge(owner.id, 32) : '',
   });
 }
 function rebuild(){
@@ -412,10 +414,11 @@ function openPlus(){
   openSheet(body=>{
     body.innerHTML = `<div class="stack">
       <button class="person-row" data-plus="log">${icon('add_a_photo')}<span class="pr-main"><span class="pr-name">Log a place I've been</span><span class="pr-sub">Rate it, add photos, stamp it on your map</span></span>${icon('chevron_right')}</button>
+      <button class="person-row" data-plus="here">${icon('where_to_vote')}<span class="pr-main"><span class="pr-name">Check in where I am</span><span class="pr-sub">Anywhere in Dubai, even out in the desert. Uses your location once.</span></span>${icon('chevron_right')}</button>
       <button class="person-row" data-plus="link">${icon('add_link')}<span class="pr-main"><span class="pr-name">Add from link or text</span><span class="pr-sub">A Google Maps or TikTok link, a caption, or a name</span></span>${icon('chevron_right')}</button>
       ${S.inbox().length ? `<button class="person-row" data-plus="inbox">${icon('inbox')}<span class="pr-main"><span class="pr-name">Inbox</span><span class="pr-sub">${plural(S.inbox().length,'share')} waiting to be added</span></span><span class="tag">${S.inbox().length}</span></button>` : ''}
     </div>`;
-    body.querySelectorAll('[data-plus]').forEach(b=>b.onclick=()=>{ const k=b.dataset.plus; back(); setTimeout(()=> k==='log' ? go.log({}) : k==='inbox' ? go.inbox() : go.shareAdd(), 80); });
+    body.querySelectorAll('[data-plus]').forEach(b=>b.onclick=()=>{ const k=b.dataset.plus; back(); setTimeout(()=> k==='log' ? go.log({}) : k==='inbox' ? go.inbox() : k==='here' ? go.checkInHere() : go.shareAdd(), 80); });
   });
 }
 go.plus = openPlus;

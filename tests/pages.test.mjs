@@ -1,9 +1,9 @@
 // node --test tests/
 // Scrapbook pages: which book a visit is a page in, the old per-day settings, "on this day",
-// the crew leaderboard and challenges. (The server rules are checked in tests/e2e/sqltest.mjs.)
+// and crew challenges. (The server rules are checked in tests/e2e/sqltest.mjs.)
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { belongs, bookPages, legacyPageRows, onThisDay, withText, leaderboardCategories, crewChallenges, recapData, pageId } from '../pages.js';
+import { belongs, bookPages, legacyPageRows, onThisDay, withText, crewChallenges, recapData, pageId } from '../pages.js';
 
 const ME='me', KABIR='kabir', MAYA='maya', OMAR='omar';
 const crewA = { id:'A', memberIds:[ME, KABIR, MAYA] }, crewB = { id:'B', memberIds:[ME, OMAR] };
@@ -115,28 +115,13 @@ test('"with" text', ()=>{
   assert.equal(withText(['Kabir','Maya','Omar','Noor']), 'with Kabir, Maya and 2 more');
 });
 
-test('leaderboard: only visits shared with this crew, this month', ()=>{
-  const es = [
-    V('a', { userId:KABIR, venueId:'v2', crewIds:['A'], date:'2026-10-02', taggedIds:[MAYA] }),
-    V('b', { userId:KABIR, venueId:'v2', crewIds:['A'], date:'2026-10-03', checkin:true }),
-    V('c', { userId:MAYA, venueId:'v1', crewIds:['A'], date:'2026-10-04' }),
-    V('d', { userId:ME, venueId:'v2', crewIds:['B'], date:'2026-10-04' }),          // crew B: not counted
-    V('e', { userId:ME, venueId:'v2', private:true, date:'2026-10-04' }),           // just me: not counted
-    V('f', { userId:MAYA, venueId:'v3', crewIds:['A'], date:'2026-09-04' }),        // last month
-  ];
-  const cats = Object.fromEntries(leaderboardCategories(crewA, '2026-10', world(es)).map(c=>[c.id, c]));
-  assert.deepEqual(cats.dessert.winner, { userId:KABIR, n:2 }); assert.equal(cats.dessert.runnerUp, null);
-  assert.deepEqual(cats.first.winner, { userId:KABIR, n:1 }); assert.deepEqual(cats.first.runnerUp, { userId:MAYA, n:1 });
-  assert.deepEqual(cats.tagged.winner, { userId:MAYA, n:1 });
-  assert.deepEqual(cats.checkin.winner, { userId:KABIR, n:1 });
-  assert.deepEqual(cats.visits.winner, { userId:KABIR, n:2 });
-});
 test('challenges: three, the same for the whole crew, with shared progress', ()=>{
   const es = [V('a', { userId:KABIR, venueId:'v3', crewIds:['A'], date:'2026-10-02' }), V('b', { userId:MAYA, crewIds:['A'], date:'2026-10-03', meals:['breakfast'] })];
   const c1 = crewChallenges(crewA, '2026-10', world(es)), c2 = crewChallenges(crewA, '2026-10', world(es, { meId:KABIR }));
   assert.equal(c1.length, 3);
   assert.deepEqual(c1, c2);
-  assert.ok(c1.every(c=>c.have <= c.target && c.pct >= 0 && c.pct <= 1));
+  // done or not done, never a count
+  assert.ok(c1.every(c=>typeof c.done==='boolean' && !('have' in c) && !('target' in c) && !('pct' in c)));
   assert.notDeepEqual(crewChallenges(crewA, '2026-11', world(es)).map(c=>c.name), []);
 });
 test('recap for a crew: its shared visits; for you: yours and tagged', ()=>{

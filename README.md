@@ -23,8 +23,9 @@ Plain HTML/CSS/JS (ES modules), no build step. Live: https://dubai-bites-pi.verc
 | `theme.js` | Light / Dark / Auto: resolves to `data-theme` on `<html>`. |
 | `synth.js` | Development only: `?synthetic=500` adds test places in memory. |
 | `shows.js` | Burj Khalifa light-show schedule and clock (`?now=` to test); tests in `tests/` (`node --test tests/shows.test.mjs`). |
-| `stats.js`, `badges.js` | Points, levels and stickers, all derived from visible logs. |
-| `profile.js`, `social.js`, `recap.js` | Profile and Settings, leaderboard and goals, the monthly recap card. |
+| `stats.js`, `badges.js` | Counts from your visible logs, and stickers (milestones: earned or not). |
+| `profile.js`, `social.js`, `recap.js` | Profile and Settings, crew challenges and goals (done or not done), the monthly recap. |
+| `critters.js`, `catch.js`, `critterui.js`, `locate.js` | Critters: the content, the catching rule, the screens, and the location (asked only on a check-in). Spots: `config.js` (`CRITTER_SPOTS`). |
 | `events.js`, `notify.js` | Crew plans, check-ins, share links; reminders. |
 | `sw.js`, `manifest.webmanifest` | Installable app, offline copy, notification taps. |
 | `prefs.js` | Per-device preferences (map extras, reminders). |

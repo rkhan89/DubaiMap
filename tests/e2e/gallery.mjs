@@ -49,7 +49,7 @@ export default async function gallery(h){
   await step('new crew', async ()=>{ await go('crewSetup', {}); await h.sleep(600); await G('start-another-crew'); await back(); });
   await step('switch crew on map', async ()=>{ await h.js(()=>document.querySelector('#mapMode [data-v="crew"]').click()); await h.sleep(500); await G('map-switch-crew'); await back(); });
   await step('invite', async ()=>{ await go('inviteLanding', 'SAMPLE7'); await h.sleep(900); await G('invite-link'); await back(); });
-  await step('leaderboard', async ()=>{ await go('leaderboard'); await h.sleep(700); await G('leaderboard'); await back(); });
+  await step('critters', async ()=>{ await go('critters'); await h.sleep(700); await G('critters'); await back(); });
   await step('profile', async ()=>{ await go('profile', ids.me); await h.sleep(800); await G('profile'); await scrollTop(700); await G('profile-2'); await back(); });
   await step('friend', async ()=>{ await go('profile', ids.maya); await h.sleep(800); await G('friend-profile'); await back(); });
   await step('stickers', async ()=>{ await go('stickers', ids.me); await h.sleep(700); await G('stickers'); await back(); });

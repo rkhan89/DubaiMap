@@ -322,5 +322,38 @@ await as(R2, `select leave_crew($1)`, [rx.id]);
 await as(R1, `update entries set tagged_ids='{}' where id='re3'`);
 await db.exec('reset role');
 (await db.query(`select count(*)::int n from visit_ratings where entry_id='re3'`)).rows[0].n===0 ? ok('being untagged removes your rating from that visit') : bad('rating after untag');
+
+// ---- pin colour (0010) and critters (0011): points backed up then dropped; catches; favourites ----
+await db.exec('reset role');
+const sql10 = fs.readFileSync(new URL('../../supabase/migrations/0010_pin_color.sql', import.meta.url),'utf8');
+const sql11 = fs.readFileSync(new URL('../../supabase/migrations/0011_critters.sql', import.meta.url),'utf8');
+const K1='a0000000-0000-0000-0000-0000000000c1', K2='a0000000-0000-0000-0000-0000000000c2', K3='a0000000-0000-0000-0000-0000000000c3';
+await db.exec(`reset role; insert into auth.users values ('${K1}','k1@x'),('${K2}','k2@x'),('${K3}','k3@x');`);
+await db.exec(`update profiles set points=42 where id='${K1}'`);
+try{ await db.exec(sql10); await db.exec(sql11); await db.exec(sql11); ok('pin colour and critters migrations run (critters twice)'); } catch(e){ bad('critters migration: '+e.message); }
+await db.exec(`grant all on all tables in schema public to authenticated;`);
+(await db.query(`select count(*)::int n from information_schema.columns where table_name='profiles' and column_name='points'`)).rows[0].n===0 ? ok('profiles.points is gone') : bad('points column still there');
+(await db.query(`select points from archive.profiles_points where user_id='${K1}'`)).rows[0]?.points===42 ? ok('…after its values were backed up') : bad('points backup');
+{ let leaked=false; try{ const r=await as(K1, `select * from archive.profiles_points`); leaked = r.rows.length>0; }catch(_){ leaked=false; } !leaked ? ok('the backup is out of reach of the app') : bad('backup readable'); }
+const kx = (await as(K1, `select * from create_crew('Critter Crew','')`)).rows[0];
+await as(K2, `select join_crew($1)`, [kx.code]);
+const catchQ = (u, c)=>`insert into critter_catches(id,critter_id,lat,lng,accuracy_m,spot) values ('${u}|${c}','${c}',25.239,55.274,20,'Etihad Museum') on conflict (id) do nothing`;
+await as(K1, catchQ(K1,'falcon'));
+(await count(K1, `select * from critter_catches`))===1 ? ok('you catch a critter') : bad('catch');
+await as(K1, catchQ(K1,'falcon'));
+(await db.query(`select count(*)::int n from critter_catches where user_id='${K1}'`)).rows[0].n===1 ? ok('catching the same critter again adds nothing') : bad('duplicate catch');
+await expectErr('a second catch of the same critter with another id', K1, `insert into critter_catches(id,critter_id) values ('x','falcon')`);
+await expectErr('a catch in someone else’s name', K2, `insert into critter_catches(id,user_id,critter_id) values ('${K1}|gecko','${K1}','gecko')`);
+(await count(K2, `select * from critter_catches where user_id='${K1}'`))===1 ? ok('a crewmate sees your catches') : bad('crewmate catches');
+(await count(K3, `select * from critter_catches`))===0 ? ok('someone outside your crews sees none') : bad('outsider catches');
+(await as(K1, `update critter_catches set critter_id='gecko' where id='${K1}|falcon' returning id`)).rows.length===0 ? ok('a catch can’t be edited') : bad('catch edited');
+await expectErr('a favourite you haven’t caught', K1, `update profiles set favourite_critter_id='gecko' where id=auth.uid()`);
+await as(K1, `update profiles set favourite_critter_id='falcon' where id=auth.uid()`);
+(await as(K2, `select favourite_critter_id f from profiles where id='${K1}'`)).rows[0]?.f==='falcon' ? ok('your favourite is set, and a crewmate can read it') : bad('favourite');
+await as(K1, `update profiles set favourite_critter_id=null where id=auth.uid()`);
+(await as(K1, `select favourite_critter_id f from profiles where id=auth.uid()`)).rows[0].f===null ? ok('…and cleared') : bad('clear favourite');
+await as(K1, `update profiles set favourite_critter_id='falcon' where id=auth.uid()`);
+await as(K2, `update profiles set favourite_critter_id=null where id='${K1}'`);
+(await as(K1, `select favourite_critter_id f from profiles where id=auth.uid()`)).rows[0].f==='falcon' ? ok('a crewmate can’t change your favourite') : bad('favourite changed by someone else');
 console.log(process.exitCode ? '\nSOME CHECKS FAILED' : '\nall checks passed');
 

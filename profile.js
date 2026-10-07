@@ -3,9 +3,11 @@
 import { APP } from './config.js';
 import * as S from './store.js';
 import * as MAP from './map.js';
-import { userStats, levelFor, leaderboard, thisMonth, POINTS } from './stats.js';
+import { userStats, thisMonth } from './stats.js';
 import { badgeStatus, stickerHTML } from './badges.js';
-import { goalProgress, myLeads, crewChallengeList } from './social.js';
+import { goalProgress, crewChallengeList } from './social.js';
+import { CRITTERS, critterById } from './critters.js';
+import { critterArt } from './critterui.js';
 import { PIN_COLORS, colorOf } from './pincolor.js';
 import { CATEGORIES, catById, iconSvg, esc, plural, fmtDate, fmtMonth, fmtRating } from './data.js';
 import { avatarHTML } from './avatar.js';
@@ -25,12 +27,9 @@ function profileScreen(userId){
   openScreen(el=>{
     const paint = ()=>{
       const u = S.user(userId); if (!u) return;
-      const crew = S.myCrew(), all = userStats(userId), month = userStats(userId, thisMonth());
-      const lvl = levelFor(all.points);
-      const badges = badgeStatus(userId).sort((a,b)=>(b.done-a.done) || (b.have/b.need - a.have/a.need));
-      const got = badges.filter(b=>b.done).length;
-      const inCrew = !!(crew && crew.memberIds.includes(userId) && crew.memberIds.length > 1);
-      const leads = mine && inCrew ? myLeads() : [];
+      const crew = S.myCrew(), all = userStats(userId);
+      const badges = badgeStatus(userId).sort((a,b)=>b.done-a.done);
+      const fav = S.favouriteOf(userId), found = S.caughtIds(userId).size;
       const challenges = mine ? crewChallengeList() : [];
       const topCats = [...all.cats].sort((a,b)=>b[1]-a[1]).slice(0,4), maxCat = topCats[0]?.[1] || 1;
       const areaCounts = {}; all.visitList.forEach(e=>{ const v=S.venue(e.venueId); if (v) areaCounts[v.zone]=(areaCounts[v.zone]||0)+1; });
@@ -46,9 +45,7 @@ function profileScreen(userId){
               ${u.tagline ? `<div class="hand mt4">${esc(u.tagline)}</div>` : ''}</div>
             ${mine ? `<button class="icon-btn" id="prEdit" aria-label="Edit profile">${icon('edit')}</button>` : ''}
           </div>
-          <div class="level mt16"><div class="row between"><span class="tag">${icon('military_tech')}Level ${lvl.n} · ${esc(lvl.name)}</span><span class="mono small"><b>${all.points}</b> pts</span></div>
-            <div class="cap-bar mt8"><i style="width:${Math.round(lvl.progress*100)}%"></i></div>
-            <div class="mono muted small mt4">${lvl.to ? `${lvl.to-all.points} pts to level ${lvl.n+1}` : 'Top level reached'}</div></div>
+          <button class="fav-row mt16" id="prFav">${fav ? critterArt(fav, 64) : `<span class="fav-empty">${icon('pets')}</span>`}<span class="grow"><span class="eyebrow">Favourite critter</span><b>${fav ? esc(critterById(fav).name) : (mine ? 'Pick one' : 'None yet')}</b><span class="mono small muted">${found} of ${CRITTERS.length} found</span></span>${icon('chevron_right')}</button>
         </div>
         <div class="stat-grid mt16">
           <div class="stat"><b>${all.places}</b><span>places</span></div>
@@ -56,11 +53,10 @@ function profileScreen(userId){
           <div class="stat"><b>${all.areaCount}<small>/${MAP.ZONES.length}</small></b><span>areas</span></div>
           <div class="stat"><b>${all.photos}</b><span>photos</span></div>
         </div>
-        <button class="card mt16 block-btn" id="prStickers"><div class="row between"><span class="h-sm">Stickers</span><span class="mono muted small">${got} of ${badges.length} ${icon('chevron_right')}</span></div>
+        <button class="card mt16 block-btn" id="prStickers"><div class="row between"><span class="h-sm">Stickers</span><span class="mono muted small">${icon('chevron_right')}</span></div>
           <div class="sticker-strip mt12">${badges.slice(0,6).map(b=>stickerHTML(b, 52)).join('')}</div></button>
-        ${inCrew ? `<button class="card mt12 block-btn row" id="prBoard"><span class="rank-badge">${icon('emoji_events','',true)}</span><span class="grow"><b>${leads.length ? 'You lead '+esc(leads.map(c=>c.title.replace(/^Most /,'most ')).join(', ')) : esc(crew.name)+' leaderboard'}</b><span class="muted small" style="display:block">Dessert runs, first finds, most tagged • ${esc(fmtMonth(thisMonth()).split(' ')[0])}</span></span>${icon('chevron_right')}</button>` : ''}
-        ${mine ? `<button class="card mt12 block-btn" id="prGoals"><div class="row between"><span class="h-sm">${challenges.length ? 'Crew challenges' : esc(fmtMonth(thisMonth()))+' goals'}</span><span class="mono muted small">${challenges.length ? challenges.filter(g=>g.done).length+' of '+challenges.length : goals.filter(g=>g.done).length+' of '+goals.length} done ${icon('chevron_right')}</span></div>
-          <div class="goal-mini mt12">${(challenges.length ? challenges : goals).map(g=>`<div class="gm${g.done?' done':''}"><span class="ring" style="--p:${Math.round(g.pct*100)}"><span>${g.done?icon('check'):Math.round(g.pct*100)+'%'}</span></span><small>${esc(g.short||g.name)}</small></div>`).join('')}</div></button>
+        ${mine ? `<button class="card mt12 block-btn" id="prGoals"><div class="row between"><span class="h-sm">${challenges.length ? 'Crew challenges' : esc(fmtMonth(thisMonth()))+' goals'}</span><span class="mono muted small">${icon('chevron_right')}</span></div>
+          <div class="goal-mini mt12">${(challenges.length ? challenges : goals).map(g=>`<div class="gm${g.done?' done':''}"><span class="goal-tick${g.done?' done':''}">${icon(g.done?'check':'radio_button_unchecked','',g.done)}</span><small>${esc(g.short||g.name)}</small></div>`).join('')}</div></button>
         <button class="card mt12 block-btn row" id="prRecap">${icon('auto_awesome')}<span class="grow"><b>Your ${fmtMonth(thisMonth()).split(' ')[0]} spread</b><span class="muted small" style="display:block">Your month as a scrapbook spread, ready to share</span></span>${icon('chevron_right')}</button>` : ''}
         ${topCats.length ? `<div class="card mt12"><span class="h-sm">Favourite kinds</span>
           <div class="cat-bars mt12">${topCats.map(([c,n])=>{ const k=catById(c); return `<div class="cb"><span class="cb-ico">${iconSvg(c, k.color)}</span><span class="cb-name">${esc(k.label)}</span><span class="cb-bar"><i style="width:${Math.round(n/maxCat*100)}%;background:${k.color}"></i></span><b>${n}</b></div>`; }).join('')}</div>
@@ -68,13 +64,13 @@ function profileScreen(userId){
         ${recent.length ? `<div class="row between mt24"><span class="h-md">Recent stamps</span></div>
           <div class="stack mt12">${recent.map(e=>{ const v=S.venue(e.venueId), z=v&&MAP.zoneById(v.zone); return v ? `<button class="person-row" data-venue="${v.id}"><span class="pr-main"><span class="pr-name trunc">${esc(v.name)}</span><span class="pr-sub">${esc(z?z.label:'')} • ${fmtDate(e.date)}${e.private?' • only you':''}</span></span>${e.rating?ratingPill(e.rating):''}</button>` : ''; }).join('')}</div>`
           : `<div class="empty">${icon('restaurant')}<p class="muted">${mine?'Log your first place with the + button and it shows up here.':'Nothing shared yet.'}</p></div>`}
-        <p class="center muted small mt20">${mine ? 'Points: new place 10, repeat visit 4, first in the crew +5, each photo +2, check-in +3.' : 'Only what they share with the crew is counted here.'}</p>
+        ${mine ? '' : '<p class="center muted small mt20">Only what they share with the crew shows here.</p>'}
       </div>`;
       const on = (id, fn)=>{ const b=el.querySelector('#'+id); if (b) b.onclick=fn; };
       on('prSettings', ()=>settingsScreen());
       on('prEdit', ()=>go.editHandle());
       on('prStickers', ()=>go.stickers(userId));
-      on('prBoard', ()=>go.leaderboard());
+      on('prFav', ()=> mine ? (found ? go.favouritePicker() : go.critters()) : go.critters(userId));
       on('prGoals', ()=>go.goals());
       on('prRecap', ()=>go.recap());
       el.querySelectorAll('[data-venue]').forEach(r=>r.onclick=()=>go.place(r.dataset.venue));

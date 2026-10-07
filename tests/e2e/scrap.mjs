@@ -56,7 +56,7 @@ export default async function scrap(h){
     if (!/Taped into .*Vol/.test(t)) throw new Error('toast: '+t);
     // the toast offers the page, so the strip doesn't say it again
     if (!(await h.js(()=>document.querySelector('#memStrip').hidden))) throw new Error('strip shown next to the toast');
-    if (await h.js(()=>document.querySelector('#points').classList.contains('show'))) throw new Error('points bar shown');
+    if (await h.js(()=>!!document.querySelector('#points, .points-toast'))) throw new Error('points bar still in the page');
     await h.js(()=>[...document.querySelectorAll('#toast .toast-btn')].find(b=>/Open page/.test(b.textContent)).click()); await h.sleep(1200);
     const r = await h.js(()=>{ const f=document.querySelector('.page.flash'); if (!f) return null; const b=f.getBoundingClientRect(); return { text:f.innerText, top:b.top, plain:f.classList.contains('layout-plain'), stamp:!!f.querySelector('.postage') }; });
     if (!r) throw new Error('page not opened');
