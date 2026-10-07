@@ -1,4 +1,5 @@
-// Onboarding: welcome, sign-in, handle, avatar, share default, crew setup, import (frames 1-6, 8).
+// Onboarding: welcome, sign-in, handle, avatar (and pin colour), who sees what, what you'll collect
+// (pages, critters, stickers), crew setup, import (frames 1-6, 8).
 import { APP } from './config.js';
 import * as S from './store.js';
 import { CATEGORIES, catById, iconSvg, esc, plural } from './data.js';
@@ -6,8 +7,11 @@ import { SKINS, HAIR_COLORS, TOPS, HAIRS, OUTFITS, spriteSvg, DEFAULT_AVATAR, av
 import { $, icon, toast, openScreen, back, closeAll, topbar, polaroidHTML } from './ui.js';
 import { go, state } from './go.js';
 import { zoneById } from './map.js';
+import { PIN_COLORS, colorOf } from './pincolor.js';
+import { CRITTERS } from './critters.js';
+import { critterArt } from './critterui.js';
 
-const STEPS = 5;
+const STEPS = 6;
 function bars(n){ return `<span class="bars">${Array.from({length:STEPS},(_,i)=>`<i class="${i<n-1?'done':i===n-1?'on':''}"></i>`).join('')}</span>`; }
 let root=null;
 
@@ -29,7 +33,7 @@ function welcome(){
       <button class="btn btn-gold btn-block" id="wEmail">${icon('mail')}Continue with Email</button>
     </div>
     <div class="or-rule mt20">${icon('restaurant')}</div>
-    <p class="center muted mt12" style="font-size:15px">By continuing, you agree to our <button class="link" data-legal="terms">Terms</button> and <button class="link" data-legal="privacy">Privacy policy</button>. Your location is only used on your phone, to check you in.</p>
+    <p class="center muted mt12" style="font-size:15px">By continuing, you agree to our <button class="link" data-legal="terms">Terms</button> and <button class="link" data-legal="privacy">Privacy policy</button>. Your location is only used when you tap check in.</p>
     ${!S.cloud?`<p class="center mono mt16" style="font-size:11px;color:var(--outline)">PREVIEW • accounts stay on this phone for now</p>`:''}
   </div>`;
   $('#screens').prepend(root);   // always underneath the step screens
@@ -180,6 +184,7 @@ function avatarStep(opts){
   opts=opts||{};
   const me=S.me();
   const av = {...DEFAULT_AVATAR, ...(me.avatar&&me.avatar.pixel||{})};
+  let pin = colorOf(me.id);
   const pid = 100 + (parseInt((me.id||'').replace(/\D/g,'').slice(0,3)||'804',10)%900);
   openScreen(el=>{
     const paint=()=>{
@@ -203,7 +208,10 @@ function avatarStep(opts){
         ${robe?'':`<div class="row between mt24"><h3 class="h-sm" style="font-family:var(--f-body)">Garment Tint</h3><span class="mono muted" style="font-size:12px">${TOPS.length} tones</span></div>
         <div class="swatches round mt8" data-k="top">${TOPS.map(c=>`<button class="sw${av.top===c?' on':''}" style="background:${c}" data-v="${c}" aria-label="Top colour"></button>`).join('')}</div>`}
         <div class="card-peach mt24 row"><span style="background:var(--card);border-radius:12px;padding:6px;box-shadow:var(--shadow-sm)">${spriteSvg(av,3)}</span><div class="grow"><b class="h-sm">Map Badge Preview</b><div class="hand">"Ready for Old Dubai karak runs!"</div></div>${icon('push_pin')}</div>
-        <div class="note mt16">${icon('shield_lock')}<span>Your avatar is visible to your crew.</span></div>
+        <div class="row between mt24"><h3 class="h-md">Your pin colour</h3><span class="hand">Rings your pins</span></div>
+        <p class="muted small mt4">Your crew sees your pins in this colour, with your face on them up close.</p>
+        <div class="pin-swatches mt8">${PIN_COLORS.map(p=>`<button class="pin-sw${pin===p.c?' on':''}" data-pin="${p.c}" style="--c:${p.c}" aria-label="${p.n}" aria-pressed="${pin===p.c}"></button>`).join('')}</div>
+        <div class="note mt16">${icon('shield_lock')}<span>Your avatar and pin colour are visible to your crew.</span></div>
         <button class="btn btn-gold btn-block mt24" id="aGo">${opts.edit?'Save avatar':'Next: Crew Sharing'} ${icon(opts.edit?'check':'arrow_forward')}</button>
         <p class="center hand mt12">You can re-dress your pocket avatar anytime</p>
       </div>`;
@@ -211,8 +219,9 @@ function avatarStep(opts){
         const k=b.closest('[data-k]').dataset.k; av[k] = k==='skin' ? parseInt(b.dataset.v,10) : b.dataset.v;
         const st=el.scrollTop; paint(); el.scrollTop=st;
       }));
+      el.querySelectorAll('[data-pin]').forEach(b=>b.addEventListener('click', ()=>{ pin = b.dataset.pin; const st=el.scrollTop; paint(); el.scrollTop=st; }));
       el.querySelector('#aGo').onclick=()=>{
-        S.updateMe({avatar:{...(me.avatar||{}), pixel:{...av}}});
+        S.updateMe({avatar:{...(me.avatar||{}), pixel:{...av}}, ...(pin!==colorOf(me.id) || me.pinColor ? { pinColor:pin } : {})});
         go.paintMe && go.paintMe();
         if (opts.edit){ back(); toast('Looking sharp'); go.refresh(); } else shareStep();
       };
@@ -233,10 +242,30 @@ function shareStep(){
       <div class="card mt24" style="text-align:left">
         <div class="row" style="gap:12px;align-items:flex-start">${icon('groups')}<span><b>Up to ${APP.crewsPerPerson} crews</b>, with up to ${APP.crewMax} people in each.</span></div>
         <div class="row mt12" style="gap:12px;align-items:flex-start">${icon('lock')}<span>Each time you save a place, choose <b>Just me</b> or the crews that can see it.</span></div>
+        <div class="row mt12" style="gap:12px;align-items:flex-start">${icon('sell')}<span><b>Tag who you were with.</b> It shares the visit with a crew you're both in, and they can add their own rating.</span></div>
       </div>
-      <button class="btn btn-gold btn-block mt24" id="sGo">Continue to Crew Setup ${icon('arrow_forward')}</button>
+      <button class="btn btn-gold btn-block mt24" id="sGo">Next ${icon('arrow_forward')}</button>
     </div>`;
-    el.querySelector('#sGo').onclick=()=>go.crewSetup({onboarding:true});
+    el.querySelector('#sGo').onclick=collectStep;
+  });
+}
+
+/* ---------- 5. what you'll collect: pages, critters, stickers ---------- */
+function collectStep(){
+  openScreen(el=>{
+    const shown = critterArt(CRITTERS[0].id, 64, { silhouette:true });   // one shape, no name: a taste, not a clue
+    el.innerHTML = topbar({title:'Your scrapbook', center:true, profile:false, progress:[0,4]}) + `<div class="screen-body center">
+      <span class="step mt8" style="letter-spacing:.2em">STEP 5 OF ${STEPS}</span>
+      <h1 class="h-xl mt12">Three things you'll collect</h1>
+      <p class="muted mt8" style="font-size:16px">No points, no scores. Just memories.</p>
+      <div class="collect-list mt20" style="text-align:left">
+        <div class="collect-row"><span class="cl-art">${icon('auto_stories')}</span><span><b>Every visit becomes a page</b><span class="muted small">Log a place and it's taped into your scrapbook, and your crew's if you share it. Photos are optional.</span></span></div>
+        <div class="collect-row"><span class="cl-art critters">${shown}</span><span><b>Critters to find</b><span class="muted small">${CRITTERS.length} pixel animals live at real places around Dubai. Check in where one lives to catch it. There are no clues on the map: just get out and explore.</span></span></div>
+        <div class="collect-row"><span class="cl-art">${icon('verified')}</span><span><b>Stickers for milestones</b><span class="muted small">Your first new place, your first coffee, ten visits. Earned or not, nothing to compete for.</span></span></div>
+      </div>
+      <button class="btn btn-gold btn-block mt24" id="clGo">Continue to Crew Setup ${icon('arrow_forward')}</button>
+    </div>`;
+    el.querySelector('#clGo').onclick=()=>go.crewSetup({onboarding:true});
   });
 }
 

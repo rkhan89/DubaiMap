@@ -26,7 +26,7 @@ function crewSetup(opts){
       const me=S.me();
       const preview = { name: name.trim() || 'My Crew', code: made?.code || ((name.toUpperCase().replace(/[^A-Z]/g,'').slice(0,5)||'CREW')+'··') };
       el.innerHTML = topbar({title:'Crew Setup Invitation', center:true, profile:false, progress:opts.onboarding?[0,4]:null}) + `<div class="screen-body">
-        <div class="row between mt8">${opts.onboarding?`<span class="step">STEP 5 OF 5 • CREW</span>`:'<span></span>'}<span class="hand">Almost ready to feast! 🫖</span></div>
+        <div class="row between mt8">${opts.onboarding?`<span class="step">STEP 6 OF 6 • CREW</span>`:'<span></span>'}<span class="hand">Almost ready to feast! 🫖</span></div>
         <h1 class="h-xl mt12">Set up your food crew</h1>
         <p class="muted mt8" style="font-size:16px">Scrapbook hidden spice dens in Deira and secret beach shacks together in one living logbook.</p>
         <div class="mt20">${seg('ctab', [['create','Create Crew','group_add'],['join','Join Crew','key']], tab)}</div>

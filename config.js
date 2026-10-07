@@ -2,7 +2,7 @@
 // The logo files live in brand-kit/ exactly as supplied (see README, Branding).
 export const APP = {
   name: 'Koko',
-  version: '2026.10.07',   // shown in Settings and sent with feedback and error reports
+  version: '2026.10.07b',   // shown in Settings and sent with feedback and error reports
   tagline: 'We were here',
   brand: {
     wordmark: { light:'brand-kit/brand/koko-wordmark-brown.svg', dark:'brand-kit/brand/koko-wordmark-cream.svg' },

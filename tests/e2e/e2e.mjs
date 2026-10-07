@@ -12,6 +12,7 @@ export default async function e2e(h){
   await step('handle', async ()=>{ await typeIn('#hIn', 'tester_'+Math.floor(Math.random()*1e4)); await h.sleep(300); await h.shot('e-03-handle'); await tap('#hGo'); });
   await step('avatar', async ()=>{ await p.waitForSelector('#aGo', {visible:true}); await p.click('[data-k="skin"] button:nth-child(3)'); await h.sleep(200); await h.shot('e-04-avatar'); await tap('#aGo'); });
   await step('share default', async ()=>{ await h.shot('e-05-share'); await tap('#sGo'); });
+  await step('what you will collect: pages, critters, stickers', async ()=>{ const t=await h.js(()=>document.body.innerText); if (!/Critters to find/.test(t) || !/Stickers for milestones/.test(t) || !/STEP 5 OF 6/.test(t)) throw new Error('collect step'); await h.shot('e-05b-collect'); await tap('#clGo'); });
   await step('crew create', async ()=>{ await typeIn('#cName', 'Test Crew'); await h.shot('e-06-crew'); await tap('#cGo'); await h.sleep(600); });
   await step('lands on map (+coach)', async ()=>{ await h.sleep(1200); await h.shot('e-07-after-onboarding'); const t=await text(); if (!/me/i.test(t) || !/crew/i.test(t)) throw new Error('no map controls'); });
   await step('skip the guide', async ()=>{ for (let i=0;i<20 && !(await h.js(()=>!!document.querySelector('.tour [data-t="skip"]')));i++) await h.sleep(200); await h.js(()=>document.querySelector('.tour [data-t="skip"]').click()); await h.sleep(400); if (!(await h.js(()=>!!document.querySelector('#emptyMap')))) throw new Error('no empty-map card'); });

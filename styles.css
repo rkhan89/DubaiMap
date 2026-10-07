@@ -1261,3 +1261,12 @@ html.still .mem-strip.in{opacity:1;}
 .sticker-grid.book .sticker-cell b{color:var(--ink-on-light);}
 .st-when{font-family:var(--f-mono);font-weight:700;font-size:10.5px;color:#486636;text-align:center;}
 .st-rule{font-size:12px;color:#6b5c4c;text-align:center;line-height:1.3;}
+
+/* onboarding: what you'll collect */
+.collect-list{display:flex;flex-direction:column;gap:12px;}
+.collect-row{display:flex;align-items:center;gap:14px;padding:14px;border-radius:18px;background:#fff3e8;border:2px dashed #E8826F;color:var(--ink-on-light);}
+.collect-row b{display:block;font-family:var(--f-head);font-weight:900;font-size:17px;}
+.collect-row .muted{display:block;margin-top:2px;color:#6b5c4c;line-height:1.4;}
+.cl-art{flex:none;width:64px;height:64px;border-radius:14px;background:#ffe3c2;color:#7e5700;display:flex;align-items:center;justify-content:center;}
+.cl-art .ms{font-size:32px;}
+.cl-art.critters{background:#f6ebde;}

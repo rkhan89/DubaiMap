@@ -358,3 +358,7 @@ Points, levels, the leaderboard and every counter toward a reward are gone (migr
 **Catch moment**: a takeover with the critter, its theme, where you found it and its fact (facts still marked needsVerification say "Fact being checked", or are hidden with APP.critters.hideUnverifiedFacts). Once per critter.
 
 **Favourite**: one caught critter or none (profiles.favourite_critter_id; the database refuses one you haven't caught). It shows at 32 px beside your face on your pins (crew view, close up; hidden in the wide shot) and at 64 px on your profile. Crewmates read each other's catches and favourites (critter_catches: you and your crews).
+
+## Onboarding (current)
+
+Welcome → sign in (email code or Google) → 2 handle → 3 avatar and pin colour → 4 who sees each place (crews, Just me, tagging shares with a crew you're both in) → 5 three things you'll collect (pages, critters, stickers; no points) → 6 crew setup. The first-run guide then walks through pinning a first place and the map: Me/Crew (pin colours and faces), filters, the bell (tags to rate, On this day), crew invites, the Shelf, and finding critters with + → Check in where I am.

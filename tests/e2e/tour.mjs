@@ -10,7 +10,7 @@ export default async function tour(h){
   await step('sign up', async ()=>{
     await tap('#wEmail'); await typeIn('#eIn','new@example.test'); await tap('#eGo');
     await p.waitForSelector('.code-box input', {visible:true}); await p.click('.code-box input'); await p.keyboard.type('123456'); await tap('#vfyGo');
-    await typeIn('#hIn','newbie_'+Math.floor(Math.random()*1e4)); await tap('#hGo'); await tap('#aGo'); await tap('#sGo');
+    await typeIn('#hIn','newbie_'+Math.floor(Math.random()*1e4)); await tap('#hGo'); await tap('#aGo'); await tap('#sGo'); await tap('#clGo');
     await typeIn('#cName','First Crew'); await tap('#cGo'); await h.sleep(1500);
   });
   await step('map starts empty, no starter places', async ()=>{ const n=await h.js(async ()=>(await import('/store.js')).venues().length); if (n!==0) throw new Error(n+' venues'); });
@@ -24,7 +24,7 @@ export default async function tour(h){
   await step('photo', async ()=>{ const input=await p.$('#lPh'); await input.uploadFile(path.resolve('fixture.jpg')); await h.sleep(1200); await h.js(()=>document.querySelector('[data-t="next"]').click()); await waitBubble(/Who sees it/); await h.shot('t-08-share'); });
   await step('share', async ()=>{ await h.js(()=>{ const c=document.querySelector('[data-who]:not([data-who="me"])'); if (c) c.click(); }); await h.sleep(200); await h.js(()=>document.querySelector('[data-t="next"]').click()); await waitBubble(/Save it/); await h.shot('t-09-save'); });
   await step('save', async ()=>{ await h.js(()=>document.querySelector('#lSave').click()); await waitBubble(/Your first stamp/); await h.shot('t-10-stamp'); });
-  for (const [re, name] of [[/You, or your crew/,'mode'],[/Filters/,'filter'],[/Crew news/,'bell'],[/Bring your crew/,'crew'],[/Your photobook/,'shelf']]){
+  for (const [re, name] of [[/You, or your crew/,'mode'],[/Filters/,'filter'],[/Crew news/,'bell'],[/Bring your crew/,'crew'],[/Your scrapbook/,'shelf'],[/Find critters/,'critters']]){
     await step('next → '+name, async ()=>{ await h.js(()=>{ const u=document.querySelector('.unlock [data-x="ok"]'); if (u) u.click(); }); await h.sleep(300); await h.js(()=>document.querySelector('[data-t="next"]').click()); await waitBubble(re); await h.shot('t-11-'+name); });
   }
   await step('done, guide gone, place saved', async ()=>{
@@ -37,7 +37,7 @@ export default async function tour(h){
     await h.js(async ()=>{ localStorage.clear(); indexedDB.deleteDatabase('bites-photos'); }); await h.load();
     await tap('#wEmail'); await typeIn('#eIn','skip@example.test'); await tap('#eGo');
     await p.waitForSelector('.code-box input', {visible:true}); await p.click('.code-box input'); await p.keyboard.type('123456'); await tap('#vfyGo');
-    await typeIn('#hIn','skipper_'+Math.floor(Math.random()*1e4)); await tap('#hGo'); await tap('#aGo'); await tap('#sGo'); await tap('#cSolo'); await h.sleep(1500);
+    await typeIn('#hIn','skipper_'+Math.floor(Math.random()*1e4)); await tap('#hGo'); await tap('#aGo'); await tap('#sGo'); await tap('#clGo'); await tap('#cSolo'); await h.sleep(1500);
     await waitBubble(/map looks empty/i);
     await h.js(()=>document.querySelector('[data-t="skip"]').click()); await h.sleep(700);
     const r=await h.js(()=>({ tour:!!document.querySelector('.tour'), card:!!document.querySelector('#emptyMap') }));

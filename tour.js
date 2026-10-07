@@ -28,11 +28,12 @@ const STEPS = [
   { id:'share', target:'#lWho', title:'Who sees it?', body:'Pick Just me, or one of your crews to put it on their map. You choose every time.', next:true, ctx:()=>has('#lSave') },
   { id:'save', target:'#lSave', title:'Save it', body:'That’s it. Watch it land on your map.', ctx:()=>has('#lSave') || tourSaved, done:()=>tourSaved },
   { id:'stamp', target:'.stamp-anchor.dropped .stamp, .stamp-anchor.selected .stamp, .stamp-anchor .stamp', title:'Your first stamp', body:'Every place you log becomes a stamp. Tap one any time for its card, notes and photos.', next:true, wait:1500 },
-  { id:'mode', target:'#mapMode', title:'You, or your crew', body:'Me shows your own scrapbook, private places included. Crew shows everything your friends share.', next:true },
-  { id:'filter', target:'#btnFilter', title:'Filters', body:'Filter by friend or kind of place, or colour the areas you’ve explored.', next:true },
-  { id:'bell', target:'#btnBell', title:'Crew news', body:'A dot here means a friend logged somewhere new or planned a bite. The map itself stays clean.', next:true },
+  { id:'mode', target:'#mapMode', title:'You, or your crew', body:'Me shows your own places, private ones included. Crew shows what your friends share, each friend’s pins in their own colour, with their face up close.', next:true },
+  { id:'filter', target:'#btnFilter', title:'Filters', body:'Filter by friend, kind of place or meal, or colour the areas you’ve explored.', next:true },
+  { id:'bell', target:'#btnBell', title:'Crew news', body:'A dot here means a friend logged somewhere, planned a bite or tagged you (add your own rating). Memories from this day in past years show up here too.', next:true },
   { id:'crew', target:'#nav [data-tab="crew"]', title:'Bring your crew', body:'Invite friends with a link. Your map fills up fast when they log too.', next:true },
-  { id:'shelf', target:'#nav [data-tab="shelf"]', title:'Your scrapbook', body:'Every visit you log becomes a page, taped in automatically. Add stickers if you like.', next:true, last:true },
+  { id:'shelf', target:'#nav [data-tab="shelf"]', title:'Your scrapbook', body:'Every visit you log becomes a page, taped in automatically. Your critters and stickers live here too.', next:true },
+  { id:'critters', target:'#navLog', title:'Find critters', body:'Twelve pixel animals live at real places around Dubai. When you’re out, tap + then Check in where I am. No clues: just explore.', next:true, last:true },
 ];
 
 let tourSaved = false, root = null, raf = 0, idx = -1, since = 0, missingSince = 0, scrolledFor = -1;
