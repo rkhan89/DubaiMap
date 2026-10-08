@@ -665,6 +665,14 @@ function buildObjects(){
   { const before = new Uint8Array(reserved);
     LANDMARKS2.forEach(l=>{
       if (ART_KEYS.has(l.k)) return;
+      if (l.k==='royal'){
+        reserveAround(l.at[0], l.at[1], 1);
+        const g=aiToGrid(l.at[0], l.at[1]), d0=g.gx+g.gy+0.9, wall='#E6DBC6', base=(hx,hy,gx,gy,z0,h,k)=>{ const p=proj(g.gx+gx, g.gy+gy);
+          OBJECTS.push({k:'box', x:p.x, y:p.y, hx, hy, z0, h, st:'campus', d:d0+k*0.001, opts:{ left:shade(wall,0.9), right:shade(wall,0.72), top:'#9BC98A' }}); };
+        base(0.62, 0.42, 0, 0, 0, 6, 0);                                               // podium with its pools and gardens
+        [[0.62,0.2,0.1,0],[0.2,0.62,0,0.1],[0.6,0.2,-0.1,0],[0.2,0.6,0,-0.1],[0.56,0.2,0.08,0],[0.2,0.5,0,0.06]].forEach(([hx,hy,gx,gy],k)=>base(hx, hy, gx, gy, 6+k*6, 6, k+1));
+        return;
+      }
       const rad = ['dcc','mirdifcc','festival','dhmall','img','expo','cricket','autodrome','dragonmart','maktoum','miracle'].includes(l.k) ? 2 : 1;
       reserveAround(l.at[0], l.at[1], rad);
       const g=aiToGrid(l.at[0], l.at[1]), p=proj(g.gx,g.gy);
@@ -1486,7 +1494,7 @@ const reduceMotion = HAS_DOM && window.matchMedia && matchMedia('(prefers-reduce
 
 let wrap, canvas, ctx, stampsLayer, labelsLayer, fxLayer, meEl, fxEls = [];
 let opts = {};
-let dpr = HAS_DOM ? Math.min(window.devicePixelRatio||1, 2) : 1;
+let dpr = HAS_DOM ? Math.min(window.devicePixelRatio||1, 3) : 1;
 let cacheScale = 1, dataBuilt = false;
 let viewW = 0, viewH = 0, interacting = false, rafPending = false, built = false;
 let picking = false, needsCenter = true, lastW = 0;
@@ -1513,9 +1521,33 @@ function shownStore(){
 /* ---------- finished overviews are kept in the browser's cache (per app version and theme), so the
    next launch shows the whole city at once and the worker only renders close-ups ---------- */
 // bump ART_REV whenever mapraster.js draws anything differently, so nobody keeps old art
-const ART_REV = 6, ART_CACHE = 'koko-map-art', ART_VER = `${APP.version}-r${ART_REV}`;
+const ART_REV = 7, ART_CACHE = 'koko-map-art', ART_VER = `${APP.version}-r${ART_REV}`;
 const artURL = (th, s)=>`/__map-art/${ART_VER}/${th}/${s}.png`;
+// The finished overviews ship with the app (map-art/overview, made by tools/build-overviews.mjs), so a
+// phone never shows half-finished ones. Wide first (small), then mid. If they can't be had, the worker
+// renders overviews and sharpens them chunk by chunk, as before.
+function loadImage(src){ return new Promise((res, rej)=>{ const img = new Image(); img.onload = ()=>res(img); img.onerror = rej; img.src = src; }); }
+async function loadShipped(th){
+  if (!HAS_DOM) return false;
+  const st = rstore(th);
+  st.shippedPending = true;
+  setTimeout(()=>{ st.shippedPending = false; RS.lastWant = ''; rasterWant(); }, 2500);   // slow network: let the worker start anyway
+  try {
+    const lo = await loadImage(`map-art/overview/r${ART_REV}-${th}-lo.webp`);
+    if (!st.lo){ st.lo = newCanvas(lo.width, lo.height); st.lo.getContext('2d').drawImage(lo, 0, 0); }
+    st.shipped = true; st.saved = true; st.shippedPending = false;
+    if (!built && th === themeKey()) rasterReady();
+    requestRender();
+    const mid = await loadImage(`map-art/overview/r${ART_REV}-${th}-mid.webp`);
+    if (!st.mid){ st.mid = newCanvas(mid.width, mid.height); st.mid.getContext('2d').drawImage(mid, 0, 0); }
+    if (RS.grid) for (let y=0; y<RS.grid.rows; y++) for (let x=0; x<RS.grid.cols; x++) st.refined.add(x+','+y);
+    else st.allRefined = true;
+    RS.lastWant = ''; rasterWant(); requestRender();
+    return true;
+  } catch(e){ st.shipped = false; st.saved = false; st.shippedPending = false; RS.lastWant = ''; rasterWant(); return false; }
+}
 async function loadSaved(th){
+  if (await loadShipped(th)) return true;
   if (!HAS_DOM || !('caches' in window)) return false;
   try {
     const c = await caches.open(ART_CACHE);
@@ -1615,6 +1647,7 @@ function rasterMsg(m){
   }
   const st = rstore(m.theme), img = toImage(m);
   if (m.kind === 'overview'){
+    if (st.shipped){ if (img.close) img.close(); return; }   // the shipped overview is better than a quick one
     const cv = newCanvas(Math.ceil(WORLD.w*m.s), Math.ceil(WORLD.h*m.s)), c = cv.getContext('2d');
     c.drawImage(img, 0, 0);
     if (img.close) img.close();
@@ -1627,8 +1660,8 @@ function rasterMsg(m){
     st.asked.delete(key);
     if (m.fx) m.fx.forEach(f=>fxMaskPart(st, f));
     const old = st.chunks.get(key); if (old && old.img.close) old.img.close();
-    st.chunks.set(key, { img, cx:m.cx, cy:m.cy, used:0, water:m.waterBmp || (m.water ? waterCanvas(m.water) : null) });
-    if (!st.saved) refine(st, m.cx, m.cy, img);
+    st.chunks.set(key, { img, cx:m.cx, cy:m.cy, used:++RS.tick, water:m.waterBmp || (m.water ? waterCanvas(m.water) : null) });
+    if (!st.saved && !st.shipped) refine(st, m.cx, m.cy, img);
     st.refined.add(key);
     evict(st);
     saveWhenDone(st, m.theme);
@@ -1666,8 +1699,13 @@ function refine(st, cx, cy, img, only){
 }
 function evict(st){
   if (st.chunks.size <= RS.cap) return;
-  const list = [...st.chunks.entries()].sort((a,b)=>a[1].used-b[1].used);
-  for (let k=0; k<list.length - RS.cap; k++){ const [key, c] = list[k]; if (c.img.close) c.img.close(); if (c.water && c.water.close) c.water.close(); st.chunks.delete(key); }
+  // never what's on screen now (or on a snapshot)
+  const keep = new Set();
+  const k = cam.s*dpr/RS.S;
+  if (k >= CHUNK_K && viewW) chunksFor(k, Math.round(dpr*cam.x), Math.round(dpr*cam.y), viewW*dpr, viewH*dpr).forEach(([x,y])=>keep.add(x+','+y));
+  RS.snaps.forEach(sn=>{ if (sn.k >= CHUNK_K) chunksFor(sn.k, sn.ox, sn.oy, sn.w, sn.h).forEach(([x,y])=>keep.add(x+','+y)); });
+  const list = [...st.chunks.entries()].filter(([key])=>!keep.has(key)).sort((a,b)=>a[1].used-b[1].used);
+  for (let k=0; k<Math.min(list.length, st.chunks.size - RS.cap); k++){ const [key, c] = list[k]; if (c.img.close) c.img.close(); if (c.water && c.water.close) c.water.close(); st.chunks.delete(key); }
 }
 function rasterReady(){
   RS.firstMs = Math.round(performance.now() - RS.t0);
@@ -1716,7 +1754,7 @@ function rasterWant(){
   if (!RS.grid) return;
   const st = rstore(themeKey()), list = [], seen = new Set();
   const want = (cx, cy)=>{ const key = cx + ',' + cy; if (seen.has(key)) return; seen.add(key); if (!st.chunks.has(key)) list.push({ kind:'chunk', cx, cy }); };
-  if (!st.lo) list.push({ kind:'overview', s:0.5 });
+  if (!st.lo && st.shipped !== true && !st.shippedPending) list.push({ kind:'overview', s:0.5 });
   // 1. what's on screen (and on any snapshot), nearest the middle first
   const k = cam.s*dpr/RS.S, ox = dpr*cam.x, oy = dpr*cam.y, w = viewW*dpr, h = viewH*dpr;
   RS.snaps.forEach(sn=>{ if (!sn.target.isConnected){ RS.snaps.delete(sn); return; } if (sn.k >= CHUNK_K) chunksFor(sn.k, sn.ox, sn.oy, sn.w, sn.h).forEach(([x,y])=>want(x,y)); });
@@ -1727,7 +1765,7 @@ function rasterWant(){
     vis.sort((a,b)=>Math.hypot(a[0]+0.5-mx, a[1]+0.5-my) - Math.hypot(b[0]+0.5-mx, b[1]+0.5-my)).forEach(([x,y])=>want(x,y));
   }
   const missingOnScreen = list.filter(j=>j.kind==='chunk').length;
-  if (!st.mid) list.push({ kind:'overview', s:1 });
+  if (!st.mid && !st.shipped && !st.shippedPending) list.push({ kind:'overview', s:1 });
   // 2. a ring round the view, only as far as the chunk memory allows (so nothing is thrown out and asked for again)
   if (k >= CHUNK_K && viewW){
     let room = RS.cap - 8 - seen.size;
@@ -1789,7 +1827,7 @@ function resizeCanvas(){
   const r = wrap.getBoundingClientRect();
   if (!r.width || !r.height) return false;
   viewW = r.width; viewH = r.height;
-  dpr = Math.min(window.devicePixelRatio||1, 2);
+  dpr = Math.min(window.devicePixelRatio||1, 3);
   [canvas, carCanvas].forEach(cv=>{ cv.width = Math.round(viewW*dpr); cv.height = Math.round(viewH*dpr); cv.style.width = viewW+'px'; cv.style.height = viewH+'px'; });
   return true;
 }
@@ -2520,7 +2558,7 @@ function visible(){ return !!viewW; }
 // draw a small static view of the city around a point (place sheet header)
 function drawSnapshot(target, w, zoomMult){
   const W=target.clientWidth, H=target.clientHeight; if (!W||!H) return false;
-  const r=Math.min(window.devicePixelRatio||1,2);
+  const r=Math.min(window.devicePixelRatio||1,3);
   target.width=Math.round(W*r); target.height=Math.round(H*r);
   const s=baseFit*(zoomMult||5), k=s*r/RS.S;
   // drop any earlier snapshot of this same canvas, then keep this one fresh as pieces arrive

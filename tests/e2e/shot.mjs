@@ -18,7 +18,7 @@ const browser = await puppeteer.launch({
 });
 const page = await browser.newPage();
 const width = +W, height = width < 380 ? 780 : 844;
-await page.setViewport({ width, height, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+await page.setViewport({ width, height, deviceScaleFactor: Number(process.env.DPR || 2), isMobile: true, hasTouch: true });
 await page.emulateMediaFeatures([{ name:'prefers-color-scheme', value: THEME==='dark'?'dark':'light' }]);
 const errors = [];
 page.on('pageerror', e=>errors.push('pageerror: '+e.message));

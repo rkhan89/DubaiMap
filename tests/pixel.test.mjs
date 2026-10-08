@@ -54,3 +54,10 @@ test('a building straddling two chunks lines up across the seam', async ()=>{
   for (let y=0; y<R.CH; y++) for (const [x, part, px] of [[R.CH-1, left, R.CH-1], [R.CH, right, 0]])
     assert.equal(whole.data[y*R.CH*2 + x], part.data[y*R.CH + px], `row ${y}`);
 });
+
+test('the shipped map overviews match the current art revision (rebuild with tools/build-overviews.mjs)', async ()=>{
+  const fs = await import('fs');
+  const rev = Number((fs.readFileSync(new URL('../map.js', import.meta.url), 'utf8').match(/const ART_REV = (\d+)/) || [])[1]);
+  for (const t of ['day','night']) for (const s of ['lo','mid'])
+    assert.ok(fs.existsSync(new URL(`../map-art/overview/r${rev}-${t}-${s}.webp`, import.meta.url)), `missing r${rev}-${t}-${s}.webp`);
+});
