@@ -567,7 +567,7 @@ function reserveAround(a,i,rad){
 }
 
 // old landmark drawings now done by the art pack's sprites (landmarks.js)
-const ART_KEYS = new Set(['burj','baa','frame','motf','atlantis','jmosque','emtowers','wildwadi']);
+const ART_KEYS = new Set(['burj','baa','frame','motf','atlantis','jmosque','emtowers','wildwadi','gv','mall','moe','ibn','festival','dcc','mirdifcc','dhmall','dragonmart']);
 function landmarkPoint(l){ return l.at==='palm-crescent' ? ATLANTIS : l.plot==='lake' ? BURJ_LAKE.c : G(l.lat, l.lng); }
 function buildObjects(){
   // the art-pack landmarks: the point is the middle of the sprite's footprint (its anchor sits half the
@@ -583,12 +583,17 @@ function buildObjects(){
     return at;
   };
   ART_LANDMARKS.forEach(l=>{
-    const at = l.plot==='plaza' ? nearestLand(landmarkPoint(l), Math.max(1, l.clear||1)) : landmarkPoint(l);
-    if (l.clear) reserveAround(at[0], at[1], l.clear);
+    const at = (l.plot==='plaza' || l.plot==='parking') ? nearestLand(landmarkPoint(l), Math.max(1, l.clear||1)) : landmarkPoint(l);
+    // a mall clears its footprint plus a margin, and more on the two sides facing the camera (lower a, higher i),
+    // where anything standing would hide its low front
+    if (l.fp){ const ha = l.fp[0]/2000 + 0.12, hi = l.fp[1]/2000 + 0.12; forRect({ a:[at[0]-ha-0.35, at[0]+ha], i:[at[1]-hi, at[1]+hi+0.35] }, (r,c)=>{ reserved[r*COLS+c] = 1; }); }
+    else if (l.clear) reserveAround(at[0], at[1], l.clear);
     const g = aiToGrid(at[0], at[1]), p = proj(g.gx, g.gy), W = l.size[0];
     const dy = l.billboard ? 0 : W/8;
     OBJECTS.push({ k:'sprite', id:l.id, sprite:l.sprite, x:p.x, y:p.y + dy, px:p.x, py:p.y, w:l.size[0]/2, h:l.size[1]/2,
-      d:g.gx + g.gy + (l.billboard ? 0.9 : W/32 + 0.4), plot:l.plot, plotL:2*(l.clear||0)+1 });
+      d:g.gx + g.gy + (l.billboard ? 0.9 : W/32 + 0.4), plot:l.plot, plotL:2*(l.clear||0)+1,
+      // a car park: the building's footprint plus ~120 m round it, in tiles (hx along gx = inland, hy along gy = the coast)
+      plotHx: l.fp ? l.fp[1]/400 + 0.6 : 0, plotHy: l.fp ? l.fp[0]/400 + 0.6 : 0 });
   });
   // nothing tall in front of the lake, so the fountain's show is never hidden
   { const [ca, ci] = BURJ_LAKE.c, h = BURJ_LAKE.h + 0.5;
@@ -1520,7 +1525,7 @@ function shownStore(){
 /* ---------- finished overviews are kept in the browser's cache (per app version and theme), so the
    next launch shows the whole city at once and the worker only renders close-ups ---------- */
 // bump ART_REV whenever mapraster.js draws anything differently, so nobody keeps old art
-const ART_REV = 10, ART_CACHE = 'koko-map-art', ART_VER = `${APP.version}-r${ART_REV}`;
+const ART_REV = 13, ART_CACHE = 'koko-map-art', ART_VER = `${APP.version}-r${ART_REV}`;
 const artURL = (th, s)=>`/__map-art/${ART_VER}/${th}/${s}.png`;
 // The finished overviews ship with the app (map-art/overview, made by tools/build-overviews.mjs), so a
 // phone never shows half-finished ones. Wide first (small), then mid. If they can't be had, the worker
@@ -2200,31 +2205,7 @@ function placeLabels(lod, vis, k){
 /* ---------- landmark effects over the canvas (night glow, light shows) ----------
    Small SVGs pinned to world points and scaled with the camera; their colour is
    animated by CSS, so they cost nothing per frame beyond a transform. */
-function buildFx(){
-  buildGlobalVillageLights();
-}
-// Global Village at night: bulbs round the Ferris wheel, a glowing gate arch, string lights round the ground.
-// Same geometry as drawLandmark('gv'): world offsets from the landmark point.
-function buildGlobalVillageLights(){
-  const gv = LANDMARKS.find(l=>l.k==='gv'); if (!gv) return;
-  const w = aiToWorld(gv.at[0], gv.at[1]);
-  const at = (gx,gy)=>[(gx-gy)*TW/2, (gx+gy)*TH/2];
-  const cols = ['#ff5a7a','#ffd24a','#5ad1ff','#7dff8a','#c78bff','#ff9b4a'];
-  const [wx,wy] = at(-2.9,-0.6), Rw = 30, wcy = wy-Rw-6;
-  let bulbs = '';
-  for (let k=0;k<24;k++){ const t=k/24*Math.PI*2; bulbs += '<circle class="b b'+(k%3)+'" cx="'+(wx+Math.cos(t)*Rw*0.42).toFixed(1)+'" cy="'+(wcy+Math.sin(t)*Rw).toFixed(1)+'" r="1.6" fill="'+cols[k%cols.length]+'"/>'; }
-  let ring = '';
-  for (let k=0;k<40;k++){ const q=k/40*Math.PI*2, gx=Math.cos(q)*3.4, gy=Math.sin(q)*3.4; if (gx+gy < 0.6 || (gx+gy > 3.9 && Math.abs(gx-gy) < 2.2)) continue; const [px,py]=at(gx,gy); ring += '<circle class="s s'+(k%2)+'" cx="'+px.toFixed(1)+'" cy="'+py.toFixed(1)+'" r="1" fill="'+(k%2?'#ffe08a':'#ff9bd0')+'"/>'; }
-  const [gx0,gy0] = at(3.05,3.05), th = 19;
-  const arch = 'M'+(gx0-9)+' '+(gy0-th+5)+' A 9 12 0 0 1 '+(gx0+9)+' '+(gy0-th+5);
-  const el = document.createElement('div');
-  el.className = 'fx fx-gv';
-  el.innerHTML = '<svg viewBox="-60 -100 120 140" width="120" height="140" aria-hidden="true">'
-    + '<ellipse class="wheel" cx="'+wx.toFixed(1)+'" cy="'+wcy.toFixed(1)+'" rx="'+(Rw*0.42).toFixed(1)+'" ry="'+Rw+'"/>'
-    + bulbs + ring + '<path class="arch" d="'+arch+'"/></svg>';
-  el._w = { x:w.x-60, y:w.y-100 };
-  fxLayer.appendChild(el); fxEls.push(el);
-}
+function buildFx(){}
 // Burj Khalifa light show: a colour wash that runs up the tower, clipped to its silhouette
 // Burj Khalifa light show: a colour wash running up the tower, over its visible pixels only.
 // The Dubai Fountain plays with the blue shows (:00 and :30, 19:00 to 23:00), its last seconds the gold finale.

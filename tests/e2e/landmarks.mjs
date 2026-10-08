@@ -33,7 +33,7 @@ export default async function landmarks(h){
     const v = await h.js(async ()=>{ const L=await import('/landmarks.js'); return L.LANDMARKS.map(l=>L.landmarkCritter(l.id)); });
     if (v.some(x=>x)) throw new Error('a landmark critter is set');
   });
-  for (const id of ['museum_of_the_future','dubai_frame','al_fahidi','atlantis_the_palm','emirates_towers','jumeirah_mosque','burj_al_arab']){
+  for (const id of ['museum_of_the_future','dubai_frame','al_fahidi','atlantis_the_palm','emirates_towers','jumeirah_mosque','burj_al_arab','global_village','dubai_mall','mall_of_the_emirates','ibn_battuta','dragon_mart','wafi','city_centre_deira']){
     await go(id, 9); await h.shot('lm-' + id);
   }
 }

@@ -588,9 +588,15 @@ function drawSprite(buf, o, s){
 function drawPlazas(buf, s, list, groundMask){
   const stone = N('#E8DCC6'), joint = N('#D6C8AE'), kerbC = N('#BFAF92'), clip = { x0:buf.ox, y0:buf.oy, x1:buf.ox+buf.w, y1:buf.oy+buf.h };
   for (const k of list){
-    const o = M.OBJECTS[k]; if (o.k !== 'sprite' || o.plot !== 'plaza') continue;
+    const o = M.OBJECTS[k]; if (o.k !== 'sprite' || (o.plot !== 'plaza' && o.plot !== 'parking')) continue;
     const L = o.plotL, hw = 8*s*L, hh = 4*s*L, cx = o.px*s, cy = o.py*s;
     const ring = [cx, cy-hh, cx+hw, cy, cx, cy+hh, cx-hw, cy];
+    if (o.plot === 'parking'){
+      // an iso rectangle round the building's footprint
+      const ex = 8*s*o.plotHx, ey = 8*s*o.plotHy;
+      const rect = [cx-ex+ey, cy-ex/2-ey/2, cx+ex+ey, cy+ex/2-ey/2, cx+ex-ey, cy+ex/2+ey/2, cx-ex-ey, cy-ex/2+ey/2];
+      drawParking(buf, s, o, rect, cx, cy, ex, ey, groundMask, clip); continue;
+    }
     scanPolys([ring], (y, a, b)=>{
       for (let x=a; x<b; x++){
         if (groundMask && M.isWaterT(groundMask[(y-buf.oy)*buf.w + x-buf.ox]-1)) continue;   // never pave the water
@@ -612,6 +618,29 @@ function drawPlazas(buf, s, list, groundMask){
   }
 }
 const PEOPLE_SKIN = ['#F1C27D','#DDA46F','#B97A4C','#8D5A36'].map(rgba), PEOPLE_TOPS = ['#E86A5C','#3F7FD9','#F4F0E6','#2FA59A','#E5A93C','#1D1712','#8E5BD6'].map(rgba);
+const CAR_COLS = ['#F7F4EE','#F7F4EE','#C7CED6','#C7CED6','#34343C','#34343C','#8A8F96','#3F7FD9','#E5533D'].map(rgba);
+function drawParking(buf, s, o, ring, cx, cy, ex, ey, groundMask, clip){
+  const asph = N('#9A938B'), bay = N('#E9E4DA'), kerb = N('#C9C1B2');
+  scanPolys([ring], (y, a, b)=>{
+    for (let x=a; x<b; x++){
+      if (groundMask && M.isWaterT(groundMask[(y-buf.oy)*buf.w + x-buf.ox]-1)) continue;
+      const edge = x - a < 2 || b - x <= 2;
+      // rows of bays across one iso axis, a driving aisle between every pair of rows
+      const u = ((x + 2*y) % 24 + 24) % 24, v = ((x - 2*y) % 6 + 6) % 6;
+      buf.data[(y-buf.oy)*buf.w + x-buf.ox] = edge && s >= 1 ? kerb : (s >= 2 && v === 0 && u > 4) ? bay : asph;
+    }
+  }, clip);
+  if (s < 2) return;
+  // parked cars, mostly white, silver and black like a real car park, in the bay rows
+  const n = Math.round(o.plotHx*o.plotHy*3);
+  for (let p=0; p<n; p++){
+    const u = h32(o.px|0, p, 51)*2 - 1, v = h32(o.py|0, p, 52)*2 - 1;
+    const x = Math.round(cx + u*ex - v*ey), y = Math.round(cy + (u*ex + v*ey)/2), c = N2(CAR_COLS[Math.floor(h32(p, o.px|0, 53)*CAR_COLS.length)]);
+    if (groundMask){ const q = Math.min(buf.h-1, Math.max(0, y-buf.oy))*buf.w + Math.min(buf.w-1, Math.max(0, x-buf.ox)); if (M.isWaterT(groundMask[q]-1)) continue; }
+    for (let dx=0; dx<3; dx++){ buf.put(x+dx, y, c); buf.put(x+dx, y+1, scale(c, 0.78)); }
+    buf.put(x+1, y-1, scale(c, 1.12));
+  }
+}
 // which of an overlay sprite's pixels are still showing once everything in front is drawn
 export function fxMasks(buf, s=S){
   const out = [];

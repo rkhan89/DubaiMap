@@ -383,6 +383,11 @@ neighbourhoods, ~7,400 objects); only the drawing changed.
   would land in the water on this stylised coast moves to the nearest land. Each stands on its own plot (a paved
   plaza with a few people, the lake, its island) with the ground round it cleared. The other landmarks keep
   their procedural drawings, in the same pixel style.
+- **Drawn in the pack's style** (): the Jumeirah Beach Hotel, Wild Wadi, Global Village (at its
+  real venue size, ~650 m: pavilions round a square, the big wheel, the gate) and 34 malls at their OpenStreetMap
+  footprints, each on its own car park with the ground in front cleared (Dubai Mall's glass dome, Wafi's pyramids,
+  Ibn Battuta's domes, Dragon Mart's blue scales). A mall's card says where it is, plus one fact for the famous ones.
+  Left out: Expo Mall (closed); Galleria Al Barsha, Gate Avenue, Abu Hail Centre and LuLu Village (no reliable position).
 - **The Burj Lake** is bigger than life so the fountain fits: a square ~0.85 km a side about 1 km from the tower
   towards the real fountain, with nothing tall in front of it.
 - **Shows**: on the Burj light-show schedule (`shows.js`), a colour wash runs up the Burj's visible pixels; with

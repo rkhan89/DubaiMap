@@ -31,6 +31,62 @@ export const LANDMARKS = [
   { id:'al_fahidi', size:[72,64], name:'Al Fahidi Historical Neighbourhood', lat:25.26389, lng:55.30000, sprite:'al_fahidi_house', clear:1, plot:'plaza', plotR:1,
     fact:'Built by merchants in the 1890s, its houses are topped with wind towers (barjeel) that catch the breeze and send it down into the rooms.', venue:['Al Fahidi', 'Al Bastakiya', 'Arabian Tea House'] },
 ];
+
+// Global Village and the malls: drawn in the art pack's style by tools/draw-landmarks.mjs at their real
+// footprint (OpenStreetMap outlines, Oct 2026). fp = [metres along the coast, metres inland], h = wall height.
+// A mall stands on its own car park; its card says where it is (and one fact for the famous ones).
+// Left out: Expo Mall (closed); Galleria Al Barsha, Gate Avenue, Abu Hail Centre and LuLu Village (no reliable position).
+export const MALLS = [
+  ['dubai_mall','The Dubai Mall',25.19704,55.27895,[480,400],9,'atrium','One of the world’s largest malls, at the foot of the Burj Khalifa. It opened in 2008.'],
+  ['mall_of_the_emirates','Mall of the Emirates',25.11798,55.20038,[460,280],9,'skylight','Home to Ski Dubai, an indoor ski slope. It opened in 2005.'],
+  ['ibn_battuta','Ibn Battuta Mall',25.04458,55.12058,[1200,160],7,'domes','Its courts are themed on the lands the 14th-century traveller Ibn Battuta wrote about: China, India, Persia, Egypt, Tunisia and Andalusia.'],
+  ['dubai_festival_city','Dubai Festival City Mall',25.22187,55.35259,[300,220],8,'skylight'],
+  ['city_centre_deira','City Centre Deira',25.25222,55.33225,[300,260],8,'skylight'],
+  ['city_centre_mirdif','City Centre Mirdif',25.21602,55.40807,[280,380],8,'skylight'],
+  ['dubai_hills_mall','Dubai Hills Mall',25.10167,55.23993,[330,320],8,'skylight'],
+  ['dragon_mart','Dragon Mart',25.17375,55.41873,[160,900],6,'scales','A long trading hall for goods from China, shaped like a dragon, in International City.'],
+  ['al_ghurair_centre','Al Ghurair Centre',25.26820,55.31744,[220,180],9,'skylight','Opened in 1981, one of Dubai’s first shopping malls.'],
+  ['burjuman','BurJuman',25.25306,55.30194,[260,200],9,'skylight'],
+  ['wafi','Wafi Mall',25.22876,55.31923,[240,220],8,'pyramids','Built in an ancient-Egyptian style, with pyramids on top.'],
+  ['mercato','Mercato Shopping Mall',25.21636,55.25301,[150,150],7,'skylight'],
+  ['dubai_marina_mall','Dubai Marina Mall',25.07664,55.14022,[160,180],8,'skylight'],
+  ['arabian_centre','Arabian Center',25.23512,55.43601,[160,200],7,'skylight'],
+  ['dubai_outlet_mall','Dubai Outlet Mall',25.07141,55.40093,[300,400],6,'skylight'],
+  ['city_centre_meaisem','City Centre Me’aisem',25.04034,55.19694,[150,150],6,'skylight'],
+  ['cityland_mall','Cityland Mall',25.06652,55.30177,[320,320],7,'garden'],
+  ['galleria_al_wasl','The Galleria Al Wasl',25.20712,55.25448,[120,160],6,'skylight'],
+  ['times_square_center','Times Square Center',25.13954,55.22004,[160,160],7,'skylight'],
+  ['oasis_mall','Oasis Mall',25.16945,55.24178,[170,170],6,'skylight'],
+  ['first_avenue_mall','First Avenue Mall',25.04707,55.24327,[120,120],6,'skylight'],
+  ['century_mall','Century Mall',25.29095,55.34520,[120,120],6,'skylight'],
+  ['grand_city_mall','Grand City Mall',25.12861,55.23240,[80,80],6,'skylight'],
+  ['al_barsha_mall','Al Barsha Mall',25.09890,55.20457,[170,170],6,'skylight'],
+  ['circle_mall','Circle Mall',25.06571,55.21594,[140,200],7,'skylight'],
+  ['etihad_mall','Etihad Mall',25.23704,55.42131,[150,110],6,'skylight'],
+  ['al_mizhar_mall','Al Mizhar Mall',25.24601,55.45286,[80,100],5,'skylight'],
+  ['aswaaq_mall','Aswaaq Mall',25.19283,55.41009,[90,90],5,'skylight'],
+  ['reef_mall','Reef Mall',25.26940,55.32285,[160,130],7,'skylight'],
+  ['silicon_central','Silicon Central',25.11122,55.37478,[240,260],7,'skylight'],
+  ['city_centre_al_shindagha','City Centre Al Shindagha',25.26399,55.28712,[180,160],6,'skylight'],
+  ['nakheel_mall','Nakheel Mall',25.11398,55.13834,[220,220],8,'skylight'],
+  ['madina_mall','Madina Mall',25.28198,55.39812,[160,220],6,'skylight'],
+  ['al_khawaneej_walk','Al Khawaneej Walk',25.23341,55.47287,[220,150],4,'garden'],
+  ['the_springs_souk','The Springs Souk',25.06565,55.19285,[180,220],6,'skylight'],
+].map(([id, name, lat, lng, fp, h, roof, fact])=>({ id, name, lat, lng, fp, h, roof, fact, kind:'mall' }));
+// a mall's box in art pixels (2 per world unit; a 200 m tile is 16 units across): shared by the
+// sprite drawer and the map, so the sprite and its place on the map always agree
+export function mallBox(m){
+  const ex = Math.max(3, Math.round(16*m.fp[1]/400)), ey = Math.max(3, Math.round(16*m.fp[0]/400)), h = m.h*2;
+  const extra = m.roof==='atrium' ? 12 : m.roof==='pyramids' ? 14 : m.roof==='domes' ? 8 : 4;
+  return { ex, ey, h, w:2*(ex+ey)+3, hgt:(ex+ey)+h+extra+3, extra };
+}
+MALLS.forEach(m=>{
+  const b = mallBox(m);
+  LANDMARKS.push({ id:m.id, name:m.name, lat:m.lat, lng:m.lng, sprite:'mall_'+m.id, size:[b.w, b.hgt], clear:Math.max(1, Math.round(Math.max(b.ex, b.ey)/16)),
+    plot:'parking', kind:'mall', fp:m.fp, fact:m.fact || '', venue:[m.name] });
+});
+LANDMARKS.push({ id:'global_village', name:'Global Village', lat:25.06815, lng:55.30731, sprite:'global_village', size:[108,96], clear:2, plot:'none', kind:'park',
+  fact:'A seasonal festival park of country pavilions, rides and food, open each winter from October to spring. It first opened in 1996.', venue:['Global Village'] });
 export const landmarkById = id=>LANDMARKS.find(l=>l.id===id);
 
 // The landmark critters (one per landmark, art to come). Until they're confirmed this returns
