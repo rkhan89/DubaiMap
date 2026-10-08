@@ -668,7 +668,7 @@ function buildObjects(){
       if (l.k==='royal'){
         reserveAround(l.at[0], l.at[1], 1);
         const g=aiToGrid(l.at[0], l.at[1]), d0=g.gx+g.gy+0.9, wall='#E6DBC6', base=(hx,hy,gx,gy,z0,h,k)=>{ const p=proj(g.gx+gx, g.gy+gy);
-          OBJECTS.push({k:'box', x:p.x, y:p.y, hx, hy, z0, h, st:'campus', d:d0+k*0.001, opts:{ left:shade(wall,0.9), right:shade(wall,0.72), top:'#9BC98A' }}); };
+          OBJECTS.push({k:'box', keep:true, x:p.x, y:p.y, hx, hy, z0, h, st:'campus', d:d0+k*0.001, opts:{ left:shade(wall,0.9), right:shade(wall,0.72), top:'#9BC98A' }}); };
         base(0.62, 0.42, 0, 0, 0, 6, 0);                                               // podium with its pools and gardens
         [[0.62,0.2,0.1,0],[0.2,0.62,0,0.1],[0.6,0.2,-0.1,0],[0.2,0.6,0,-0.1],[0.56,0.2,0.08,0],[0.2,0.5,0,0.06]].forEach(([hx,hy,gx,gy],k)=>base(hx, hy, gx, gy, 6+k*6, 6, k+1));
         return;
@@ -679,7 +679,7 @@ function buildObjects(){
       OBJECTS.push({k:'lm2', lm:l.k, x:p.x, y:p.y, d:g.gx+g.gy+0.9});
     });
     const tileOf = o=>{ const ai=worldToAI(o.x,o.y), g=aiToGrid(ai.a,ai.i), c=Math.floor(g.gx), r=Math.floor(g.gy); return (r>=0&&c>=0&&r<ROWS&&c<COLS) ? r*COLS+c : -1; };
-    for (let k=OBJECTS.length-1;k>=0;k--){ const o=OBJECTS[k]; if (o.k!=='box' && o.k!=='tree') continue; const t=tileOf(o); if (t>=0 && reserved[t] && !before[t]) OBJECTS.splice(k,1); }
+    for (let k=OBJECTS.length-1;k>=0;k--){ const o=OBJECTS[k]; if ((o.k!=='box' && o.k!=='tree') || o.keep) continue; const t=tileOf(o); if (t>=0 && reserved[t] && !before[t]) OBJECTS.splice(k,1); }
   }
   // everything below uses its own random streams, so the districts above come out exactly as before
   const occ = new Uint8Array(ROWS*COLS);
@@ -1521,7 +1521,7 @@ function shownStore(){
 /* ---------- finished overviews are kept in the browser's cache (per app version and theme), so the
    next launch shows the whole city at once and the worker only renders close-ups ---------- */
 // bump ART_REV whenever mapraster.js draws anything differently, so nobody keeps old art
-const ART_REV = 7, ART_CACHE = 'koko-map-art', ART_VER = `${APP.version}-r${ART_REV}`;
+const ART_REV = 8, ART_CACHE = 'koko-map-art', ART_VER = `${APP.version}-r${ART_REV}`;
 const artURL = (th, s)=>`/__map-art/${ART_VER}/${th}/${s}.png`;
 // The finished overviews ship with the app (map-art/overview, made by tools/build-overviews.mjs), so a
 // phone never shows half-finished ones. Wide first (small), then mid. If they can't be had, the worker
