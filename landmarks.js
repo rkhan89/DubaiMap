@@ -1,4 +1,5 @@
-// The landmarks drawn from the art pack (map-art/*.png): where they stand, the plot they stand on,
+// The landmarks drawn from the art pack (map-art/*.png; the Jumeirah Beach Hotel and Wild Wadi are
+// drawn in its style by tools/draw-landmarks.mjs): where they stand, the plot they stand on,
 // the card you see when you tap one, and the place in the app it links to.
 // Pure data, so the map's Web Worker can read it too. Coordinates checked against Wikipedia (Oct 2026).
 //   sprite: map-art/<sprite>.png, native pixels, anchor = bottom centre of the ground footprint
@@ -23,6 +24,10 @@ export const LANDMARKS = [
     fact:'One of the few mosques in Dubai that welcomes non-Muslim visitors, with guided tours.', venue:['Jumeirah Mosque'] },
   { id:'atlantis_the_palm', size:[132,112], name:'Atlantis The Palm', at:'palm-crescent', sprite:'atlantis_the_palm', clear:2, plot:'none',
     fact:'It sits at the top of the Palm Jumeirah’s crescent. It opened in September 2008.', venue:['Atlantis The Palm', 'Atlantis'] },
+  { id:'jumeirah_beach_hotel', size:[96,70], name:'Jumeirah Beach Hotel', lat:25.141633, lng:55.190549, sprite:'jumeirah_beach_hotel', clear:1, plot:'none', billboard:true,
+    fact:'Shaped like a breaking wave: 26 floors, 93 m tall, opened in December 1997 beside the Burj Al Arab.', venue:['Jumeirah Beach Hotel'] },
+  { id:'wild_wadi', size:[92,78], name:'Wild Wadi Water Park', lat:25.139444, lng:55.189167, sprite:'wild_wadi', clear:1, plot:'none',
+    fact:'Opened in February 1998, with 17 water slides and the largest wave pool in the Middle East.', venue:['Wild Wadi', 'Wild Wadi Water Park'] },
   { id:'al_fahidi', size:[72,64], name:'Al Fahidi Historical Neighbourhood', lat:25.26389, lng:55.30000, sprite:'al_fahidi_house', clear:1, plot:'plaza', plotR:1,
     fact:'Built by merchants in the 1890s, its houses are topped with wind towers (barjeel) that catch the breeze and send it down into the rooms.', venue:['Al Fahidi', 'Al Bastakiya', 'Arabian Tea House'] },
 ];

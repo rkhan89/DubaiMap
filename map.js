@@ -567,7 +567,7 @@ function reserveAround(a,i,rad){
 }
 
 // old landmark drawings now done by the art pack's sprites (landmarks.js)
-const ART_KEYS = new Set(['burj','baa','frame','motf','atlantis','jmosque','emtowers']);
+const ART_KEYS = new Set(['burj','baa','frame','motf','atlantis','jmosque','emtowers','wildwadi']);
 function landmarkPoint(l){ return l.at==='palm-crescent' ? ATLANTIS : l.plot==='lake' ? BURJ_LAKE.c : G(l.lat, l.lng); }
 function buildObjects(){
   // the art-pack landmarks: the point is the middle of the sprite's footprint (its anchor sits half the
@@ -1209,9 +1209,8 @@ function drawLandmark2(ctx, o){
       ctx.fillStyle=C('#B9D9E8'); ctx.beginPath(); ctx.moveTo(x+6,y-8); ctx.lineTo(x+14,y-14); ctx.lineTo(x+11,y-2); ctx.closePath(); ctx.fill(); ctx.stroke(); break;
     case 'cocacola':   // Coca-Cola Arena: a box with a red stripe
       isoBox(ctx,x,y,0.9,0.8,0,10,'#E5E2DC',{floors:5}); isoBox(ctx,x,y,0.92,0.82,10,1.6,'#D9443A'); break;
-    case 'madinat':    // Madinat Jumeirah: sand-coloured, with wind towers; the Jumeirah Beach Hotel's wave beside it
+    case 'madinat':    // Madinat Jumeirah: sand-coloured, with wind towers
       [[0,0],[0.6,0.3],[-0.5,0.4]].forEach(([gx,gy])=>{ const [px,py]=at2(x,y,gx,gy); isoBox(ctx,px,py,0.35,0.3,0,7,'#E3C496'); isoBox(ctx,px,py,0.08,0.08,7,5,'#E9D2A8'); });
-      { const [wx,wy]=at2(x,y,1.2,-0.9); ctx.fillStyle=C('#8FC3DB'); ctx.beginPath(); ctx.moveTo(wx-8,wy); ctx.quadraticCurveTo(wx-6,wy-30,wx+8,wy-34); ctx.lineTo(wx+8,wy); ctx.closePath(); ctx.fill(); ctx.stroke(); }
       break;
     case 'wildwadi':   // Wild Wadi: twisty slides
       isoBox(ctx,x,y,0.6,0.5,0,4,'#7FD0D8',{top:'#9FE3E8'});
@@ -1521,7 +1520,7 @@ function shownStore(){
 /* ---------- finished overviews are kept in the browser's cache (per app version and theme), so the
    next launch shows the whole city at once and the worker only renders close-ups ---------- */
 // bump ART_REV whenever mapraster.js draws anything differently, so nobody keeps old art
-const ART_REV = 9, ART_CACHE = 'koko-map-art', ART_VER = `${APP.version}-r${ART_REV}`;
+const ART_REV = 10, ART_CACHE = 'koko-map-art', ART_VER = `${APP.version}-r${ART_REV}`;
 const artURL = (th, s)=>`/__map-art/${ART_VER}/${th}/${s}.png`;
 // The finished overviews ship with the app (map-art/overview, made by tools/build-overviews.mjs), so a
 // phone never shows half-finished ones. Wide first (small), then mid. If they can't be had, the worker
