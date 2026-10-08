@@ -354,6 +354,26 @@ A pin's ring is the colour of the most recent visitor in the view (or whoever sa
 
 Around 55 neighbourhoods from real lat/lng, each with its own character (old town low, tight, cream and coral with wind towers; busy mid-rise; villas with gaps, trees and pools; wide sheds), paved lots round the city, golf, lakes, farms, dune crests and deeper sea; the Metro Red and Green lines on pillars with their stations, the Marina tram; about 30 more landmarks; and small life (palms, parasols, abras, dhows, yachts, planes, cranes, flamingos, camels, ghaf; the smallest only close up). The board reaches south-west to Jebel Ali Port, Expo City, Dubai South and Al Maktoum airport. Districts that were already there generate exactly as before, except Deira, Bur Dubai, Karama and Satwa, rebuilt as finer neighbourhoods. Build time and frame rate: tests/e2e/mapperf.mjs.
 
+## The map as pixel art
+
+The city is drawn as pixel art in the chunky isometric style of the art pack: one pixel size everywhere,
+2 art pixels per map unit (a 200 m tile is a 32x16 diamond). Same data as before (terrain, roads,
+neighbourhoods, ~7,400 objects); only the drawing changed.
+- **Renderer** (`pixel.js`, `mapraster.js`): hard-edged fills sampled at pixel centres (exact 2:1 stairs,
+  no gaps between tiles), 1 px outlines. Buildings have three shaded faces (left dark, right mid, top light),
+  a rim highlight, windows by type (office bands, apartment grids with balconies, sparse old-town windows,
+  villa windows, cladding and roller doors on sheds), roof details (AC units, tanks, antennas, helipads,
+  setbacks and spires on towers). Glass is steel blue Downtown and blue-teal at the Marina and JLT; old
+  Dubai is sand and ochre. Ground is textured by type; roads have kerbs and lane markings; shadows are
+  hard-edged and semi-transparent, cast down-left. Everything else is drawn through a small Canvas
+  stand-in (`PixelCtx`), so it shares the pixel grid.
+- **Off the main thread** (`mapworker.js`): a wide overview, a mid overview, then 256x256 chunks, what's on
+  screen first. Each chunk is also averaged down into the overviews. Close up, zoom settles on whole
+  pixels (1, 2, 3 … device pixels per art pixel) when you let go; fly-tos never land on less zoom than asked.
+  Below one device pixel per art pixel the overviews are averaged down, never sampled.
+- **Saved art**: once the whole city has been rendered, the overviews are kept in the browser cache
+  (per app version, art revision and day/night), so the next launch shows the city at once.
+
 ## Critters (no more points)
 
 Points, levels, the leaderboard and every counter toward a reward are gone (migration 0011 backs up `profiles.points` to `archive.profiles_points`, then drops it). Stickers stay as milestones; critters are the collectible.

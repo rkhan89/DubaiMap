@@ -1,5 +1,8 @@
-// The isometric Dubai map: a stylised but real projection of the city, drawn on a canvas.
-// Static city = cached bitmap when zoomed out, culled crisp vectors when zoomed in.
+// The isometric Dubai map: a stylised but real projection of the city.
+// This file holds the city's data (terrain, roads, buildings, landmarks), the camera, gestures, pins
+// and labels. The city itself is drawn as pixel art by mapraster.js, in a Web Worker (mapworker.js),
+// and composited here from overviews and chunks (see "the pixel city" below).
+import { APP } from './config.js';
 
 /* =========================================================
    GEOGRAPHY
@@ -809,73 +812,18 @@ function isoBox(ctx, cx, cy, hx, hy, z0, h, base, opts){
   return {N,E,S,W};
 }
 
-function drawGround(ctx, view){
-  const n = TILE_COLORS.length;
-  const tiles = Array.from({length:n}, ()=>new Path2D());
-  const faceL = Array.from({length:n}, ()=>new Path2D());
-  const faceR = Array.from({length:n}, ()=>new Path2D());
-  const waterGrid = new Path2D(), landGrid = new Path2D(), foam = new Path2D();
-  const hw=TW/2, hh=TH/2;
-  for (let r=0;r<ROWS;r++){
-    for (let c=0;c<COLS;c++){
-      const x=(c-r)*hw+WORLD.ox, y=(c+r)*hh+WORLD.oy;         // N corner
-      if (view && (x+hw<view.x0 || x-hw>view.x1 || y+TH+SLAB<view.y0 || y>view.y1)) continue;
-      const k=r*COLS+c, t=tType[k], water=isWaterT(t);
-      const p=tiles[t];
-      p.moveTo(x,y); p.lineTo(x+hw,y+hh); p.lineTo(x,y+TH); p.lineTo(x-hw,y+hh); p.closePath();
-      if (water){ waterGrid.moveTo(x-hw,y+hh); waterGrid.lineTo(x,y); waterGrid.lineTo(x+hw,y+hh); }
-      else if (t===L_URBAN || t===L_PARK || t===L_TARMAC){ landGrid.moveTo(x-hw,y+hh); landGrid.lineTo(x,y); landGrid.lineTo(x+hw,y+hh); }
-      // coastline foam on the land's back edges
-      if (!water){
-        if (c>0 && isWaterT(tType[k-1])){ foam.moveTo(x-hw,y+hh); foam.lineTo(x,y); }
-        if (r>0 && isWaterT(tType[k-COLS])){ foam.moveTo(x,y); foam.lineTo(x+hw,y+hh); }
-      }
-      // front faces: a lip where land meets water, the slab at the map's front edges
-      const dR = c===COLS-1 ? SLAB : (!water && isWaterT(tType[k+1]) ? LIP : 0);
-      if (dR){ const f=faceR[t]; f.moveTo(x,y+TH); f.lineTo(x+hw,y+hh); f.lineTo(x+hw,y+hh+dR); f.lineTo(x,y+TH+dR); f.closePath(); }
-      const dL = r===ROWS-1 ? SLAB : (!water && isWaterT(tType[k+COLS]) ? LIP : 0);
-      if (dL){ const f=faceL[t]; f.moveTo(x-hw,y+hh); f.lineTo(x,y+TH); f.lineTo(x,y+TH+dL); f.lineTo(x-hw,y+hh+dL); f.closePath(); }
-    }
-  }
-  const TC = NIGHT ? TILE_NIGHT : TILE_COLORS;
-  for (let t=0;t<n;t++){ ctx.fillStyle=TC[t]; ctx.fill(tiles[t]); }
-  ctx.lineWidth=LW*0.6;
-  ctx.strokeStyle=C('rgba(255,255,255,0.42)'); ctx.stroke(waterGrid);
-  ctx.strokeStyle=C('rgba(110,80,50,0.14)'); ctx.stroke(landGrid);
-  ctx.lineWidth=LW*1.3; ctx.strokeStyle=C('rgba(255,255,255,0.85)'); ctx.stroke(foam);
-  ctx.lineWidth=LW*0.8; ctx.strokeStyle=C(OUT);
-  for (let t=0;t<n;t++){
-    ctx.fillStyle=shade(TC[t], isWaterT(t)?0.8:0.82); ctx.fill(faceL[t]); ctx.stroke(faceL[t]);
-    ctx.fillStyle=shade(TC[t], 0.66); ctx.fill(faceR[t]); ctx.stroke(faceR[t]);
-  }
-}
 
 let ROADS_W=null, MAP_CLIP=null, RUNWAYS_W=null;
 function prepRoads(){
   ROADS_W = ROADS.map(r=>({k:r.k, pts:r.pts.map(([a,i])=>{ const p=aiToWorld(a,i); return [p.x,p.y]; })}));
   const c=[proj(0,0),proj(COLS,0),proj(COLS,ROWS),proj(0,ROWS)];
-  MAP_CLIP = new Path2D(); MAP_CLIP.moveTo(c[0].x,c[0].y); c.slice(1).forEach(p=>MAP_CLIP.lineTo(p.x,p.y)); MAP_CLIP.closePath();
+  if (typeof Path2D !== 'undefined'){ MAP_CLIP = new Path2D(); MAP_CLIP.moveTo(c[0].x,c[0].y); c.slice(1).forEach(p=>MAP_CLIP.lineTo(p.x,p.y)); MAP_CLIP.closePath(); }
   RUNWAYS_W = RUNWAYS.map(rw=>{
     const q=(a,i)=>{ const p=aiToWorld(a,i); return [p.x,p.y]; };
     return { poly:[q(rw.a-0.09,rw.i[0]),q(rw.a+0.09,rw.i[0]),q(rw.a+0.09,rw.i[1]),q(rw.a-0.09,rw.i[1])], line:[q(rw.a,rw.i[0]+0.1),q(rw.a,rw.i[1]-0.1)] };
   });
 }
 function strokeLine(ctx, pts){ ctx.beginPath(); ctx.moveTo(pts[0][0],pts[0][1]); for(let k=1;k<pts.length;k++) ctx.lineTo(pts[k][0],pts[k][1]); ctx.stroke(); }
-function drawRoads(ctx){
-  ctx.save(); ctx.clip(MAP_CLIP);
-  ctx.lineCap='round'; ctx.lineJoin='round';
-  RUNWAYS_W.forEach(rw=>{ ctx.lineWidth=LW*0.8; ctx.strokeStyle=C(OUT); face(ctx, rw.poly, '#B7B0A6'); });
-  ctx.setLineDash([4,3]); ctx.strokeStyle=C('#FFFFFF'); ctx.lineWidth=0.9; RUNWAYS_W.forEach(rw=>strokeLine(ctx, rw.line)); ctx.setLineDash([]);
-  [2,1,0].forEach(k=>{ ctx.strokeStyle=C('#6C5E54'); ctx.lineWidth=RD[k].w+LW*2; ROADS_W.filter(r=>r.k===k).forEach(r=>strokeLine(ctx,r.pts)); });
-  [2,1,0].forEach(k=>{ ctx.strokeStyle=C(k===0 ? '#948A83' : '#A1968E'); ctx.lineWidth=RD[k].w; ROADS_W.filter(r=>r.k===k).forEach(r=>strokeLine(ctx,r.pts)); });
-  ctx.setLineDash([3,3]); ctx.strokeStyle=C('#FBF4E6'); ctx.lineWidth=0.6;
-  ROADS_W.filter(r=>r.k<2).forEach(r=>strokeLine(ctx,r.pts));
-  ctx.setLineDash([]);
-  // the Dubai Tram round the Marina: twin rails in teal
-  const tram = TRAM.map(([a,i])=>{ const p=aiToWorld(a,i); return [p.x,p.y]; });
-  ctx.strokeStyle=C(OUT); ctx.lineWidth=3; strokeLine(ctx, tram); ctx.strokeStyle=C('#3FB8AF'); ctx.lineWidth=1.8; strokeLine(ctx, tram);
-  ctx.restore();
-}
 
 
 /* ---------- Burj Al Arab ----------
@@ -1259,37 +1207,25 @@ function drawLandmark2(ctx, o){
   }
 }
 
-function drawObjects(ctx, view){
-  ctx.lineJoin='round';
-  for (const o of OBJECTS){
-    // small life (shrubs, camels, parasols…) only once you're close; the wide shot stays calm
-    if (o.near && !view) continue;
-    if (view && (o.x<view.x0-40 || o.x>view.x1+40 || o.y<view.y0-10 || o.y>view.y1+280)) continue;
-    ctx.strokeStyle=C(OUT); ctx.lineWidth=LW;
-    if (o.k==='box') isoBox(ctx,o.x,o.y,o.hx,o.hy,o.z0||0,o.h,null,o.opts);
-    else if (o.k==='lm2') drawLandmark2(ctx,o);
-    else if (o.k==='palm') drawPalm(ctx,o);
-    else if (o.k==='pool') drawPool(ctx,o);
-    else if (o.k==='rail') drawRail(ctx,o);
-    else if (o.k==='station') drawStation(ctx,o);
-    else if (o.k==='shrub') drawShrub(ctx,o);
-    else if (o.k==='ghaf') drawGhaf(ctx,o);
-    else if (o.k==='camel') drawCamel(ctx,o);
-    else if (o.k==='parasol') drawParasol(ctx,o);
-    else if (o.k==='reed') drawReed(ctx,o);
-    else if (o.k==='flamingo') drawFlamingo(ctx,o);
-    else if (o.k==='plane') drawPlane(ctx,o);
-    else if (o.k==='crane') drawCrane(ctx,o);
-    else if (o.k==='tree') drawTree(ctx,o);
-    else if (o.k==='boat') drawBoat(ctx,o);
-    else drawLandmark(ctx,o);
-  }
-}
-function drawScene(ctx, view){
-  ctx.lineJoin='round'; ctx.lineCap='butt';
-  drawGround(ctx, view);
-  drawRoads(ctx);
-  drawObjects(ctx, view);
+function drawObjectVector(ctx, o){
+  ctx.strokeStyle=C(OUT); ctx.lineWidth=LW;
+  if (o.k==='box') isoBox(ctx,o.x,o.y,o.hx,o.hy,o.z0||0,o.h,null,o.opts);
+  else if (o.k==='lm2') drawLandmark2(ctx,o);
+  else if (o.k==='palm') drawPalm(ctx,o);
+  else if (o.k==='pool') drawPool(ctx,o);
+  else if (o.k==='rail') drawRail(ctx,o);
+  else if (o.k==='station') drawStation(ctx,o);
+  else if (o.k==='shrub') drawShrub(ctx,o);
+  else if (o.k==='ghaf') drawGhaf(ctx,o);
+  else if (o.k==='camel') drawCamel(ctx,o);
+  else if (o.k==='parasol') drawParasol(ctx,o);
+  else if (o.k==='reed') drawReed(ctx,o);
+  else if (o.k==='flamingo') drawFlamingo(ctx,o);
+  else if (o.k==='plane') drawPlane(ctx,o);
+  else if (o.k==='crane') drawCrane(ctx,o);
+  else if (o.k==='tree') drawTree(ctx,o);
+  else if (o.k==='boat') drawBoat(ctx,o);
+  else drawLandmark(ctx,o);
 }
 
 
@@ -1613,27 +1549,272 @@ function drawTint(view){
 const cam = { x:0, y:0, s:1 };
 let baseFit = 0.2, MIN_S = 0.15;
 const MAX_S = 7;
-const reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+const HAS_DOM = typeof window !== 'undefined';   // false inside the map's Web Worker (mapworker.js)
+const reduceMotion = HAS_DOM && window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 let wrap, canvas, ctx, stampsLayer, labelsLayer, fxLayer, meEl, twinkles = [], fxEls = [];
 let opts = {};
-let dpr = Math.min(window.devicePixelRatio||1, 2);
-let cache = null, cacheScale = 1;
+let dpr = HAS_DOM ? Math.min(window.devicePixelRatio||1, 2) : 1;
+let cacheScale = 1, dataBuilt = false;
 let viewW = 0, viewH = 0, interacting = false, rafPending = false, built = false;
 let picking = false, needsCenter = true, lastW = 0;
 const readyCbs = [];
 
-function buildCache(){
-  const maxPx = 9e6;
-  cacheScale = Math.min(1.7, Math.sqrt(maxPx/(WORLD.w*WORLD.h)));
-  cache = document.createElement('canvas');
-  cache.width = Math.round(WORLD.w*cacheScale); cache.height = Math.round(WORLD.h*cacheScale);
-  const c = cache.getContext('2d');
-  c.scale(cacheScale, cacheScale);
-  LW = 0.75;
-  drawScene(c, null);
-  // at night the steady city lights are baked in, so panning costs the same as by day
-  if (NIGHT && LIGHTS){ c.globalAlpha = 0.85; drawLights(c, null, 0, cacheScale); c.globalAlpha = 1; }
+/* ---------- the pixel city ----------
+   mapraster.js draws the city as pixel art at RS.S art pixels per world unit, in mapworker.js.
+   Three sources, picked by k = device pixels per art pixel:
+     lo   whole city at 0.5 px/unit  (wide view; first thing on screen)
+     mid  whole city at 1 px/unit    (mid zoom)
+     chunks of 256x256 art px at full scale (close up; whole-pixel steps once you let go)
+   Each chunk that arrives is also averaged down into lo and mid, so the wide views converge on
+   the real art. Chunks are kept in a small least-recently-used set. */
+const RS = { worker:null, inline:null, S:2, CH:256, grid:null, art:null, stores:{}, tick:0, cap:72, wantTimer:0, snaps:new Set(), t0:0, firstMs:0, errors:0 };
+const rstore = th=>RS.stores[th] || (RS.stores[th] = { lo:null, mid:null, chunks:new Map(), asked:new Set(), refined:new Set() });
+const themeKey = ()=>NIGHT ? 'night' : 'day';
+// what's on screen: this theme once it has its overview, else the other one (no flash while switching)
+function shownStore(){
+  const cur = RS.stores[themeKey()];
+  if (cur && cur.lo) return cur;
+  for (const k in RS.stores) if (RS.stores[k].lo) return RS.stores[k];
+  return null;
+}
+/* ---------- finished overviews are kept in the browser's cache (per app version and theme), so the
+   next launch shows the whole city at once and the worker only renders close-ups ---------- */
+// bump ART_REV whenever mapraster.js draws anything differently, so nobody keeps old art
+const ART_REV = 2, ART_CACHE = 'koko-map-art', ART_VER = `${APP.version}-r${ART_REV}`;
+const artURL = (th, s)=>`/__map-art/${ART_VER}/${th}/${s}.png`;
+async function loadSaved(th){
+  if (!HAS_DOM || !('caches' in window)) return false;
+  try {
+    const c = await caches.open(ART_CACHE);
+    const [lo, mid] = await Promise.all([c.match(artURL(th, 'lo')), c.match(artURL(th, 'mid'))]);
+    if (!lo || !mid) return false;
+    const [a, b] = await Promise.all([lo.blob().then(createImageBitmap), mid.blob().then(createImageBitmap)]);
+    const st = rstore(th);
+    if (st.lo) return true;
+    st.lo = newCanvas(a.width, a.height); st.lo.getContext('2d').drawImage(a, 0, 0); a.close();
+    st.mid = newCanvas(b.width, b.height); st.mid.getContext('2d').drawImage(b, 0, 0); b.close();
+    st.saved = true;
+    if (RS.grid) for (let y=0; y<RS.grid.rows; y++) for (let x=0; x<RS.grid.cols; x++) st.refined.add(x+','+y);
+    else st.allRefined = true;
+    if (!built && th === themeKey()) rasterReady();
+    requestRender();
+    return true;
+  } catch(e){ return false; }
+}
+function saveWhenDone(st, th){
+  if (st.saved || !st.lo || !st.mid || !RS.grid || st.refined.size < RS.grid.rows*RS.grid.cols || !HAS_DOM || !('caches' in window)) return;
+  st.saved = true;
+  const put = (cv, s)=>new Promise(res=>cv.toBlob(b=>res(b), 'image/png')).then(b=>b && caches.open(ART_CACHE).then(c=>c.put(artURL(th, s), new Response(b, { headers:{ 'Content-Type':'image/png' } }))));
+  Promise.all([put(st.lo, 'lo'), put(st.mid, 'mid')]).then(()=>caches.open(ART_CACHE)).then(c=>c.keys()).then(keys=>{
+    // only this version's art is kept
+    keys.forEach(r=>{ if (!new URL(r.url).pathname.startsWith(`/__map-art/${ART_VER}/`)) caches.open(ART_CACHE).then(c=>c.delete(r)); });
+  }).catch(()=>{});
+}
+function rasterStart(){
+  RS.t0 = performance.now();
+  loadSaved(themeKey());
+  try {
+    RS.worker = new Worker(new URL('./mapworker.js', import.meta.url), { type:'module' });
+    RS.worker.onmessage = e=>rasterMsg(e.data);
+    RS.worker.onerror = ()=>rasterInline();
+    RS.worker.postMessage({ type:'init', night:themeKey() });
+  } catch(e){ rasterInline(); }
+}
+// no module workers here: the same renderer on the main thread, one job per task
+function rasterInline(){
+  if (RS.inline) return;
+  if (RS.worker){ try { RS.worker.terminate(); } catch(e){} RS.worker = null; }
+  RS.inline = { queue:[], busy:false };
+  import('./mapraster.js').then(R=>{
+    const I = RS.inline;
+    I.R = R; I.theme = themeKey(); R.setNight(NIGHT); R.prepare();
+    rasterMsg({ kind:'ready', theme:I.theme, grid:R.chunkGrid(), art:R.artSize(), CH:R.CH, S:R.S });
+    I.pump = ()=>{
+      if (I.busy) return; const job = I.queue.shift(); if (!job) return; I.busy = true;
+      setTimeout(()=>{
+        try {
+          if (I.theme !== themeKey()){ I.theme = themeKey(); R.setNight(NIGHT); }
+          if (job.kind === 'overview'){ const a = R.artSize(job.s), b = R.renderRect(0, 0, a.w, a.h, job.s); rasterMsg({ kind:'overview', theme:I.theme, s:job.s, w:a.w, h:a.h, px:new Uint8ClampedArray(b.data.buffer) }); }
+          else { const b = R.renderChunk(job.cx, job.cy); rasterMsg({ kind:'chunk', theme:I.theme, cx:job.cx, cy:job.cy, w:R.CH, h:R.CH, px:new Uint8ClampedArray(b.data.buffer) }); }
+        } catch(e){ console.error(e); }
+        I.busy = false; I.pump();
+      }, 0);
+    };
+    I.pump();
+  });
+}
+function rasterPost(msg){
+  if (RS.worker) RS.worker.postMessage(msg);
+  else if (RS.inline && RS.inline.R && msg.type === 'want'){ RS.inline.queue = msg.list.slice(); RS.inline.pump(); }
+}
+function toImage(m){
+  if (m.bmp) return m.bmp;
+  const cv = document.createElement('canvas'); cv.width = m.w; cv.height = m.h;
+  cv.getContext('2d').putImageData(new ImageData(m.px, m.w, m.h), 0, 0);
+  return cv;
+}
+function newCanvas(w, h){ const cv = document.createElement('canvas'); cv.width = w; cv.height = h; return cv; }
+function rasterMsg(m){
+  if (m.kind === 'error'){ if (++RS.errors < 4) console.error('map renderer:', m.message); return; }
+  if (m.kind === 'ready'){
+    RS.grid = m.grid; RS.art = m.art; RS.CH = m.CH; RS.S = m.S;
+    for (const k in RS.stores){ const st = RS.stores[k]; if (st.allRefined){ for (let y=0; y<m.grid.rows; y++) for (let x=0; x<m.grid.cols; x++) st.refined.add(x+','+y); st.allRefined = false; } }
+    rasterWant(); return;
+  }
+  const st = rstore(m.theme), img = toImage(m);
+  if (m.kind === 'overview'){
+    const cv = newCanvas(Math.ceil(WORLD.w*m.s), Math.ceil(WORLD.h*m.s)), c = cv.getContext('2d');
+    c.drawImage(img, 0, 0);
+    if (img.close) img.close();
+    if (m.s === 0.5) st.lo = cv; else st.mid = cv;
+    // chunks that already came in sharpen the new overview too
+    st.chunks.forEach((ch, key)=>refine(st, ch.cx, ch.cy, ch.img, m.s === 0.5 ? 'lo' : 'mid'));
+    if (m.s === 0.5 && !built && m.theme === themeKey()) rasterReady();
+  } else {
+    const key = m.cx + ',' + m.cy;
+    st.asked.delete(key);
+    const old = st.chunks.get(key); if (old && old.img.close) old.img.close();
+    st.chunks.set(key, { img, cx:m.cx, cy:m.cy, used:0 });
+    if (!st.saved) refine(st, m.cx, m.cy, img);
+    st.refined.add(key);
+    evict(st);
+    saveWhenDone(st, m.theme);
+  }
+  // drop a store that's no longer shown (the theme changed and the new one is up)
+  for (const k in RS.stores) if (k !== themeKey() && RS.stores[themeKey()] && RS.stores[themeKey()].lo){ dropStore(k); }
+  repaintSnaps(); requestRender();
+}
+function dropStore(k){ const st = RS.stores[k]; if (!st) return; st.chunks.forEach(c=>{ if (c.img.close) c.img.close(); }); delete RS.stores[k]; }
+// average a full-scale chunk down into the overviews
+function refine(st, cx, cy, img, only){
+  const CH = RS.CH;
+  for (const [cv, f] of [[only !== 'lo' && st.mid, 0.5], [only !== 'mid' && st.lo, 0.25]]){
+    if (!cv) continue;
+    const c = cv.getContext('2d'); c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
+    c.drawImage(img, cx*CH*f, cy*CH*f, CH*f, CH*f);
+  }
+}
+function evict(st){
+  if (st.chunks.size <= RS.cap) return;
+  const list = [...st.chunks.entries()].sort((a,b)=>a[1].used-b[1].used);
+  for (let k=0; k<list.length - RS.cap; k++){ const [key, c] = list[k]; if (c.img.close) c.img.close(); st.chunks.delete(key); }
+}
+function rasterReady(){
+  RS.firstMs = Math.round(performance.now() - RS.t0);
+  if (BUILD_STATS){ BUILD_STATS.cacheMs = RS.firstMs; BUILD_STATS.cachePx = RS.art ? RS.art.w + 'x' + RS.art.h : ''; }
+  built = true;
+  if (resizeCanvas()) initialView();
+  if (pendingTint){ const v = pendingTint; pendingTint = null; tintKey = ""; setZoneTint(v); }
+  readyCbs.splice(0).forEach(f=>f());
+  requestRender();
+}
+// chunks covering a device-pixel rectangle at k device px per art px, origin (ox, oy)
+function chunksFor(k, ox, oy, w, h){
+  const CH = RS.CH, g = RS.grid; if (!g) return [];
+  const c0 = Math.max(0, Math.floor(-ox/k/CH)), c1 = Math.min(g.cols-1, Math.floor((w-ox)/k/CH));
+  const r0 = Math.max(0, Math.floor(-oy/k/CH)), r1 = Math.min(g.rows-1, Math.floor((h-oy)/k/CH));
+  const out = []; for (let r=r0; r<=r1; r++) for (let c=c0; c<=c1; c++) out.push([c, r]);
+  return out;
+}
+const CHUNK_K = 0.75;   // below this many device px per art px the overviews take over
+// draw the city into a 2D context: k device px per art px, art origin at device (ox, oy)
+function paintCity(c, k, ox, oy, w, h){
+  const st = shownStore(); if (!st) return;
+  c.setTransform(1,0,0,1,0,0);
+  const S = RS.S, CH = RS.CH;
+  const overview = (src, sl, x, y, ww, hh)=>{   // part of an overview (sl px per world unit) into device rect
+    const f = sl/S; c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
+    c.drawImage(src, x*f, y*f, ww*f, hh*f, ox + x*k, oy + y*k, ww*k, hh*k);
+  };
+  if (k >= CHUNK_K && RS.grid){
+    for (const [cx, cy] of chunksFor(k, ox, oy, w, h)){
+      const ch = st.chunks.get(cx + ',' + cy);
+      const dx = Math.round(ox + cx*CH*k), dy = Math.round(oy + cy*CH*k), dw = Math.round(ox + (cx+1)*CH*k) - dx, dh = Math.round(oy + (cy+1)*CH*k) - dy;
+      if (ch){ ch.used = ++RS.tick; c.imageSmoothingEnabled = k < 1; c.imageSmoothingQuality = 'high'; c.drawImage(ch.img, dx, dy, dw, dh); }
+      else { const src = st.mid || st.lo, sl = st.mid ? 1 : 0.5; overview(src, sl, cx*CH, cy*CH, CH, CH); }
+    }
+  } else {
+    const src = (k >= 0.3 && st.mid) ? st.mid : st.lo, sl = src === st.mid ? 1 : 0.5;
+    const x0 = Math.max(0, Math.floor(-ox/k)), y0 = Math.max(0, Math.floor(-oy/k));
+    const x1 = Math.min(RS.art ? RS.art.w : WORLD.w*S, Math.ceil((w-ox)/k)), y1 = Math.min(RS.art ? RS.art.h : WORLD.h*S, Math.ceil((h-oy)/k));
+    if (x1 > x0 && y1 > y0) overview(src, sl, x0, y0, x1-x0, y1-y0);
+  }
+}
+// ask the renderer for what's missing: the overviews, the chunks on screen (and on any snapshot),
+// then a ring round the view, then the rest of the city a little at a time
+function rasterWant(){
+  if (!RS.grid) return;
+  const st = rstore(themeKey()), list = [], seen = new Set();
+  const want = (cx, cy)=>{ const key = cx + ',' + cy; if (seen.has(key)) return; seen.add(key); if (!st.chunks.has(key)) list.push({ kind:'chunk', cx, cy }); };
+  if (!st.lo) list.push({ kind:'overview', s:0.5 });
+  // 1. what's on screen (and on any snapshot), nearest the middle first
+  const k = cam.s*dpr/RS.S, ox = dpr*cam.x, oy = dpr*cam.y, w = viewW*dpr, h = viewH*dpr;
+  RS.snaps.forEach(sn=>{ if (!sn.target.isConnected){ RS.snaps.delete(sn); return; } if (sn.k >= CHUNK_K) chunksFor(sn.k, sn.ox, sn.oy, sn.w, sn.h).forEach(([x,y])=>want(x,y)); });
+  let vis = [];
+  if (k >= CHUNK_K && viewW){
+    vis = chunksFor(k, ox, oy, w, h);
+    const mx = (-ox + w/2)/k/RS.CH, my = (-oy + h/2)/k/RS.CH;
+    vis.sort((a,b)=>Math.hypot(a[0]+0.5-mx, a[1]+0.5-my) - Math.hypot(b[0]+0.5-mx, b[1]+0.5-my)).forEach(([x,y])=>want(x,y));
+  }
+  const missingOnScreen = list.filter(j=>j.kind==='chunk').length;
+  if (!st.mid) list.push({ kind:'overview', s:1 });
+  // 2. a ring round the view, only as far as the chunk memory allows (so nothing is thrown out and asked for again)
+  if (k >= CHUNK_K && viewW){
+    let room = RS.cap - 8 - seen.size;
+    for (const [x,y] of chunksFor(k, ox - w*0.5, oy - h*0.5, w*2, h*2)){ if (room <= 0) break; if (!seen.has(x+','+y)){ want(x,y); room--; } }
+  }
+  // 3. nothing on screen missing and you're not moving: sharpen the rest of the overviews a little at a time
+  if (!interacting && st.mid && !st.saved && !missingOnScreen){
+    const g = RS.grid, kk = Math.max(k, 1e-3), mx = (-ox + w/2)/kk/RS.CH, my = (-oy + h/2)/kk/RS.CH, rest = [];
+    for (let y=0; y<g.rows; y++) for (let x=0; x<g.cols; x++){ const key = x+','+y; if (!st.refined.has(key) && !seen.has(key)) rest.push([x, y, Math.hypot(x+0.5-mx, y+0.5-my)]); }
+    rest.sort((a,b)=>a[2]-b[2]).slice(0, 12).forEach(([x,y])=>list.push({ kind:'chunk', cx:x, cy:y }));
+  }
+  const key = JSON.stringify(list.map(j=>j.kind==='chunk' ? j.cx+','+j.cy : 'o'+j.s));
+  if (key === RS.lastWant) return;
+  RS.lastWant = key;
+  rasterPost({ type:'want', list });
+}
+function rasterPending(){
+  const st = RS.stores[themeKey()]; if (!st || !st.lo) return 1;
+  const k = cam.s*dpr/RS.S; if (k < CHUNK_K) return st.mid ? 0 : 1;
+  return chunksFor(k, Math.round(dpr*cam.x), Math.round(dpr*cam.y), viewW*dpr, viewH*dpr).filter(([x,y])=>!st.chunks.has(x+','+y)).length;
+}
+function rasterStats(){
+  const st = RS.stores[themeKey()] || {};
+  return { theme:themeKey(), lo:!!st.lo, mid:!!st.mid, chunks:st.chunks ? st.chunks.size : 0, refined:st.refined ? st.refined.size : 0,
+    total:RS.grid ? RS.grid.rows*RS.grid.cols : 0, saved:!!st.saved, worker:!!RS.worker, inline:!!RS.inline, lastWant:(RS.lastWant||'').slice(0,80) };
+}
+function rasterWantSoon(){ clearTimeout(RS.wantTimer); RS.wantTimer = setTimeout(rasterWant, interacting ? 120 : 30); }
+// snapshots (place header, welcome screen) repaint as sharper pieces arrive
+function repaintSnaps(){ RS.snaps.forEach(sn=>{ if (!sn.target.isConnected){ RS.snaps.delete(sn); return; } paintSnap(sn); }); }
+function paintSnap(sn){
+  const c = sn.target.getContext('2d');
+  c.setTransform(1,0,0,1,0,0); c.clearRect(0, 0, sn.target.width, sn.target.height);
+  paintCity(c, sn.k, sn.ox, sn.oy, sn.w, sn.h);
+}
+/* ---------- whole-pixel zoom: settle on k = 1, 2, 3 … device px per art px once you let go ---------- */
+// up: never less zoom than asked for (fly-tos pick their zoom to pull pins apart); else the nearest step
+function snappedScale(sc, up){
+  const k = sc*dpr/RS.S;
+  if (k < 1) return sc;
+  const kmax = Math.max(1, Math.floor(MAX_S*dpr/RS.S));
+  return Math.min(kmax, Math.max(1, up ? Math.ceil(k - 1e-6) : Math.round(k)))*RS.S/dpr;
+}
+let snapAnim = 0;
+function snapZoom(sx, sy){
+  const target = snappedScale(cam.s);
+  if (Math.abs(target - cam.s) < 1e-6) return;
+  if (sx == null){ sx = viewW/2; sy = viewH/2; }
+  if (reduceMotion){ zoomAt(sx, sy, target); return; }
+  const s0 = cam.s, t0 = performance.now();
+  cancelAnimationFrame(snapAnim);
+  const step = now=>{
+    const t = Math.min(1, (now-t0)/150), e = 1-Math.pow(1-t, 3);
+    zoomAt(sx, sy, s0 + (target-s0)*e);
+    if (t < 1) snapAnim = requestAnimationFrame(step);
+  };
+  snapAnim = requestAnimationFrame(step);
 }
 function resizeCanvas(){
   const r = wrap.getBoundingClientRect();
@@ -1667,24 +1848,15 @@ function renderLights(view, fromCache){
 function requestRender(){ if (!rafPending){ rafPending=true; requestAnimationFrame(render); } }
 function render(){
   rafPending = false;
-  if (!viewW || !cache) return;
+  if (!viewW || !built) return;
   ctx.setTransform(1,0,0,1,0,0);
   ctx.clearRect(0,0,canvas.width,canvas.height);
+  // the city, on whole device pixels so the pixel art stays crisp
+  paintCity(ctx, cam.s*dpr/RS.S, Math.round(dpr*cam.x), Math.round(dpr*cam.y), canvas.width, canvas.height);
   ctx.setTransform(dpr*cam.s,0,0,dpr*cam.s,dpr*cam.x,dpr*cam.y);
-  const needCrisp = cam.s*dpr > cacheScale*1.15;
-  const visTiles = (viewW/cam.s)*(viewH/cam.s)/(TW*TH/2);
   const view = { x0:-cam.x/cam.s, y0:-cam.y/cam.s, x1:(viewW-cam.x)/cam.s, y1:(viewH-cam.y)/cam.s };
-  // while panning/zooming through busy views use the cached bitmap; redraw crisp once you let go
-  const fromCache = !needCrisp || (interacting && visTiles > 1100);
-  if (fromCache){
-    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(cache, 0, 0, WORLD.w, WORLD.h);
-  } else {
-    LW = Math.max(0.22, Math.min(0.8, 1.05/cam.s));
-    drawScene(ctx, view);
-  }
   drawTint(view);
-  if (NIGHT && LIGHTS) renderLights(view, fromCache);
+  rasterWantSoon();
   drawCars(); kickCars();
   updateOverlay();
   if (opts.onViewChange) opts.onViewChange();
@@ -1704,7 +1876,7 @@ function clampCam(){
   const ccx=Math.max(FRAME.x0, Math.min(FRAME.x1, cx)), ccy=Math.max(FRAME.y0, Math.min(FRAME.y1, cy));
   cam.x = viewW/2 - ccx*cam.s; cam.y = viewH/2 - ccy*cam.s;
 }
-function setView(cx, cy, s){ cam.s=s; cam.x=viewW/2-cx*s; cam.y=viewH/2-cy*s; clampCam(); requestRender(); }
+function setView(cx, cy, s){ s=snappedScale(s, true); cam.s=s; cam.x=viewW/2-cx*s; cam.y=viewH/2-cy*s; clampCam(); requestRender(); }
 function viewCenter(){ return { x:(viewW/2-cam.x)/cam.s, y:(viewH/2-cam.y)/cam.s }; }
 function fitScaleFor(b, pad){
   pad = pad||{x:40,top:90,bottom:40};
@@ -1734,7 +1906,7 @@ function fitPoints(pts, animate, pad){
 }
 let flyAnim = null;
 function flyTo(cx, cy, s, dur){
-  s = Math.max(MIN_S, Math.min(MAX_S, s));
+  s = snappedScale(Math.max(MIN_S, Math.min(MAX_S, s)), true);
   if (reduceMotion || !viewW){ setView(cx,cy,s); return; }
   dur = dur || 520;
   const from = viewCenter(), s0 = cam.s, t0 = performance.now();
@@ -1761,7 +1933,7 @@ let inertia = null;
 function stopInertia(){ if (inertia){ cancelAnimationFrame(inertia); inertia=null; interacting=false; } }
 function initGestures(){
   const pointers = new Map();
-  let downAt=null, dragged=false, lastDist=null, lastMid=null, vel={x:0,y:0}, lastMove=0, lastTap={t:0,x:0,y:0};
+  let downAt=null, dragged=false, lastDist=null, lastMid=null, vel={x:0,y:0}, lastMove=0, lastTap={t:0,x:0,y:0}, pinched=false, lastPinch={x:0,y:0};
   const SLOP=6;
   const uiTarget = t => t.closest('.map-ui');
 
@@ -1794,6 +1966,7 @@ function initGestures(){
         const r=wrap.getBoundingClientRect();
         cam.x += m.x-lastMid.x; cam.y += m.y-lastMid.y;
         zoomAt(m.x-r.left, m.y-r.top, cam.s*d/lastDist);
+        pinched=true; lastPinch={x:m.x-r.left, y:m.y-r.top};
       }
       lastDist=d; lastMid=m; vel={x:0,y:0};
     }
@@ -1811,6 +1984,7 @@ function initGestures(){
         };
         inertia=requestAnimationFrame(step);
       } else { interacting=false; requestRender(); }
+      if (pinched){ pinched=false; snapZoom(lastPinch.x, lastPinch.y); }
       if (!dragged && e.type==='pointerup' && !e.target.closest('.stamp-anchor, .map-dot, .map-label, .me')){
         const now=performance.now();
         if (now-lastTap.t < 300 && Math.hypot(e.clientX-lastTap.x, e.clientY-lastTap.y) < 30){
@@ -1834,8 +2008,8 @@ function initGestures(){
   wrap.addEventListener('wheel', e=>{
     if (uiTarget(e.target) && e.target.closest('.scrolls')) return;
     e.preventDefault(); stopInertia();
-    interacting=true; clearTimeout(wheelTimer); wheelTimer=setTimeout(()=>{ interacting=false; requestRender(); }, 160);
-    const r=wrap.getBoundingClientRect();
+    const r=wrap.getBoundingClientRect(), wx=e.clientX-r.left, wy=e.clientY-r.top;
+    interacting=true; clearTimeout(wheelTimer); wheelTimer=setTimeout(()=>{ interacting=false; requestRender(); snapZoom(wx, wy); }, 160);
     const dy = e.deltaMode===1 ? e.deltaY*16 : e.deltaY;
     zoomAt(e.clientX-r.left, e.clientY-r.top, cam.s*Math.exp(-dy*0.0022));
   }, {passive:false});
@@ -1961,7 +2135,7 @@ function onClusterTap(cl, evt){
 /* ---------- labels: one budget, collision checked, highest priority first ---------- */
 const labelEls = [];
 const escL = s => String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const measure = (()=>{ const c=document.createElement('canvas').getContext('2d'), cache=new Map();
+const measure = (()=>{ const c=HAS_DOM ? document.createElement('canvas').getContext('2d') : null, cache=new Map();
   return (text, font)=>{ const k=font+'|'+text; if (!cache.has(k)){ c.font=font; cache.set(k, c.measureText(text).width); } return cache.get(k); }; })();
 function labelEl(n){
   let el = labelEls[n];
@@ -2206,7 +2380,7 @@ function initMap(o){
   o.overlay.append(fxLayer, stampsLayer, labelsLayer, meEl);
   initGestures();
   new ResizeObserver(()=>{
-    if (!cache) return;
+    if (!built) return;
     if (!resizeCanvas()) return;
     if (needsCenter) { initialView(); }
     else if (Math.abs(viewW-lastW) > 40){ const c=viewCenter(); computeBaseFit(); setView(c.x,c.y,Math.max(cam.s,MIN_S)); lastW=viewW; }
@@ -2217,15 +2391,11 @@ function initMap(o){
   setTimeout(()=>{
     const t0 = performance.now();
     buildTerrain(); const t1 = performance.now(); buildObjects(); prepRoads(); prepCarRoads(); const t2 = performance.now();
-    if (NIGHT) buildLights();
-    buildCache();
-    BUILD_STATS = { terrainMs:Math.round(t1-t0), objectsMs:Math.round(t2-t1), cacheMs:Math.round(performance.now()-t2), objects:OBJECTS.length, lights:LIGHTS?LIGHTS.length:0, tiles:ROWS*COLS, cachePx:cache.width+'x'+cache.height };
-    if (NIGHT) buildLightBitmaps();
-    built = true;
-    if (resizeCanvas()) initialView();
-    if (pendingTint){ const v = pendingTint; pendingTint = null; tintKey = ""; setZoneTint(v); }
-    readyCbs.splice(0).forEach(f=>f());
-    requestRender();
+    dataBuilt = true;
+    // the pixel city renders in a worker; the map shows once its overview is in (rasterReady)
+    BUILD_STATS = { terrainMs:Math.round(t1-t0), objectsMs:Math.round(t2-t1), cacheMs:null, objects:OBJECTS.length, lights:0, tiles:ROWS*COLS, cachePx:'' };
+    resizeCanvas();
+    rasterStart();
   }, 0);
   resumeTracking();
 }
@@ -2263,6 +2433,8 @@ function flyToWorld(w, minZoomMult){
   const s = Math.max(cam.s, baseFit*(minZoomMult||4));
   flyTo(w.x, w.y-30/s, Math.min(MAX_S, s));
 }
+// tests and screenshots: centre on a world point at an exact zoom (multiple of the fit-city zoom)
+function viewAt(w, ratio){ setView(w.x, w.y, Math.max(MIN_S, Math.min(MAX_S, baseFit*ratio))); }
 // zoom that separates one stamp from its nearest neighbour
 function flyToSeparate(w, others){
   let dmin=Infinity;
@@ -2285,18 +2457,17 @@ function isTracking(){ return watchId!==null; }
 function visible(){ return !!viewW; }
 // draw a small static view of the city around a point (place sheet header)
 function drawSnapshot(target, w, zoomMult){
-  if (!built) return false;
   const W=target.clientWidth, H=target.clientHeight; if (!W||!H) return false;
   const r=Math.min(window.devicePixelRatio||1,2);
   target.width=Math.round(W*r); target.height=Math.round(H*r);
-  const c=target.getContext('2d');
-  const s=baseFit*(zoomMult||5);
-  c.setTransform(r*s,0,0,r*s, r*(W/2-w.x*s), r*(H/2-w.y*s));
-  const prevLW=LW; LW=Math.max(0.22, Math.min(0.8, 1.05/s));
-  const view = { x0:w.x-W/2/s, y0:w.y-H/2/s, x1:w.x+W/2/s, y1:w.y+H/2/s };
-  drawScene(c, view);
-  if (NIGHT && LIGHTS) [0,1,2].forEach(tw=>drawLights(c, view, tw, s*r));
-  LW=prevLW;
+  const s=baseFit*(zoomMult||5), k=s*r/RS.S;
+  // drop any earlier snapshot of this same canvas, then keep this one fresh as pieces arrive
+  RS.snaps.forEach(sn=>{ if (sn.target===target) RS.snaps.delete(sn); });
+  const sn = { target, k, ox:Math.round(r*(W/2 - w.x*s)), oy:Math.round(r*(H/2 - w.y*s)), w:target.width, h:target.height };
+  RS.snaps.add(sn);
+  rasterWantSoon();
+  if (!shownStore()) return false;
+  paintSnap(sn);
   return true;
 }
 // where a world point lands on a canvas drawn by drawSnapshot(target, w, zoomMult), in CSS px
@@ -2309,19 +2480,31 @@ function refresh(){ clustersDirty=true; requestRender(); }
 function setTheme(t){
   const n = t==='dark';
   if (n===NIGHT) return;
-  NIGHT = n;
+  NIGHT = n; nightCache.clear();
   if (wrap) wrap.classList.toggle('night', NIGHT);
-  if (!built) return;
-  if (NIGHT && !LIGHTS) buildLights();
-  buildCache();
-  if (NIGHT && !lightsBmp) buildLightBitmaps();
+  if (!dataBuilt) return;
+  RS.lastWant = '';
+  loadSaved(themeKey());
+  rasterPost({ type:'theme', night:themeKey() });
+  if (RS.inline) RS.inline.queue = [];
+  rasterWant();
   requestRender();
 }
-function resize(){ if (cache && resizeCanvas()){ if (needsCenter) initialView(); requestRender(); } }
+function resize(){ if (built && resizeCanvas()){ if (needsCenter) initialView(); requestRender(); } }
 
 export { buildStats,
-  initMap, whenReady, setStamps, setAreaCounts, placeWorld, fitPoints, fitCity, flyToWorld, flyToSeparate,
+  initMap, whenReady, viewAt, rasterPending, rasterStats, setStamps, setAreaCounts, placeWorld, fitPoints, fitCity, flyToWorld, flyToSeparate,
   centerLatLng, viewZone, zoomRatio, setPicking, highlight, markDropped, setMeSprite, setSelected, startTracking,
   stopTracking, isTracking, drawSnapshot, snapshotPoint, refresh, resize, visible, setTheme, setShow, setZoneTint, setCars,
   ZONES, zoneById, nearestZone, toAI, toLatLng, inMap, onLand,
 };
+
+// ---- for the pixel renderer (mapraster.js, which also runs in mapworker.js) ----
+function buildData(){ buildTerrain(); buildObjects(); prepRoads(); }
+function setNight(on){ NIGHT = !!on; nightCache.clear(); }
+function setLineWidth(w){ LW = w; }
+export const RAW = { buildData, setNight, setLineWidth, drawObjectVector, C, shade, hash2, vnoise, isWaterT, proj, aiToGrid, gridToAI, aiToWorld, worldToAI, inRect,
+  TW, TH, LIP, SLAB, ROWS, COLS, WORLD, RD, OUT, TILE_COLORS, TILE_NIGHT, DISTRICTS, HOODS, TRAM,
+  W_SEA, W_SHALLOW, L_BEACH, L_SAND, L_DUNE, L_URBAN, L_PARK, W_CANAL, L_TARMAC, L_PALM, L_LOT, L_GOLF, W_DEEP, L_FARM, L_CREST,
+  get tType(){ return tType; }, get roadMask(){ return roadMask; }, get OBJECTS(){ return OBJECTS; },
+  get ROADS_W(){ return ROADS_W; }, get RUNWAYS_W(){ return RUNWAYS_W; }, get NIGHT(){ return NIGHT; } };
