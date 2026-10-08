@@ -548,8 +548,10 @@ const geomR = (o, s)=>8*Math.min(o.hx, o.hy)*s;
    SPRITES (landmarks and props from the art pack)
    ========================================================= */
 // the night version of a sprite pixel: the same dusk mapping as the rest of the city, a touch brighter
+const LIT_WINDOW = rgba('#ffd470') & 0xffffff;
 function nightPx(c){
   const a = c>>>24; if (!a) return 0;
+  if ((c & 0xffffff) === LIT_WINDOW) return c;   // the art's lit windows stay lit at night
   const r = c&255, g = c>>8&255, b = c>>16&255, l = (0.299*r + 0.587*g + 0.114*b)/255;
   const k = v=>Math.max(0, Math.min(255, Math.round(v)));
   return hex(k(r*0.16 + 22 + l*44), k(g*0.18 + 28 + l*46), k(b*0.24 + 46 + l*52), a);

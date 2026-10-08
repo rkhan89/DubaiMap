@@ -383,11 +383,15 @@ neighbourhoods, ~7,400 objects); only the drawing changed.
   would land in the water on this stylised coast moves to the nearest land. Each stands on its own plot (a paved
   plaza with a few people, the lake, its island) with the ground round it cleared. The other landmarks keep
   their procedural drawings, in the same pixel style.
-- **Drawn in the pack's style** (): the Jumeirah Beach Hotel, Wild Wadi, Global Village (at its
-  real venue size, ~650 m: pavilions round a square, the big wheel, the gate) and 34 malls at their OpenStreetMap
-  footprints, each on its own car park with the ground in front cleared (Dubai Mall's glass dome, Wafi's pyramids,
-  Ibn Battuta's domes, Dragon Mart's blue scales). A mall's card says where it is, plus one fact for the famous ones.
-  Left out: Expo Mall (closed); Galleria Al Barsha, Gate Avenue, Abu Hail Centre and LuLu Village (no reliable position).
+- **The mall pack** (`map-art/mall_*.png`, `global_village.png`, `jumeirah_beach_hotel.png`, `wild_wadi.png`; card
+  text in `landmark-cards.js`, from the pack's mall_cards.json): 35 malls plus Global Village, the Jumeirah Beach
+  Hotel and Wild Wadi. Anchor = bottom centre of the canvas; placed by footprint centroid, the anchor sits
+  (coast + inland px)/4 art px below it. Right face = coast, left face = inland (Ibn Battuta runs along Sheikh
+  Zayed Road, Dragon Mart along its road). Each mall stands on a car park the shape of its footprint, with the
+  ground in front cleared. Cards: famous ones show the fact and a source link (and "Fact being checked" where
+  flagged); the rest show the title and area. #ffd470 is the art's lit-window colour and stays lit at night.
+  Not on the map: Expo Mall (closed); Galleria Al Barsha, Gate Avenue, Abu Hail Centre and LuLu Village (no
+  reliable position).
 - **The Burj Lake** is bigger than life so the fountain fits: a square ~0.85 km a side about 1 km from the tower
   towards the real fountain, with nothing tall in front of it.
 - **Shows**: on the Burj light-show schedule (`shows.js`), a colour wash runs up the Burj's visible pixels; with

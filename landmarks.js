@@ -1,5 +1,5 @@
-// The landmarks drawn from the art pack (map-art/*.png; the Jumeirah Beach Hotel and Wild Wadi are
-// drawn in its style by tools/draw-landmarks.mjs): where they stand, the plot they stand on,
+// The landmarks drawn from the art packs (map-art/*.png: the landmark pack, then the mall pack with the
+// malls, Global Village, the Jumeirah Beach Hotel and Wild Wadi): where they stand, the plot they stand on,
 // the card you see when you tap one, and the place in the app it links to.
 // Pure data, so the map's Web Worker can read it too. Coordinates checked against Wikipedia (Oct 2026).
 //   sprite: map-art/<sprite>.png, native pixels, anchor = bottom centre of the ground footprint
@@ -7,6 +7,7 @@
 //   clear:  tiles (radius) cleared of other buildings round it
 //   plot:   what it stands on: 'plaza' (paving), 'lake', 'island' (already in the terrain), 'none'
 //   venue:  names a matching place in the app might have (the card links to it)
+import { CARDS } from './landmark-cards.js';
 export const LANDMARKS = [
   { id:'burj_khalifa', size:[76,220], name:'Burj Khalifa', lat:25.1972, lng:55.2744, sprite:'burj_khalifa', clear:2, plot:'plaza', plotR:2,
     fact:'At 828 m it has been the world’s tallest building since it opened in 2010.', venue:['Burj Khalifa', 'At the Top'] },
@@ -24,16 +25,16 @@ export const LANDMARKS = [
     fact:'One of the few mosques in Dubai that welcomes non-Muslim visitors, with guided tours.', venue:['Jumeirah Mosque'] },
   { id:'atlantis_the_palm', size:[132,112], name:'Atlantis The Palm', at:'palm-crescent', sprite:'atlantis_the_palm', clear:2, plot:'none',
     fact:'It sits at the top of the Palm Jumeirah’s crescent. It opened in September 2008.', venue:['Atlantis The Palm', 'Atlantis'] },
-  { id:'jumeirah_beach_hotel', size:[96,70], name:'Jumeirah Beach Hotel', lat:25.141633, lng:55.190549, sprite:'jumeirah_beach_hotel', clear:1, plot:'none', billboard:true,
+  { id:'jumeirah_beach_hotel', size:[96,70], name:'Jumeirah Beach Hotel', lat:25.14159, lng:55.19084, sprite:'jumeirah_beach_hotel', clear:1, plot:'none',
     fact:'Shaped like a breaking wave: 26 floors, 93 m tall, opened in December 1997 beside the Burj Al Arab.', venue:['Jumeirah Beach Hotel'] },
-  { id:'wild_wadi', size:[92,78], name:'Wild Wadi Water Park', lat:25.139444, lng:55.189167, sprite:'wild_wadi', clear:1, plot:'none',
+  { id:'wild_wadi', size:[92,78], name:'Wild Wadi Water Park', lat:25.13965, lng:55.18943, sprite:'wild_wadi', clear:1, plot:'none',
     fact:'Opened in February 1998, with 17 water slides and the largest wave pool in the Middle East.', venue:['Wild Wadi', 'Wild Wadi Water Park'] },
   { id:'al_fahidi', size:[72,64], name:'Al Fahidi Historical Neighbourhood', lat:25.26389, lng:55.30000, sprite:'al_fahidi_house', clear:1, plot:'plaza', plotR:1,
     fact:'Built by merchants in the 1890s, its houses are topped with wind towers (barjeel) that catch the breeze and send it down into the rooms.', venue:['Al Fahidi', 'Al Bastakiya', 'Arabian Tea House'] },
 ];
 
-// Global Village and the malls: drawn in the art pack's style by tools/draw-landmarks.mjs at their real
-// footprint (OpenStreetMap outlines, Oct 2026). fp = [metres along the coast, metres inland], h = wall height.
+// Global Village and the malls: sprites from the mall art pack (map-art/mall_*.png), placed at their real
+// positions (OpenStreetMap, Oct 2026). fp = [metres along the coast, metres inland], h = wall height.
 // A mall stands on its own car park; its card says where it is (and one fact for the famous ones).
 // Left out: Expo Mall (closed); Galleria Al Barsha, Gate Avenue, Abu Hail Centre and LuLu Village (no reliable position).
 export const MALLS = [
@@ -73,16 +74,9 @@ export const MALLS = [
   ['al_khawaneej_walk','Al Khawaneej Walk',25.23341,55.47287,[220,150],4,'garden'],
   ['the_springs_souk','The Springs Souk',25.06565,55.19285,[180,220],6,'skylight'],
 ].map(([id, name, lat, lng, fp, h, roof, fact])=>({ id, name, lat, lng, fp, h, roof, fact, kind:'mall' }));
-// a mall's box in art pixels (2 per world unit; a 200 m tile is 16 units across): shared by the
-// sprite drawer and the map, so the sprite and its place on the map always agree
-export function mallBox(m){
-  const ex = Math.max(3, Math.round(16*m.fp[1]/400)), ey = Math.max(3, Math.round(16*m.fp[0]/400)), h = m.h*2;
-  const extra = m.roof==='atrium' ? 12 : m.roof==='pyramids' ? 14 : m.roof==='domes' ? 8 : 4;
-  return { ex, ey, h, w:2*(ex+ey)+3, hgt:(ex+ey)+h+extra+3, extra };
-}
 MALLS.forEach(m=>{
-  const b = mallBox(m);
-  LANDMARKS.push({ id:m.id, name:m.name, lat:m.lat, lng:m.lng, sprite:'mall_'+m.id, size:[b.w, b.hgt], clear:Math.max(1, Math.round(Math.max(b.ex, b.ey)/16)),
+  const c = CARDS['mall_'+m.id];
+  LANDMARKS.push({ id:m.id, name:m.name, lat:m.lat, lng:m.lng, sprite:'mall_'+m.id, size:c.size, fpx:c.fpx, clear:Math.max(1, Math.round(Math.max(c.fpx[0], c.fpx[1])/32)),
     plot:'parking', kind:'mall', fp:m.fp, fact:m.fact || '', venue:[m.name] });
 });
 LANDMARKS.push({ id:'global_village', name:'Global Village', lat:25.06815, lng:55.30731, sprite:'global_village', size:[108,96], clear:2, plot:'none', kind:'park',
@@ -101,3 +95,5 @@ export const PROPS = {
 };
 // every file the map loads from map-art/
 export const SPRITE_FILES = [...new Set([...LANDMARKS.map(l=>l.sprite), 'dubai_fountain_1','dubai_fountain_2','dubai_fountain_3','dubai_fountain_4','dubai_fountain_5', ...Object.keys(PROPS)])];
+// footprints for the pack's other sprites (art pixels: [coast, inland])
+for (const lm of LANDMARKS){ const c = CARDS[lm.sprite]; if (c && !lm.fpx) lm.fpx = c.fpx; }

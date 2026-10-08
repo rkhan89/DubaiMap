@@ -589,7 +589,9 @@ function buildObjects(){
     if (l.fp){ const ha = l.fp[0]/2000 + 0.12, hi = l.fp[1]/2000 + 0.12; forRect({ a:[at[0]-ha-0.35, at[0]+ha], i:[at[1]-hi, at[1]+hi+0.35] }, (r,c)=>{ reserved[r*COLS+c] = 1; }); }
     else if (l.clear) reserveAround(at[0], at[1], l.clear);
     const g = aiToGrid(at[0], at[1]), p = proj(g.gx, g.gy), W = l.size[0];
-    const dy = l.billboard ? 0 : W/8;
+    // the sprite's anchor is the bottom centre of its canvas, the row of the footprint's front corner: that sits
+    // (coast + inland)/4 art px (= /8 world units) below the footprint's middle, which is the landmark's point
+    const dy = l.billboard ? 0 : l.fpx ? (l.fpx[0] + l.fpx[1])/8 : W/8;
     OBJECTS.push({ k:'sprite', id:l.id, sprite:l.sprite, x:p.x, y:p.y + dy, px:p.x, py:p.y, w:l.size[0]/2, h:l.size[1]/2,
       d:g.gx + g.gy + (l.billboard ? 0.9 : W/32 + 0.4), plot:l.plot, plotL:2*(l.clear||0)+1,
       // a car park: the building's footprint plus ~120 m round it, in tiles (hx along gx = inland, hy along gy = the coast)
@@ -1525,7 +1527,7 @@ function shownStore(){
 /* ---------- finished overviews are kept in the browser's cache (per app version and theme), so the
    next launch shows the whole city at once and the worker only renders close-ups ---------- */
 // bump ART_REV whenever mapraster.js draws anything differently, so nobody keeps old art
-const ART_REV = 13, ART_CACHE = 'koko-map-art', ART_VER = `${APP.version}-r${ART_REV}`;
+const ART_REV = 14, ART_CACHE = 'koko-map-art', ART_VER = `${APP.version}-r${ART_REV}`;
 const artURL = (th, s)=>`/__map-art/${ART_VER}/${th}/${s}.png`;
 // The finished overviews ship with the app (map-art/overview, made by tools/build-overviews.mjs), so a
 // phone never shows half-finished ones. Wide first (small), then mid. If they can't be had, the worker
@@ -2249,6 +2251,20 @@ function shimmerFrames(){
   shimmer = { night:NIGHT, list };
   return list;
 }
+// a live sprite in tonight's colours (the same dusk mapping the renderer gives every sprite)
+const nightCv = new Map();
+function nightSprite(sp){
+  if (!NIGHT) return sp;
+  let n = nightCv.get(sp); if (n) return n;
+  const cv = newCanvas(sp.w, sp.h), c = cv.getContext('2d'), id = c.createImageData(sp.w, sp.h), d = new Uint32Array(id.data.buffer);
+  for (let q=0; q<sp.data.length; q++){
+    const p = sp.data[q], al = p>>>24; if (!al) continue;
+    const r = p&255, g = p>>8&255, bl = p>>16&255, l = (0.299*r + 0.587*g + 0.114*bl)/255, k = v=>Math.max(0, Math.min(255, Math.round(v)));
+    d[q] = ((al<<24) | (k(bl*0.24 + 46 + l*52)<<16) | (k(g*0.18 + 28 + l*46)<<8) | k(r*0.16 + 22 + l*44)) >>> 0;
+  }
+  c.putImageData(id, 0, 0);
+  n = { ...sp, img:cv }; nightCv.set(sp, n); return n;
+}
 let shimTmp = null;
 function drawLive(){
   // paused while the map moves (and in the wide view, and with reduced motion)
@@ -2274,7 +2290,7 @@ function drawLive(){
       if (o.k !== 'camel') continue;
       const sx = o.x*cam.s+cam.x, sy = o.y*cam.s+cam.y; if (sx < -40 || sx > viewW+40 || sy < -40 || sy > viewH+40) continue;
       const ph = hash2(Math.round(o.x), Math.round(o.y))*20, t = liveFrame*0.25 + ph, walk = Math.round(Math.sin(t/6)*6), dir = Math.cos(t/6) >= 0 ? 1 : -1;
-      const sp = (liveFrame & 1) ? cb : ca, bob = (liveFrame >> 1) & 1;
+      const sp = nightSprite((liveFrame & 1) ? cb : ca), bob = (liveFrame >> 1) & 1;
       const x0 = Math.round((o.x*RS.S + walk)) - Math.round(sp.ax), y0 = Math.round(o.y*RS.S) - Math.round(sp.ay) - bob;
       ctx.save();
       if (dir < 0){ ctx.translate(Math.round(ox + (x0 + sp.w)*k), 0); ctx.scale(-1, 1); ctx.drawImage(sp.img, 0, Math.round(oy + y0*k), Math.round(sp.w*k), Math.round(sp.h*k)); }

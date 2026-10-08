@@ -43,10 +43,11 @@ import mapcache from './mapcache.mjs';
 import landmarks from './landmarks.mjs';
 import mapperf2 from './mapperf2.mjs';
 import blur from './blur.mjs';
+import mallpack from './mallpack.mjs';
 import mapperf from './mapperf.mjs';
 import pins from './pins.mjs';
 import critters from './critters.mjs';
-const dflt = { screens, baa, perf2:perf, show, e2e, p2, p3, tour, brand, share1, crews, bookadd, gallery, gv, legal, share2, share3, places, share4, shelf, scrap, scrap2, ratings, mapfull, mapart, mapcache, landmarks, mapperf2, blur, mapperf, pins, critters,
+const dflt = { screens, baa, perf2:perf, show, e2e, p2, p3, tour, brand, share1, crews, bookadd, gallery, gv, legal, share2, share3, places, share4, shelf, scrap, scrap2, ratings, mapfull, mapart, mapcache, landmarks, mapperf2, blur, mallpack, mapperf, pins, critters,
   async fonts(h){
     await h.seed({mode:'crew'});
     await h.click('[data-tab="shelf"]'); await h.sleep(600); await h.shot('f-shelf');

@@ -1308,3 +1308,6 @@ html.still .mem-strip.in{opacity:1;}
 .lm-critter{display:flex;align-items:center;gap:12px;text-align:left;padding:12px;border-radius:16px;background:var(--sc-low);}
 .lm-critter .critter-art{width:48px;height:48px;background-size:contain;background-repeat:no-repeat;flex:none;}
 .lm-critter b{display:block;}
+.lm-card .fact-check{display:inline-flex;align-items:center;gap:4px;font-weight:700;font-size:12px;color:#B5451B;}
+.lm-source{font-size:12px;}
+.lm-source a{color:var(--ink-3);text-decoration:underline;}
