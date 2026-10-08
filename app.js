@@ -28,6 +28,7 @@ import './tapein.js';
 import { paintStrip, onThisDay, openMemory } from './memories.js';
 import './rate.js';
 import './critterui.js';
+import { openLandmark } from './landmarkui.js';
 import { favouriteBadge } from './critterui.js';
 import { colorOf } from './pincolor.js';
 
@@ -453,6 +454,7 @@ async function boot(){
     onAreaTap:(z)=>openArea(z),
     onMeTap:()=>go.editAvatar(),
     onEmptyTap:()=>hidePeek(),
+    onLandmarkTap:(lm)=>{ hidePeek(); openLandmark(lm.id); },
     onDragStart:()=>hidePeek(),
     onLocation:(st)=>{
       const b=$('#btnLocate');

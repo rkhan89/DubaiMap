@@ -374,6 +374,31 @@ neighbourhoods, ~7,400 objects); only the drawing changed.
 - **Saved art**: once the whole city has been rendered, the overviews are kept in the browser cache
   (per app version, art revision and day/night), so the next launch shows the city at once.
 
+## Landmarks, the fountain and the living city
+
+- **Landmarks from the art pack** (`landmarks.js`, `map-art/`): Burj Khalifa, the Dubai Fountain, Burj Al Arab
+  (side-on, on its island with the bridge), Museum of the Future, Emirates Towers, Dubai Frame, Jumeirah Mosque,
+  Atlantis The Palm (on the drawn crescent tip) and an Al Fahidi wind-tower house. Native pixels, anchored at the
+  middle of their footprint at their real coordinates (checked against Wikipedia, Oct 2026); one on a plaza that
+  would land in the water on this stylised coast moves to the nearest land. Each stands on its own plot (a paved
+  plaza with a few people, the lake, its island) with the ground round it cleared. The other landmarks keep
+  their procedural drawings, in the same pixel style.
+- **The Burj Lake** is bigger than life so the fountain fits: a square ~0.85 km a side about 1 km from the tower
+  towards the real fountain, with nothing tall in front of it.
+- **Shows**: on the Burj light-show schedule (`shows.js`), a colour wash runs up the Burj's visible pixels; with
+  the blue shows (:00 and :30, 19:00 to 23:00, 60 s) the fountain plays (rising, peak, falling, then the gold
+  finale for the last 6 s) and sits still on frame 0 in between. Only drawn when on screen and not in the wide
+  view; reduced motion shows a still frame.
+- **Tap a landmark** (anywhere on its sprite; pins on top always win) for its card: the sprite, one fact and a
+  button to the matching place if the app has one. The landmark-critter hook (`landmarkCritter`) returns
+  nothing until the landmark critters are confirmed; when it does, the card shows a locked silhouette.
+- **Life**: street lamps along the city roads (a warm baked glow at night), zebra crossings where city roads
+  meet, palms down Jumeirah Beach Road and Al Wasl Road, trees in three sizes, wakes behind boats, people on
+  the plazas, a soft haze toward the map's edges, and a shimmer on the water you can actually see (close up,
+  4 frames a second, paused while moving, behind full screens and with reduced motion).
+- **Props**: camel, palm, dhow, abra and yacht sprites are only used once they're the half-size art (limits in
+  `PROPS`); until then the map keeps its own small ones. Camels walk and bob once their art is in.
+
 ## Critters (no more points)
 
 Points, levels, the leaderboard and every counter toward a reward are gone (migration 0011 backs up `profiles.points` to `archive.profiles_points`, then drops it). Stickers stay as milestones; critters are the collectible.

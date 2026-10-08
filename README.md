@@ -11,7 +11,13 @@ Plain HTML/CSS/JS (ES modules), no build step. Live: https://dubai-bites-pi.verc
 | `config.js` | App name, tagline, logo, limits. **Rename the app here** (and `logo.svg`). |
 | `store.js` | Data layer. Local today (localStorage + IndexedDB for photos). Swap its exported functions for Supabase calls to go multi-device; screens don't touch storage directly. |
 | `model.js` | Derived views: stamp state per venue, who's been, feed. Privacy rules applied here via `store.canSee`. |
-| `map.js` | The isometric map renderer + camera, gestures, stamps overlay, live location. |
+| `map.js` | The map's data (terrain, roads, buildings), camera, gestures, stamps overlay, live location; composites the pixel city and draws the shows, shimmer and camels. |
+| `pixel.js` | Hard-edged pixel rasteriser and a small Canvas stand-in (no DOM). |
+| `mapraster.js` | Draws the city as pixel art: ground, roads, lamps, shadows, buildings, sprites, haze. |
+| `mapworker.js` | Runs mapraster.js in a Web Worker: overviews, then chunks, what's on screen first. |
+| `landmarks.js` | The art-pack landmarks (positions, plots, facts), the landmark-critter hook, prop size limits. |
+| `landmarkui.js` | The landmark card. |
+| `map-art/` | The art pack's sprites (native pixels; replace a file with the same name to update it). |
 | `app.js` | Shell: map Me/Crew modes, peek card, filters, list feed, profile, map tour. |
 | `onboarding.js` | Welcome, sign-in, handle, avatar, share default, crew setup, import (frames 1-8). |
 | `crew.js` | Crew screen, crew of one, invite link landing (frames 6, 9, 10). |

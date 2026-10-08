@@ -1,7 +1,7 @@
 // The map's pixel renderer, off the main thread. map.js asks for the overviews and for chunks in
 // priority order (what's on screen first); each comes back as an ImageBitmap (or raw pixels if this
 // browser can't make bitmaps in a worker). A new list replaces the old one, so panning re-prioritises.
-import { prepare, renderRect, renderChunk, setNight, artSize, chunkGrid, CH, S } from './mapraster.js';
+import { prepare, renderRect, renderChunk, setNight, setSprites, setPropLimits, fxMasks, artSize, chunkGrid, CH, S } from './mapraster.js';
 
 let theme = null, queue = [], busy = false;
 
@@ -16,6 +16,13 @@ async function send(kind, extra, buf, w, h){
   }
   postMessage({ kind, ...extra, w, h, px }, [px.buffer]);
 }
+// an alpha mask (1 byte a pixel) as a white ImageBitmap, made here so the main thread never loops over pixels
+async function maskBitmap(mask, w, h){
+  if (typeof createImageBitmap !== 'function') return null;
+  const id = new ImageData(w, h), d = new Uint32Array(id.data.buffer);
+  for (let q=0; q<w*h; q++) if (mask[q]) d[q] = 0xffffffff;
+  return createImageBitmap(id);
+}
 function pump(){
   if (busy) return;
   const job = queue.shift();
@@ -28,7 +35,10 @@ function pump(){
         const a = artSize(job.s), buf = renderRect(0, 0, a.w, a.h, job.s);
         await send('overview', { theme:th, s:job.s, ms:Math.round(performance.now()-t0) }, buf, a.w, a.h);
       } else {
-        await send('chunk', { theme:th, cx:job.cx, cy:job.cy, ms:Math.round(performance.now()-t0) }, renderChunk(job.cx, job.cy), CH, CH);
+        const buf = renderChunk(job.cx, job.cy), fx = fxMasks(buf);   // which Burj / fountain pixels show, for the overlays
+        for (const f of fx){ f.bmp = await maskBitmap(f.mask, f.w, f.h); if (f.bmp) f.mask = null; }
+        const waterBmp = buf.water ? await maskBitmap(buf.water, CH, CH) : null;
+        await send('chunk', { theme:th, cx:job.cx, cy:job.cy, fx, water:waterBmp ? null : buf.water, waterBmp, ms:Math.round(performance.now()-t0) }, buf, CH, CH);
       }
     } catch(e){ postMessage({ kind:'error', message:String(e && e.stack || e) }); }
     busy = false;
@@ -39,7 +49,7 @@ onmessage = e=>{
   const m = e.data;
   if (m.type === 'init' || m.type === 'theme'){
     if (m.night !== theme){ theme = m.night; setNight(theme === 'night'); }
-    if (m.type === 'init'){ const t0 = performance.now(); prepare(); postMessage({ kind:'ready', theme, grid:chunkGrid(), art:artSize(), CH, S, ms:Math.round(performance.now()-t0) }); }
+    if (m.type === 'init'){ const t0 = performance.now(); setSprites(m.sprites); setPropLimits(m.props); prepare(); postMessage({ kind:'ready', theme, grid:chunkGrid(), art:artSize(), CH, S, ms:Math.round(performance.now()-t0) }); }
     queue = [];
   } else if (m.type === 'want'){
     // [{kind:'overview', s}, {kind:'chunk', cx, cy}, …] in priority order (map.js only asks for what it hasn't got)

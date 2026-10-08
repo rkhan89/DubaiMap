@@ -294,11 +294,6 @@ textarea.input{min-height:110px;resize:none;line-height:1.45;}
 .map-wrap{position:absolute;inset:0;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;
   background:radial-gradient(120% 80% at 20% 0%, var(--map-glow), transparent 60%), linear-gradient(165deg,var(--peach-1) 0%, var(--peach-2) 55%, var(--peach-3) 100%);}
 #mapCanvas{position:absolute;inset:0;display:block;}
-/* night: two twinkle layers of city lights, faded by CSS only (no JS per frame) */
-.map-twinkle{position:absolute;inset:0;display:none;pointer-events:none;}
-.map-wrap.night .map-twinkle{display:block;animation:twinkle 5.3s ease-in-out infinite alternate;}
-.map-wrap.night .map-twinkle.b{animation-duration:7.7s;animation-delay:-3.1s;}
-@keyframes twinkle{0%{opacity:1;}100%{opacity:.18;}}
 #mapOverlay{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
 .labels-layer,.stamps-layer{position:absolute;inset:0;}
 .stamps-layer{z-index:1;} .labels-layer{z-index:2;}
@@ -771,8 +766,7 @@ textarea.input{min-height:110px;resize:none;line-height:1.45;}
 /* ?still in the URL: no transitions (used for screenshot testing) */
 html.still *,html.still *::before,html.still *::after{transition:none !important;animation:none !important;}
 @media (prefers-reduced-motion: reduce){
-  .me-ring,.me-sprite,.pick-marker .stamp,.map-twinkle{animation:none !important;}
-  .map-twinkle{opacity:.8;}
+  .me-ring,.me-sprite,.pick-marker .stamp{animation:none !important;}
   .screen,.sheet,.scrim,.toast,.peek{transition:none;}
 }
 .btn-grid .btn{font-size:16px;white-space:nowrap;padding:0 12px;}
@@ -788,28 +782,14 @@ html{overflow:hidden;}
 .screen-body,.place-body{overflow-x:hidden;}
 .person-row>.seg{flex-basis:100%;margin-top:4px;}
 
-/* landmark effects: the Burj Al Arab's sail glows at night, slowly shifting colour like the real one */
+/* landmark effects over the map (Global Village lights at night) */
 .fx-layer{position:absolute;inset:0;pointer-events:none;z-index:0;}
 .fx{position:absolute;left:0;top:0;transform-origin:0 0;display:none;will-change:transform;}
-.map-wrap.night .fx-baa{display:block;}
 .fx svg{display:block;overflow:visible;}
-.fx-baa svg{color:#8fd0ff;animation:baaglow 28s linear infinite;}
-.fx-baa .body{fill:currentColor;opacity:.42;mix-blend-mode:screen;}
-.fx-baa .halo{fill:none;stroke:currentColor;stroke-width:5;stroke-linejoin:round;opacity:.22;}
-@keyframes baaglow{0%{color:#8fd0ff;}20%{color:#b79cff;}40%{color:#ff9fd2;}60%{color:#ffc978;}80%{color:#9fffd6;}100%{color:#8fd0ff;}}
-@media (prefers-reduced-motion: reduce){ .fx-baa svg{animation:none;color:#b7c9ff;} }
 :root[data-theme="dark"] .map-dot i{opacity:.72;}
-.map-wrap.moving .map-twinkle{visibility:hidden;}
 .person-row{text-align:left;}
 .map-cars{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .4s;}
 .map-cars.on{opacity:1;}
-/* Burj Khalifa light shows: the wash runs up the tower; fades are a CSS opacity transition */
-.fx-burj{display:block;opacity:0;transition:opacity 1s linear;visibility:hidden;}
-.fx-burj.on{visibility:visible;}
-.fx-burj .wash{animation:washup 6s linear infinite;}
-.map-wrap.night .fx-burj{mix-blend-mode:screen;}
-@keyframes washup{from{transform:translateY(0);}to{transform:translateY(-130px);}}
-@media (prefers-reduced-motion: reduce){ .fx-burj .wash{animation:none;} }
 
 /* =========================================================
    PHASE 2: profile, stickers, goals, recap (own design)
@@ -1327,3 +1307,12 @@ html.still .mem-strip.in{opacity:1;}
 .w-city.still .wc-pin .wc-head,.w-city.still .wc-pin .wc-shadow{animation:none;opacity:1;transform:rotate(-45deg);}
 .w-city.still .wc-pin .wc-shadow{transform:none;}
 @media (prefers-reduced-motion: reduce){ .wc-layer{animation:none !important;} }
+
+/* the landmark card (landmarkui.js) */
+.lm-card{text-align:center;padding-bottom:6px;}
+.lm-art{display:flex;justify-content:center;align-items:flex-end;padding:18px 0 10px;border-radius:20px;background:var(--sc-low);}
+.lm-art img{image-rendering:pixelated;image-rendering:crisp-edges;display:block;}
+.lm-card p{color:var(--ink-2);font-size:15px;line-height:1.5;}
+.lm-critter{display:flex;align-items:center;gap:12px;text-align:left;padding:12px;border-radius:16px;background:var(--sc-low);}
+.lm-critter .critter-art{width:48px;height:48px;background-size:contain;background-repeat:no-repeat;flex:none;}
+.lm-critter b{display:block;}

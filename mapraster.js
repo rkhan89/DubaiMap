@@ -11,6 +11,13 @@ import { RAW as M } from './map.js';
 import { PixelBuffer, PixelCtx, rgba, hex, mix, scale, scanPolys, fillPolys, line, thickRings } from './pixel.js';
 
 export const S = 2;          // art pixels per world unit (the approved scale)
+// landmark and prop sprites (map-art/*.png), handed over by map.js: { name: { w, h, data:Uint32Array, ax, ay } }
+// ax, ay = the anchor in the sprite: bottom centre of its ground footprint
+let SPRITES = {};
+const spriteCache = new Map();
+export function setSprites(sp){ SPRITES = sp || {}; spriteCache.clear(); chunkObjs = null; }
+// sprites whose visible pixels the main thread needs for its overlays (the Burj light show, the fountain)
+export const FX_SPRITES = ['burj_khalifa', 'dubai_fountain'];
 export const CH = 256;       // chunk size in art pixels
 let ready = false, chunkObjs = null, roadBoxes = null;
 
@@ -34,6 +41,10 @@ function objBox(o){
     const w = 8*(o.hx+o.hy)+3, top = (o.z0||0)+o.h+(o.h>30?16:6), sh = o.h*0.55+2;
     return [o.x-w-sh, o.y-top, o.x+w+2, o.y+4*(o.hx+o.hy)+sh*0.5+3];
   }
+  if (o.k==='sprite'){
+    const sp = SPRITES[o.sprite]; if (!sp) return [o.x-4, o.y-4, o.x+4, o.y+4];
+    return [o.x - sp.ax/S - 2, o.y - sp.ay/S - 2, o.x + (sp.w - sp.ax)/S + 2, o.y + (sp.h - sp.ay)/S + 2];
+  }
   if (o.k==='rail') return [Math.min(o.x0,o.x1)-6, Math.min(o.y0,o.y1)-14, Math.max(o.x0,o.x1)+6, Math.max(o.y0,o.y1)+6];
   if (o.k==='lm') return [o.x-70, o.y-280, o.x+70, o.y+40];
   if (o.k==='lm2') return [o.x-70, o.y-140, o.x+70, o.y+40];
@@ -41,6 +52,22 @@ function objBox(o){
   return [o.x-20, o.y-40, o.x+20, o.y+12];
 }
 // which objects touch each chunk, in the global depth order
+// where two city roads cross (world units), for the zebra crossings
+let CROSSINGS = null;
+function findCrossings(){
+  CROSSINGS = [];
+  const rd = M.ROADS_W.filter(r=>r.k >= 1);
+  const segX = (p, q, a, b)=>{ const d = (q[0]-p[0])*(b[1]-a[1]) - (q[1]-p[1])*(b[0]-a[0]); if (!d) return null;
+    const t = ((a[0]-p[0])*(b[1]-a[1]) - (a[1]-p[1])*(b[0]-a[0]))/d, u = ((a[0]-p[0])*(q[1]-p[1]) - (a[1]-p[1])*(q[0]-p[0]))/d;
+    return t>0 && t<1 && u>0 && u<1 ? [p[0]+(q[0]-p[0])*t, p[1]+(q[1]-p[1])*t] : null; };
+  for (let i=0; i<rd.length; i++) for (let j=i+1; j<rd.length; j++){
+    const A = rd[i].pts, B = rd[j].pts;
+    for (let a=0; a<A.length-1; a++) for (let b=0; b<B.length-1; b++){
+      const x = segX(A[a], A[a+1], B[b], B[b+1]); if (!x) continue;
+      CROSSINGS.push({ x:x[0], y:x[1], roads:[[A[a], A[a+1], rd[i].k], [B[b], B[b+1], rd[j].k]] });
+    }
+  }
+}
 function indexChunks(){
   const g = chunkGrid();
   chunkObjs = Array.from({length:g.cols*g.rows}, ()=>[]);
@@ -209,10 +236,64 @@ function drawRoads(buf, s, groundMask){
     else if (rd.k === 1) walk(pts, 0, markC, [3,4]);
   });
   M.RUNWAYS_W.forEach(rw=>walk(rw.line.map(p=>[p[0]*s, p[1]*s]), 0, N('#FFFFFF'), [6,5]));
+  if (s >= 2) drawCrossings(buf, s, groundMask, mask, mw, mx0, my0);
+  if (s >= 2) drawLamps(buf, s, groundMask, vis);
   // the Dubai Tram: twin teal rails on a dark bed
   const tram = M.TRAM.map(([a,i])=>{ const p = M.aiToWorld(a,i); return [p.x*s, p.y*s]; });
   fillPolys(buf, thickRings(tram, 3*s), N(M.OUT));
   fillPolys(buf, thickRings(tram, 1.8*s), N('#3FB8AF'));
+}
+
+// zebra crossings where two city roads meet (in town only)
+function drawCrossings(buf, s, groundMask, mask, mw, mx0, my0){
+  if (!CROSSINGS) findCrossings();
+  const W = buf.w, H = buf.h, zc = N('#F7F3EA');
+  for (const cr of CROSSINGS){
+    const X = cr.x*s, Y = cr.y*s; if (X < buf.ox-30 || X > buf.ox+W+30 || Y < buf.oy-30 || Y > buf.oy+H+30) continue;
+    const gx = Math.min(W-1, Math.max(0, Math.round(X)-buf.ox)), gy = Math.min(H-1, Math.max(0, Math.round(Y)-buf.oy));
+    const t = groundMask ? groundMask[gy*W + gx]-1 : -1;
+    if (t !== M.L_URBAN && t !== M.L_LOT) continue;
+    cr.roads.forEach(([p, q, k], idx)=>{
+      const other = cr.roads[1-idx][2], dx = q[0]-p[0], dy = q[1]-p[1], L = Math.hypot(dx, dy), ux = dx/L, uy = dy/L, nx = -uy, ny = ux;
+      const w = M.RD[k].w*s, back = M.RD[other].w*s/2 + 3;
+      for (const side of [-1, 1]) for (let a=-w/2+1; a<w/2-0.5; a+=2) for (let l=0; l<3; l++){
+        const x = Math.floor(X + ux*side*(back+l) + nx*a), y = Math.floor(Y + uy*side*(back+l) + ny*a);
+        if (x < buf.ox || y < buf.oy || x >= buf.ox+W || y >= buf.oy+H) continue;
+        const m = mask[(y-my0)*mw + x-mx0]; if (m === 2 || m === 3) buf.data[(y-buf.oy)*W + x-buf.ox] = zc;
+      }
+    });
+  }
+}
+// street lamps along the city roads: a post, a head, and at night a warm glow round the head
+function drawLamps(buf, s, groundMask, vis){
+  const W = buf.w, H = buf.h, post = N('#7B7F86'), head = night() ? rgba('#FFE7A6') : rgba('#D9DCE0'), glow = rgba('#FFD27A'), STEP = 24;
+  vis.forEach(rd=>{
+    if (rd.k === 2) return;
+    const pts = rd.pts.map(p=>[p[0]*s, p[1]*s]), off = M.RD[rd.k].w*s/2 + 2;
+    let walked = 0;
+    for (let k=0; k<pts.length-1; k++){
+      const [ax,ay] = pts[k], [bx,by] = pts[k+1], L = Math.hypot(bx-ax, by-ay); if (!L){ continue; }
+      const nx = -(by-ay)/L, ny = (bx-ax)/L;
+      for (let d = (STEP - walked % STEP) % STEP; d < L; d += STEP){
+        for (const side of [-1, 1]){
+          const x = Math.round(ax + (bx-ax)*d/L + nx*off*side), y = Math.round(ay + (by-ay)*d/L + ny*off*side);
+          if (x < buf.ox-8 || y < buf.oy-8 || x >= buf.ox+W+8 || y >= buf.oy+H+12) continue;
+          const gi = Math.min(H-1, Math.max(0, y-buf.oy))*W + Math.min(W-1, Math.max(0, x-buf.ox)), t = groundMask ? groundMask[gi]-1 : -1;
+          if (t !== M.L_URBAN && t !== M.L_LOT && t !== M.L_TARMAC && t !== M.L_PARK) continue;
+          if (night()){
+            for (let gy=-7; gy<=7; gy++) for (let gx=-7; gx<=7; gx++){
+              const r = Math.hypot(gx, gy*1.4); if (r > 7) continue;
+              const px = x+gx, py = y-5+gy; if (px < buf.ox || py < buf.oy || px >= buf.ox+W || py >= buf.oy+H) continue;
+              const q = (py-buf.oy)*W + px-buf.ox; buf.data[q] = mix(buf.data[q], glow, 0.32*(1 - r/7)**2);
+            }
+          }
+          for (let k2=0; k2<5; k2++) buf.put(x, y-k2, post);
+          buf.put(x, y-5, head); buf.put(x + side, y-5, head);
+        }
+      }
+      walked += L;
+    }
+  });
 }
 
 /* =========================================================
@@ -464,6 +545,94 @@ function drawBuilding(buf, o, s){
 const geomR = (o, s)=>8*Math.min(o.hx, o.hy)*s;
 
 /* =========================================================
+   SPRITES (landmarks and props from the art pack)
+   ========================================================= */
+// the night version of a sprite pixel: the same dusk mapping as the rest of the city, a touch brighter
+function nightPx(c){
+  const a = c>>>24; if (!a) return 0;
+  const r = c&255, g = c>>8&255, b = c>>16&255, l = (0.299*r + 0.587*g + 0.114*b)/255;
+  const k = v=>Math.max(0, Math.min(255, Math.round(v)));
+  return hex(k(r*0.16 + 22 + l*44), k(g*0.18 + 28 + l*46), k(b*0.24 + 46 + l*52), a);
+}
+// a sprite at scale s (native at full scale; averaged down for the overviews), in the current theme
+function spriteFor(name, s){
+  const sp = SPRITES[name]; if (!sp) return null;
+  const f = Math.max(1, Math.round(S/s)), key = name + '|' + (night() ? 1 : 0) + '|' + f;
+  let out = spriteCache.get(key); if (out) return out;
+  let data = night() ? sp.data.map(nightPx) : sp.data, w = sp.w, h = sp.h;
+  if (f > 1){
+    // average f x f blocks (colour weighted by alpha); a block shows if at least half of it is opaque
+    const W = Math.ceil(w/f), H = Math.ceil(h/f), d2 = new Uint32Array(W*H);
+    for (let y=0; y<H; y++) for (let x=0; x<W; x++){
+      let r=0, g=0, b=0, a=0, n=0;
+      for (let dy=0; dy<f; dy++) for (let dx=0; dx<f; dx++){ const X = x*f+dx, Y = y*f+dy; if (X>=w || Y>=h) continue; n++; const c = data[Y*w+X], al = c>>>24; if (!al) continue; r += (c&255)*al; g += (c>>8&255)*al; b += (c>>16&255)*al; a += al; }
+      if (a >= 255*n/2) d2[y*W+x] = hex(Math.round(r/a), Math.round(g/a), Math.round(b/a), 255);
+    }
+    data = d2; w = W; h = H;
+  }
+  out = { w, h, data, ax:sp.ax/f, ay:sp.ay/f };
+  spriteCache.set(key, out);
+  return out;
+}
+function spriteOrigin(o, sp, s){ return [Math.round(o.x*s) - Math.round(sp.ax), Math.round(o.y*s) - Math.round(sp.ay)]; }
+function drawSprite(buf, o, s){
+  const sp = spriteFor(o.sprite, s); if (!sp) return;
+  const [x0, y0] = spriteOrigin(o, sp, s);
+  const bx0 = Math.max(x0, buf.ox), by0 = Math.max(y0, buf.oy), bx1 = Math.min(x0+sp.w, buf.ox+buf.w), by1 = Math.min(y0+sp.h, buf.oy+buf.h);
+  for (let y=by0; y<by1; y++){
+    const srow = (y-y0)*sp.w - x0, brow = (y-buf.oy)*buf.w - buf.ox;
+    for (let x=bx0; x<bx1; x++){ const c = sp.data[srow+x]; if ((c>>>24) >= 128) buf.data[brow+x] = (c | 0xff000000) >>> 0; }
+  }
+}
+// the paved plaza a landmark stands on: light stone, an iso grid of joints, a kerb round the edge
+function drawPlazas(buf, s, list, groundMask){
+  const stone = N('#E8DCC6'), joint = N('#D6C8AE'), kerbC = N('#BFAF92'), clip = { x0:buf.ox, y0:buf.oy, x1:buf.ox+buf.w, y1:buf.oy+buf.h };
+  for (const k of list){
+    const o = M.OBJECTS[k]; if (o.k !== 'sprite' || o.plot !== 'plaza') continue;
+    const L = o.plotL, hw = 8*s*L, hh = 4*s*L, cx = o.px*s, cy = o.py*s;
+    const ring = [cx, cy-hh, cx+hw, cy, cx, cy+hh, cx-hw, cy];
+    scanPolys([ring], (y, a, b)=>{
+      for (let x=a; x<b; x++){
+        if (groundMask && M.isWaterT(groundMask[(y-buf.oy)*buf.w + x-buf.ox]-1)) continue;   // never pave the water
+        const u = ((x + 2*y) % 16 + 16) % 16, v = ((x - 2*y) % 16 + 16) % 16;
+        const edge = x - a < 2 || b - x <= 2;
+        buf.data[(y-buf.oy)*buf.w + x-buf.ox] = edge && s >= 1 ? kerbC : (s >= 2 && (u < 2 || v < 2)) ? joint : stone;
+      }
+    }, clip);
+    // a few people out on the plaza: a head, a top and legs, 1 x 4 pixels
+    if (s >= 2){
+      const n = 3 + L*2;
+      for (let p=0; p<n; p++){
+        const u = h32(k, p, 41) - 0.5, v = h32(k, p, 42) - 0.5;
+        const x = Math.round(cx + (u - v)*hw*0.9), y = Math.round(cy + (u + v)*hh*0.9), top = N2(PEOPLE_TOPS[(p*3 + k) % PEOPLE_TOPS.length]);
+        if (groundMask && M.isWaterT(groundMask[Math.min(buf.h-1, Math.max(0, y-buf.oy))*buf.w + Math.min(buf.w-1, Math.max(0, x-buf.ox))]-1)) continue;
+        buf.put(x, y-3, N2(PEOPLE_SKIN[p % 4])); buf.put(x, y-2, top); buf.put(x, y-1, top); buf.put(x, y, N('#3A3A44'));
+      }
+    }
+  }
+}
+const PEOPLE_SKIN = ['#F1C27D','#DDA46F','#B97A4C','#8D5A36'].map(rgba), PEOPLE_TOPS = ['#E86A5C','#3F7FD9','#F4F0E6','#2FA59A','#E5A93C','#1D1712','#8E5BD6'].map(rgba);
+// which of an overlay sprite's pixels are still showing once everything in front is drawn
+export function fxMasks(buf, s=S){
+  const out = [];
+  if (!chunkObjs) indexChunks();
+  for (const o of M.OBJECTS){
+    if (o.k !== 'sprite' || !FX_SPRITES.includes(o.id)) continue;
+    const sp = spriteFor(o.sprite, s); if (!sp) continue;
+    const [x0, y0] = spriteOrigin(o, sp, s);
+    const bx0 = Math.max(x0, buf.ox), by0 = Math.max(y0, buf.oy), bx1 = Math.min(x0+sp.w, buf.ox+buf.w), by1 = Math.min(y0+sp.h, buf.oy+buf.h);
+    if (bx1 <= bx0 || by1 <= by0) continue;
+    const w = bx1-bx0, h = by1-by0, mask = new Uint8Array(w*h);
+    for (let y=by0; y<by1; y++) for (let x=bx0; x<bx1; x++){
+      const c = sp.data[(y-y0)*sp.w + x-x0];
+      if ((c>>>24) >= 128 && buf.data[(y-buf.oy)*buf.w + x-buf.ox] === ((c | 0xff000000) >>> 0)) mask[(y-by0)*w + x-bx0] = 255;
+    }
+    out.push({ id:o.id, x:bx0-x0, y:by0-y0, w, h, sw:sp.w, sh:sp.h, mask });
+  }
+  return out;
+}
+
+/* =========================================================
    A RECTANGLE OF THE CITY
    ========================================================= */
 // x0, y0, w, h in art pixels at scale s. Returns a PixelBuffer.
@@ -471,19 +640,61 @@ export function renderRect(x0, y0, w, h, s=S){
   prepare();
   const buf = new PixelBuffer(w, h, x0, y0), groundMask = new Uint8Array(w*h);
   drawGround(buf, s, groundMask);
-  drawRoads(buf, s, groundMask);
   const list = s === S && w === CH && h === CH && x0 % CH === 0 && y0 % CH === 0
     ? (chunkObjs || (indexChunks(), chunkObjs))[(y0/CH)*chunkGrid().cols + x0/CH]
     : objectsIn(x0/s, y0/s, (x0+w)/s, (y0+h)/s, s);
+  drawPlazas(buf, s, list, groundMask);
+  drawRoads(buf, s, groundMask);
+  const ground = s >= 2 ? buf.data.slice() : null;   // to tell which water nothing stands in front of
   if (s >= 1) drawShadows(buf, s, list, groundMask);
   const ctx = new PixelCtx(buf, s);
   M.setLineWidth(1/s);
   for (const k of list){
     const o = M.OBJECTS[k];
+    if (o.k === 'boat' && s >= 2){
+      // a pale V of wake trailing behind the boat
+      const wc = night() ? rgba('rgba(170,200,255,0.35)') : rgba('rgba(255,255,255,0.75)'), X = Math.round(o.x*s), Y = Math.round(o.y*s);
+      for (let d=0; d<14; d++){ if (d % 3 === 2) continue; buf.put(X - 10 - d, Y + 1 + (d>>2), wc); buf.put(X - 10 - d, Y + 5 - (d>>2), wc); }
+    }
     if (o.k === 'box') drawBuilding(buf, o, s);
+    else if (o.k === 'sprite') drawSprite(buf, o, s);
+    else if (o.k === 'camel' && propOk('camel_a')) continue;   // walking camels are drawn live by map.js
+    else if (propOk(propOf(o))) drawSprite(buf, { x:o.x, y:o.y, sprite:propOf(o) }, s);
     else { try { M.drawObjectVector(ctx, o); } catch(e){ /* one odd shape never stops the city */ } }
   }
+  // the water you can see (not under a boat, a bridge or a building in front)
+  if (ground){
+    let any = false; const water = new Uint8Array(w*h);
+    for (let q=0; q<w*h; q++) if (groundMask[q] && M.isWaterT(groundMask[q]-1) && buf.data[q] === ground[q]){ water[q] = 1; any = true; }
+    buf.water = any ? water : null;
+  }
+  addHaze(buf, s);
   return buf;
 }
+// a soft haze toward the edges of the map (the only soft thing besides glow; it sits on top of the pixels)
+function addHaze(buf, s){
+  const hz = night() ? rgba('#0D1426') : rgba('#EFE3CF'), ox = M.WORLD.ox, oy = M.WORLD.oy, R = 14;
+  for (let y=0; y<buf.h; y++){
+    const wy = (y + buf.oy + 0.5)/s;
+    for (let x=0; x<buf.w; x++){
+      const q = y*buf.w + x; if (!buf.data[q]) continue;
+      const wx = (x + buf.ox + 0.5)/s, a = (wx - ox)/8, b = (wy - oy)/4, gx = (a + b)/2, gy = (b - a)/2;
+      const d = Math.min(gx, gy, M.COLS - gx, M.ROWS - gy);
+      if (d >= R) continue;
+      const t = (R - Math.max(d, 0))/R; buf.data[q] = mix(buf.data[q], hz, 0.38*t*t);
+    }
+  }
+}
+// a prop sprite is only used once it's the new half-size art (see PROPS in landmarks.js)
+let PROP_MAX = {};
+export function setPropLimits(p){ PROP_MAX = p || {}; }
+// which prop sprite stands in for one of the map's small things
+function propOf(o){
+  if (o.k === 'camel') return o.f ? 'camel_b' : 'camel_a';
+  if (o.k === 'palm') return (o.s || 1) < 0.95 ? 'palm_short' : 'palm';
+  if (o.k === 'boat') return o.kind;   // dhow, abra, yacht
+  return null;
+}
+function propOk(name){ if (!name) return false; const sp = SPRITES[name], m = PROP_MAX[name]; return sp && m && sp.w <= m[0] && sp.h <= m[1]; }
 export function renderChunk(cx, cy){ return renderRect(cx*CH, cy*CH, CH, CH, S); }
 export function setNight(on){ M.setNight(on); }

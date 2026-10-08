@@ -3,6 +3,7 @@
 // and labels. The city itself is drawn as pixel art by mapraster.js, in a Web Worker (mapworker.js),
 // and composited here from overviews and chunks (see "the pixel city" below).
 import { APP } from './config.js';
+import { LANDMARKS as ART_LANDMARKS, PROPS, SPRITE_FILES } from './landmarks.js';
 
 /* =========================================================
    GEOGRAPHY
@@ -98,7 +99,12 @@ const LAGOON = { c:G(25.1930,55.3400), r:0.85 };
 const CANAL = [G(25.2160,55.3420),G(25.1990,55.3120),G(25.1890,55.2920),G(25.1850,55.2780),G(25.1870,55.2640),
   G(25.1920,55.2500),G(25.1990,55.2400),G(25.2040,55.2330)];
 const MARINA = [G(25.0660,55.1335),G(25.0760,55.1400),G(25.0840,55.1440),G(25.0900,55.1470),G(25.0935,55.1440)];
-const BURJ_LAKE = { c:[G(25.1972,55.2744)[0]+0.35, G(25.1972,55.2744)[1]+0.3], r:0.22 };
+// The Burj Lake, bigger than life so the fountain sprite fits: its base is a diamond 4.25 tiles
+// across, which is a square (half-side h km) in map terms. It sits on the line from the tower to the
+// real fountain, ~1 km out, which leaves the tower its plaza.
+const BURJ_LAKE = (()=>{ const b=G(25.1972,55.2744), f=G(25.19518,55.27506), da=f[0]-b[0], di=f[1]-b[1], L=Math.hypot(da,di);
+  return { c:[b[0]+da/L*0.95, b[1]+di/L*0.95], h:0.425 }; })();
+const inLake = (a,i)=>Math.abs(a-BURJ_LAKE.c[0]) <= BURJ_LAKE.h && Math.abs(i-BURJ_LAKE.c[1]) <= BURJ_LAKE.h;
 
 // Palm Jumeirah: trunk off Al Sufouh, a fan of fronds, and the crescent with Atlantis at its apex
 const PALM = { base:[3.43,0.45], hub:[3.56,-1.15], fr0:0.3, fr1:2.35, fronds:15, span:1.72, cr:3.3, crW:0.13, crSpan:1.84 };
@@ -199,13 +205,13 @@ const ROADS = [
   {k:1, pts:[G(25.285,55.375),G(25.265,55.395),G(25.215,55.405),G(25.170,55.395)]},                   // Tripoli St / Mirdif
   {k:1, pts:[G(25.100,55.180),G(25.060,55.220),G(25.030,55.255)]},                                    // Hessa St
   {k:1, pts:[G(25.035,55.110),G(25.020,55.150),G(25.010,55.200)]},                                    // Furjan / Discovery Gardens
-  {k:1, pts:[[-3.4,-0.1],[0,0.42],[2.2,0.55],[3.4,0.8],[5.4,1.0],[9,0.95],[15,0.9],[17.5,0.8],[19.6,0.7],[21.2,0.62],[23.5,0.5],[26.2,0.45]]}, // Jumeirah Beach Rd
+  {k:1, palms:true, pts:[[-3.4,-0.1],[0,0.42],[2.2,0.55],[3.4,0.8],[5.4,1.0],[9,0.95],[15,0.9],[17.5,0.8],[19.6,0.7],[21.2,0.62],[23.5,0.5],[26.2,0.45]]}, // Jumeirah Beach Rd
   {k:1, pts:[[26.9,0.3],[28,0.55],[30,0.8],[31.6,1.25],[32.6,2.35],[34.5,3.3],[36,3.8]]},                                             // Deira corniche
   {k:1, pts:[[0.6,0.45],[0.6,9.7]]}, {k:1, pts:[[4.15,0.8],[4.15,9.7]]}, {k:1, pts:[[7.9,0.95],[7.9,9.7]]},
   {k:1, pts:[[11.4,0.92],[11.4,9.7]]}, {k:1, pts:[[14.9,0.9],[14.9,6.5]]}, {k:1, pts:[[21.3,0.62],[21.3,6.6]]},
   {k:1, pts:[[23.5,0.5],[23.5,5.5]]}, {k:1, pts:[[25.2,0.45],[25.2,6.0]]}, {k:1, pts:[[28.4,0.6],[28.4,5.4]]},
   {k:1, pts:[[30.6,0.8],[30.6,5.4]]},
-  {k:1, pts:[G(25.2335,55.2725),G(25.2180,55.2580),G(25.2000,55.2450),G(25.1850,55.2350),G(25.1700,55.2230),G(25.1550,55.2120),G(25.1400,55.2000)]}, // Al Wasl Rd
+  {k:1, palms:true, pts:[G(25.2335,55.2725),G(25.2180,55.2580),G(25.2000,55.2450),G(25.1850,55.2350),G(25.1700,55.2230),G(25.1550,55.2120),G(25.1400,55.2000)]}, // Al Wasl Rd
   {k:1, pts:[G(25.1530,55.2080),G(25.1350,55.2200),G(25.1180,55.2320),G(25.1000,55.2450),G(25.0800,55.2580),G(25.0600,55.2700)]}, // Umm Suqeim St
   {k:1, pts:[G(25.2620,55.3240),G(25.2730,55.3420),G(25.2850,55.3580),G(25.2990,55.3720),G(25.3150,55.3850)]},                   // Al Ittihad Rd
   {k:1, pts:[G(25.2520,55.3270),G(25.2480,55.3400),G(25.2440,55.3560),G(25.2380,55.3750),G(25.2300,55.3920)]},                   // Airport Rd
@@ -491,7 +497,7 @@ function buildTerrain(){
       }
       if (distLine(a,i,CREEK) < 0.21 || Math.hypot(a-LAGOON.c[0], i-LAGOON.c[1]) < LAGOON.r
           || distLine(a,i,CANAL) < 0.12 || distLine(a,i,MARINA) < 0.14
-          || Math.hypot(a-BURJ_LAKE.c[0], i-BURJ_LAKE.c[1]) < BURJ_LAKE.r) t = W_CANAL;
+          || inLake(a,i)) t = W_CANAL;
     }
     tType[r*COLS+c] = t;
     if (!isWaterT(t)){
@@ -560,8 +566,35 @@ function reserveAround(a,i,rad){
   }
 }
 
+// old landmark drawings now done by the art pack's sprites (landmarks.js)
+const ART_KEYS = new Set(['burj','baa','frame','motf','atlantis','jmosque','emtowers']);
+function landmarkPoint(l){ return l.at==='palm-crescent' ? ATLANTIS : l.plot==='lake' ? BURJ_LAKE.c : G(l.lat, l.lng); }
 function buildObjects(){
+  // the art-pack landmarks: the point is the middle of the sprite's footprint (its anchor sits half the
+  // footprint lower), the ground round it is cleared, and it gets a paved plaza where it has one
+  // a landmark on a plaza that lands in the water on this stylised coast moves to the nearest land
+  const onLandTile = (a,i)=>{ const g=aiToGrid(a,i), c=Math.floor(g.gx), r=Math.floor(g.gy); return r>=0&&c>=0&&r<ROWS&&c<COLS && !isWaterT(tType[r*COLS+c]); };
+  const plotOnLand = (a, i, R)=>{ for (let x=-R; x<=R; x++) for (let y=-R; y<=R; y++) if (!onLandTile(a + x*T, i + y*T)) return false; return true; };
+  const nearestLand = (at, R)=>{
+    if (plotOnLand(at[0], at[1], R)) return at;
+    for (let d=T; d<=1.2; d+=T/2) for (let k=0; k<24; k++){ const th=k/24*Math.PI*2, a=at[0]+Math.cos(th)*d, i=at[1]+Math.sin(th)*d;
+      // the whole plot has to be on land, not just its middle
+      if (plotOnLand(a, i, R)) return [a, i]; }
+    return at;
+  };
+  ART_LANDMARKS.forEach(l=>{
+    const at = l.plot==='plaza' ? nearestLand(landmarkPoint(l), Math.max(1, l.clear||1)) : landmarkPoint(l);
+    if (l.clear) reserveAround(at[0], at[1], l.clear);
+    const g = aiToGrid(at[0], at[1]), p = proj(g.gx, g.gy), W = l.size[0];
+    const dy = l.billboard ? 0 : W/8;
+    OBJECTS.push({ k:'sprite', id:l.id, sprite:l.sprite, x:p.x, y:p.y + dy, px:p.x, py:p.y, w:l.size[0]/2, h:l.size[1]/2,
+      d:g.gx + g.gy + (l.billboard ? 0.9 : W/32 + 0.4), plot:l.plot, plotL:2*(l.clear||0)+1 });
+  });
+  // nothing tall in front of the lake, so the fountain's show is never hidden
+  { const [ca, ci] = BURJ_LAKE.c, h = BURJ_LAKE.h + 0.5;
+    for (let r=0;r<ROWS;r++) for (let c=0;c<COLS;c++){ const {a,i} = gridToAI(c+0.5,r+0.5); if (Math.abs(a-ca) <= h && Math.abs(i-ci) <= h && (i-ci) - (a-ca) > -0.3) reserved[r*COLS+c] = 1; } }
   LANDMARKS.forEach(l=>{
+    if (ART_KEYS.has(l.k)) return;
     const rad = l.k==='gv' ? 5 : l.k==='meydan' ? 4 : l.k==='mall'||l.k==='terminal'||l.k==='atlantis'||l.k==='burj'||l.k==='ibn' ? 2 : 1;
     reserveAround(l.at[0], l.at[1], rad);
     const g=aiToGrid(l.at[0], l.at[1]), p=proj(g.gx,g.gy);
@@ -580,7 +613,7 @@ function buildObjects(){
   };
   const addTree = (c,r,rng)=>{
     const p = tileWorld(c,r);
-    OBJECTS.push({k:'tree', x:p.x+(rng()-0.5)*8, y:p.y+(rng()-0.5)*4, d:c+r+1.05});
+    OBJECTS.push({k:'tree', x:p.x+(rng()-0.5)*8, y:p.y+(rng()-0.5)*4, d:c+r+1.05, ts:[0.75,1,1,1.3][Math.floor(rng()*4)]});
   };
   const free = (c,r)=>{ const k=r*COLS+c; return !roadMask[k] && !reserved[k]; };
 
@@ -631,6 +664,7 @@ function buildObjects(){
   // the new landmarks: their ground is cleared of whatever the districts put there (nothing else moves)
   { const before = new Uint8Array(reserved);
     LANDMARKS2.forEach(l=>{
+      if (ART_KEYS.has(l.k)) return;
       const rad = ['dcc','mirdifcc','festival','dhmall','img','expo','cricket','autodrome','dragonmart','maktoum','miracle'].includes(l.k) ? 2 : 1;
       reserveAround(l.at[0], l.at[1], rad);
       const g=aiToGrid(l.at[0], l.at[1]), p=proj(g.gx,g.gy);
@@ -748,6 +782,21 @@ function buildObjects(){
   [[-11.75,-2.0],[-11.75,-2.5],[-10.65,-2.2],[-9.85,-2.0],[-9.85,-2.6],[-8.55,-2.3],[-11.2,-1.4],[-9.2,-1.4],[24.6,-0.95],[25.1,-0.95],[25.7,-0.95]].forEach(([a,i],q)=>{
     const w=aiToWorld(a,i), g=aiToGrid(a,i); OBJECTS.push({k:'crane', x:w.x, y:w.y, d:g.gx+g.gy+0.9, col:q%2?'#3F78B5':'#D9443A'}); });
 
+  // palms down both sides of the palm-lined roads, every ~150 m, where there's free land
+  { const rng = mulberry32(4242);
+    ROADS.filter(r=>r.palms).forEach(rd=>{
+      const off = RD[rd.k].km + 0.05;
+      for (let k=0; k<rd.pts.length-1; k++){
+        const [a0,i0]=rd.pts[k], [a1,i1]=rd.pts[k+1], L=Math.hypot(a1-a0,i1-i0), na=-(i1-i0)/L, ni=(a1-a0)/L;
+        for (let d=0.075; d<L; d+=0.15) for (const side of [-1,1]){
+          const a=a0+(a1-a0)*d/L+na*off*side, i=i0+(i1-i0)*d/L+ni*off*side, g=aiToGrid(a,i), c=Math.floor(g.gx), r=Math.floor(g.gy);
+          if (r<0||c<0||r>=ROWS||c>=COLS) continue;
+          const t=tType[r*COLS+c]; if (isWaterT(t) || reserved[r*COLS+c] || t===L_BEACH && side<0) continue;
+          const p=proj(g.gx,g.gy); OBJECTS.push({k:'palm', x:p.x, y:p.y, d:g.gx+g.gy+0.3, s:0.85+rng()*0.25});
+        }
+      }
+    });
+  }
   OBJECTS.sort((p,q)=>p.d-q.d);
 }
 
@@ -880,8 +929,6 @@ function drawBAA(ctx, x, y){
   ctx.strokeStyle=C('#FFFFFF'); ctx.lineWidth=LW*0.7; ctx.beginPath(); ctx.ellipse(hx, hy-1.4, 4.6, 2.2, 0, 0, Math.PI*2); ctx.stroke();
   ctx.restore();
 }
-// night glow outline (SVG path in local coords) for the overlay
-function baaGlowPath(){ return 'M'+[BAA.spineB, ...BAA.edge, BAA.spineT].map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join('L')+'Z'; }
 
 /* ---------- landmarks ---------- */
 function drawLandmark(ctx, o){
@@ -1010,10 +1057,11 @@ function drawLandmark(ctx, o){
   }
 }
 function drawTree(ctx,o){
+  const k = o.ts || 1;   // three sizes: young, grown, old
   ctx.strokeStyle=C(OUT); ctx.lineWidth=LW;
-  ctx.beginPath(); ctx.moveTo(o.x,o.y); ctx.lineTo(o.x,o.y-3); ctx.stroke();
-  ctx.fillStyle=C('#6DB35A'); ctx.beginPath(); ctx.arc(o.x,o.y-5,2.7,0,Math.PI*2); ctx.fill(); ctx.stroke();
-  ctx.fillStyle=C('rgba(255,255,255,0.28)'); ctx.beginPath(); ctx.arc(o.x-0.9,o.y-6,1,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(o.x,o.y); ctx.lineTo(o.x,o.y-3*k); ctx.stroke();
+  ctx.fillStyle=C(k > 1.1 ? '#5FA34F' : '#6DB35A'); ctx.beginPath(); ctx.arc(o.x,o.y-3*k-2.2*k,2.7*k,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle=C('rgba(255,255,255,0.28)'); ctx.beginPath(); ctx.arc(o.x-0.9*k,o.y-3*k-3.2*k,1*k,0,Math.PI*2); ctx.fill();
 }
 function drawBoat(ctx,o){
   const x=o.x, y=o.y; ctx.strokeStyle=C(OUT); ctx.lineWidth=LW;
@@ -1208,6 +1256,7 @@ function drawLandmark2(ctx, o){
 }
 
 function drawObjectVector(ctx, o){
+  if (o.k==='sprite') return;
   ctx.strokeStyle=C(OUT); ctx.lineWidth=LW;
   if (o.k==='box') isoBox(ctx,o.x,o.y,o.hx,o.hy,o.z0||0,o.h,null,o.opts);
   else if (o.k==='lm2') drawLandmark2(ctx,o);
@@ -1230,96 +1279,7 @@ function drawObjectVector(ctx, o){
 
 
 
-/* =========================================================
-   CITY LIGHTS (night only)
-   Generated once from the city itself: lit windows on the towers (mostly warm,
-   some cool, irregular), streetlights along the roads, DXB runway lights, the Palm
-   crescent, boats, and the Burj Khalifa's spire. Drawn from pre-rendered bitmaps
-   when zoomed out; culled dots when zoomed in. A small subset twinkles: those
-   live on two extra canvases whose opacity CSS animates, so twinkling costs no JS.
-   ========================================================= */
-let LIGHTS = null, lightsBmp = null;
-const WARM = ['#FFD27A','#FFC56B','#FFE0A3','#FFB85C'], COOL = ['#E4EEFF','#CFE0FF'];
-function buildLights(){
-  const L = [], rnd = mulberry32(4242);
-  // k: 0 window, 1 streetlight, 2 accent (runway, boats, beacons); tw: 0 steady, 1 or 2 twinkle group
-  const add = (x,y,c,k,tw)=>L.push({x,y,c,k,tw:tw||0});
-  const twk = p => rnd()<p ? (rnd()<0.5?1:2) : 0;
-  const faceLights = (A,B,h,p,step,cols,z0)=>{
-    for (let z=z0||2.4; z<h-1.2; z+=step) for (let q=0;q<cols;q++){
-      if (rnd()>p) continue;
-      const u = (q+0.5)/cols*0.8+0.1+(rnd()-0.5)*0.05;
-      add(A[0]+(B[0]-A[0])*u, A[1]+(B[1]-A[1])*u-z, rnd()<0.15 ? COOL[rnd()<0.5?0:1] : WARM[Math.floor(rnd()*4)], 0, twk(0.1));
-    }
-  };
-  const corners = (x,y,hx,hy)=>{ const ax=TW/2*hx, ay=TH/2*hx, bx=-TW/2*hy, by=TH/2*hy;
-    return { W:[x-ax+bx,y-ay+by], S:[x+ax+bx,y+ay+by], E:[x+ax-bx,y+ay-by] }; };
-  for (const o of OBJECTS){
-    if (o.k==='box'){
-      const {W,S,E} = corners(o.x,o.y,o.hx,o.hy), st=o.st;
-      if (st==='villa'){ if (rnd()<0.65){ const u=0.3+rnd()*0.4; add(W[0]+(S[0]-W[0])*u, W[1]+(S[1]-W[1])*u-2.3, WARM[Math.floor(rnd()*4)], 0, twk(0.08)); } continue; }
-      const p = st==='glass'?0.4 : st==='mid'||st==='busy'?0.32 : st==='low'||st==='old'||st==='campus'?0.28 : st==='resort'?0.36 : 0.1, cols = st==='glass'?3:2, step = st==='glass'?3.4:3.2;
-      faceLights(W,S,o.h,p,step,cols); faceLights(S,E,o.h,p*0.8,step,cols);
-    } else if (o.k==='lm2'){
-      // the new landmarks: warm windows, plus their own touches
-      for (let k=0;k<12;k++) add(o.x+(rnd()-0.5)*20, o.y-3-rnd()*14, WARM[k%4], 0, twk(0.2));
-      if (o.lm==='expo') for (let t=0;t<Math.PI;t+=Math.PI/14) add(o.x+Math.cos(t)*18, o.y-1.5-Math.sin(t)*18, '#FFE3AD', 2, t%0.6<0.3?1:0);
-      if (o.lm==='etihad') add(o.x+12, o.y+4-34, '#FFFFFF', 2);
-      if (o.lm==='emtowers' || o.lm==='sohq' || o.lm==='theview' || o.lm==='wtc') add(o.x, o.y-60, '#FF3B30', 2, 2);
-      if (o.lm==='qe2') for (let k=0;k<10;k++) add(o.x-12+k*2.6, o.y-1-k*1.2, '#FFE0A3', 0, twk(0.2));
-    } else if (o.k==='station'){ add(o.x-2,o.y-RAIL_Z-1,'#FFF4D6',2); add(o.x+2,o.y-RAIL_Z-1,'#FFF4D6',2);
-    } else if (o.k==='rail'){ if (rnd()<0.5) add(o.x, o.y-RAIL_Z, o.col==='#D9443A'?'#FF8A7A':'#8DF0A0', 1);
-    } else if (o.k==='crane'){ add(o.x+8, o.y-31, '#FF3B30', 2, 2);
-    } else if (o.k==='plane'){ add(o.x+7, o.y-3, '#FF3B30', 2, 1); add(o.x-6, o.y+3, '#FFFFFF', 2, 2);
-    } else if (o.k==='pool'){ add(o.x, o.y, '#7FE3F0', 1);
-    } else if (o.k==='boat'){ add(o.x-3,o.y-2,'#FFE9B8',2); add(o.x+3,o.y-2, rnd()<0.5?'#FF6B5E':'#7CFFB2',2,1); }
-    else if (o.k==='lm' && o.lm==='burj'){
-      // the tower's lit column, then the spire: a white strobe and a red beacon at the tip
-      const tiers=[[0.62,30],[0.52,30],[0.43,28],[0.34,26],[0.26,24],[0.19,20],[0.13,18]];
-      let z=3;
-      tiers.forEach(([s,h])=>{ const {W,S,E}=corners(o.x,o.y,s,s); for (let zz=z+2; zz<z+h-1; zz+=2.6){ [[W,S],[S,E]].forEach(([A,B])=>{ for (let q=0;q<2;q++){ if (rnd()<0.55){ const u=0.3+q*0.4; add(A[0]+(B[0]-A[0])*u, A[1]+(B[1]-A[1])*u-zz, COOL[q], 0, twk(0.06)); } } }); } z+=h+2.5; });
-      add(o.x, o.y-z-30, '#FFFFFF', 2, 1); add(o.x, o.y-z-46, '#FF3B30', 2, 2);
-    } else if (o.k==='lm' && o.lm==='baa'){
-      // helipad ring, the Skyview bar's windows, and a beacon on the needle
-      const g = BAA, hx = o.x+g.heli[0], hy = o.y+g.heli[1]-1.4;
-      for (let t=0;t<Math.PI*2;t+=Math.PI/5) add(hx+Math.cos(t)*6, hy+Math.sin(t)*2.6, '#FFF6D8', 2, 1);
-      for (let q=0;q<5;q++) add(o.x+g.spineB[0]+3+q*2.6, o.y-g.bar-2+q*1.3, '#FFD9A0', 0);
-      add(o.x+g.spineB[0]+1.5, o.y-g.H-2-18, '#FF3B30', 2, 2);
-    } else if (o.k==='lm' && (o.lm==='frame' || o.lm==='ain' || o.lm==='atlantis' || o.lm==='terminal')){
-      for (let k=0;k<10;k++) add(o.x+(rnd()-0.5)*18, o.y-4-rnd()*30, WARM[k%4], 0, twk(0.2));
-    }
-  }
-  // streetlights: brighter amber on the highways, warm white elsewhere, alternating sides
-  for (const r of ROADS_W){
-    const gap = r.k===0?5.5:r.k===1?7:9, off = RD[r.k].w/2+0.5, col = r.k===0?'#FFB257':'#FFDDA6';
-    let carry = 0, side = 1;
-    for (let k=1;k<r.pts.length;k++){
-      const [x0,y0]=r.pts[k-1], [x1,y1]=r.pts[k], len=Math.hypot(x1-x0,y1-y0); if (!len) continue;
-      const nx=-(y1-y0)/len, ny=(x1-x0)/len;
-      for (let d=gap-carry; d<len; d+=gap){ const t=d/len; side=-side; add(x0+(x1-x0)*t+nx*off*side, y0+(y1-y0)*t+ny*off*side, col, 1); }
-      carry = (carry+len)%gap;
-    }
-  }
-  // the tram line: soft teal lamps
-  for (let k=1;k<TRAM.length;k++) for (let t=0;t<1;t+=0.34){ const a=TRAM[k-1][0]+(TRAM[k][0]-TRAM[k-1][0])*t, i=TRAM[k-1][1]+(TRAM[k][1]-TRAM[k-1][1])*t, p=aiToWorld(a,i); add(p.x,p.y,'#9FF2E8',1); }
-  // DXB: blue edge lights and a warm centre line on both runways
-  RUNWAYS.forEach(rw=>{ for (let i=rw.i[0]; i<=rw.i[1]; i+=0.1){
-    [-0.09,0.09].forEach(da=>{ const p=aiToWorld(rw.a+da,i); add(p.x,p.y,'#8FCBFF',2); });
-    const c=aiToWorld(rw.a,i+0.05); add(c.x,c.y,'#FFF1C4',2, i%0.4<0.1?1:0);
-  }});
-  // the Palm: lights along both edges of the crescent and down each frond
-  for (let th=-PALM.crSpan; th<=PALM.crSpan; th+=0.03) [PALM.cr-PALM.crW-0.02, PALM.cr+PALM.crW+0.02].forEach(r=>{
-    const p=aiToWorld(PALM.hub[0]+Math.sin(th)*r, PALM.hub[1]-Math.cos(th)*r); add(p.x,p.y,'#FFD58A',1, twk(0.15)); });
-  const fstep=(2*PALM.span)/(PALM.fronds-1);
-  for (let f=0; f<PALM.fronds; f++){ const th=-PALM.span+f*fstep;
-    for (let r=PALM.fr0+0.25; r<PALM.fr1; r+=0.2){ const p=aiToWorld(PALM.hub[0]+Math.sin(th)*r, PALM.hub[1]-Math.cos(th)*r); add(p.x,p.y,'#FFE3AD',1, twk(0.12)); } }
-  // boats moored in the marina
-  for (let k=1;k<MARINA.length;k++) for (let t=0.15;t<1;t+=0.3){
-    const a=MARINA[k-1][0]+(MARINA[k][0]-MARINA[k-1][0])*t, i=MARINA[k-1][1]+(MARINA[k][1]-MARINA[k-1][1])*t, p=aiToWorld(a,i);
-    add(p.x-1.5,p.y,'#FFF4D6',2); add(p.x+1.5,p.y-0.5, rnd()<0.5?'#FF6B5E':'#7CFFB2',2, rnd()<0.5?1:2);
-  }
-  LIGHTS = L;
-}
+// a soft round glow (car headlights at night)
 const glowCache = new Map();
 function glowSprite(col){
   let g = glowCache.get(col); if (g) return g;
@@ -1329,35 +1289,6 @@ function glowSprite(col){
   c.fillStyle = grd; c.fillRect(0,0,32,32);
   glowCache.set(col, g); return g;
 }
-// px = device pixels per world px, so dots stay visible when zoomed out
-const LCELL = 96;
-let LIGHT_GRID = null;
-function lightsIn(view){
-  if (!view) return LIGHTS;
-  if (!LIGHT_GRID){
-    LIGHT_GRID = new Map();
-    for (const l of LIGHTS){ const k = Math.floor(l.x/LCELL)+','+Math.floor(l.y/LCELL); if (!LIGHT_GRID.has(k)) LIGHT_GRID.set(k,[]); LIGHT_GRID.get(k).push(l); }
-  }
-  const out = [];
-  for (let cx=Math.floor((view.x0-4)/LCELL); cx<=Math.floor((view.x1+4)/LCELL); cx++)
-    for (let cy=Math.floor((view.y0-4)/LCELL); cy<=Math.floor((view.y1+4)/LCELL); cy++){ const c = LIGHT_GRID.get(cx+','+cy); if (c) out.push(c); }
-  return out.flat();
-}
-function drawLights(ctx, view, tw, px){
-  const win = Math.max(0.8, 1.3/px), gl = Math.max(3.2, 5/px);
-  for (const l of lightsIn(view)){
-    if (l.tw !== tw) continue;
-    if (l.k===0){ ctx.fillStyle = l.c; ctx.fillRect(l.x-win/2, l.y-win*0.6, win, win*1.2); }
-    else { const r = l.k===2 ? gl*0.8 : gl; ctx.drawImage(glowSprite(l.c), l.x-r, l.y-r, r*2, r*2); }
-  }
-}
-function buildLightBitmaps(){
-  const sc = Math.min(1, cacheScale*0.75), mk = tw=>{
-    const cv = document.createElement('canvas'); cv.width = Math.round(WORLD.w*sc); cv.height = Math.round(WORLD.h*sc);
-    const c = cv.getContext('2d'); c.scale(sc, sc); drawLights(c, null, tw, sc); return cv; };
-  lightsBmp = { sc, a:mk(1), b:mk(2) };
-}
-
 
 /* =========================================================
    CARS: little pixel cars driving the map's own roads
@@ -1388,6 +1319,7 @@ function markHiddenRoad(){
   for (const o of OBJECTS){
     let hw, top, bot;
     if (o.k==='box'){ hw = TW/2*(o.hx+o.hy); top = o.y - o.h - TH/2*(o.hx+o.hy); bot = o.y + TH/2*(o.hx+o.hy); }
+    else if (o.k==='sprite'){ hw = o.w/2; top = o.y - o.h; bot = o.y + 2; }
     else if (o.k==='lm' && LM_BOX[o.lm]){ hw = LM_BOX[o.lm][0]/2; top = o.y - LM_BOX[o.lm][1]; bot = o.y + 6; }
     else continue;
     const b = { x0:o.x-hw, x1:o.x+hw, y0:top, y1:bot, d:o.d };
@@ -1552,7 +1484,7 @@ const MAX_S = 7;
 const HAS_DOM = typeof window !== 'undefined';   // false inside the map's Web Worker (mapworker.js)
 const reduceMotion = HAS_DOM && window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-let wrap, canvas, ctx, stampsLayer, labelsLayer, fxLayer, meEl, twinkles = [], fxEls = [];
+let wrap, canvas, ctx, stampsLayer, labelsLayer, fxLayer, meEl, fxEls = [];
 let opts = {};
 let dpr = HAS_DOM ? Math.min(window.devicePixelRatio||1, 2) : 1;
 let cacheScale = 1, dataBuilt = false;
@@ -1581,7 +1513,7 @@ function shownStore(){
 /* ---------- finished overviews are kept in the browser's cache (per app version and theme), so the
    next launch shows the whole city at once and the worker only renders close-ups ---------- */
 // bump ART_REV whenever mapraster.js draws anything differently, so nobody keeps old art
-const ART_REV = 2, ART_CACHE = 'koko-map-art', ART_VER = `${APP.version}-r${ART_REV}`;
+const ART_REV = 6, ART_CACHE = 'koko-map-art', ART_VER = `${APP.version}-r${ART_REV}`;
 const artURL = (th, s)=>`/__map-art/${ART_VER}/${th}/${s}.png`;
 async function loadSaved(th){
   if (!HAS_DOM || !('caches' in window)) return false;
@@ -1611,14 +1543,33 @@ function saveWhenDone(st, th){
     keys.forEach(r=>{ if (!new URL(r.url).pathname.startsWith(`/__map-art/${ART_VER}/`)) caches.open(ART_CACHE).then(c=>c.delete(r)); });
   }).catch(()=>{});
 }
-function rasterStart(){
+// map-art/*.png -> { w, h, data:Uint32Array, ax, ay } (anchor = bottom centre of the opaque pixels)
+const SPR = {};
+function loadSprites(){
+  const one = name=>new Promise(res=>{
+    const img = new Image();
+    img.onload = ()=>{
+      const cv = newCanvas(img.width, img.height), c = cv.getContext('2d'); c.drawImage(img, 0, 0);
+      const data = new Uint32Array(c.getImageData(0, 0, img.width, img.height).data.buffer);
+      let bottom = img.height - 1; scan: for (; bottom > 0; bottom--) for (let x=0; x<img.width; x++) if (data[bottom*img.width + x] >>> 24) break scan;
+      SPR[name] = { w:img.width, h:img.height, data, ax:img.width/2, ay:bottom+1, img:cv };
+      res();
+    };
+    img.onerror = ()=>res();
+    img.src = 'map-art/' + name + '.png';
+  });
+  return Promise.race([Promise.all(SPRITE_FILES.map(one)), new Promise(r=>setTimeout(r, 4000))]);
+}
+const spritePayload = ()=>Object.fromEntries(Object.entries(SPR).map(([k,v])=>[k, { w:v.w, h:v.h, data:v.data, ax:v.ax, ay:v.ay }]));
+async function rasterStart(){
   RS.t0 = performance.now();
   loadSaved(themeKey());
+  await loadSprites();
   try {
     RS.worker = new Worker(new URL('./mapworker.js', import.meta.url), { type:'module' });
     RS.worker.onmessage = e=>rasterMsg(e.data);
     RS.worker.onerror = ()=>rasterInline();
-    RS.worker.postMessage({ type:'init', night:themeKey() });
+    RS.worker.postMessage({ type:'init', night:themeKey(), sprites:spritePayload(), props:PROPS });
   } catch(e){ rasterInline(); }
 }
 // no module workers here: the same renderer on the main thread, one job per task
@@ -1628,7 +1579,7 @@ function rasterInline(){
   RS.inline = { queue:[], busy:false };
   import('./mapraster.js').then(R=>{
     const I = RS.inline;
-    I.R = R; I.theme = themeKey(); R.setNight(NIGHT); R.prepare();
+    I.R = R; I.theme = themeKey(); R.setNight(NIGHT); R.setSprites(spritePayload()); R.setPropLimits(PROPS); R.prepare();
     rasterMsg({ kind:'ready', theme:I.theme, grid:R.chunkGrid(), art:R.artSize(), CH:R.CH, S:R.S });
     I.pump = ()=>{
       if (I.busy) return; const job = I.queue.shift(); if (!job) return; I.busy = true;
@@ -1636,7 +1587,7 @@ function rasterInline(){
         try {
           if (I.theme !== themeKey()){ I.theme = themeKey(); R.setNight(NIGHT); }
           if (job.kind === 'overview'){ const a = R.artSize(job.s), b = R.renderRect(0, 0, a.w, a.h, job.s); rasterMsg({ kind:'overview', theme:I.theme, s:job.s, w:a.w, h:a.h, px:new Uint8ClampedArray(b.data.buffer) }); }
-          else { const b = R.renderChunk(job.cx, job.cy); rasterMsg({ kind:'chunk', theme:I.theme, cx:job.cx, cy:job.cy, w:R.CH, h:R.CH, px:new Uint8ClampedArray(b.data.buffer) }); }
+          else { const b = R.renderChunk(job.cx, job.cy), fx = R.fxMasks(b); rasterMsg({ kind:'chunk', theme:I.theme, cx:job.cx, cy:job.cy, w:R.CH, h:R.CH, fx, water:b.water, px:new Uint8ClampedArray(b.data.buffer) }); }
         } catch(e){ console.error(e); }
         I.busy = false; I.pump();
       }, 0);
@@ -1674,8 +1625,9 @@ function rasterMsg(m){
   } else {
     const key = m.cx + ',' + m.cy;
     st.asked.delete(key);
+    if (m.fx) m.fx.forEach(f=>fxMaskPart(st, f));
     const old = st.chunks.get(key); if (old && old.img.close) old.img.close();
-    st.chunks.set(key, { img, cx:m.cx, cy:m.cy, used:0 });
+    st.chunks.set(key, { img, cx:m.cx, cy:m.cy, used:0, water:m.waterBmp || (m.water ? waterCanvas(m.water) : null) });
     if (!st.saved) refine(st, m.cx, m.cy, img);
     st.refined.add(key);
     evict(st);
@@ -1684,6 +1636,23 @@ function rasterMsg(m){
   // drop a store that's no longer shown (the theme changed and the new one is up)
   for (const k in RS.stores) if (k !== themeKey() && RS.stores[themeKey()] && RS.stores[themeKey()].lo){ dropStore(k); }
   repaintSnaps(); requestRender();
+}
+// the visible pixels of an overlay sprite (Burj, fountain), pieced together from the chunks
+function fxMaskPart(st, f){
+  st.fx = st.fx || {};
+  let cv = st.fx[f.id];
+  if (!cv){ cv = st.fx[f.id] = newCanvas(f.sw, f.sh); }
+  if (f.bmp){ const c = cv.getContext('2d'); c.clearRect(f.x, f.y, f.w, f.h); c.drawImage(f.bmp, f.x, f.y); f.bmp.close(); return; }
+  const id = new ImageData(f.w, f.h);
+  for (let q=0; q<f.w*f.h; q++){ id.data[q*4] = id.data[q*4+1] = id.data[q*4+2] = 255; id.data[q*4+3] = f.mask[q]; }
+  cv.getContext('2d').putImageData(id, f.x, f.y);
+}
+// the water you can see in a chunk, as an alpha mask (for the shimmer)
+function waterCanvas(w){
+  const cv = newCanvas(RS.CH, RS.CH), id = new ImageData(RS.CH, RS.CH);
+  for (let q=0; q<w.length; q++) if (w[q]){ id.data[q*4] = id.data[q*4+1] = id.data[q*4+2] = 255; id.data[q*4+3] = 255; }
+  cv.getContext('2d').putImageData(id, 0, 0);
+  return cv;
 }
 function dropStore(k){ const st = RS.stores[k]; if (!st) return; st.chunks.forEach(c=>{ if (c.img.close) c.img.close(); }); delete RS.stores[k]; }
 // average a full-scale chunk down into the overviews
@@ -1698,7 +1667,7 @@ function refine(st, cx, cy, img, only){
 function evict(st){
   if (st.chunks.size <= RS.cap) return;
   const list = [...st.chunks.entries()].sort((a,b)=>a[1].used-b[1].used);
-  for (let k=0; k<list.length - RS.cap; k++){ const [key, c] = list[k]; if (c.img.close) c.img.close(); st.chunks.delete(key); }
+  for (let k=0; k<list.length - RS.cap; k++){ const [key, c] = list[k]; if (c.img.close) c.img.close(); if (c.water && c.water.close) c.water.close(); st.chunks.delete(key); }
 }
 function rasterReady(){
   RS.firstMs = Math.round(performance.now() - RS.t0);
@@ -1821,29 +1790,8 @@ function resizeCanvas(){
   if (!r.width || !r.height) return false;
   viewW = r.width; viewH = r.height;
   dpr = Math.min(window.devicePixelRatio||1, 2);
-  [canvas, ...twinkles, carCanvas].forEach(cv=>{ cv.width = Math.round(viewW*dpr); cv.height = Math.round(viewH*dpr); cv.style.width = viewW+'px'; cv.style.height = viewH+'px'; });
+  [canvas, carCanvas].forEach(cv=>{ cv.width = Math.round(viewW*dpr); cv.height = Math.round(viewH*dpr); cv.style.width = viewW+'px'; cv.style.height = viewH+'px'; });
   return true;
-}
-// lights sit dimmer at zoom levels where stamps and labels show, so they never compete
-function blitLights(c, bmp, view){
-  const sc = lightsBmp.sc, x0 = Math.max(0, view.x0), y0 = Math.max(0, view.y0), x1 = Math.min(WORLD.w, view.x1), y1 = Math.min(WORLD.h, view.y1);
-  if (x1<=x0 || y1<=y0) return;
-  c.drawImage(bmp, x0*sc, y0*sc, (x1-x0)*sc, (y1-y0)*sc, x0, y0, x1-x0, y1-y0);
-}
-let twinklePaused = false;
-function renderLights(view, fromCache){
-  const z = cam.s/baseFit, a = z < LOD_MID ? 1 : z < LOD_NEAR ? 0.78 : 0.6, px = cam.s*dpr;
-  // steady lights come baked into the cached city; close up they're drawn crisp (and dimmer, under the stamps)
-  if (!fromCache){ ctx.globalAlpha = a; drawLights(ctx, view, 0, px); ctx.globalAlpha = 1; }
-  // twinkling pauses while the map moves (nobody sees it mid-pan) and resumes when it settles
-  if (interacting){ if (!twinklePaused){ twinklePaused = true; wrap.classList.add('moving'); } return; }
-  if (twinklePaused){ twinklePaused = false; wrap.classList.remove('moving'); }
-  twinkles.forEach((tc,k)=>{
-    const c = tc.getContext('2d');
-    c.setTransform(1,0,0,1,0,0); c.clearRect(0,0,tc.width,tc.height);
-    c.setTransform(dpr*cam.s,0,0,dpr*cam.s,dpr*cam.x,dpr*cam.y); c.globalAlpha = a;
-    if (px <= lightsBmp.sc*1.6) blitLights(c, k ? lightsBmp.b : lightsBmp.a, view); else drawLights(c, view, k+1, px);
-  });
 }
 function requestRender(){ if (!rafPending){ rafPending=true; requestAnimationFrame(render); } }
 function render(){
@@ -1853,10 +1801,13 @@ function render(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
   // the city, on whole device pixels so the pixel art stays crisp
   paintCity(ctx, cam.s*dpr/RS.S, Math.round(dpr*cam.x), Math.round(dpr*cam.y), canvas.width, canvas.height);
+  drawLive();
+  drawShows();
   ctx.setTransform(dpr*cam.s,0,0,dpr*cam.s,dpr*cam.x,dpr*cam.y);
   const view = { x0:-cam.x/cam.s, y0:-cam.y/cam.s, x1:(viewW-cam.x)/cam.s, y1:(viewH-cam.y)/cam.s };
   drawTint(view);
   rasterWantSoon();
+  liveKick();
   drawCars(); kickCars();
   updateOverlay();
   if (opts.onViewChange) opts.onViewChange();
@@ -1994,7 +1945,9 @@ function initGestures(){
           lastTap={t:0,x:0,y:0};
         } else {
           lastTap={t:now, x:e.clientX, y:e.clientY};
-          if (opts.onEmptyTap) opts.onEmptyTap();
+          const r=wrap.getBoundingClientRect(), lm = landmarkAt(e.clientX-r.left, e.clientY-r.top);
+          if (lm && opts.onLandmarkTap && !picking) opts.onLandmarkTap(lm);
+          else if (opts.onEmptyTap) opts.onEmptyTap();
         }
       }
     }
@@ -2211,13 +2164,6 @@ function placeLabels(lod, vis, k){
    Small SVGs pinned to world points and scaled with the camera; their colour is
    animated by CSS, so they cost nothing per frame beyond a transform. */
 function buildFx(){
-  const baa = LANDMARKS.find(l=>l.k==='baa'), w = aiToWorld(baa.at[0], baa.at[1]);
-  const d = baaGlowPath(), el = document.createElement('div');
-  el.className = 'fx fx-baa';
-  el.innerHTML = '<svg viewBox="-40 -120 60 124" width="60" height="124" aria-hidden="true"><path class="halo" d="'+d+'"/><path class="body" d="'+d+'"/></svg>';
-  el._w = { x:w.x-40, y:w.y-120 };
-  fxLayer.appendChild(el); fxEls.push(el);
-  buildBurjShow();
   buildGlobalVillageLights();
 }
 // Global Village at night: bulbs round the Ferris wheel, a glowing gate arch, string lights round the ground.
@@ -2243,45 +2189,144 @@ function buildGlobalVillageLights(){
   fxLayer.appendChild(el); fxEls.push(el);
 }
 // Burj Khalifa light show: a colour wash that runs up the tower, clipped to its silhouette
-const BURJ_TIERS = [[0.62,30],[0.52,30],[0.43,28],[0.34,26],[0.26,24],[0.19,20],[0.13,18]];
-function burjSilhouette(){
-  const L = [], Rt = []; let z = 3;
-  BURJ_TIERS.forEach(([sz,h],k)=>{ L.push([-16*sz, -z], [-16*sz, -(z+h)]); Rt.push([16*sz, -z], [16*sz, -(z+h)]); z += h + (k<BURJ_TIERS.length-1 ? 2.5 : 0); });
-  const top = z, s0 = BURJ_TIERS[0][0];
-  const pts = [...L, [-1.3,-top], [0,-top-46], [1.3,-top], ...Rt.reverse(), [0, 8*s0-3]];
-  return 'M'+pts.map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join('L')+'Z';
-}
-let burjEl = null;
-function buildBurjShow(){
-  const b = LANDMARKS.find(l=>l.k==='burj'), w = aiToWorld(b.at[0], b.at[1]);
-  burjEl = document.createElement('div');
-  burjEl.className = 'fx fx-burj';
-  const stops = (list)=>list.map((c,i)=>'<stop offset="'+(i/(list.length-1)).toFixed(2)+'" stop-color="'+c+'"/>').join('');
-  burjEl.innerHTML = '<svg viewBox="-12 -250 24 262" width="24" height="262" aria-hidden="true"><defs>'
-    + '<clipPath id="burjClip"><path d="'+burjSilhouette()+'"/></clipPath>'
-    + '<linearGradient id="washBlue" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="130" spreadMethod="repeat">'+stops(['#0b3dff','#4fa3ff','#d9f1ff','#4fa3ff','#0b3dff'])+'</linearGradient>'
-    + '<linearGradient id="washMulti" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="130" spreadMethod="repeat">'+stops(['#ff3b6b','#ffb13b','#fff05a','#3bff9d','#3bb4ff','#b35bff','#ff3b6b'])+'</linearGradient>'
-    + '</defs><g clip-path="url(#burjClip)"><rect class="wash" x="-12" y="-250" width="24" height="520"/></g></svg>';
-  burjEl._w = { x:w.x-12, y:w.y-250 };
-  fxLayer.appendChild(burjEl); fxEls.push(burjEl);
-}
+// Burj Khalifa light show: a colour wash running up the tower, over its visible pixels only.
+// The Dubai Fountain plays with the blue shows (:00 and :30, 19:00 to 23:00), its last seconds the gold finale.
 // state from shows.js: { active, type, t, intensity }
-let showOn = false;
+let showOn = false, showSt = null, fxLoop = 0;
+const WASH = { blue:['#0b3dff','#4fa3ff','#d9f1ff','#4fa3ff','#0b3dff'], multi:['#ff3b6b','#ffb13b','#fff05a','#3bff9d','#3bb4ff','#b35bff','#ff3b6b'] };
+const FOUNTAIN_LOOP = [1,2,3,3,4], FOUNTAIN_STEP = 0.5, FINALE_SEC = 6;
 function setShow(st){
-  if (!burjEl) return;
   const on = !!(st && st.active);
-  if (on){
-    const rect = burjEl.querySelector('.wash');
-    rect.setAttribute('fill', st.type==='multi' ? 'url(#washMulti)' : 'url(#washBlue)');
-    if (!showOn) rect.style.animationDelay = (-(st.t % 6)).toFixed(2)+'s';   // opened mid-show: pick up where it is
-  }
-  burjEl.classList.toggle('on', on);
-  burjEl.style.opacity = on ? (st.intensity * (NIGHT ? 0.82 : 0.55)).toFixed(3) : '0';
+  showSt = on ? st : null;
   if (on !== showOn){ showOn = on; requestRender(); }
+  liveKick();
+}
+// the live layer's clock: ~12 frames a second while a show is on screen, 4 for the water and camels,
+// nothing in the wide view, while the map moves, behind a full screen, in a background tab or with reduced motion
+function liveWanted(){
+  if (reduceMotion || !built || !viewW || (HAS_DOM && document.hidden)) return 0;
+  if (showOn && fxVisible()) return 83;
+  if (cam.s*dpr/RS.S >= 1 && !coveredByScreen()) return 250;
+  return 0;
+}
+let liveFrame = 0;
+function liveKick(){ if (!fxLoop && liveWanted()) fxLoop = setTimeout(liveTick, liveWanted()); }
+function liveTick(){
+  fxLoop = 0;
+  const ms = liveWanted(); if (!ms) return;
+  liveFrame++;
+  if (!interacting) requestRender();
+  fxLoop = setTimeout(liveTick, ms);
+}
+// four shimmer patterns: short pale glints scattered over the water, a different set each frame
+let shimmer = null;
+function shimmerFrames(){
+  if (shimmer && shimmer.night === NIGHT) return shimmer.list;
+  const list = [0,1,2,3].map(f=>{
+    const cv = newCanvas(RS.CH, RS.CH), c = cv.getContext('2d');
+    c.fillStyle = NIGHT ? 'rgba(150,185,255,0.55)' : 'rgba(255,255,255,0.8)';
+    for (let k=0; k<260; k++){ const x = Math.floor(hash2(k, f*97+1)*RS.CH), y = Math.floor(hash2(f*31+3, k)*RS.CH), len = 2 + (k % 3); c.fillRect(x, y, len, 1); }
+    return cv;
+  });
+  shimmer = { night:NIGHT, list };
+  return list;
+}
+let shimTmp = null;
+function drawLive(){
+  // paused while the map moves (and in the wide view, and with reduced motion)
+  const k = cam.s*dpr/RS.S; if (k < 1 || reduceMotion || interacting) return;
+  const st = shownStore(); if (!st) return;
+  const ox = Math.round(dpr*cam.x), oy = Math.round(dpr*cam.y), CH = RS.CH, frames = shimmerFrames();
+  ctx.setTransform(1,0,0,1,0,0); ctx.imageSmoothingEnabled = false;
+  if (!shimTmp) shimTmp = newCanvas(CH, CH);
+  const tc = shimTmp.getContext('2d');
+  for (const [cx, cy] of chunksFor(k, ox, oy, canvas.width, canvas.height)){
+    const ch = st.chunks.get(cx + ',' + cy); if (!ch || !ch.water) continue;
+    tc.globalCompositeOperation = 'source-over'; tc.clearRect(0, 0, CH, CH);
+    tc.drawImage(frames[(liveFrame + cx + cy) & 3], 0, 0);
+    tc.globalCompositeOperation = 'destination-in'; tc.drawImage(ch.water, 0, 0);
+    tc.globalCompositeOperation = 'source-over';
+    const dx = Math.round(ox + cx*CH*k), dy = Math.round(oy + cy*CH*k);
+    ctx.drawImage(shimTmp, dx, dy, Math.round(ox + (cx+1)*CH*k) - dx, Math.round(oy + (cy+1)*CH*k) - dy);
+  }
+  // camels, once the half-size art is in: a slow walk to and fro and a two-frame gait
+  const ca = SPR.camel_a, cb = SPR.camel_b;
+  if (ca && cb && PROPS.camel_a && ca.w <= PROPS.camel_a[0] && ca.h <= PROPS.camel_a[1]){
+    for (const o of OBJECTS){
+      if (o.k !== 'camel') continue;
+      const sx = o.x*cam.s+cam.x, sy = o.y*cam.s+cam.y; if (sx < -40 || sx > viewW+40 || sy < -40 || sy > viewH+40) continue;
+      const ph = hash2(Math.round(o.x), Math.round(o.y))*20, t = liveFrame*0.25 + ph, walk = Math.round(Math.sin(t/6)*6), dir = Math.cos(t/6) >= 0 ? 1 : -1;
+      const sp = (liveFrame & 1) ? cb : ca, bob = (liveFrame >> 1) & 1;
+      const x0 = Math.round((o.x*RS.S + walk)) - Math.round(sp.ax), y0 = Math.round(o.y*RS.S) - Math.round(sp.ay) - bob;
+      ctx.save();
+      if (dir < 0){ ctx.translate(Math.round(ox + (x0 + sp.w)*k), 0); ctx.scale(-1, 1); ctx.drawImage(sp.img, 0, Math.round(oy + y0*k), Math.round(sp.w*k), Math.round(sp.h*k)); }
+      else ctx.drawImage(sp.img, Math.round(ox + x0*k), Math.round(oy + y0*k), Math.round(sp.w*k), Math.round(sp.h*k));
+      ctx.restore();
+    }
+  }
+}
+// what the shows are doing (tests): the Burj wash, and the fountain's frame (0 = still)
+function fountainFrame(){
+  if (!showOn || !showSt || showSt.type !== 'blue') return 0;
+  const t = reduceMotion ? 1 : (showSt.t || 0), dur = showSt.durationSec || 60;
+  return t >= dur - FINALE_SEC ? 5 : FOUNTAIN_LOOP[Math.floor(t/FOUNTAIN_STEP) % FOUNTAIN_LOOP.length];
+}
+function showInfo(){ return { on:showOn, type:showSt ? showSt.type : null, fountain:fountainFrame(), drawn:showOn && fxVisible(), live:liveWanted(), frame:liveFrame }; }
+function spriteObj(id){ return OBJECTS.find(o=>o.k==='sprite' && o.id===id); }
+function fxVisible(){
+  if (!viewW || cam.s*dpr/RS.S < CHUNK_K) return false;     // not in the wide view
+  return ['burj_khalifa','dubai_fountain'].some(id=>{ const o = spriteObj(id); if (!o) return false;
+    const sx = o.x*cam.s+cam.x, sy = o.y*cam.s+cam.y; return sx > -o.w*cam.s && sx < viewW + o.w*cam.s && sy > -20 && sy - o.h*cam.s < viewH; });
+}
+let washCv = null;
+function drawShows(){
+  if (!showOn || !showSt || !fxVisible()) return;
+  const st = shownStore(); if (!st || !st.fx) return;
+  const k = cam.s*dpr/RS.S, ox = Math.round(dpr*cam.x), oy = Math.round(dpr*cam.y), t = reduceMotion ? 1 : (showSt.t || 0);   // reduced motion: a still frame
+  ctx.setTransform(1,0,0,1,0,0); ctx.imageSmoothingEnabled = false;
+  // the wash on the Burj
+  const burj = spriteObj('burj_khalifa'), bs = SPR.burj_khalifa, bm = st.fx.burj_khalifa;
+  if (burj && bs && bm){
+    if (!washCv) washCv = newCanvas(bs.w, bs.h);
+    const c = washCv.getContext('2d'), cols = WASH[showSt.type==='multi' ? 'multi' : 'blue'], band = 64, off = Math.floor((t*24) % band);
+    c.globalCompositeOperation = 'source-over'; c.clearRect(0, 0, bs.w, bs.h);
+    for (let y=-band; y<bs.h+band; y+=2){ const f = (((y + off) % band) + band) % band / band; c.fillStyle = cols[Math.min(cols.length-1, Math.floor(f*cols.length))]; c.fillRect(0, bs.h - y, bs.w, 2); }
+    c.globalCompositeOperation = 'destination-in'; c.drawImage(bm, 0, 0);
+    // the tower only: not the plaza it stands on (the footprint is the sprite's bottom quarter-width rows)
+    c.clearRect(0, Math.round(bs.ay - bs.w/4), bs.w, bs.h);
+    c.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = (showSt.intensity||1) * (NIGHT ? 0.78 : 0.5);
+    const x0 = Math.round(burj.x*RS.S) - Math.round(bs.ax), y0 = Math.round(burj.y*RS.S) - Math.round(bs.ay);
+    ctx.drawImage(washCv, Math.round(ox + x0*k), Math.round(oy + y0*k), Math.round(bs.w*k), Math.round(bs.h*k));
+    ctx.globalAlpha = 1;
+  }
+  // the fountain: only with the blue shows
+  const ft = spriteObj('dubai_fountain'), f0 = SPR.dubai_fountain_0, fm = st.fx.dubai_fountain;
+  if (ft && f0 && showSt.type === 'blue'){
+    const frame = fountainFrame();
+    const fs = SPR['dubai_fountain_' + frame]; if (!fs) return;
+    const x0 = Math.round(ft.x*RS.S) - Math.round(f0.ax), y0 = Math.round(ft.y*RS.S) - Math.round(f0.ay);
+    // the water and jets go over the lake; anything standing in front of the lake keeps its pixels
+    if (!RS.fcv) RS.fcv = newCanvas(f0.w, f0.h);
+    const c = RS.fcv.getContext('2d');
+    c.globalCompositeOperation = 'source-over'; c.clearRect(0, 0, f0.w, f0.h); c.drawImage(fs.img, 0, 0);
+    if (fm){
+      // keep = (not frame 0: the jets in the air) + (the lake pixels nothing stands in front of)
+      c.globalCompositeOperation = 'destination-in';
+      const keep = RS.fkeep || (RS.fkeep = newCanvas(f0.w, f0.h)), kc = keep.getContext('2d');
+      kc.globalCompositeOperation = 'source-over'; kc.clearRect(0, 0, f0.w, f0.h); kc.fillStyle = '#fff'; kc.fillRect(0, 0, f0.w, f0.h);
+      kc.globalCompositeOperation = 'destination-out'; kc.drawImage(f0.img, 0, 0);
+      kc.globalCompositeOperation = 'source-over'; kc.drawImage(fm, 0, 0);
+      c.drawImage(keep, 0, 0);
+      c.globalCompositeOperation = 'source-over';
+    }
+    if (NIGHT){ c.globalCompositeOperation = 'source-atop'; c.fillStyle = 'rgba(20,30,70,0.35)'; c.fillRect(0, 0, f0.w, f0.h); c.globalCompositeOperation = 'source-over'; }
+    ctx.drawImage(RS.fcv, Math.round(ox + x0*k), Math.round(oy + y0*k), Math.round(f0.w*k), Math.round(f0.h*k));
+  }
 }
 function placeFx(){
   for (const el of fxEls){
-    if (el === burjEl ? !showOn : !NIGHT) continue;
+    if (!NIGHT) continue;
     const sx = el._w.x*cam.s+cam.x, sy = el._w.y*cam.s+cam.y;
     el.style.transform = 'translate3d('+sx.toFixed(1)+'px,'+sy.toFixed(1)+'px,0) scale('+cam.s.toFixed(4)+')';
   }
@@ -2366,7 +2411,6 @@ let BUILD_STATS = null;
 function buildStats(){ return BUILD_STATS; }
 function initMap(o){
   opts = o; wrap = o.wrap; canvas = o.canvas; ctx = canvas.getContext('2d');
-  twinkles = ['a','b'].map(k=>{ const c=document.createElement('canvas'); c.className='map-twinkle '+k; c.setAttribute('aria-hidden','true'); canvas.after(c); return c; });
   carCanvas = document.createElement('canvas'); carCanvas.className='map-cars'; carCanvas.setAttribute('aria-hidden','true'); canvas.after(carCanvas); carCtx = carCanvas.getContext('2d');
   setInterval(kickCars, 1500);   // resume after a full screen closes or the battery recovers
   wrap.classList.toggle('night', NIGHT);
@@ -2433,7 +2477,25 @@ function flyToWorld(w, minZoomMult){
   const s = Math.max(cam.s, baseFit*(minZoomMult||4));
   flyTo(w.x, w.y-30/s, Math.min(MAX_S, s));
 }
+// the landmark sprite under a point on screen (its opaque pixels, a little forgiving when zoomed out)
+function landmarkAt(sx, sy){
+  if (!built) return null;
+  const ax = (sx - cam.x)/cam.s*RS.S, ay = (sy - cam.y)/cam.s*RS.S, k = cam.s*dpr/RS.S, pad = Math.min(10, Math.max(0, Math.round(2/Math.max(k, 0.2))));
+  const list = OBJECTS.filter(o=>o.k==='sprite' && SPR[o.sprite]).sort((p,q)=>q.d-p.d);   // front first
+  for (const o of list){
+    const sp = SPR[o.sprite], x0 = Math.round(o.x*RS.S) - Math.round(sp.ax), y0 = Math.round(o.y*RS.S) - Math.round(sp.ay);
+    const lx = Math.floor(ax - x0), ly = Math.floor(ay - y0);
+    if (lx < -pad || ly < -pad || lx >= sp.w + pad || ly >= sp.h + pad) continue;
+    for (let dy=-pad; dy<=pad; dy++) for (let dx=-pad; dx<=pad; dx++){
+      const X = lx+dx, Y = ly+dy; if (X<0 || Y<0 || X>=sp.w || Y>=sp.h) continue;
+      if (sp.data[Y*sp.w + X] >>> 24) return { id:o.id, x:o.x, y:o.y };
+    }
+  }
+  return null;
+}
 // tests and screenshots: centre on a world point at an exact zoom (multiple of the fit-city zoom)
+// where a landmark stands (world point at the middle of its footprint)
+function landmarkWorld(id){ const o = OBJECTS.find(o=>o.k==='sprite' && o.id===id); return o ? { x:o.px, y:o.py, top:o.y - o.h } : null; }
 function viewAt(w, ratio){ setView(w.x, w.y, Math.max(MIN_S, Math.min(MAX_S, baseFit*ratio))); }
 // zoom that separates one stamp from its nearest neighbour
 function flyToSeparate(w, others){
@@ -2493,7 +2555,7 @@ function setTheme(t){
 function resize(){ if (built && resizeCanvas()){ if (needsCenter) initialView(); requestRender(); } }
 
 export { buildStats,
-  initMap, whenReady, viewAt, rasterPending, rasterStats, setStamps, setAreaCounts, placeWorld, fitPoints, fitCity, flyToWorld, flyToSeparate,
+  initMap, whenReady, viewAt, rasterPending, rasterStats, landmarkAt, landmarkWorld, showInfo, setStamps, setAreaCounts, placeWorld, fitPoints, fitCity, flyToWorld, flyToSeparate,
   centerLatLng, viewZone, zoomRatio, setPicking, highlight, markDropped, setMeSprite, setSelected, startTracking,
   stopTracking, isTracking, drawSnapshot, snapshotPoint, refresh, resize, visible, setTheme, setShow, setZoneTint, setCars,
   ZONES, zoneById, nearestZone, toAI, toLatLng, inMap, onLand,
