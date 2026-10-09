@@ -14,6 +14,8 @@ import { avatarHTML } from './avatar.js';
 import { icon, openScreen, openSheet, topbar, toast, back, seg, bindSeg, toggleHTML, bindToggle, ratingPill } from './ui.js';
 import { LEGAL_PAGES, fillLegal } from './legal.js';
 import { themePref, setThemePref } from './theme.js';
+// what each theme choice does, under the switch
+const themeSub = p => ({ light:'Always light', dark:'Always dark', system:'Follows your phone', dynamic:'Light by day, dark from sunset in '+APP.city }[p] || '');
 import { prefs, setPref } from './prefs.js';
 import { go } from './go.js';
 
@@ -101,7 +103,7 @@ function settingsScreen(){
           ${row('mail','Email', esc(me.email||'Not set'))}
         </div>
         <div class="eyebrow mt24">Appearance</div><div class="stack mt8">
-          <div class="person-row" style="flex-wrap:wrap">${icon('contrast')}<span class="pr-main"><span class="pr-name">Theme</span><span class="pr-sub">Auto follows your phone</span></span>${seg('theme', [['light','Light'],['dark','Dark'],['auto','Auto']], themePref())}</div>
+          <div class="person-row" style="flex-wrap:wrap">${icon('contrast')}<span class="pr-main"><span class="pr-name">Theme</span><span class="pr-sub" id="themeSub">${esc(themeSub(themePref()))}</span></span>${seg('theme', [['light','Light'],['dark','Dark'],['system','System'],['dynamic','Dynamic']], themePref())}</div>
         </div>
         <div class="eyebrow mt24">Map</div><div class="stack mt8">
           ${row('my_location','Show me on the map','Only on this phone, never saved', toggleHTML('sLoc', MAP.isTracking(),'Show my location'))}
@@ -136,7 +138,7 @@ function settingsScreen(){
         <button class="btn btn-ghost btn-block mt8" id="sDelete" style="color:var(--red)">${icon('delete_forever')}Delete my account</button>
         <p class="center mono muted small mt16">${esc(APP.name)} • version ${esc(APP.version||'')}</p>
       </div>`;
-      bindSeg(el, 'theme', v=>setThemePref(v));
+      bindSeg(el, 'theme', v=>{ setThemePref(v); const t=el.querySelector('#themeSub'); if (t) t.textContent=themeSub(v); });
       bindToggle(el.querySelector('#sLoc'), on=>{ on?MAP.startTracking(true):MAP.stopTracking(); });
       bindToggle(el.querySelector('#sZones'), on=>{ setPref('zones', on); go.refresh(); });
       el.querySelectorAll('[data-pin]').forEach(b=>b.onclick=()=>{ S.updateMe({ pinColor:b.dataset.pin }); el.querySelectorAll('[data-pin]').forEach(x=>{ const on=x===b; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); }); go.refresh(); toast('Your pins are '+b.getAttribute('aria-label').toLowerCase()+' now'); });

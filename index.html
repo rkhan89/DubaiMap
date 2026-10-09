@@ -7,7 +7,7 @@
 <meta name="description" content="Koko: we were here. A shared food scrapbook map of Dubai for you and your crew.">
 <meta name="theme-color" content="#F7F3EC" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#141210" media="(prefers-color-scheme: dark)">
-<script>/* theme before first paint (same rule as theme.js) */try{var p=localStorage.getItem("bites-theme"),d=p==="dark"||(p!=="light"&&matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.dataset.theme=d?"dark":"light";if(p==="light"||p==="dark")document.querySelectorAll("meta[name=theme-color]").forEach(function(m){m.content=d?"#141210":"#F7F3EC";});}catch(e){document.documentElement.dataset.theme="light";}</script>
+<script>/* theme before first paint (same rule as theme.js; Dynamic uses its last saved answer while it holds) */try{var p=localStorage.getItem("bites-theme");if(p==="auto")p="system";if(["light","dark","system"].indexOf(p)<0)p="dynamic";var c=p==="dynamic"&&JSON.parse(localStorage.getItem("bites-theme-dyn")||"null"),d=p==="dark"||(p==="dynamic"&&c&&c.until>Date.now()?c.t==="dark":(p==="system"||p==="dynamic")&&matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.dataset.theme=d?"dark":"light";if(p!=="system")document.querySelectorAll("meta[name=theme-color]").forEach(function(m){m.content=d?"#141210":"#F7F3EC";});}catch(e){document.documentElement.dataset.theme="light";}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">

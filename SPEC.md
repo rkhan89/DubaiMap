@@ -26,9 +26,12 @@ photos, and share a photobook. Private logs are visible to their owner only.
 ## Colour and themes
 - Every colour is a CSS variable in `styles.css`. Light values sit on `:root`; dark values under
   `:root[data-theme="dark"]`. Nothing in the UI is hard-coded.
-- Setting: **Light / Dark / Auto** (Auto follows the phone), in Profile → Appearance. There is no
-  theme button on the map. `theme.js` resolves the choice to `data-theme` on `<html>`, and an
-  inline script in `index.html` does the same before first paint, so there's no flash.
+- Setting: **Light / Dark / System / Dynamic**, in Settings → Appearance. **Dynamic is the default**: light from
+  sunrise, dark from sunset in Dubai (`sun.js`: NOAA sunrise equation on the city's clock, UTC+4), whatever the
+  phone's time zone; it switches by itself at the moment and re-checks when the app comes back. System follows
+  the phone. There is no theme button on the map. `theme.js` resolves the choice to `data-theme` on `<html>`; an
+  inline script in `index.html` does the same before first paint (Dynamic from its last saved answer while it
+  holds), so there's no flash. Its hash is in vercel.json's script-src (tests/headers.test.mjs checks it).
 - Look (design/dna/koko-target.json, from the references in design/dna/references.json): warm
   neutral paper (`#f7f3ec`) instead of peach, ink (`#1d1712`) for text, primary buttons and selected
   chips, white cards with soft shadows (no hard offset shadows, no card inside a card), pill buttons.
