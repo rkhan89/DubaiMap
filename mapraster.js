@@ -12,7 +12,7 @@ import { PixelBuffer, PixelCtx, rgba, hex, mix, scale, scanPolys, fillPolys, lin
 
 export const S = 2;          // art pixels per world unit (the approved scale)
 // landmark and prop sprites (map-art/*.png), handed over by map.js: { name: { w, h, data:Uint32Array, ax, ay } }
-// ax, ay = the anchor in the sprite: bottom centre of its ground footprint
+// ax, ay = the anchor in the sprite: the bottom centre of its canvas (ground contact, or the waterline)
 let SPRITES = {};
 const spriteCache = new Map();
 export function setSprites(sp){ SPRITES = sp || {}; spriteCache.clear(); chunkObjs = null; }
@@ -225,7 +225,7 @@ function drawRoads(buf, s, groundMask){
       for (let d=0; d<L; d+=1, n++){
         if (dash && (n % (dash[0]+dash[1])) >= dash[0]) continue;
         const x = Math.floor(ax + (bx-ax)*d/L + nx), y = Math.floor(ay + (by-ay)*d/L + ny);
-        if (x < buf.ox || y < buf.oy || x >= buf.ox+W || y >= buf.oy+H) continue;
+        if (x < buf.ox || y < buf.oy || x >= buf.ox+W || y >= buf.oy+H || !inMap(x, y)) continue;
         if (mask[(y-my0)*mw + x-mx0] >= 2 && mask[(y-my0)*mw + x-mx0] <= 3) buf.data[(y-buf.oy)*W + x-buf.ox] = col;
       }
     }
@@ -682,15 +682,18 @@ export function renderRect(x0, y0, w, h, s=S){
   M.setLineWidth(1/s);
   for (const k of list){
     const o = M.OBJECTS[k];
-    if (o.k === 'boat' && s >= 2){
-      // a pale V of wake trailing behind the boat
+    if (o.k === 'boat' && s >= 2 && propOk(propOf(o))){
+      // a pale V of wake trailing behind the boat, away from its bow (along the 2:1 iso diagonal)
       const wc = night() ? rgba('rgba(170,200,255,0.35)') : rgba('rgba(255,255,255,0.75)'), X = Math.round(o.x*s), Y = Math.round(o.y*s);
-      for (let d=0; d<14; d++){ if (d % 3 === 2) continue; buf.put(X - 10 - d, Y + 1 + (d>>2), wc); buf.put(X - 10 - d, Y + 5 - (d>>2), wc); }
+      const bx = o.head[1] === 'e' ? 1 : -1, by = o.head[0] === 's' ? 1 : -1;
+      for (let d=0; d<14; d++){ if (d % 3 === 2) continue; const t = 9 + d, x = X - bx*t, y = Y - 2 - by*(t>>1), sp = 1 + (d>>2);
+        buf.put(x, y - sp, wc); buf.put(x, y + sp, wc); }
     }
     if (o.k === 'box') drawBuilding(buf, o, s);
     else if (o.k === 'sprite') drawSprite(buf, o, s);
     else if (o.k === 'camel' && propOk('camel_a')) continue;   // walking camels are drawn live by map.js
     else if (propOk(propOf(o))) drawSprite(buf, { x:o.x, y:o.y, sprite:propOf(o) }, s);
+    else if (o.k === 'boat' || o.k === 'plane') continue;       // no sprite, no boat (the old vector ones are gone)
     else { try { M.drawObjectVector(ctx, o); } catch(e){ /* one odd shape never stops the city */ } }
   }
   // the water you can see (not under a boat, a bridge or a building in front)
@@ -723,7 +726,8 @@ export function setPropLimits(p){ PROP_MAX = p || {}; }
 function propOf(o){
   if (o.k === 'camel') return o.f ? 'camel_b' : 'camel_a';
   if (o.k === 'palm') return (o.s || 1) < 0.95 ? 'palm_short' : 'palm';
-  if (o.k === 'boat') return o.kind;   // dhow, abra, yacht
+  if (o.k === 'boat') return o.kind + '_' + o.head;   // dhow, abra, yacht in one of four headings
+  if (o.k === 'plane') return 'plane_' + o.head;
   return null;
 }
 function propOk(name){ if (!name) return false; const sp = SPRITES[name], m = PROP_MAX[name]; return sp && m && sp.w <= m[0] && sp.h <= m[1]; }

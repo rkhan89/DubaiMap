@@ -1,5 +1,5 @@
 // Prepares art-pack sprites for the map, from the pack's original files:
-//  - props (camel_a/b, palm, palm_short, dhow, abra, yacht) at half size, pixel-art style: each 2x2
+//  - props (camel_a/b, palm, palm_short) at half size, pixel-art style: each 2x2
 //    block takes its commonest colour (ties go to the darker, so outlines and thin parts survive),
 //    then a 1 px outline is redrawn round the new silhouette
 //  - museum_of_the_future and dubai_frame flattened to 16 colours, no dithering
@@ -37,7 +37,7 @@ function halve(img){
   }
   return { w, h, d:o };
 }
-for (const f of ['camel_a','camel_b','palm','palm_short','dhow','abra','yacht']){
+for (const f of ['camel_a','camel_b','palm','palm_short']){   // the boats come ready-made in four headings (fix pack)
   const img = halve(await read(f + '.png'));
   await write(img, f + '.png');
   console.log(f, img.w + 'x' + img.h);

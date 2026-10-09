@@ -29,6 +29,9 @@ export const LANDMARKS = [
     fact:'Shaped like a breaking wave: 26 floors, 93 m tall, opened in December 1997 beside the Burj Al Arab.', venue:['Jumeirah Beach Hotel'] },
   { id:'wild_wadi', size:[92,78], name:'Wild Wadi Water Park', lat:25.13965, lng:55.18943, sprite:'wild_wadi', clear:1, plot:'none',
     fact:'Opened in February 1998, with 17 water slides and the largest wave pool in the Middle East.', venue:['Wild Wadi', 'Wild Wadi Water Park'] },
+  // Atlantis The Royal (fix pack): footprint 56 px along the coast by 22 inland, about 700 x 275 m
+  { id:'atlantis_the_royal', size:[96,112], fpx:[56,22], fp:[700,275], name:'Atlantis The Royal', lat:25.1385, lng:55.1300, sprite:'atlantis_the_royal', clear:2, plot:'none',
+    fact:'Opened in 2023 on the Palm’s crescent: two towers of stacked, shifted blocks joined by a bridge with a sky pool.', venue:['Atlantis The Royal'] },
   { id:'al_fahidi', size:[72,64], name:'Al Fahidi Historical Neighbourhood', lat:25.26389, lng:55.30000, sprite:'al_fahidi_house', clear:1, plot:'plaza', plotR:1,
     fact:'Built by merchants in the 1890s, its houses are topped with wind towers (barjeel) that catch the breeze and send it down into the rooms.', venue:['Al Fahidi', 'Al Bastakiya', 'Arabian Tea House'] },
 ];
@@ -88,10 +91,13 @@ export const landmarkById = id=>LANDMARKS.find(l=>l.id===id);
 // silhouette on the card (caught only by checking in at the landmark).
 export function landmarkCritter(id){ return null; }
 
-// The small props the art pack is redrawing at half size. A file is only used once it's the new,
-// smaller one (no bigger than this); until then the map keeps its own small placeholders.
+// The small props. A file is only used if it's no bigger than this; until then the map keeps its own
+// small placeholders (camels, palms). Boats and planes come in four headings, by the bow's direction on
+// screen (ne up-right, nw up-left, sw down-left, se down-right); the map picks one, never flips or turns one.
+export const HEADINGS = ['ne', 'nw', 'sw', 'se'];
 export const PROPS = {
-  camel_a:[24,22], camel_b:[24,22], palm:[28,36], palm_short:[28,36], dhow:[42,32], abra:[28,22], yacht:[40,24],
+  camel_a:[24,22], camel_b:[24,22], palm:[28,36], palm_short:[28,36],
+  ...Object.fromEntries([['dhow',[38,28]], ['abra',[24,18]], ['yacht',[36,20]], ['plane',[46,34]]].flatMap(([k, sz])=>HEADINGS.map(h=>[k+'_'+h, sz]))),
 };
 // every file the map loads from map-art/
 export const SPRITE_FILES = [...new Set([...LANDMARKS.map(l=>l.sprite), 'dubai_fountain_1','dubai_fountain_2','dubai_fountain_3','dubai_fountain_4','dubai_fountain_5', ...Object.keys(PROPS)])];

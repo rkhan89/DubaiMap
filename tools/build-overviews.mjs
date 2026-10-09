@@ -13,14 +13,13 @@ const L = await import(new URL('../landmarks.js', import.meta.url));
 const rev = Number((fs.readFileSync(path.join(root, 'map.js'), 'utf8').match(/const ART_REV = (\d+)/) || [])[1]);
 if (!rev) throw new Error('ART_REV not found in map.js');
 
-// the sprites, as map.js hands them over (anchor = bottom centre of the opaque pixels)
+// the sprites, as map.js hands them over (anchor = bottom centre of the canvas)
 const sprites = {};
 for (const n of L.SPRITE_FILES){
   const f = path.join(root, 'map-art', n + '.png'); if (!fs.existsSync(f)) continue;
   const { data, info } = await sharp(f).ensureAlpha().raw().toBuffer({ resolveWithObject:true });
   const d = new Uint32Array(data.buffer, data.byteOffset, info.width*info.height).slice();
-  let b = info.height - 1; outer: for (; b > 0; b--) for (let x=0; x<info.width; x++) if (d[b*info.width + x] >>> 24) break outer;
-  sprites[n] = { w:info.width, h:info.height, data:d, ax:info.width/2, ay:b+1 };
+  sprites[n] = { w:info.width, h:info.height, data:d, ax:info.width/2, ay:info.height };
 }
 R.setSprites(sprites); R.setPropLimits(L.PROPS);
 

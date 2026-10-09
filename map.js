@@ -48,6 +48,12 @@ function worldToAI(x,y){
   return gridToAI(X/TW + Y/TH, Y/TH - X/TW);
 }
 function inMap(a,i){ return a>A_MIN && a<A_MAX && i>I_MIN && i<I_MAX; }
+// which of the four sprite headings (the bow's direction on screen: ne, nw, sw, se) a travel direction
+// (da, di in km) from a/i is closest to
+function headingOf(a, i, [da, di]){
+  const p=aiToWorld(a,i), q=aiToWorld(a+da*0.1, i+di*0.1), dx=q.x-p.x, dy=q.y-p.y;
+  return (dy < 0 ? 'n' : 's') + (dx < 0 ? 'w' : 'e');
+}
 
 /* ---------- small math helpers ---------- */
 function lerpPts(pts, x){
@@ -221,9 +227,9 @@ const ROADS = [
   {k:1, pts:[G(25.000,55.110),G(24.970,55.150),G(24.930,55.170),G(24.890,55.175)]},                                                  // Expo Rd / Al Maktoum airport
   {k:1, pts:[G(25.050,55.110),G(25.000,55.170),G(24.960,55.230)]},                                                                   // Jebel Ali–Lehbab Rd
   {k:2, pts:[[3.5,0.85],[3.56,-1.05]]},                                                                // Palm trunk
-  {k:2, pts:(()=>{ const [a0,i0]=G(25.1412,55.1853), o=[]; for (let t=0;t<=1.001;t+=0.125){ const u=1-t; o.push([u*u*(a0+0.1)+2*u*t*(a0+0.5)+t*t*9.25, u*u*(i0+0.11)+2*u*t*(i0+0.24)+t*t*0.95]); } return o; })()}, // Burj Al Arab: curved causeway
-  {k:2, pts:[G(25.0806,55.1205),[-0.1,0.2]]},                                                         // Bluewaters bridge
-  {k:2, pts:[[18.6,-0.6],[18.6,0.8]]},                                                                 // Jumeirah Bay bridge
+  {k:2, causeway:true, pts:(()=>{ const [a0,i0]=G(25.1412,55.1853), o=[]; for (let t=0;t<=1.001;t+=0.125){ const u=1-t; o.push([u*u*(a0+0.1)+2*u*t*(a0+0.5)+t*t*9.25, u*u*(i0+0.11)+2*u*t*(i0+0.24)+t*t*0.95]); } return o; })()}, // Burj Al Arab: curved causeway
+  {k:2, causeway:true, pts:[G(25.0806,55.1205),[-0.1,0.2]]},                                                         // Bluewaters bridge
+  {k:2, causeway:true, pts:[[18.6,-0.6],[18.6,0.8]]},                                                                 // Jumeirah Bay bridge
 ];
 
 const LANDMARKS = [
@@ -318,6 +324,8 @@ const tType = new Uint8Array(ROWS*COLS);
 const roadMask = new Uint8Array(ROWS*COLS);
 const reserved = new Uint8Array(ROWS*COLS);
 const inRect = (a,i,R)=> a>=R.a[0] && a<=R.a[1] && i>=R.i[0] && i<=R.i[1];
+// the terrain type under a/i, or -1 off the map
+function tileAt(a,i){ if (!inMap(a,i)) return -1; const g=aiToGrid(a,i), c=Math.floor(g.gx), r=Math.floor(g.gy); return (r>=0&&c>=0&&r<ROWS&&c<COLS) ? tType[r*COLS+c] : -1; }
 
 /* =========================================================
    NEIGHBOURHOODS: the finer city fabric
@@ -443,11 +451,11 @@ const LANDMARKS2 = [
   {k:'waterfront',at:G(25.2890,55.3230)}, {k:'etihad', at:G(25.2390,55.2740)},    {k:'jmosque', at:[22.0,0.75]},
   {k:'emtowers',  at:G(25.2170,55.2820)}, {k:'difcgate', at:G(25.2135,55.2795)},  {k:'wtc', at:G(25.2260,55.2865)},
   {k:'opera',     at:G(25.1955,55.2720)}, {k:'cocacola', at:G(25.2040,55.2620)},  {k:'madinat', at:G(25.1325,55.1845)},
-  {k:'wildwadi',  at:G(25.1395,55.1890)}, {k:'ski', at:[G(25.1181,55.2006)[0]+0.45, G(25.1181,55.2006)[1]+0.05]},
+  {k:'wildwadi',  at:G(25.1395,55.1890)},
   {k:'dhmall',    at:[8.4,6.6]},          {k:'cricket', at:[2.6,9.6]},             {k:'autodrome', at:G(25.0520,55.2390)},
-  {k:'dragonmart',at:G(25.1750,55.4200)}, {k:'miracle', at:G(25.0600,55.2440)},    {k:'img', at:G(25.0810,55.3180)},
+  {k:'dragonmart',at:G(25.1750,55.4200)}, {k:'miracle', at:G(25.0600,55.2440)},
   {k:'expo',      at:G(24.9630,55.1490)}, {k:'maktoum', at:[-13.0,15.0]},          {k:'sohq', at:G(25.1200,55.3820)},
-  {k:'mirdifcc',  at:G(25.2160,55.4070)}, {k:'theview', at:[3.5,-0.6]},            {k:'royal', at:G(25.1385,55.1300)},
+  {k:'mirdifcc',  at:G(25.2160,55.4070)}, {k:'theview', at:[3.5,-0.6]},
   {k:'pointe',    at:[ATLANTIS[0]+0.55, ATLANTIS[1]+0.5]},                        {k:'lamer', at:[20.9,-0.05]},
   {k:'qe2',       at:[25.6,-1.3]},        {k:'festival', at:G(25.2220,55.3570)},   {k:'alserkal', at:G(25.1430,55.2250)},
 ];
@@ -544,6 +552,10 @@ function buildTerrain(){
    OBJECTS  (buildings, trees, boats, landmarks) — depth sorted
    ========================================================= */
 const OBJECTS = [];
+// what each landmark stands on (a/i km, half-extents ha along the coast and hi inland): no cars drive
+// within a tile of it and the Metro passes under its sprite
+const FOOTPRINTS = [];
+const inFootprint = (a, i, m=T)=>FOOTPRINTS.find(f=>Math.abs(a-f.a) <= f.ha + m && Math.abs(i-f.i) <= f.hi + m);
 const PAL = {
   glass: ['#8FC3DB','#6FAACB','#A7D0E2','#7FB0C8','#9DBFD0','#B7C9D6','#E3CFA8'],
   mid:   ['#EAD7B7','#E3C9A0','#F0E2C8','#D9BF96','#E8CDB0','#F2D9B5'],
@@ -570,6 +582,7 @@ function reserveAround(a,i,rad){
 const ART_KEYS = new Set(['burj','baa','frame','motf','atlantis','jmosque','emtowers','wildwadi','gv','mall','moe','ibn','festival','dcc','mirdifcc','dhmall','dragonmart']);
 function landmarkPoint(l){ return l.at==='palm-crescent' ? ATLANTIS : l.plot==='lake' ? BURJ_LAKE.c : G(l.lat, l.lng); }
 function buildObjects(){
+  OBJECTS.length = 0; FOOTPRINTS.length = 0;
   // the art-pack landmarks: the point is the middle of the sprite's footprint (its anchor sits half the
   // footprint lower), the ground round it is cleared, and it gets a paved plaza where it has one
   // a landmark on a plaza that lands in the water on this stylised coast moves to the nearest land
@@ -586,8 +599,11 @@ function buildObjects(){
     const at = (l.plot==='plaza' || l.plot==='parking') ? nearestLand(landmarkPoint(l), Math.max(1, l.clear||1)) : landmarkPoint(l);
     // a mall clears its footprint plus a margin, and more on the two sides facing the camera (lower a, higher i),
     // where anything standing would hide its low front
-    if (l.fp){ const ha = l.fp[0]/2000 + 0.12, hi = l.fp[1]/2000 + 0.12; forRect({ a:[at[0]-ha-0.35, at[0]+ha], i:[at[1]-hi, at[1]+hi+0.35] }, (r,c)=>{ reserved[r*COLS+c] = 1; }); }
+    if (l.fp){ const ha = l.fp[0]/2000 + 0.12, hi = l.fp[1]/2000 + 0.12, fr = l.kind==='mall' ? 0.35 : 0; forRect({ a:[at[0]-ha-fr, at[0]+ha], i:[at[1]-hi, at[1]+hi+fr] }, (r,c)=>{ reserved[r*COLS+c] = 1; }); }
     else if (l.clear) reserveAround(at[0], at[1], l.clear);
+    // its footprint (half-extents in km), for the cars and the Metro: from the metres, the art pixels
+    // (a 200 m tile edge is 16 art px across), or failing those its cleared radius
+    const fha = l.fp ? l.fp[0]/2000 : l.fpx ? l.fpx[0]/16*T/2 : (l.clear||1)*T, fhi = l.fp ? l.fp[1]/2000 : l.fpx ? l.fpx[1]/16*T/2 : (l.clear||1)*T;
     const g = aiToGrid(at[0], at[1]), p = proj(g.gx, g.gy), W = l.size[0];
     // the sprite's anchor is the bottom centre of its canvas, the row of the footprint's front corner: that sits
     // (coast + inland)/4 art px (= /8 world units) below the footprint's middle, which is the landmark's point
@@ -596,6 +612,7 @@ function buildObjects(){
       d:g.gx + g.gy + (l.billboard ? 0.9 : W/32 + 0.4), plot:l.plot, plotL:2*(l.clear||0)+1,
       // a car park: the building's footprint plus ~120 m round it, in tiles (hx along gx = inland, hy along gy = the coast)
       plotHx: l.fp ? l.fp[1]/400 + 0.6 : 0, plotHy: l.fp ? l.fp[0]/400 + 0.6 : 0 });
+    FOOTPRINTS.push({ a:at[0], i:at[1], ha:fha, hi:fhi, o:OBJECTS[OBJECTS.length-1] });
   });
   // nothing tall in front of the lake, so the fountain's show is never hidden
   { const [ca, ci] = BURJ_LAKE.c, h = BURJ_LAKE.h + 0.5;
@@ -606,6 +623,7 @@ function buildObjects(){
     reserveAround(l.at[0], l.at[1], rad);
     const g=aiToGrid(l.at[0], l.at[1]), p=proj(g.gx,g.gy);
     OBJECTS.push({k:'lm', lm:l.k, x:p.x, y:p.y, d:g.gx+g.gy+0.9});
+    FOOTPRINTS.push({ a:l.at[0], i:l.at[1], ha:rad*T, hi:rad*T });
   });
 
   const addBox = (c,r,st,h,rng)=>{
@@ -657,14 +675,27 @@ function buildObjects(){
     } else if (t===L_BEACH && i>0 && rng()<0.07 && !roadMask[k]) addTree(c,r,rng);
   }
 
-  // boats on the creek, the marina and off the Palm
-  const boatAt = (a,i,kind)=>{ const g=aiToGrid(a,i), p=proj(g.gx,g.gy); OBJECTS.push({k:'boat', kind, x:p.x, y:p.y, d:g.gx+g.gy+0.5}); };
-  [[0.18,'dhow'],[0.32,'abra'],[0.45,'dhow'],[0.6,'abra']].forEach(([f,kind])=>{
-    const seg = CREEK[Math.floor(f*(CREEK.length-1))], nxt = CREEK[Math.floor(f*(CREEK.length-1))+1];
-    boatAt((seg[0]+nxt[0])/2, (seg[1]+nxt[1])/2, kind);
-  });
-  boatAt(MARINA[1][0], MARINA[1][1], 'yacht'); boatAt(MARINA[3][0], MARINA[3][1], 'yacht');
-  boatAt(6.2,-1.8,'yacht'); boatAt(13.2,-2.0,'dhow'); boatAt(21.5,-2.2,'yacht'); boatAt(26.4,-1.6,'dhow');
+  // boats on the creek, the marina and off the Palm. A boat only goes on open water: its tile and the
+  // eight round it are all water (so never on a pier, a beach or between buildings), and no other boat in those nine.
+  // A spot that fails moves to the nearest one that passes within 800 m, else the boat isn't drawn.
+  // dir = the way it's going (a/i): its bow points that way on screen, one of the four sprite headings
+  const boatTile = new Set();
+  const openWater = (c,r)=>{ for (let dr=-1;dr<=1;dr++) for (let dc=-1;dc<=1;dc++){ const rr=r+dr, cc=c+dc; if (rr<0||cc<0||rr>=ROWS||cc>=COLS || !isWaterT(tType[rr*COLS+cc])) return false; } return true; };
+  const boatAt = (a,i,kind,dir)=>{
+    const g=aiToGrid(a,i), c0=Math.floor(g.gx), r0=Math.floor(g.gy); let best=null, bd=Infinity;
+    for (let dr=-4;dr<=4;dr++) for (let dc=-4;dc<=4;dc++){ const c=c0+dc, r=r0+dr, d=Math.hypot(c+0.5-g.gx, r+0.5-g.gy);
+      if (d < bd && openWater(c,r) && !boatTile.has(r*COLS+c)){ bd=d; best=[c,r]; } }
+    if (!best) return;
+    for (let dr=-1;dr<=1;dr++) for (let dc=-1;dc<=1;dc++) boatTile.add((best[1]+dr)*COLS+best[0]+dc);
+    const gx = best[0]===c0 && best[1]===r0 ? g.gx : best[0]+0.5, gy = best[0]===c0 && best[1]===r0 ? g.gy : best[1]+0.5, p=proj(gx,gy);
+    OBJECTS.push({k:'boat', kind, head:headingOf(a, i, dir), x:p.x, y:p.y, d:gx+gy+0.5});
+  };
+  // along a waterway (a polyline) at fraction f, going with it (+1) or against it (-1)
+  const along = (L, f, sgn)=>{ const n=L.length-1, s=Math.min(n-1, Math.floor(f*n)), u=f*n-s, A=L[s], B=L[s+1];
+    return [A[0]+(B[0]-A[0])*u, A[1]+(B[1]-A[1])*u, [(B[0]-A[0])*sgn, (B[1]-A[1])*sgn]]; };
+  [[0.18,'dhow'],[0.32,'abra'],[0.45,'dhow'],[0.6,'abra']].forEach(([f,kind],q)=>{ const [a,i,dir]=along(CREEK, f+0.07, q%2?1:-1); boatAt(a, i, kind, dir); });
+  [[0.25,1],[0.75,-1]].forEach(([f,sg])=>{ const [a,i,dir]=along(MARINA, f, sg); boatAt(a, i, 'yacht', dir); });
+  boatAt(6.2,-1.8,'yacht',[1,0]); boatAt(13.2,-2.0,'dhow',[-1,0]); boatAt(21.5,-2.2,'yacht',[1,0]); boatAt(26.4,-1.6,'dhow',[-1,0]);
 
 
   // ===== the finer fabric (neighbourhoods), then small life, transit and the new landmarks =====
@@ -672,18 +703,11 @@ function buildObjects(){
   { const before = new Uint8Array(reserved);
     LANDMARKS2.forEach(l=>{
       if (ART_KEYS.has(l.k)) return;
-      if (l.k==='royal'){
-        reserveAround(l.at[0], l.at[1], 1);
-        const g=aiToGrid(l.at[0], l.at[1]), d0=g.gx+g.gy+0.9, wall='#E6DBC6', base=(hx,hy,gx,gy,z0,h,k)=>{ const p=proj(g.gx+gx, g.gy+gy);
-          OBJECTS.push({k:'box', keep:true, x:p.x, y:p.y, hx, hy, z0, h, st:'campus', d:d0+k*0.001, opts:{ left:shade(wall,0.9), right:shade(wall,0.72), top:'#9BC98A' }}); };
-        base(0.62, 0.42, 0, 0, 0, 6, 0);                                               // podium with its pools and gardens
-        [[0.62,0.2,0.1,0],[0.2,0.62,0,0.1],[0.6,0.2,-0.1,0],[0.2,0.6,0,-0.1],[0.56,0.2,0.08,0],[0.2,0.5,0,0.06]].forEach(([hx,hy,gx,gy],k)=>base(hx, hy, gx, gy, 6+k*6, 6, k+1));
-        return;
-      }
-      const rad = ['dcc','mirdifcc','festival','dhmall','img','expo','cricket','autodrome','dragonmart','maktoum','miracle'].includes(l.k) ? 2 : 1;
+      const rad = ['dcc','mirdifcc','festival','dhmall','expo','cricket','autodrome','dragonmart','maktoum','miracle'].includes(l.k) ? 2 : 1;
       reserveAround(l.at[0], l.at[1], rad);
       const g=aiToGrid(l.at[0], l.at[1]), p=proj(g.gx,g.gy);
       OBJECTS.push({k:'lm2', lm:l.k, x:p.x, y:p.y, d:g.gx+g.gy+0.9});
+      FOOTPRINTS.push({ a:l.at[0], i:l.at[1], ha:rad*T, hi:rad*T });
     });
     const tileOf = o=>{ const ai=worldToAI(o.x,o.y), g=aiToGrid(ai.a,ai.i), c=Math.floor(g.gx), r=Math.floor(g.gy); return (r>=0&&c>=0&&r<ROWS&&c<COLS) ? r*COLS+c : -1; };
     for (let k=OBJECTS.length-1;k>=0;k--){ const o=OBJECTS[k]; if ((o.k!=='box' && o.k!=='tree') || o.keep) continue; const t=tileOf(o); if (t>=0 && reserved[t] && !before[t]) OBJECTS.splice(k,1); }
@@ -770,30 +794,37 @@ function buildObjects(){
   }
 
   // the Metro: elevated track segments (depth-sorted so buildings in front cover it) and stations
+  const onTrack = (a,i)=>{ const t = tileAt(a,i); return t >= 0 && (!isWaterT(t) || t===W_CANAL); };
+  const underSprite = (a, i, d)=>{ const f = FOOTPRINTS.find(f=>f.o && Math.abs(a-f.a) <= f.ha + T && Math.abs(i-f.i) <= f.hi + T); return f ? Math.min(d, f.o.d - 0.05) : d; };
   METRO_AI.forEach((line, li)=>{
     const col = METRO[li].col;
     for (let k=1;k<line.length;k++){
       const [a0,i0]=line[k-1], [a1,i1]=line[k], n=Math.max(1, Math.ceil(Math.hypot(a1-a0,i1-i0)/0.25));
       for (let s=0;s<n;s++){
         const pa=a0+(a1-a0)*s/n, pi=i0+(i1-i0)*s/n, qa=a0+(a1-a0)*(s+1)/n, qi=i0+(i1-i0)*(s+1)/n;
-        const P=aiToWorld(pa,pi), Q=aiToWorld(qa,qi), g=aiToGrid((pa+qa)/2,(pi+qi)/2);
-        OBJECTS.push({k:'rail', x:(P.x+Q.x)/2, y:(P.y+Q.y)/2, x0:P.x, y0:P.y, x1:Q.x, y1:Q.y, col, d:g.gx+g.gy+0.7});
+        const P=aiToWorld(pa,pi), Q=aiToWorld(qa,qi), ma=(pa+qa)/2, mi=(pi+qi)/2, g=aiToGrid(ma,mi);
+        // only over land and its bridges (never off the map or out over the sea), and under a landmark's sprite
+        if (!onTrack(ma, mi)) continue;
+        OBJECTS.push({k:'rail', x:(P.x+Q.x)/2, y:(P.y+Q.y)/2, x0:P.x, y0:P.y, x1:Q.x, y1:Q.y, col, d:underSprite(ma, mi, g.gx+g.gy+0.7)});
       }
     }
-    METRO[li].stations.forEach(([lat,lng,name])=>{ if (!name) return; const [a,i]=G(lat,lng); if (!inMap(a,i)) return; const g=aiToGrid(a,i), p=proj(g.gx,g.gy);
-      OBJECTS.push({k:'station', x:p.x, y:p.y, col, d:g.gx+g.gy+0.75}); });
+    METRO[li].stations.forEach(([lat,lng,name])=>{ if (!name) return; const [a,i]=G(lat,lng); if (!onTrack(a,i)) return; const g=aiToGrid(a,i), p=proj(g.gx,g.gy);
+      OBJECTS.push({k:'station', x:p.x, y:p.y, col, d:underSprite(a, i, g.gx+g.gy+0.75)}); });
   });
 
   // boats: more abras and dhows on the creek, yachts in the marina and at Dubai Harbour
   { const rng = mulberry32(2024);
-    for (let q=0;q<14;q++){ const f=0.04+q*0.05, n=CREEK.length-1, s=Math.min(n-1, Math.floor(f*n)), u=f*n-s, a=CREEK[s][0]+(CREEK[s+1][0]-CREEK[s][0])*u, i=CREEK[s][1]+(CREEK[s+1][1]-CREEK[s][1])*u;
-      boatAt(a+(rng()-0.5)*0.08, i+(rng()-0.5)*0.08, q%3===0?'dhow':'abra'); }
-    [[0.15,'yacht'],[0.4,'yacht'],[0.55,'yacht'],[0.75,'yacht'],[0.9,'yacht']].forEach(([f])=>{ const n=MARINA.length-1, s=Math.min(n-1,Math.floor(f*n)), u=f*n-s;
-      boatAt(MARINA[s][0]+(MARINA[s+1][0]-MARINA[s][0])*u+0.03, MARINA[s][1]+(MARINA[s+1][1]-MARINA[s][1])*u, 'yacht'); });
-    [[2.4,-0.75],[2.75,-0.8],[3.1,-0.7],[24.9,-1.15],[26.9,0.1],[27.3,0.12],[-9.2,-2.4],[-10.9,-2.5]].forEach(([a,i],q)=>boatAt(a,i, q<3?'yacht':'dhow'));
+    for (let q=0;q<14;q++){ const [a,i,dir]=along(CREEK, 0.04+q*0.05, rng()<0.5?1:-1);
+      // abras cross the creek, dhows go up and down it
+      boatAt(a+(rng()-0.5)*0.08, i+(rng()-0.5)*0.08, q%3===0?'dhow':'abra', q%3===0 ? dir : [-dir[1], dir[0]]); }
+    [[0.15,'yacht'],[0.4,'yacht'],[0.55,'yacht'],[0.75,'yacht'],[0.9,'yacht']].forEach(([f],q)=>{ const [a,i,dir]=along(MARINA, f, q%2?1:-1); boatAt(a+0.03, i, 'yacht', dir); });
+    [[2.4,-0.75],[2.75,-0.8],[3.1,-0.7],[24.9,-1.15],[26.9,0.1],[27.3,0.12],[-9.2,-2.4],[-10.9,-2.5]].forEach(([a,i],q)=>boatAt(a,i, q<3?'yacht':'dhow', [q%2?1:-1, 0]));
   }
   // planes at DXB and Al Maktoum; cranes at the ports
-  [[29.35,6.6,0],[29.35,7.2,0],[29.35,7.8,0],[29.0,8.6,1],[-13.3,14.2,0],[-13.3,14.9,0],[-14.6,15.6,1]].forEach(([a,i,taxi])=>{ const w=aiToWorld(a,i), g=aiToGrid(a,i); OBJECTS.push({k:'plane', x:w.x, y:w.y, d:g.gx+g.gy+0.8, taxi}); });
+  // planes sit on a runway's centre line, nose along it: the heading comes from the runway's own direction
+  // (index into RUNWAYS: DXB's two, then Al Maktoum's two; i along the runway; +1/-1 which way it faces)
+  [[0,6.4,1],[0,8.7,-1],[1,7.3,1],[1,9.0,-1],[2,14.0,1],[3,15.4,-1],[3,16.4,1]].forEach(([n,i,sg])=>{ const rw=RUNWAYS[n], w=aiToWorld(rw.a,i), g=aiToGrid(rw.a,i);
+    OBJECTS.push({k:'plane', head:headingOf(rw.a, i, [0, sg]), x:w.x, y:w.y, d:g.gx+g.gy+0.8}); });
   [[-11.75,-2.0],[-11.75,-2.5],[-10.65,-2.2],[-9.85,-2.0],[-9.85,-2.6],[-8.55,-2.3],[-11.2,-1.4],[-9.2,-1.4],[24.6,-0.95],[25.1,-0.95],[25.7,-0.95]].forEach(([a,i],q)=>{
     const w=aiToWorld(a,i), g=aiToGrid(a,i); OBJECTS.push({k:'crane', x:w.x, y:w.y, d:g.gx+g.gy+0.9, col:q%2?'#3F78B5':'#D9443A'}); });
 
@@ -878,8 +909,33 @@ function isoBox(ctx, cx, cy, hx, hy, z0, h, base, opts){
 
 
 let ROADS_W=null, MAP_CLIP=null, RUNWAYS_W=null;
+// A road is drawn and driven only over land and its bridges: a stretch over the creek, the canal or a lake
+// up to BRIDGE_KM long with land at both ends, or the whole of a causeway. It stops at the map's edge and at
+// the sea, so one road can come out as several pieces (ROADS_W). main = Sheikh Zayed Road (the busiest).
+const BRIDGE_KM = 1.0;
+function landPieces(rd){
+  const smp = [], out = [];
+  for (let k=1;k<rd.pts.length;k++){ const [a0,i0]=rd.pts[k-1], [a1,i1]=rd.pts[k], n=Math.max(1, Math.ceil(Math.hypot(a1-a0,i1-i0)/0.05));
+    for (let q=(k===1?0:1); q<=n; q++){ const a=a0+(a1-a0)*q/n, i=i0+(i1-i0)*q/n, t=tileAt(a,i);
+      // 2 land (or a causeway), 1 creek, canal or lake, 0 off the map or the sea
+      smp.push({ a, i, vtx:q===n, st: t<0 ? 0 : (!isWaterT(t) || rd.causeway) ? 2 : t===W_CANAL ? 1 : 0 }); } }
+  // a run over the creek is a bridge if it's short and has land at both ends
+  for (let s=0; s<smp.length; ){ if (smp[s].st!==1){ s++; continue; } let e=s; while (e<smp.length && smp[e].st===1) e++;
+    const ok = s>0 && e<smp.length && smp[s-1].st===2 && smp[e].st===2 && (e-s)*0.05 <= BRIDGE_KM;
+    for (let q=s;q<e;q++) smp[q].st = ok ? 2 : 0;
+    s=e; }
+  // pieces: the runs that stay, with just the road's own corners and the two ends
+  let cur = null;
+  smp.forEach((p,q)=>{
+    if (p.st!==2){ if (cur && cur.length>1) out.push(cur); cur=null; return; }
+    if (!cur) cur=[];
+    if (!cur.length || p.vtx || q===smp.length-1 || smp[q+1].st!==2) cur.push([p.a,p.i]);
+  });
+  if (cur && cur.length>1) out.push(cur);
+  return out;
+}
 function prepRoads(){
-  ROADS_W = ROADS.map(r=>({k:r.k, pts:r.pts.map(([a,i])=>{ const p=aiToWorld(a,i); return [p.x,p.y]; })}));
+  ROADS_W = ROADS.flatMap((r,idx)=>landPieces(r).map(pts=>({k:r.k, main:idx===0, causeway:!!r.causeway, pts:pts.map(([a,i])=>{ const p=aiToWorld(a,i); return [p.x,p.y]; })})));
   const c=[proj(0,0),proj(COLS,0),proj(COLS,ROWS),proj(0,ROWS)];
   if (typeof Path2D !== 'undefined'){ MAP_CLIP = new Path2D(); MAP_CLIP.moveTo(c[0].x,c[0].y); c.slice(1).forEach(p=>MAP_CLIP.lineTo(p.x,p.y)); MAP_CLIP.closePath(); }
   RUNWAYS_W = RUNWAYS.map(rw=>{
@@ -1078,17 +1134,6 @@ function drawTree(ctx,o){
   ctx.fillStyle=C(k > 1.1 ? '#5FA34F' : '#6DB35A'); ctx.beginPath(); ctx.arc(o.x,o.y-3*k-2.2*k,2.7*k,0,Math.PI*2); ctx.fill(); ctx.stroke();
   ctx.fillStyle=C('rgba(255,255,255,0.28)'); ctx.beginPath(); ctx.arc(o.x-0.9*k,o.y-3*k-3.2*k,1*k,0,Math.PI*2); ctx.fill();
 }
-function drawBoat(ctx,o){
-  const x=o.x, y=o.y; ctx.strokeStyle=C(OUT); ctx.lineWidth=LW;
-  if (o.kind==='yacht'){
-    face(ctx,[[x-6,y-1],[x+6,y-1],[x+4,y+2],[x-4,y+2]],'#FFFFFF'); face(ctx,[[x-2,y-4],[x+3,y-4],[x+3,y-1],[x-2,y-1]],'#D8E4EA');
-  } else {
-    face(ctx,[[x-6,y-1],[x+6,y-2],[x+4,y+2],[x-4,y+2]],'#A0683A');
-    if (o.kind==='dhow') face(ctx,[[x-1,y-2],[x-1,y-13],[x+6,y-3]],'#F5EBD6');
-    else face(ctx,[[x-3,y-4],[x+3,y-4],[x+3,y-1],[x-3,y-1]],'#E8C06A');
-  }
-}
-
 /* ---------- small life (palms, pools, shrubs, ghaf, camels, parasols, reeds, flamingos) ---------- */
 function drawPalm(ctx,o){
   const s=o.s||1, x=o.x, y=o.y, top=[x+1.2*s, y-9*s];
@@ -1150,14 +1195,7 @@ function drawStation(ctx,o){
   // the shell-shaped roof in the line's colour
   ctx.fillStyle=C(o.col); ctx.beginPath(); ctx.ellipse(o.x, o.y-RAIL_Z-2.2, 4.8, 2.2, 0, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
 }
-/* ---------- planes and cranes ---------- */
-function drawPlane(ctx,o){
-  const x=o.x, y=o.y;
-  ctx.strokeStyle=C(OUT); ctx.lineWidth=LW*0.8;
-  face(ctx, [[x-7,y+2.5],[x+7,y-3.5],[x+8,y-2.5],[x-6,y+3.5]], '#F4F6F8');                // fuselage, along the stand
-  face(ctx, [[x-1,y-1.5],[x+4,y+2.5],[x+2.5,y+3],[x-3,y+0.5]], '#DDE3E8');               // wings
-  face(ctx, [[x-6.5,y+2.4],[x-7.2,y-1],[x-5.4,y+1.4]], '#C9503A');                       // tail fin
-}
+/* ---------- cranes (the planes and boats are sprites: landmarks.js PROPS) ---------- */
 function drawCrane(ctx,o){
   const x=o.x, y=o.y, h=26;
   ctx.strokeStyle=C(OUT); ctx.lineWidth=LW*2.2; ctx.beginPath(); ctx.moveTo(x-3,y+1); ctx.lineTo(x-3,y-h); ctx.moveTo(x+3,y-1); ctx.lineTo(x+3,y-h-2); ctx.stroke();
@@ -1222,9 +1260,6 @@ function drawLandmark2(ctx, o){
     case 'wildwadi':   // Wild Wadi: twisty slides
       isoBox(ctx,x,y,0.6,0.5,0,4,'#7FD0D8',{top:'#9FE3E8'});
       ctx.save(); ctx.lineWidth=2; [['#F2B84B',0],['#E86A5C',3]].forEach(([c,o])=>{ ctx.strokeStyle=C(c); ctx.beginPath(); ctx.moveTo(x-6+o,y-4); ctx.bezierCurveTo(x+4+o,y-16,x-8+o,y-20,x+2+o,y-26); ctx.stroke(); }); ctx.restore(); break;
-    case 'ski':        // Ski Dubai: the long slanted slope on the mall's roof
-      ctx.fillStyle=C('#EEF4F7'); ctx.beginPath(); ctx.moveTo(x-12,y-6); ctx.lineTo(x+8,y-22); ctx.lineTo(x+14,y-19); ctx.lineTo(x+14,y-4); ctx.lineTo(x-6,y+4); ctx.closePath(); ctx.fill(); ctx.stroke();
-      ctx.fillStyle=C('#C9D6DD'); ctx.beginPath(); ctx.moveTo(x+8,y-22); ctx.lineTo(x+14,y-19); ctx.lineTo(x+14,y-4); ctx.lineTo(x+8,y-7); ctx.closePath(); ctx.fill(); ctx.stroke(); break;
     case 'cricket':    // the cricket stadium: an oval bowl round a green pitch
       isoDisc(ctx,x,y,22,11,6,'#E5E1D8'); ctx.fillStyle=C('#8CC46B'); ctx.beginPath(); ctx.ellipse(x,y-6,16,8,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
       ctx.fillStyle=C('#E2C79A'); ctx.fillRect(x-1.2,y-8,2.4,4); break;
@@ -1238,9 +1273,6 @@ function drawLandmark2(ctx, o){
       [[0,0,'#E86A5C'],[0.6,0,'#F2B84B'],[0,0.6,'#F28CB1'],[0.6,0.6,'#B57EDC'],[-0.6,0.3,'#FF9E5E']].forEach(([gx,gy,c])=>{ const [px,py]=at2(x,y,gx,gy); isoBox(ctx,px,py,0.28,0.28,0,1.5,c); });
       ctx.save(); ctx.lineWidth=2.2; ctx.strokeStyle=C('#E86A5C'); ctx.beginPath(); ctx.moveTo(x,y-2); ctx.bezierCurveTo(x-10,y-12,x-4,y-18,x,y-12); ctx.bezierCurveTo(x+4,y-18,x+10,y-12,x,y-2); ctx.stroke(); ctx.restore();
       { const [bx,by]=at2(x,y,1.3,-0.4); [0,6].forEach(o=>dome(ctx,bx+o,by,3.2,'#BFE3EE')); } break;
-    case 'img':        // IMG Worlds: a huge box with a colourful front
-      isoBox(ctx,x,y,1.6,1.1,0,12,'#3F78B5',{top:'#5FA8D3'});
-      ['#E86A5C','#F2B84B','#8BC34A'].forEach((c,k)=>{ const [px,py]=at2(x,y,-1.1+k*0.8,1.12); ctx.fillStyle=C(c); ctx.beginPath(); ctx.arc(px,py-7,2.4,0,Math.PI*2); ctx.fill(); ctx.stroke(); }); break;
     case 'expo':       // Expo City: the Al Wasl dome, a trellis hemisphere
       isoBox(ctx,x,y,1.3,1.3,0,1.5,'#E9E4DA');
       ctx.fillStyle=C('rgba(255,255,255,0.45)'); ctx.beginPath(); ctx.ellipse(x,y-1.5,18,18,0,Math.PI,0); ctx.closePath(); ctx.fill(); ctx.stroke();
@@ -1254,8 +1286,6 @@ function drawLandmark2(ctx, o){
       ctx.fillStyle=C('#B7C9D6'); ctx.beginPath(); ctx.moveTo(x-4,y-46); ctx.lineTo(x,y-54); ctx.lineTo(x+4,y-46); ctx.closePath(); ctx.fill(); ctx.stroke(); break;
     case 'theview':    // the Palm Tower (The View at the Palm) over Nakheel Mall
       isoBox(ctx,x,y,1.0,0.6,0,7,'#E9DCC6',{floors:4}); isoBox(ctx,x,y,0.34,0.3,7,50,'#A7D0E2',{mullion:true,floors:5,floorColor:'rgba(255,255,255,0.25)'}); break;
-    case 'royal':      // Atlantis The Royal: stacked, shifted blocks
-      [[0,0,0.8,14],[0.15,-0.1,0.65,12],[-0.1,0.1,0.7,12],[0.1,0,0.5,10]].reduce((z,[gx,gy,s,h])=>{ const [px,py]=at2(x,y,gx,gy); isoBox(ctx,px,py,s,0.3,z,h,'#E9E4DA',{floors:4,top:'#9BC98A'}); return z+h; },0); break;
     case 'pointe':     // The Pointe: a curved row of low shops facing Atlantis
       for (let q=0;q<5;q++){ const [px,py]=at2(x,y,q*0.35-0.7,Math.abs(q-2)*0.18); isoBox(ctx,px,py,0.2,0.22,0,5,'#F1E3C9',{top:'#E3A071'}); } break;
     case 'lamer':      // La Mer: low beach-shack blocks in bright colours
@@ -1270,7 +1300,7 @@ function drawLandmark2(ctx, o){
 }
 
 function drawObjectVector(ctx, o){
-  if (o.k==='sprite') return;
+  if (o.k==='sprite' || o.k==='boat' || o.k==='plane') return;   // sprites only (no old vector boats or planes)
   ctx.strokeStyle=C(OUT); ctx.lineWidth=LW;
   if (o.k==='box') isoBox(ctx,o.x,o.y,o.hx,o.hy,o.z0||0,o.h,null,o.opts);
   else if (o.k==='lm2') drawLandmark2(ctx,o);
@@ -1284,10 +1314,8 @@ function drawObjectVector(ctx, o){
   else if (o.k==='parasol') drawParasol(ctx,o);
   else if (o.k==='reed') drawReed(ctx,o);
   else if (o.k==='flamingo') drawFlamingo(ctx,o);
-  else if (o.k==='plane') drawPlane(ctx,o);
   else if (o.k==='crane') drawCrane(ctx,o);
   else if (o.k==='tree') drawTree(ctx,o);
-  else if (o.k==='boat') drawBoat(ctx,o);
   else drawLandmark(ctx,o);
 }
 
@@ -1320,13 +1348,14 @@ function prepCarRoads(){
     for (let k=1;k<r.pts.length;k++){ L += Math.hypot(r.pts[k][0]-r.pts[k-1][0], r.pts[k][1]-r.pts[k-1][1]); r.cum.push(L); }
     r.len = L;
     r.bb = { x0:Math.min(...r.pts.map(p=>p[0])), x1:Math.max(...r.pts.map(p=>p[0])), y0:Math.min(...r.pts.map(p=>p[1])), y1:Math.max(...r.pts.map(p=>p[1])) };
-    r.busy = idx===0 ? 7 : r.k===0 ? 3 : r.k===1 ? 1 : 0.35;        // index 0 is Sheikh Zayed Road
+    r.busy = r.main ? 7 : r.k===0 ? 3 : r.k===1 ? 1 : 0.35;          // Sheikh Zayed Road is busiest
     r.speed = r.k===0 ? 20 : r.k===1 ? 13 : 8;                     // world px per second
   });
   markHiddenRoad();
 }
 // Cars live on a layer above the city, so stretches of road that pass behind a building
-// (one standing in front of them) are worked out once here and cars aren't drawn there.
+// (one standing in front of them), or across a landmark's footprint, are worked out once here and
+// cars aren't drawn there.
 const OCC_STEP = 1.5, LM_BOX = { burj:[20,240], baa:[30,115], frame:[16,56], ain:[24,70], atlantis:[30,40], motf:[12,34], terminal:[36,34], moe:[20,14], mall:[22,14], ibn:[16,12], meydan:[40,14] };
 function markHiddenRoad(){
   const CELL = 32, grid = new Map(), key = (x,y)=>x+','+y;
@@ -1344,6 +1373,8 @@ function markHiddenRoad(){
     const n = Math.ceil(r.len/OCC_STEP)+1; r.occ = new Uint8Array(n);
     for (let i=0;i<n;i++){
       const p = roadPoint(r, i*OCC_STEP), ai = worldToAI(p.x, p.y), g = aiToGrid(ai.a, ai.i), d = g.gx+g.gy;
+      // no cars on a landmark or mall, or within a tile of one
+      if (inFootprint(ai.a, ai.i)){ r.occ[i] = 1; continue; }
       const list = grid.get(key(Math.floor(p.x/CELL), Math.floor(p.y/CELL)));
       if (list && list.some(b=>b.d > d+0.6 && p.x>b.x0 && p.x<b.x1 && p.y>b.y0 && p.y<b.y1)) r.occ[i] = 1;
     }
@@ -1527,7 +1558,7 @@ function shownStore(){
 /* ---------- finished overviews are kept in the browser's cache (per app version and theme), so the
    next launch shows the whole city at once and the worker only renders close-ups ---------- */
 // bump ART_REV whenever mapraster.js draws anything differently, so nobody keeps old art
-const ART_REV = 14, ART_CACHE = 'koko-map-art', ART_VER = `${APP.version}-r${ART_REV}`;
+const ART_REV = 15, ART_CACHE = 'koko-map-art', ART_VER = `${APP.version}-r${ART_REV}`;
 const artURL = (th, s)=>`/__map-art/${ART_VER}/${th}/${s}.png`;
 // The finished overviews ship with the app (map-art/overview, made by tools/build-overviews.mjs), so a
 // phone never shows half-finished ones. Wide first (small), then mid. If they can't be had, the worker
@@ -1581,7 +1612,7 @@ function saveWhenDone(st, th){
     keys.forEach(r=>{ if (!new URL(r.url).pathname.startsWith(`/__map-art/${ART_VER}/`)) caches.open(ART_CACHE).then(c=>c.delete(r)); });
   }).catch(()=>{});
 }
-// map-art/*.png -> { w, h, data:Uint32Array, ax, ay } (anchor = bottom centre of the opaque pixels)
+// map-art/*.png -> { w, h, data:Uint32Array, ax, ay } (anchor = bottom centre of the canvas)
 const SPR = {};
 function loadSprites(){
   const one = name=>new Promise(res=>{
@@ -1589,8 +1620,7 @@ function loadSprites(){
     img.onload = ()=>{
       const cv = newCanvas(img.width, img.height), c = cv.getContext('2d'); c.drawImage(img, 0, 0);
       const data = new Uint32Array(c.getImageData(0, 0, img.width, img.height).data.buffer);
-      let bottom = img.height - 1; scan: for (; bottom > 0; bottom--) for (let x=0; x<img.width; x++) if (data[bottom*img.width + x] >>> 24) break scan;
-      SPR[name] = { w:img.width, h:img.height, data, ax:img.width/2, ay:bottom+1, img:cv };
+      SPR[name] = { w:img.width, h:img.height, data, ax:img.width/2, ay:img.height, img:cv };
       res();
     };
     img.onerror = ()=>res();
@@ -2600,6 +2630,7 @@ function buildData(){ buildTerrain(); buildObjects(); prepRoads(); }
 function setNight(on){ NIGHT = !!on; nightCache.clear(); }
 function setLineWidth(w){ LW = w; }
 export const RAW = { buildData, setNight, setLineWidth, drawObjectVector, C, shade, hash2, vnoise, isWaterT, proj, aiToGrid, gridToAI, aiToWorld, worldToAI, inRect,
+  tileAt, inFootprint, prepCarRoads, RUNWAYS, BRIDGE_KM, get FOOTPRINTS(){ return FOOTPRINTS; },
   TW, TH, LIP, SLAB, ROWS, COLS, WORLD, RD, OUT, TILE_COLORS, TILE_NIGHT, DISTRICTS, HOODS, TRAM,
   W_SEA, W_SHALLOW, L_BEACH, L_SAND, L_DUNE, L_URBAN, L_PARK, W_CANAL, L_TARMAC, L_PALM, L_LOT, L_GOLF, W_DEEP, L_FARM, L_CREST,
   get tType(){ return tType; }, get roadMask(){ return roadMask; }, get OBJECTS(){ return OBJECTS; },

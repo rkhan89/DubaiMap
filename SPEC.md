@@ -405,8 +405,22 @@ neighbourhoods, ~7,400 objects); only the drawing changed.
   meet, palms down Jumeirah Beach Road and Al Wasl Road, trees in three sizes, wakes behind boats, people on
   the plazas, a soft haze toward the map's edges, and a shimmer on the water you can actually see (close up,
   4 frames a second, paused while moving, behind full screens and with reduced motion).
-- **Props**: camel, palm, dhow, abra and yacht sprites are only used once they're the half-size art (limits in
-  `PROPS`); until then the map keeps its own small ones. Camels walk and bob once their art is in.
+- **Props**: camel and palm sprites are only used once they're the half-size art (limits in `PROPS`); until
+  then the map keeps its own small ones. Camels walk and bob once their art is in.
+- **The fix pack** (Oct 2026): boats (dhow, abra, yacht) and planes are sprites in four headings,
+  `<kind>_ne/nw/sw/se` by the bow's direction on screen. The heading comes from the way the boat is going (along
+  the creek, the marina or the coast; abras cross the creek) or from the runway's own direction, snapped to the
+  nearest of the four; never rotated or flipped, and with no sprite there's no boat or plane. A boat only goes
+  on open water (its tile and the eight round it all water, no other boat in those nine); a spot that fails
+  moves to the nearest one that passes within 800 m, else it's dropped (17 boats on the map; the creek, ~2 tiles
+  wide, keeps few). The wake trails away from the bow. Planes sit on a runway's centre line. Roads (asphalt,
+  markings and cars) and the Metro run only over land, a creek or canal bridge up to 1 km with land at both ends,
+  or a causeway (Burj Al Arab, Bluewaters, Jumeirah Bay); they stop at the map's edge and at the sea. No car is
+  drawn within a tile of any landmark or mall footprint, and the Metro passes under a landmark sprite. Atlantis
+  The Royal is a sprite (footprint 56 x 22 px, ~700 x 275 m, kept clear). Gone: the stacked-box Royal, the Ski
+  Dubai wedge beside Mall of the Emirates, the IMG Worlds placeholder box, and the navy waterline and tan
+  driveway baked into atlantis_the_palm.png (`tools/clean-sprite.mjs`). Sprites are drawn 1:1 into the map's
+  pixels (`tests/fixpack.test.mjs` checks every one); only the zoomed-out overviews are averaged down.
 
 ## Critters (no more points)
 
