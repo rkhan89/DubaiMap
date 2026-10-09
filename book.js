@@ -273,6 +273,7 @@ function pageHTML(b, pg){
     ${e&&e.notes?`<p class="pg-notes">“${esc(e.notes)}”</p>`:''}
     <div class="pg-foot">${e ? (()=>{ const pr = placeRatingFor(b, e.venueId); const row = ratersRowHTML(e, rateScope(b)); return `${overallHTML(pr, pr.label)}${row}`; })() : `${avatarStack(people, 30, 5)}<span class="hand">Just you</span>`}
       ${fromCrews.length?`<span class="tag soft pg-from">${icon('groups')}From ${esc(fromCrews.join(', '))}</span>`:''}</div>
+    ${e && S.canRate(e) ? `<div class="pg-actions"><button class="btn btn-gold btn-sm" data-rate="${esc(e.id)}">${icon('add_a_photo')}${S.myRatingOn(e.id) || pg.photos.some(p=>p.userId===me.id) ? 'Edit yours' : 'Add yours'}</button><button class="btn btn-soft btn-sm" data-addplace="${esc(e.venueId)}">${icon('add_location_alt')}Log a new visit</button></div>` : ''}
   </article>`;
 }
 // the photos on a page, for the viewer

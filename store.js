@@ -534,7 +534,13 @@ export function photos(filter){
 export function photo(id){ return db.photos[id]||null; }
 export function myPhotoCount(){ const m=me(); return m ? Object.values(db.photos).filter(p=>p.userId===m.id).length : 0; }
 // a photo goes to the same people as its visit
-function photoAudience(it){ const e = it.entryId && db.entries[it.entryId]; return e ? { private:!!e.private, crewIds:(e.crewIds||[]).slice() } : audience(it); }
+function photoAudience(it){
+  const e = it.entryId && db.entries[it.entryId]; if (!e) return audience(it);
+  if (e.userId === me()?.id) return { private:!!e.private, crewIds:(e.crewIds||[]).slice() };
+  // a photo you add to a visit you were tagged on: the crews it was shared with that you're in, else the crews you share with whoever logged it
+  const mine = myCrews(), on = mine.filter(c=>(e.crewIds||[]).includes(c.id)), withThem = mine.filter(c=>c.memberIds.includes(e.userId));
+  return { private:false, crewIds:(on.length ? on : withThem).map(c=>c.id) };
+}
 export async function addPhotos(list){
   const m=me(); const out=[];
   for (const it of list){

@@ -118,7 +118,7 @@ export default async function scrap(h){
     const [chooser] = await Promise.all([p.waitForFileChooser({timeout:4000}), h.js(()=>document.querySelector('#shNew').click())]);
     await chooser.accept([path.resolve('fixture.jpg')]); await h.sleep(1500);
     const t = await text();
-    if (!/Log a visit/i.test(t)) throw new Error('not the log flow');
+    if (!/Check in/i.test(t)) throw new Error('not the log flow');
     if (/Add Scrapbook Memory/i.test(t)) throw new Error('old flow');
     await h.js(async ()=>{ const S=await import('/store.js'); const i=document.querySelector('#logQ'); i.value='Knot'; i.dispatchEvent(new Event('input')); }); await h.sleep(500);
     await h.js(()=>document.querySelector('.search-result[data-v]').click()); await h.sleep(500);

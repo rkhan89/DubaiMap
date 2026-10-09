@@ -1339,3 +1339,7 @@ html.still .mem-strip.in{opacity:1;}
 .search-panel input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;appearance:none;}
 .search-sheet .sr-out{margin-top:12px;min-height:120px;}
 .search-sheet input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;appearance:none;}
+.tagged-by{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:14px;background:var(--sc-low);}
+.tagged-by q{display:block;margin-top:4px;}
+.pg-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
+.pg-actions .btn{flex:1 1 auto;}

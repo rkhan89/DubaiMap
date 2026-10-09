@@ -62,6 +62,9 @@ function placeScreen(venueId){
       const mineWho = [...new Set(mine.flatMap(e=>e.private?[]:(e.crewIds&&e.crewIds.length?e.crewIds:(crew?[crew.id]:[]))))];
       const photos=S.photos({venueId:v.id});
       const wanters=sum.wantIds.map(S.user).filter(Boolean);
+      // the latest visit here someone tagged you on (when you haven't logged one of your own)
+      const taggedOn = mine.some(e=>e.kind==='visit') ? null : visits.find(e=>S.canRate(e));
+      const taggedBy = taggedOn && S.user(taggedOn.userId);
       el.innerHTML = topbar({title:'', center:true, actions:`<button class="icon-btn" id="pMore" aria-label="More">${icon('more_vert')}</button>`}) + `
       <div class="snap"><canvas id="pSnap"></canvas><span class="snap-pin">${icon('storefront')}${esc(v.name)}</span></div>
       <div class="place-body">
@@ -86,7 +89,9 @@ function placeScreen(venueId){
         ${wanters.length?`<div class="card-soft row mt16">${icon('bookmark')}<div class="grow"><b>Wants to try</b><div class="muted small">${plural(wanters.length,'crew friend')}${(()=>{ const L={google_maps:'from Google Maps',tiktok:'from TikTok',instagram:'from Instagram',text:'from a name'}; const ls=[...new Set(sum.wants.map(e=>L[e.sourceType]).filter(Boolean))]; return ls.length?' ('+ls.join(', ')+')':''; })()} saved this spot</div></div>${avatarStack(wanters,34,3)}</div>`:''}
 ${S.events({venueId:v.id, upcoming:true}).length?`<div class="card mt16"><span class="h-sm">${icon('event')} Crew plans here</span><div class="stack mt8">${S.events({venueId:v.id, upcoming:true}).map(eventRowHTML).join('')}</div></div>`:''}
         <div class="btn-grid mt16"><button class="btn btn-soft" id="pCheck">${icon('where_to_vote')}Check in</button><button class="btn btn-soft" id="pPlan">${icon('event')}Plan a bite</button></div>
-        <button class="btn btn-soft btn-block mt12" id="pLog">${icon('add_a_photo')}${mine.some(e=>e.kind==='visit')?'Log another visit':'Log your visit'}</button>
+        ${taggedOn ? `<button class="btn btn-gold btn-block mt12" id="pAdd">${icon('add_a_photo')}${S.myRatingOn(taggedOn.id) || S.photos({entryId:taggedOn.id}).some(p=>p.userId===me.id) ? 'Edit your part of the visit' : 'Add your rating & photos'}</button>
+        <p class="muted small center mt4">${esc(taggedBy ? (taggedBy.name||'@'+taggedBy.handle) : 'A friend')} tagged you on this visit</p>` : ''}
+        <button class="btn ${taggedOn?'btn-ghost':'btn-soft'} btn-block mt12" id="pLog">${icon(taggedOn?'add_location_alt':'add_a_photo')}${mine.some(e=>e.kind==='visit')?'Log another visit':taggedOn?'Log a new visit of your own':'Log your visit'}</button>
         ${photos.length?`<div class="row between mt24"><span class="row h-md" style="gap:8px">${icon('photo_camera')}Photos</span><span class="muted small">${photos.length}</span></div>
         <div class="strip">${photos.map(p=>polaroidHTML({src:S.photoURL(p), caption:p.caption, id:p.id, badge:p.private?`<span class="pol-badge tr">${icon('lock')}Only me</span>`:''})).join('')}</div>`:''}
         <button class="btn btn-gold btn-block mt16" id="pSend">${icon('send')}Send to crew</button>
@@ -101,6 +106,7 @@ ${S.events({venueId:v.id, upcoming:true}).length?`<div class="card mt16"><span c
       el.querySelectorAll('[data-untag]').forEach(b=>b.onclick=()=>{ S.untagMe(b.dataset.untag); toast('You’re off that visit'); go.refresh(); paint(); });
       el.querySelectorAll('.strip [data-photo]').forEach(f=>f.onclick=()=>go.viewer(photos.map(p=>p.id), photos.findIndex(p=>p.id===f.dataset.photo)));
       el.querySelector('#pLog').onclick=()=>logFlow({venueId:v.id});
+      const pa=el.querySelector('#pAdd'); if (pa) pa.onclick=()=>rateSheet(taggedOn.id, paint);
       el.querySelector('#pSend').onclick=()=>sharePlace(v);
       el.querySelector('#pCheck').onclick=()=>go.log({ venueId:v.id, here:true });
       el.querySelector('#pPlan').onclick=()=>planBite(v.id, ()=>paint());
@@ -270,6 +276,8 @@ function logFlow(opts){
       const sum=M.venueSummary(venue,{...state.scope, mode:'crew', members:null});
       const others=sum.others.map(S.user).filter(Boolean);
       const lastOther = sum.visits.filter(e=>e.userId!==me.id).sort((a,b)=>b.createdAt-a.createdAt)[0];
+      // a visit here you were tagged on (new logs only): adding to it is usually what you meant
+      const tagged = !editing && d.kind==='visit' ? sum.visits.filter(e=>S.canRate(e)).sort((a,b)=>b.createdAt-a.createdAt)[0] : null;
       const allPhotos = existingPhotos.length + newPhotos.length;
       const used = S.myPhotoCount() + newPhotos.length;
       // tagging a crewmate shares the visit with a crew you're both in
@@ -277,7 +285,8 @@ function logFlow(opts){
       el.innerHTML = header + `<div class="screen-body">${stepRow}
         <label class="search mt16">${icon('search')}<input value="${esc(venue.name)}" readonly aria-label="Place">${editing?'':`<button id="lChange" aria-label="Change place" class="icon-btn" style="width:34px;height:34px">${icon('check_circle')}</button>`}</label>
         ${others.length?`<div class="already mt12"><b>${esc(venue.name)} is already on the crew map!</b>
-          <p class="muted mt4">Adding your visit will link your notes and photos to ${others.slice(0,2).map(u=>`<span class="hl">${esc(u.name||u.handle)}</span>`).join(' and ')}${others.length>2?` +${others.length-2}`:''}'s log.</p>
+          <p class="muted mt4">${tagged ? `<span class="hl">${esc(S.user(tagged.userId)?.name||'A friend')}</span> tagged you on their visit. Add your rating and photos to it, or log a new visit of your own below.` : `Your visit goes on the same pin as ${others.slice(0,2).map(u=>`<span class="hl">${esc(u.name||u.handle)}</span>`).join(' and ')}${others.length>2?` +${others.length-2}`:''}'s.`}</p>
+          ${tagged ? `<button type="button" class="btn btn-gold btn-block mt12" id="lJoin">${icon('add_a_photo')}Add to their visit</button>` : ''}
           <div class="row mt8">${avatarStack(others,30,3)}<span class="hand">Visited ${lastOther?whenText(lastOther).toLowerCase().replace(/ •.*/,''):''}</span></div></div>`:''}
         <div class="card mt16" style="border-radius:var(--r-xl)">
           <div class="seg"><button data-k="visit" class="${d.kind==='visit'?'on':''}">Been here</button><button data-k="want" class="${d.kind==='want'?'on':''}">Want to try</button></div>
@@ -311,6 +320,7 @@ function logFlow(opts){
       </div>`;
       // wiring
       const ch=el.querySelector('#lChange'); if (ch) ch.onclick=()=>{ venue=null; paint(); };
+      const jn=el.querySelector('#lJoin'); if (jn) jn.onclick=()=>{ back(); setTimeout(()=>rateSheet(tagged.id), 80); };
       el.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{ d.kind=b.dataset.k; keepScroll(paint); });
       const st=el.querySelector('#lStars'); if (st) stars=starInput(st, d.rating, v=>{ d.rating=v; });
       const dt=el.querySelector('#lDate'); if (dt) dt.onchange=()=>{ d.date=dt.value||todayISO(); keepScroll(paint); };

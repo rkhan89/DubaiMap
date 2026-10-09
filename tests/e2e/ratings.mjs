@@ -45,7 +45,7 @@ export default async function ratings(h){
     await h.js(()=>document.querySelector('#rsStars [data-v="2"]').click()); await h.sleep(150);
     await h.js(()=>{ document.querySelector('#rsNote').value='Too busy today'; });
     await h.js(()=>document.querySelector('#rsSave').click()); await h.sleep(800);
-    const r = await h.js(()=>{ const pg=document.querySelector('[data-page-id$="|demo-rt1"]'); return { text:pg.innerText, add:!!pg.querySelector('[data-rate]') }; });
+    const r = await h.js(()=>{ const pg=document.querySelector('[data-page-id$="|demo-rt1"]'); return { text:pg.innerText, add:!!pg.querySelector('.rp-add') }; });
     // you: (5 + 2) / 2 = 3.5 → (3.5 + 4 + 3 + 4.5) / 4 = 3.75 → 3.8
     if (!/Crew avg ★ 3\.8 · 4 ratings/.test(r.text)) throw new Error('overall: '+r.text.replace(/\n/g,' | '));
     if (r.add) throw new Error('still says Add yours');
@@ -58,6 +58,8 @@ export default async function ratings(h){
     if (r!==4) throw new Error('changed to '+r);
   });
   await step('+N: a table of six shows four and "+2", which lists everyone', async ()=>{
+    // the feed loads more pages as you scroll
+    for (let i=0; i<8 && !(await h.js(()=>!!document.querySelector('[data-page-id$="|demo-rt3"]'))); i++){ await h.js(()=>{ const m=document.querySelector('#bkMore'); if (m) m.scrollIntoView(); }); await h.sleep(400); }
     const t = await h.js(()=>{ const pg=document.querySelector('[data-page-id$="|demo-rt3"]'); pg.scrollIntoView(); return { n:pg.querySelectorAll('.rater:not(.rp-more)').length, more:pg.querySelector('.rp-more')?.textContent }; });
     if (t.n!==4 || t.more!=='+2') throw new Error(JSON.stringify(t));
     await h.sleep(300); await h.shot('rt-overflow');

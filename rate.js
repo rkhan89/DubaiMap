@@ -3,9 +3,10 @@
 // their own rating and note. The numbers come from ratings.js, the one calculation.
 import * as S from './store.js';
 import * as R from './ratings.js';
-import { esc } from './data.js';
+import { esc, fmtDate } from './data.js';
+import { APP } from './config.js';
 import { avatarHTML } from './avatar.js';
-import { icon, toast, openSheet, back, starInput } from './ui.js';
+import { icon, toast, openSheet, back, starInput, polaroidHTML, compressImage } from './ui.js';
 import { go } from './go.js';
 
 const MAX = 4;   // people shown before "+N"
@@ -49,26 +50,66 @@ export function ratersSheet(e, scope){
       <div class="stack mt8">${people.map(p=>{ const u=S.user(p.userId); if (!u) return ''; return `<div class="person-row">${avatarHTML(u, 40)}<span class="pr-main"><span class="pr-name">${esc(name(u))}${p.logger?' <span class="tag soft">Logged it</span>':''}</span>${p.note?`<span class="pr-sub">“${esc(p.note)}”</span>`:''}</span>${p.rating?`${miniStars(p.rating)}<b class="mono">${R.fmt(p.rating)}</b>`:'<span class="muted small">No rating</span>'}</div>`; }).join('')}</div>`;
   });
 }
-// add or change your own rating on a visit you were tagged on (the logger's own: their log)
+// someone tagged you on their visit: add your side to it (your stars, a line, your photos), not a new visit.
+// Your own visit there is a separate thing ("Log a new visit instead"). The logger's own visit opens their log.
 export function rateSheet(entryId, after){
   const e = S.entry(entryId); if (!e) return;
   if (e.userId === S.me().id){ go.log({ entryId }); return; }
-  if (!S.canRate(e)) return toast('Only people tagged on this visit can rate it');
-  const mine = S.myRatingOn(entryId), logger = S.user(e.userId), v = S.venue(e.venueId);
-  let rating = mine ? mine.rating : 0;
+  if (!S.canRate(e)) return toast('Only people tagged on this visit can add to it');
+  const me = S.me(), mine = S.myRatingOn(entryId), logger = S.user(e.userId), v = S.venue(e.venueId);
+  const who = logger ? (logger.name || '@'+logger.handle) : 'A friend';
+  const myPhotos = ()=>S.photos({ entryId }).filter(p=>p.userId===me.id);
+  const theirs = S.photos({ entryId }).filter(p=>p.userId!==me.id).length;
+  const added = [];                                   // {blob, url} picked in this sheet
+  let rating = mine ? mine.rating : 0, note = mine?.note || '';
+  const had = !!mine || myPhotos().length > 0;
   openSheet(body=>{
-    body.innerHTML = `<div class="sheet-head"><div class="grow"><span class="eyebrow">Your rating</span><h2 class="h-md">${esc(v?.name||'This visit')}</h2>
-        <span class="hand">${esc((logger?.name||'A friend'))} tagged you${e.date?' • '+esc(e.date):''}</span></div></div>
-      <div class="star-input big mt12" id="rsStars"></div>
-      <textarea class="input mt16" id="rsNote" maxlength="400" placeholder="A line about it (optional)">${esc(mine?.note||'')}</textarea>
-      <p class="muted small mt8">${icon('groups')} Seen by the people on this visit and the crews it was shared with that you’re in.</p>
-      <div class="sheet-foot btn-grid">${mine?`<button class="btn btn-soft" id="rsDel">Remove</button>`:`<button class="btn btn-soft" data-act="back">Cancel</button>`}<button class="btn btn-gold" id="rsSave">${icon('check')}Save</button></div>`;
-    starInput(body.querySelector('#rsStars'), rating, x=>{ rating = x; });
-    body.querySelector('#rsSave').onclick = ()=>{
-      if (!rating) return toast('Tap the stars to rate it');
-      S.rateVisit(entryId, rating, body.querySelector('#rsNote').value); back(); toast('Rating saved'); go.refresh(); after && after();
+    const paint = ()=>{
+      const have = myPhotos(), n = have.length + added.length, room = Math.min(APP.photosPerLog - n, APP.photoLimit - S.myPhotoCount() - added.length);
+      body.innerHTML = `<div class="sheet-head"><div class="grow"><span class="eyebrow">${esc(who)} tagged you</span><h2 class="h-md">${esc(v?.name||'This visit')}</h2>
+          <span class="hand">${e.date ? esc(fmtDate(e.date, { day:'numeric', month:'short', year:'numeric' })) + ' • ' : ''}${had ? 'your part of the visit' : 'add your rating and photos to it'}</span></div></div>
+        ${e.notes || e.rating || theirs ? `<div class="tagged-by mt8">${logger ? avatarHTML(logger, 28) : ''}<span class="grow small"><b>${esc(who)}</b>${e.rating ? ` • ★ ${R.fmt(e.rating)}` : ''}${theirs ? ` • ${theirs} photo${theirs===1?'':'s'}` : ''}${e.notes ? `<q>${esc(e.notes)}</q>` : ''}</span></div>` : ''}
+        <span class="eyebrow mt20" style="display:block">Your rating</span>
+        <div class="star-input big mt8" id="rsStars"></div>
+        <textarea class="input mt16" id="rsNote" maxlength="400" placeholder="What did you think? (optional)">${esc(note)}</textarea>
+        <div class="row between mt20"><span class="eyebrow">Your photos</span><span class="muted small">${n} of ${APP.photosPerLog}</span></div>
+        <div class="reel mt8">
+          ${have.map(p=>`<div style="position:relative"><button class="rm" data-rmold="${esc(p.id)}" aria-label="Remove photo">${icon('close')}</button>${polaroidHTML({ src:S.photoURL(p), id:p.id, tape:false, rot:0 })}</div>`).join('')}
+          ${added.map((p,i)=>`<div style="position:relative"><button class="rm" data-rmnew="${i}" aria-label="Remove photo">${icon('close')}</button>${polaroidHTML({ src:p.url, id:'n'+i, tape:false, rot:0 })}</div>`).join('')}
+          ${room > 0 ? `<label class="add-photo">${icon('photo_camera')}<span>Take photo</span><input type="file" accept="image/*" capture="environment" id="rsCam" aria-label="Take a photo"></label><label class="add-photo">${icon('photo_library')}<span>Add photos</span><input type="file" accept="image/*" multiple id="rsPh" aria-label="Add photos from your library"></label>` : ''}
+        </div>
+        <p class="muted small mt12">${icon('groups')} They go on ${esc(who)}’s visit, seen by the people on it and the crews you share.</p>
+        <div class="sheet-foot"><button class="btn btn-gold btn-block" id="rsSave">${icon('check')}${had ? 'Save' : 'Add to ' + esc(who) + '’s visit'}</button>
+          ${mine ? `<button class="btn btn-ghost btn-block mt8" id="rsDel">Remove my rating</button>` : ''}
+          <button class="btn btn-ghost btn-block mt8" id="rsNew">${icon('add_location_alt')}Log a new visit of your own instead</button></div>`;
+      starInput(body.querySelector('#rsStars'), rating, x=>{ rating = x; });
+      const nt = body.querySelector('#rsNote'); nt.oninput = ()=>{ note = nt.value; };
+      const addFiles = async input=>{
+        const files = [...input.files];
+        if (files.length > room) toast(`Only ${room} more photo${room===1?'':'s'} fit`);
+        for (const f of files.slice(0, Math.max(0, room))){
+          try{ const blob = await compressImage(f, 1400, 0.8); added.push({ blob, url:URL.createObjectURL(blob) }); }
+          catch(_){ toast(`Couldn't read ${f.name}`); }
+        }
+        keep(paint);
+      };
+      ['#rsCam', '#rsPh'].forEach(s=>{ const i = body.querySelector(s); if (i) i.onchange = ()=>addFiles(i); });
+      body.querySelectorAll('[data-rmnew]').forEach(b=>b.onclick=()=>{ const i = +b.dataset.rmnew; URL.revokeObjectURL(added[i].url); added.splice(i, 1); keep(paint); });
+      body.querySelectorAll('[data-rmold]').forEach(b=>b.onclick=async ()=>{ await S.deletePhoto(b.dataset.rmold); go.refresh(); keep(paint); });
+      body.querySelector('#rsSave').onclick = async ()=>{
+        note = body.querySelector('#rsNote').value;
+        if (!rating && !added.length && !myPhotos().length) return toast('Tap the stars, or add a photo');
+        const btn = body.querySelector('#rsSave'); btn.disabled = true;
+        if (rating) S.rateVisit(entryId, rating, note);
+        if (added.length) await S.addPhotos(added.map(p=>({ blob:p.blob, caption:'', venueId:e.venueId, entryId, date:e.date })));
+        added.forEach(p=>URL.revokeObjectURL(p.url));
+        back(); toast(had ? 'Saved' : 'Added to ' + who + '’s visit'); go.refresh(); after && after();
+      };
+      const del = body.querySelector('#rsDel'); if (del) del.onclick = ()=>{ S.unrateVisit(entryId); rating = 0; toast('Rating removed'); go.refresh(); after && after(); keep(paint); };
+      body.querySelector('#rsNew').onclick = ()=>{ back(); setTimeout(()=>go.log({ venueId:e.venueId }), 80); };
     };
-    const del = body.querySelector('#rsDel'); if (del) del.onclick = ()=>{ S.unrateVisit(entryId); back(); toast('Rating removed'); go.refresh(); after && after(); };
+    const keep = fn=>{ const s = body.scrollTop; fn(); body.scrollTop = s; };
+    paint();
   });
 }
 go.rate = rateSheet;
