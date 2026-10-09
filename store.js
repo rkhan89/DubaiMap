@@ -603,14 +603,14 @@ export function pagesWorld(){
 export function catchesOf(userId){ return Object.values(db.catches||{}).filter(c=>c.userId===userId); }
 export function caughtIds(userId){ return new Set(catchesOf(userId || db.meId).map(c=>c.critterId)); }
 export function catchOf(userId, critterId){ return (db.catches||{})[userId+'|'+critterId] || null; }
-export function recordCatch(critterId, { lat, lng, accuracy, spot, venueId }){
+export function recordCatch(critterId, { lat, lng, accuracy, spot, venueId, landmarkId }){
   const m=me(); if (!m) return null;
   const id = m.id+'|'+critterId;
   if (db.catches[id]) return null;                                  // already caught: never twice
   // roughly where (to about 100 m), not your exact spot: your crewmates can read it
   const r3 = x => typeof x==='number' ? Math.round(x*1000)/1000 : null;
   const c = { id, userId:m.id, critterId, caughtAt:Date.now(), lat:r3(lat), lng:r3(lng), accuracy:accuracy==null?null:Math.round(accuracy),
-              spot:String(spot||'').slice(0,80), venueId: venueId && !isLocal(venueId) ? venueId : null };
+              spot:String(spot||'').slice(0,80), venueId: venueId && !isLocal(venueId) ? venueId : null, ...(landmarkId ? { landmarkId } : {}) };
   db.catches[id] = c; save('catches');
   if (!isLocal(m.id)) push('critter_catches', c, 'ins');
   return c;

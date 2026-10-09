@@ -39,5 +39,9 @@ export const CRITTERS = [
   { id:'sand_gazelle',     name:'Sand Gazelle',     theme:'Culture',      area:'Dubai Desert Conservation Reserve',
     fact:'Built for the desert, it can go long stretches without drinking.', needsVerification:true },
 ];
-export const critterById = id => CRITTERS.find(c=>c.id===id) || null;
+// the landmark critters (bonus tier, landmark-critters.js): one at each of 13 landmarks, found from the landmark's card
+export { LANDMARK_CRITTERS } from './landmark-critters.js';
+import { LANDMARK_CRITTERS } from './landmark-critters.js';
+export const critterById = id => CRITTERS.find(c=>c.id===id) || LANDMARK_CRITTERS.find(c=>c.id===id) || null;
+export const lockedImg = id => `critters/locked/${id}.png`;
 export const critterImg = id => `critters/${id}.png`;

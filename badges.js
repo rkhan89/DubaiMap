@@ -7,6 +7,7 @@ import { userStats } from './stats.js';
 import { esc, CATEGORIES, monthKey, fmtDate } from './data.js';
 import { icon, openScreen, topbar, back } from './ui.js';
 import { go } from './go.js';
+import { LANDMARK_CRITTERS } from './landmark-critters.js';
 
 const CAT_ICONS = { restaurant:'restaurant', shisha:'smoking_rooms', icecream:'icecream', coffee:'coffee', matcha:'emoji_food_beverage', dessert:'cake', burger:'lunch_dining', fastfood:'fastfood', cafeteria:'storefront', karak:'local_cafe', pizza:'local_pizza', acai:'nutrition', froyo:'icecream' };
 const OLD_DUBAI = ['deira','burdubai','alseef','karama','oudmetha'];
@@ -30,9 +31,15 @@ export const BADGES = [
   { id:'legend',    name:'Local legend',      desc:'Visit 50 different places',                ic:'workspace_premium', color:'#7E5700', progress:s=>[s.places, 50] },
   // earned through the scrapbook: a busy month, a visit with the whole crew, a first of each kind
   { id:'busymonth', name:'Full scrapbook',    desc:'Log 8 visits in one month',                ic:'auto_stories',    color:'#B5451B', progress:s=>[busiestMonth(s), 8] },
+  // landmark critters found (milestones only; copy to be agreed)
+  { id:'lmk5',      name:'Landmark spotter',  desc:'Find 5 landmark critters',                 ic:'pets',            color:'#3F7FD9', progress:s=>[landmarkFinds(s.userId), 5] },
+  { id:'lmk10',     name:'Landmark tracker',  desc:'Find 10 landmark critters',                ic:'travel_explore',  color:'#E1699A', progress:s=>[landmarkFinds(s.userId), 10] },
+  { id:'lmk13',     name:'Every landmark',    desc:'Find all 13 landmark critters',            ic:'emoji_events',    color:'#7E5700', progress:s=>[landmarkFinds(s.userId), LANDMARK_CRITTERS.length] },
   { id:'wholecrew', name:'Whole crew',        desc:'A visit with everyone in your crew tagged', ic:'diversity_3',     color:'#486636', progress:s=>[wholeCrew(s), 1] },
   ...CATEGORIES.map(c=>({ id:'cat-'+c.id, name:'First '+c.label.toLowerCase(), desc:`Your first ${c.label.toLowerCase()} visit`, ic:CAT_ICONS[c.id]||'restaurant', color:c.color, cat:true, progress:s=>[has(s, c.id), 1] })),
 ];
+// how many landmark critters someone has found
+function landmarkFinds(userId){ const ids = new Set(LANDMARK_CRITTERS.map(c=>c.id)); return S.catchesOf(userId || S.me()?.id).filter(c=>ids.has(c.critterId)).length; }
 // the busiest month: most visits logged in one month
 function busiestMonth(s){ const n=new Map(); s.visitList.forEach(e=>{ const k=monthKey(e.date); n.set(k, (n.get(k)||0)+1); }); return Math.max(0, ...n.values()); }
 // visits where whoever logged it plus everyone tagged is a whole crew (of two or more) you're in

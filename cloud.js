@@ -97,8 +97,9 @@ export const MAP = {
   },
   // critters caught: one per person per critter, never edited
   critter_catches: {
-    to: c => ({ id:c.id, user_id:c.userId, critter_id:c.critterId, caught_at:ts(c.caughtAt), lat:c.lat, lng:c.lng, accuracy_m:c.accuracy, spot:c.spot||'', venue_id:c.venueId||null }),
-    from: r => ({ id:r.id, userId:r.user_id, critterId:r.critter_id, caughtAt:ms(r.caught_at), lat:r.lat, lng:r.lng, accuracy:r.accuracy_m, spot:r.spot||'', venueId:r.venue_id||null }),
+    // (landmark_id only on a landmark critter's find: 0012_landmark_critters.sql)
+    to: c => ({ id:c.id, user_id:c.userId, critter_id:c.critterId, caught_at:ts(c.caughtAt), lat:c.lat, lng:c.lng, accuracy_m:c.accuracy, spot:c.spot||'', venue_id:c.venueId||null, ...(c.landmarkId ? { landmark_id:c.landmarkId } : {}) }),
+    from: r => ({ id:r.id, userId:r.user_id, critterId:r.critter_id, caughtAt:ms(r.caught_at), lat:r.lat, lng:r.lng, accuracy:r.accuracy_m, spot:r.spot||'', venueId:r.venue_id||null, ...(r.landmark_id ? { landmarkId:r.landmark_id } : {}) }),
   },
   // ratings from people tagged on a visit (one per person per visit)
   visit_ratings: {

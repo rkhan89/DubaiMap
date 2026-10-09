@@ -85,11 +85,12 @@ function shelf(){
     const off=S.onChange(()=>{ if (el.isConnected) paint(); else off(); });
   });
 }
-// the critters: how many you've found, the ones you have peeking out
+// the critters: how many of the street critters you've found (landmark ones are a bonus), the ones you have peeking out
+const shownN = have=>CRITTERS.filter(c=>have.has(c.id)).length;
 function critterSpine(){
   const have = S.caughtIds(), shown = CRITTERS.filter(c=>have.has(c.id)).slice(0,3);
   return `<button class="critter-spine" id="shCritters"><span class="grow" style="min-width:0"><span class="bs-kind">${icon('pets')}Collection</span><h3>Critters</h3>
-    <span class="hand">${have.size ? `${have.size} of ${CRITTERS.length} found around Dubai` : 'Animals living at real places in Dubai. Check in where they are.'}</span></span>
+    <span class="hand">${shownN(have) ? `${shownN(have)} of ${CRITTERS.length} found around Dubai` : 'Animals living at real places in Dubai. Check in where they are.'}</span></span>
     <span class="cs-art">${shown.length ? shown.map(c=>critterArt(c.id, 32)).join('') : critterArt('street_cat', 32, { silhouette:true })}</span></button>`;
 }
 function spineHTML(b, o){

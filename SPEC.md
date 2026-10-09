@@ -482,8 +482,22 @@ neighbourhoods, ~7,400 objects); only the drawing changed.
   - A distance chip appears only if location is already allowed; it never asks.
   - The Dubai Fountain's chip says "Show on now", or "Next show HH:MM" (Dubai time) from its schedule (Wikipedia's
     times, to check).
-  - The eight landmarks with a critter return it from `landmarkCritter`. Nothing hints at them on the map, and the
-    card's silhouette stays off (`SHOW_LANDMARK_CRITTER`).
+  - **Landmark critters** (bonus tier, `landmark-critters.js` from the pack's landmark_critters.json; BEHAVIOUR.md):
+    13, one at each landmark, joined to the landmark facts by landmark id. The Burj Khalifa's is the Steppe Eagle.
+    - **The row:** "Something is here" with a "Look closer" button shows only when all of these hold: the critter
+      isn't found yet, location is already allowed, you're within its radius of the landmark's centre, and the
+      fix is good to 100 m (500 m for the two 3000 m offshore ones, the World and Palm Jebel Ali). It appears
+      600 ms after the card settles, with no sprite or silhouette. Otherwise nothing shows and nothing explains
+      why; it never asks for location.
+    - **Look closer:** the critter scales in at 1x, 2x, then 3x (90 ms each, nearest neighbour). Then its name,
+      theme and the bonus fact (or the main one), and a "Meet again on your Shelf" link.
+    - **Saving:** the find is saved as a catch with its landmark id, lat, lng (to ~100 m) and accuracy. That's
+      `critter_catches.landmark_id`, and the `critter_finds` view in 0012_landmark_critters.sql.
+    - **Found:** the card shows a chip (the 2x sprite and name) that opens its Shelf entry.
+    - **The Shelf:** a "Landmark critters" section lists only the ones found. There are no silhouettes unless
+      `SHOW_LOCKED_LANDMARK_CRITTERS` is turned on. The street critters' count stays out of 12.
+    - **Stickers:** milestones at 5, 10 and all 13 finds. No points, scores or leaderboard.
+    - **Tuning:** radii and the accuracy limits are data in landmark-critters.js.
 - **The Burj Khalifa and its neighbours**: the new 124 x 340 sprite.
   - Generated buildings are capped at 130 px (and at 45 % of the Burj within 8 tiles of it, 60 % in Downtown,
     Business Bay and on Sheikh Zayed Road; the 130 px cap is the one that binds: 22 towers were lowered).

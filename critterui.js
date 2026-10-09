@@ -6,7 +6,8 @@
 // check-in that catches nothing says nothing about how close you were.
 import { APP, CRITTER_SPOTS } from './config.js';
 import * as S from './store.js';
-import { CRITTERS, THEMES, critterById, critterImg } from './critters.js';
+import { CRITTERS, THEMES, critterById, critterImg, LANDMARK_CRITTERS, lockedImg } from './critters.js';
+import { SHOW_LOCKED_LANDMARK_CRITTERS } from './landmark-critters.js';
 import { critterCheck, accuracyNeeded } from './catch.js';
 import { whereAmI, locationError } from './locate.js';
 import { esc, fmtDate } from './data.js';
@@ -29,6 +30,14 @@ function factHTML(cr){
 }
 
 /* ---------- the collection ---------- */
+// the landmark critters: only the ones found (no silhouettes, no count) unless the locked flag is turned on
+function landmarkSection(have, fav){
+  const shown = LANDMARK_CRITTERS.filter(c=>have.has(c.id) || SHOW_LOCKED_LANDMARK_CRITTERS);
+  if (!shown.length) return '';
+  return `<h2 class="h-md mt24">Landmark critters</h2><div class="critter-grid mt12">${shown.map(c=>have.has(c.id)
+    ? `<button class="critter-card caught" data-critter="${c.id}">${fav===c.id?`<span class="fav-tag">${icon('favorite','',true)}Favourite</span>`:''}<span class="cc-art">${critterArt(c.id, 96)}</span><b>${esc(c.name)}</b>${themeChip(c.theme)}</button>`
+    : `<div class="critter-card unknown" aria-label="Not found yet"><span class="cc-art"><img class="critter-art" src="${esc(lockedImg(c.id))}" width="96" height="96" alt=""></span><b>? ? ?</b><span class="theme-chip blank">&nbsp;</span></div>`).join('')}</div>`;
+}
 function collection(userId){
   const me = S.me(); userId = userId || me.id;
   const mine = userId === me.id, u = S.user(userId);
@@ -39,13 +48,14 @@ function collection(userId){
       const list = CRITTERS.filter(c=>theme==='All' || c.theme===theme);
       el.innerHTML = topbar({ title: mine ? 'Critters' : (u?.name||u?.handle||'Their')+'’s critters', eyebrow:'' }) + `<div class="screen-body">
         <div class="row between mt8"><p class="hand grow">Critters live at real places around Dubai. Check in where they are to find them.</p>
-          <span class="tag soft found-count">${have.size} of ${CRITTERS.length} found</span></div>
+          <span class="tag soft found-count">${CRITTERS.filter(c=>have.has(c.id)).length} of ${CRITTERS.length} found</span></div>
         <div class="chip-scroll mt12" role="tablist">${['All', ...Object.keys(THEMES)].map(t=>`<button class="person-chip${theme===t?' on':''}" data-theme="${t}" role="tab" aria-selected="${theme===t}">${esc(t)}</button>`).join('')}</div>
         <div class="critter-grid mt16">${list.map(c=>{ const got = have.has(c.id);
           return got
             ? `<button class="critter-card caught" data-critter="${c.id}">${fav===c.id?`<span class="fav-tag">${icon('favorite','',true)}Favourite</span>`:''}<span class="cc-art">${critterArt(c.id, 96)}</span><b>${esc(c.name)}</b>${themeChip(c.theme)}</button>`
             : `<div class="critter-card unknown" aria-label="Not found yet"><span class="cc-art">${critterArt(c.id, 96, { silhouette:true })}</span><b>? ? ?</b><span class="theme-chip blank">&nbsp;</span></div>`;
         }).join('')}</div>
+        ${landmarkSection(have, fav)}
         ${mine ? `<button class="btn btn-gold btn-block mt24" id="crHere">${icon('my_location')}I’m here now</button>
         <p class="center muted small mt8">Uses your location once, only when you tap.</p>` : ''}
       </div>`;
@@ -133,7 +143,7 @@ go.checkInHere = checkInHere;
 
 /* ---------- pick your favourite ---------- */
 function favouritePicker(){
-  const me = S.me(), have = CRITTERS.filter(c=>S.caughtIds().has(c.id));
+  const me = S.me(), have = [...CRITTERS, ...LANDMARK_CRITTERS].filter(c=>S.caughtIds().has(c.id));   // landmark critters can be favourites too
   openSheet(body=>{
     const paint = ()=>{
       const fav = S.favouriteOf(me.id);

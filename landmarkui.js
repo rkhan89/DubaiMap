@@ -7,7 +7,9 @@ import * as S from './store.js';
 import { esc } from './data.js';
 import { icon, openSheet, back } from './ui.js';
 import { go } from './go.js';
-import { landmarkById, landmarkCritter, SHOW_LANDMARK_CRITTER } from './landmarks.js';
+import { landmarkById, landmarkCritter } from './landmarks.js';
+import { accuracyFor } from './landmark-critters.js';
+import { THEMES } from './critters.js';
 import { factsFor } from './landmark-facts.js';
 import { CARDS } from './landmark-cards.js';
 import { now } from './shows.js';
@@ -63,19 +65,53 @@ export function openLandmark(id){
         ${card && !f && card.verify ? `<p class="fact-check mt8">${icon('fact_check')}Fact being checked</p>` : ''}</div>` : ''}
       ${bonus ? `<details class="lm-more"><summary>More</summary><p class="mt4">${esc(bonus)}</p>${source ? `<p class="lm-source mt8"><a href="${esc(source)}" target="_blank" rel="noopener">Source</a></p>` : ''}</details>`
         : (source && !f ? `<p class="lm-source mt8"><a href="${esc(source)}" target="_blank" rel="noopener">Source</a></p>` : '')}
-      ${SHOW_LANDMARK_CRITTER && critter ? `<div class="lm-critter mt16"><span class="silhouette critter-art"></span><div><b>A critter lives here</b><span class="muted small">Check in here to find it.</span></div></div>` : ''}
+      <div class="lm-critter-slot"></div>
       <div class="btn-grid mt20"><button class="btn btn-gold" id="lmPin">${icon('add_location_alt')}Add a pin here</button><button class="btn btn-soft" id="lmDir">${icon('directions')}Directions</button></div>
       ${v ? `<button class="btn btn-soft btn-block mt12" id="lmPlace">${icon('storefront')}Open ${esc(v.name)}</button>` : ''}
     </div>`;
     body.querySelector('#lmPin').onclick = ()=>{ back(); setTimeout(()=>go.log({ prefill:{ name, lat:lm.lat, lng:lm.lng } }), 250); };
     body.querySelector('#lmDir').onclick = ()=>window.open(directionsURL(lm.lat, lm.lng), '_blank', 'noopener');
     if (v) body.querySelector('#lmPlace').onclick = ()=>{ back(); setTimeout(()=>go.place(v.id), 300); };
-    // how far, only if location is already allowed: never asked from here
-    const dist = body.querySelector('.lm-dist');
-    if (navigator.permissions && navigator.permissions.query) navigator.permissions.query({ name:'geolocation' }).then(p=>{
-      if (p.state !== 'granted') return;
-      return whereAmI().then(pos=>{ if (!dist.isConnected) return; dist.innerHTML = icon('near_me') + esc(fmtKm(haversine(pos, { lat:lm.lat, lng:lm.lng }))); dist.hidden = false; });
+    // how far, only if location is already allowed: never asked from here. The same fix tells whether this
+    // landmark's critter is here (see critterRow)
+    const dist = body.querySelector('.lm-dist'), slot = body.querySelector('.lm-critter-slot'), opened = performance.now();
+    const found = critter && S.caughtIds().has(critter.id);
+    if (found) slot.innerHTML = foundChip(critter);
+    const granted = navigator.permissions && navigator.permissions.query ? navigator.permissions.query({ name:'geolocation' }).then(p=>p.state === 'granted', ()=>false) : Promise.resolve(false);
+    granted.then(ok=>{
+      if (!ok) return;
+      return whereAmI().then(pos=>{
+        if (!dist.isConnected) return;
+        const d = haversine(pos, { lat:lm.lat, lng:lm.lng });
+        dist.innerHTML = icon('near_me') + esc(fmtKm(d)); dist.hidden = false;
+        // the critter's row: only when it isn't found yet, you're within its radius and the fix is good enough;
+        // otherwise nothing at all (no hint, no reason). It shows once the card has settled.
+        if (critter && !found && d <= critter.radiusM && pos.accuracy <= accuracyFor(critter))
+          setTimeout(()=>{ if (slot.isConnected) critterRow(slot, critter, lm, pos); }, Math.max(0, 600 - (performance.now() - opened)));
+      });
     }).catch(()=>{});
+    slot.addEventListener('click', e=>{ if (e.target.closest('[data-open-critter]')){ back(); setTimeout(()=>go.critter(e.target.closest('[data-open-critter]').dataset.openCritter), 300); } });
   }, { cls:'lm-sheet' });
 }
 go.landmark = openLandmark;
+
+/* ---------- the landmark's critter (BEHAVIOUR.md) ---------- */
+const chip = theme=>{ const t = THEMES[theme] || THEMES.Fun; return `<span class="theme-chip" style="--c:${t.color};--ci:${t.ink}">${esc(theme)}</span>`; };
+// found already: a small chip, the sprite at 2x and its name, that opens its Shelf entry
+function foundChip(c){ return `<button class="lm-crit-chip mt12" data-open-critter="${esc(c.id)}"><img class="critter-art" src="critters/${esc(c.id)}.png" width="64" height="64" alt=""><b>${esc(c.name)}</b>${icon('chevron_right')}</button>`; }
+// "Something is here": no sprite, no silhouette. Look closer reveals it (1x, 2x, 3x, 90 ms each) and saves the find
+function critterRow(slot, c, lm, pos){
+  slot.innerHTML = `<div class="lm-something mt12"><span>Something is here</span><button class="btn btn-soft btn-sm" id="lmLook">Look closer</button></div>`;
+  slot.querySelector('#lmLook').onclick = ()=>{
+    // save first (one find per person per critter; lat, lng and accuracy kept for spotting spoofing later)
+    S.recordCatch(c.id, { lat:pos.lat, lng:pos.lng, accuracy:pos.accuracy, spot:lm.name, landmarkId:c.landmarkId });
+    console.info('landmark critter found', c.id, { lat:pos.lat, lng:pos.lng, accuracy:pos.accuracy });
+    const fact = c.bonusFact || c.fact;
+    slot.innerHTML = `<div class="lm-reveal mt12"><img class="critter-art" src="critters/${esc(c.id)}.png" width="32" height="32" alt="">
+      <div class="lm-reveal-text" hidden><b class="h-md">${esc(c.name)}</b><div class="mt4">${chip(c.theme)}</div><p class="mt8">${esc(fact)}</p>
+      <button class="lm-shelf-link mt8" data-open-critter="${esc(c.id)}">Meet again on your Shelf${icon('chevron_right')}</button></div></div>`;
+    const img = slot.querySelector('img'), text = slot.querySelector('.lm-reveal-text');
+    [64, 96].forEach((px, k)=>setTimeout(()=>{ img.width = img.height = px; }, 90*(k+1)));
+    setTimeout(()=>{ text.hidden = false; go.checkBadges && go.checkBadges(); }, 270);
+  };
+}

@@ -10,6 +10,7 @@
 import { CARDS } from './landmark-cards.js';
 import { TERRAINS } from './terrains.js';
 import { factsFor } from './landmark-facts.js';
+import { landmarkCritterOf } from './landmark-critters.js';
 export const LANDMARKS = [
   { id:'burj_khalifa', size:[124,340], name:'Burj Khalifa', lat:25.1972, lng:55.2744, sprite:'burj_khalifa', clear:2, plot:'plaza', plotR:2,
     fact:'At 828 m it has been the world’s tallest building since it opened in 2010.', venue:['Burj Khalifa', 'At the Top'] },
@@ -25,7 +26,7 @@ export const LANDMARKS = [
     fact:'About 150 m tall. From the glass-floored deck across the top you see old Dubai on one side and the Sheikh Zayed Road towers on the other.', venue:['Dubai Frame'] },
   { id:'jumeirah_mosque', size:[104,96], name:'Jumeirah Mosque', lat:25.2340, lng:55.2655, sprite:'jumeirah_mosque', clear:2, plot:'plaza', plotR:2,
     fact:'One of the few mosques in Dubai that welcomes non-Muslim visitors, with guided tours.', venue:['Jumeirah Mosque'] },
-  { id:'atlantis_the_palm', size:[132,112], name:'Atlantis The Palm', at:'palm-crescent', sprite:'atlantis_the_palm', clear:2, plot:'none',
+  { id:'atlantis_the_palm', size:[132,112], name:'Atlantis The Palm', at:'palm-crescent', lat:25.1303, lng:55.1170, sprite:'atlantis_the_palm', clear:2, plot:'none',
     fact:'It sits at the top of the Palm Jumeirah’s crescent. It opened in September 2008.', venue:['Atlantis The Palm', 'Atlantis'] },
   { id:'jumeirah_beach_hotel', size:[96,70], name:'Jumeirah Beach Hotel', lat:25.14159, lng:55.19084, sprite:'jumeirah_beach_hotel', clear:1, plot:'none',
     fact:'Shaped like a breaking wave: 26 floors, 93 m tall, opened in December 1997 beside the Burj Al Arab.', venue:['Jumeirah Beach Hotel'] },
@@ -94,10 +95,9 @@ export const TAPPABLE = [
 ];
 export const landmarkById = id=>LANDMARKS.find(l=>l.id===id) || TAPPABLE.find(l=>l.id===id);
 
-// The landmark critters: eight landmarks have one (landmark-facts.js critter). Nothing on the map hints at
-// them. The card's locked silhouette is a decision still to make, so it stays off behind this flag.
-export const SHOW_LANDMARK_CRITTER = false;
-export function landmarkCritter(id){ const f = factsFor(id); return f && f.critter ? { id:f.critter, landmark:id } : null; }
+// The landmark critters (landmark-critters.js): one at each of 13 landmarks. Nothing on the map hints at them;
+// they're found from the landmark's card (landmarkui.js).
+export function landmarkCritter(id){ return landmarkCritterOf(id); }
 
 // The small props. A file is only used if it's no bigger than this; until then the map keeps its own
 // small placeholders (camels, palms). Boats and planes come in four headings, by the bow's direction on
