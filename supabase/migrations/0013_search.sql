@@ -136,10 +136,10 @@ insert into public.search_synonyms (id, terms) values
   (9, array['sushi','sashimi','maki']::text[]),
   (10, array['dessert','desserts','sweets','cake','pastry']::text[]),
   (11, array['breakfast','brekkie','eggs']::text[]),
-  (12, array['brunch']::text[]),
+  (12, array['brunch','brunches','friday brunch']::text[]),
   (13, array['steak','steakhouse','ribeye']::text[]),
   (14, array['seafood','fish','prawns','shrimp']::text[]),
-  (15, array['falafel']::text[])
+  (15, array['falafel','felafel','falafels']::text[])
 on conflict (id) do nothing;
 -- SYNONYMS SEED END
 

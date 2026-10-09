@@ -29,11 +29,13 @@ export const SYNONYMS = [
   ['sushi', 'sashimi', 'maki'],
   ['dessert', 'desserts', 'sweets', 'cake', 'pastry'],
   ['breakfast', 'brekkie', 'eggs'],
-  ['brunch'],
+  ['brunch', 'brunches', 'friday brunch'],
   ['steak', 'steakhouse', 'ribeye'],
   ['seafood', 'fish', 'prawns', 'shrimp'],
-  ['falafel'],
+  ['falafel', 'felafel', 'falafels'],
 ];
+// the table needs 2 to 12 words a group (a one-word group finds nothing new)
+for (const g of SYNONYMS) if (g.length < 2 || g.length > 12) throw new Error('synonym group needs 2-12 words: ' + g.join(', '));
 const areas = M.ZONES.map(z=>({ id:z.id, name:z.label, aliases:ALIASES[z.id] || [], also_matches:[], zone_id:z.id, lat:+z.lat.toFixed(5), lng:+z.lng.toFixed(5), radius_km:3 }));
 fs.writeFileSync(path.join(root, 'search-data.js'), `// What search ships with (made by tools/search-seed.mjs; the same rows seed 0013_search.sql). Once signed in the
 // app reads the areas and search_synonyms tables instead, so aliases, neighbours (also_matches) and synonyms are
