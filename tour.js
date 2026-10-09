@@ -20,7 +20,7 @@ const STEPS = [
     ctx:logOpen, done:()=>has('#vfN') || has('#lStars') },
   { id:'where', target:'#vfZ', title:'Where is it?', body:'Pick the area. “Pick on map” drops an exact pin if you know the spot.', next:true,
     ctx:()=>has('#vfN') || has('#lStars'), skipIf:()=>has('#lStars') },
-  { id:'kind', target:'#vfC', title:'What kind of place?', body:'Choose one or more, then tap Save place.',
+  { id:'kind', target:'#vfC', title:'What kind of place?', body:'Choose one or more, then tap Next step.',
     ctx:()=>has('#vfN') || has('#lStars'), done:()=>has('#lStars'), skipIf:()=>has('#lStars') },
   { id:'rate', target:'#lStars', title:'How was it?', body:'Tap a star. Tap the left half of one for a half star.', next:true,
     ctx:()=>has('#lStars'), done:()=>has('#lStars .on, #lStars .half') },
@@ -33,7 +33,7 @@ const STEPS = [
   { id:'bell', target:'#btnBell', title:'Crew news', body:'A dot here means a friend logged somewhere, planned a bite or tagged you (add your own rating). Memories from this day in past years show up here too.', next:true },
   { id:'crew', target:'#nav [data-tab="crew"]', title:'Bring your crew', body:'Invite friends with a link. Your map fills up fast when they log too.', next:true },
   { id:'shelf', target:'#nav [data-tab="shelf"]', title:'Your scrapbook', body:'Every visit you log becomes a page, taped in automatically. Your critters and stickers live here too.', next:true },
-  { id:'critters', target:'#navLog', title:'Find critters', body:'Twelve pixel animals live at real places around Dubai. When you’re out, tap + then Check in, then I’m here now. No clues: just explore.', next:true, last:true },
+  { id:'critters', target:'#navLog', title:'Find critters', body:'Twelve pixel animals live at real places around Dubai. Check in at a place while you’re there, or tap I’m here now on the Critters page. No clues: just explore.', next:true, last:true },
 ];
 
 let tourSaved = false, root = null, raf = 0, idx = -1, since = 0, missingSince = 0, scrolledFor = -1;

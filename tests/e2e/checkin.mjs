@@ -1,5 +1,5 @@
-// One Check in for both "I'm here" and "I went there": the + menu has a single Check in; "I'm here now"
-// lists places near you; saved today at the place it's a check-in, saved for another day it's a visit.
+// One Check in for both "I'm here" and "I went there": the + menu has a single Check in; step 1 is search only
+// (no "I'm here now" there); saved today at the place it's a check-in, saved for another day it's a visit.
 //   node shot.mjs checkin 390 light
 export default async function checkin(h){
   const step = async (name, fn)=>{ try{ await fn(); console.log('ok  ', name); } catch(e){ console.log('FAIL', name, '-', (e.message||'').split('\n')[0]); await h.shot('cifail-'+name.replace(/\W+/g,'-')); } };
@@ -16,12 +16,16 @@ export default async function checkin(h){
     await h.shot('ci-menu');
     await h.js(()=>document.querySelector('[data-plus="log"]').click()); await h.sleep(700);
   });
-  await step('I’m here now lists the places near you, nearest first, with how far', async ()=>{
-    await h.js(()=>document.querySelector('#lHere').click()); await h.sleep(1200);
-    const first = await h.js(()=>document.querySelector('#lRes [data-v]')?.innerText || '');
-    if (!first.includes(v.name) || !/\d+ m away/.test(first)) throw new Error('first: '+first.replace(/\n/g,' | '));
-    await h.shot('ci-near');
+  await step('step 1 is search only: no I’m here now; typing finds the place', async ()=>{
+    if (await h.js(()=>!!document.querySelector('#lHere')) || /I’m here now/.test(await h.js(()=>document.querySelector('.screen.in')?.innerText || ''))) throw new Error('I’m here now still on step 1');
+    await h.js(()=>{ const q=document.querySelector('#logQ'); q.value='check-in test'; q.dispatchEvent(new Event('input', { bubbles:true })); }); await h.sleep(500);
+    await h.shot('ci-search');
     await h.js(id=>document.querySelector(`#lRes [data-v="${id}"]`).click(), v.id); await h.sleep(600);
+    await h.js(()=>document.querySelector('#lVerify').click()); await h.sleep(1200);
+  });
+  await step('step 2 has Take photo (camera) and Add photos (library)', async ()=>{
+    const t = await h.js(()=>({ cam:document.querySelector('#lCam')?.getAttribute('capture'), lib:document.querySelector('#lPh')?.hasAttribute('multiple'), text:document.querySelector('.reel')?.innerText || '' }));
+    if (t.cam !== 'environment' || !t.lib || !/Take photo/.test(t.text) || !/Add photos/.test(t.text)) throw new Error(JSON.stringify(t));
   });
   await step('at the place today it says checked in, and saves as a check-in', async ()=>{
     if (!/Checked in: you’re here/.test(await text())) throw new Error('no checked-in line');

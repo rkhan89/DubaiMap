@@ -155,9 +155,10 @@ Steps 2–4: Android share target and /share, TikTok captions, Inbox and offline
 
 - **+ button** opens a small menu: *Check in* or *Add from link or text* (and *Inbox* when shares are waiting).
 - **Check in is one flow, now or after.** Same screen whether you're at the place or logging it later.
-  - *I'm here now* finds you once (never tracked). It lists the places pinned near you: exact spots within 1 km
-    with their distance, then places known only by their area if you're in it. It also catches any critter
-    living right where you stand, anywhere.
+  - Step 1 is search only: places on the map, then Google Maps, or add it by name. A new place's form ends in
+    *Next step* (editing a place still says *Save place*). Places near you (auto-locate) are left for after the MVP.
+  - Step 2: *I'm here now* finds you once (never tracked) to make it a check-in. Photos: *Take photo* opens the
+    camera, *Add photos* picks from the library.
   - A visit saved today within 300 m of the place (1.5 km of its area when it has no exact spot) is a
     check-in, marked "Checked in: you're here". One check-in per place a day. Saving it also catches the
     place's critters.
@@ -546,7 +547,7 @@ neighbourhoods, ~7,400 objects); only the drawing changed.
 
 Points, levels, the leaderboard and every counter toward a reward are gone (migration 0011 backs up `profiles.points` to `archive.profiles_points`, then drops it). Stickers stay as milestones; critters are the collectible.
 
-**Critters** are 12 pixel animals living at real places (`critters.js`: name, theme, area, fact; `critters/<id>.png`, 32 px art drawn only at whole multiples). You catch one by checking in while your phone is inside one of its spots (`config.js` CRITTER_SPOTS: lat, lng, radius, trigger; ALL PLACEHOLDERS until checked on the ground). Check-ins: *I'm here now* on the Check in screen (anywhere, trigger `checkin`), or saving a check-in at a place (also counts for `venue` spots). The location is asked once, on tap, never tracked. A catch needs the fix to be at least as good as half the spot's radius (50 m floor); a fuzzy fix gets the same "your location is fuzzy" message everywhere, so it never hints a critter is near. Once per critter per person (the phone checks, the database refuses a second).
+**Critters** are 12 pixel animals living at real places (`critters.js`: name, theme, area, fact; `critters/<id>.png`, 32 px art drawn only at whole multiples). You catch one by checking in while your phone is inside one of its spots (`config.js` CRITTER_SPOTS: lat, lng, radius, trigger; ALL PLACEHOLDERS until checked on the ground). Check-ins: *I'm here now* on the Critters page (anywhere, trigger `checkin`), or saving a check-in at a place (also counts for `venue` spots). The location is asked once, on tap, never tracked. A catch needs the fix to be at least as good as half the spot's radius (50 m floor); a fuzzy fix gets the same "your location is fuzzy" message everywhere, so it never hints a critter is near. Once per critter per person (the phone checks, the database refuses a second).
 
 **No hints**: nothing on the map; uncaught critters are grey silhouettes and "? ? ?" in the collection (Shelf → Critters, and your profile).
 
@@ -558,4 +559,4 @@ Points, levels, the leaderboard and every counter toward a reward are gone (migr
 
 Welcome (the app's pixel city around Downtown, Satwa and Old Dubai, drifting slowly while crew pins, a
 pixel face in its owner's colour, drop onto real places one after another and lift away again; still with
-every pin placed under reduced motion) → sign in (email code or Google) → 2 handle → 3 avatar and pin colour → 4 who sees each place (crews, Just me, tagging shares with a crew you're both in) → 5 three things you'll collect (pages, critters, stickers; no points) → 6 crew setup. The first-run guide then walks through pinning a first place and the map: Me/Crew (pin colours and faces), filters, the bell (tags to rate, On this day), crew invites, the Shelf, and finding critters with + → Check in → I'm here now.
+every pin placed under reduced motion) → sign in (email code or Google) → 2 handle → 3 avatar and pin colour → 4 who sees each place (crews, Just me, tagging shares with a crew you're both in) → 5 three things you'll collect (pages, critters, stickers; no points) → 6 crew setup. The first-run guide then walks through pinning a first place and the map: Me/Crew (pin colours and faces), filters, the bell (tags to rate, On this day), crew invites, the Shelf, and finding critters (check in at a place, or I'm here now on the Critters page).

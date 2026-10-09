@@ -19,12 +19,12 @@ export default async function critters(h){
     await h.shot('cr-empty');
     await close();
   });
-  await step('Check in, I’m here now, inside the Etihad Museum spot: the Falcon, with its catch moment', async ()=>{
+  await step('I’m here now on the Critters page, inside the Etihad Museum spot: the Falcon, with its catch moment', async ()=>{
     await h.load('at=25.2391,55.2741,20'); await h.sleep(600);
     await h.click('#navLog'); await h.sleep(400);
     if (!/Check in/.test(await text()) || /Check in where I am/.test(await text())) throw new Error('the + menu should have one Check in');
-    await h.js(()=>document.querySelector('[data-plus="log"]').click()); await h.sleep(700);
-    await h.js(()=>document.querySelector('#lHere').click()); await h.sleep(1500);
+    await close();
+    await h.js(async ()=>{ const {go}=await import('/go.js'); go.checkInHere(); }); await h.sleep(1500);
     const m = await h.js(()=>document.querySelector('.catch-moment')?.innerText||'');
     if (!/New critter caught/i.test(m) || !/Falcon/.test(m) || !/Culture/i.test(m) || !/Etihad Museum/.test(m)) throw new Error('moment: '+m.replace(/\n/g,' | '));
     if (!/Fact being checked/i.test(m)) throw new Error('unverified fact not marked');

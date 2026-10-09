@@ -167,7 +167,7 @@ function venueForm(initial, onSave, title){
         <div class="chip-wrap mt8" id="vfC">${catPickerHTML(d.categories, {open:body.dataset.catsOpen==='1'})}</div>
         ${askMeal?`<div class="row between mt20"><span class="eyebrow">Meal</span><span class="hand">Optional</span></div>
         <div class="chip-wrap mt8" id="vfM">${MEALS.map(m=>`<button type="button" class="person-chip meal-chip${d.meals.includes(m.id)?' on':''}" data-meal="${m.id}" aria-pressed="${d.meals.includes(m.id)}">${icon(m.icon)}${m.label}</button>`).join('')}</div>`:''}
-        <div class="sheet-foot"><button class="btn btn-gold btn-block" id="vfS">${icon('check')}Save place</button></div>`;
+        <div class="sheet-foot"><button class="btn btn-gold btn-block" id="vfS">${askMeal ? `Next step${icon('arrow_forward')}` : `${icon('check')}Save place`}</button></div>`;
       const n=body.querySelector('#vfN'); n.oninput=()=>{ d.name=n.value; };
       body.querySelectorAll('#vfM [data-meal]').forEach(b=>b.onclick=()=>{ const m=b.dataset.meal; d.meals=d.meals.includes(m)?d.meals.filter(x=>x!==m):[...d.meals,m]; const st=body.scrollTop; paint(); body.scrollTop=st; });
       body.querySelector('#vfZ').onchange=e=>{ d.zone=e.target.value; d.lat=null; d.lng=null; paint(); };
@@ -202,11 +202,11 @@ function editVenue(v, after){ venueForm(v, d=>{ S.updateVenue(v.id, d); toast('P
 
 /* =========================================================
    14. CHECK IN: one flow whether you're there now or it was last week.
-   "I'm here now" finds you once (never tracked): it lists the places near you and catches any critter
-   living right where you stand. A visit saved today within CHECKIN_M of the place (AREA_M of its area
+   Step 1 is search only (places on the map, then Google Maps, or add it by name). On step 2, "I'm here now"
+   finds you once (never tracked). A visit saved today within CHECKIN_M of the place (AREA_M of its area
    when it has no exact spot) is a check-in; otherwise it's a visit you're logging after.
    ========================================================= */
-const CHECKIN_M = 300, AREA_M = 1500, NEAR_M = 1000;
+const CHECKIN_M = 300, AREA_M = 1500;
 function placeDistance(v, here){
   if (!here || !v) return Infinity;
   if (typeof v.lat === 'number') return haversine(here, { lat:v.lat, lng:v.lng });
@@ -246,26 +246,19 @@ function logFlow(opts){
       const header = topbar({title: editing?'Edit visit':'Check in', center:true, actions:`<button class="icon-btn" id="lMore" aria-label="More">${icon('more_vert')}</button>`});
       const stepRow = `<div class="row between mt8"><span class="row" style="gap:6px"><i style="width:14px;height:14px;border-radius:50%;background:${venue?'var(--gold-deep)':'var(--gold)'};display:inline-block"></i><i style="width:46px;height:8px;border-radius:4px;background:var(--gold);display:inline-block"></i><i style="width:14px;height:14px;border-radius:50%;background:${venue?'var(--gold)':'var(--sc-highest)'};display:inline-block"></i></span><span class="hand">${venue?'Step 2: details and memories':'Step 1: find the place'}</span></div>`;
       if (!venue){
-        // after "I'm here now" (and with nothing typed) the list is the places pinned near you, nearest first
-        // (places with an exact spot by distance; then ones only known by their area, if you're in it)
-        const near = here && !query.trim() ? S.venues().map(v=>({ v, m:placeDistance(v, here), exact:typeof v.lat==='number' }))
-          .filter(x=>x.m <= (x.exact ? NEAR_M : AREA_M)).sort((a,b)=>(b.exact-a.exact) || (a.m-b.m)).slice(0, 12) : null;
-        const results = near ? near.map(x=>x.v) : S.searchVenues(query, 10);
-        const hereRow = `<button class="search-result mt16" id="lHere"${locating?' disabled':''}><span class="sr-ico">${icon(here?'my_location':'location_searching')}</span><span class="grow"><b style="display:block">${locating?'Finding you…':here?'You’re here':'I’m here now'}</b><span class="muted small" style="display:block">${here ? (near && near.length ? 'Places pinned near you' : 'Nothing pinned near you. Search for it, or type its name to add it.') : 'Show places near you. Uses your location once.'}</span></span>${here?'':icon('chevron_right')}</button>`;
+        const results = S.searchVenues(query, 10);
         el.innerHTML = header + `<div class="screen-body">${stepRow}
-          ${hereRow}
           <label class="search mt16">${icon('search')}<input id="logQ" placeholder="Search a café, bakery, karak stop…" value="${esc(query)}" autocomplete="off"></label>
-          <div class="stack mt16" id="lRes">${results.map((v,k)=>{
+          <div class="stack mt16" id="lRes">${results.map(v=>{
             const sum=M.venueSummary(v,{...state.scope, mode:'crew', members:null}), z=MAP.zoneById(v.zone);
-            return `<button class="search-result" data-v="${v.id}">${stampHTML(sum.state,{cat:M.primaryCat(v)})}<span class="grow"><b class="trunc" style="display:block">${esc(v.name)}</b><span class="muted small">${near?(near[k].exact?distText(near[k].m)+' away • ':'In this area • '):''}${esc(z?z.label:'')}${sum.visitorIds.length?` • ${plural(sum.visitorIds.length,'crew visit')}`:''}</span></span>${icon('chevron_right')}</button>`;
+            return `<button class="search-result" data-v="${v.id}">${stampHTML(sum.state,{cat:M.primaryCat(v)})}<span class="grow"><b class="trunc" style="display:block">${esc(v.name)}</b><span class="muted small">${esc(z?z.label:'')}${sum.visitorIds.length?` • ${plural(sum.visitorIds.length,'crew visit')}`:''}</span></span>${icon('chevron_right')}</button>`;
           }).join('')}
           ${googleHTML()}
           ${query.trim()?`<button class="search-result" id="lNew" style="background:var(--sc)"><span class="sr-ico">${icon('add_location_alt')}</span><span class="grow"><b>Add “${esc(query.trim())}”</b><span class="muted small" style="display:block">New place on the map</span></span>${icon('chevron_right')}</button>`:''}
           </div>
-          ${!query.trim() && !here?`<div class="empty"><span class="stamp st-want big"><span class="st-paper"><span class="st-ico">${iconSvg('karak','#7e5700')}</span></span><span class="st-ribbon">TRY</span></span><span class="hand">Where did you eat?</span><p class="muted small">${S.venues().length ? 'Search places you and your crew have pinned, or type a new name to add it.' : 'Type its name to add it. Every place on the map starts with someone pinning it.'}</p></div>`:''}
+          ${!query.trim()?`<div class="empty"><span class="stamp st-want big"><span class="st-paper"><span class="st-ico">${iconSvg('karak','#7e5700')}</span></span><span class="st-ribbon">TRY</span></span><span class="hand">Where did you eat?</span><p class="muted small">${S.venues().length ? 'Search places you and your crew have pinned, or type a new name to add it.' : 'Type its name to add it. Every place on the map starts with someone pinning it.'}</p></div>`:''}
         </div>`;
-        const q=el.querySelector("#logQ"); if (!here && !locating) q.focus();
-        el.querySelector('#lHere').onclick=()=>locate(true);
+        const q=el.querySelector("#logQ"); q.focus();
         q.oninput=()=>{ query=q.value; const pos=q.selectionStart; paint(); const n=el.querySelector("#logQ"); n.setSelectionRange(pos,pos); suggestSoon(); };
         el.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>pickGoogle(b.dataset.g, b));
         el.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{ venue=S.venue(b.dataset.v); paint(); });
@@ -303,7 +296,7 @@ function logFlow(opts){
           <div class="reel mt12">
             ${existingPhotos.map(p=>polaroidHTML({src:S.photoURL(p), caption:p.caption, id:p.id, tape:false, rot:0})).join('')}
             ${newPhotos.map((p,i)=>`<div style="position:relative"><button class="rm" data-rm="${i}" aria-label="Remove photo">${icon('close')}</button>${polaroidHTML({src:p.url, id:'n'+i, tape:false, rot:0, sub:`<input data-cap="${i}" value="${esc(p.caption)}" placeholder="caption" maxlength="40">`})}</div>`).join('')}
-            ${allPhotos<APP.photosPerLog && used<APP.photoLimit?`<label class="add-photo">${icon('add_a_photo')}<span>Add photos</span><input type="file" accept="image/*" multiple id="lPh"></label>`:''}
+            ${allPhotos<APP.photosPerLog && used<APP.photoLimit?`<label class="add-photo">${icon('photo_camera')}<span>Take photo</span><input type="file" accept="image/*" capture="environment" id="lCam" aria-label="Take a photo"></label><label class="add-photo">${icon('photo_library')}<span>Add photos</span><input type="file" accept="image/*" multiple id="lPh" aria-label="Add photos from your library"></label>`:''}
           </div>
           <div class="capacity mt16"><span class="cap-ico">${icon('photo_library')}</span><div class="grow"><div class="row between mono" style="font-size:12px;font-weight:700"><span>Scrapbook Roll Capacity</span><span style="color:var(--rust)">${used} / ${APP.photoLimit}</span></div><div class="cap-bar mt8"><i style="width:${Math.min(100,used/APP.photoLimit*100)}%"></i></div></div></div>
           ${used>=APP.photoLimit?`<div class="alert warn mt12">${icon('photo_library')}<div><b>Photo roll is full</b>Delete a photo from your book to add more.</div></div>`:''}
@@ -321,7 +314,7 @@ function logFlow(opts){
       el.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{ d.kind=b.dataset.k; keepScroll(paint); });
       const st=el.querySelector('#lStars'); if (st) stars=starInput(st, d.rating, v=>{ d.rating=v; });
       const dt=el.querySelector('#lDate'); if (dt) dt.onchange=()=>{ d.date=dt.value||todayISO(); keepScroll(paint); };
-      const vf=el.querySelector('#lVerify'); if (vf) vf.onclick=()=>locate(false);
+      const vf=el.querySelector('#lVerify'); if (vf) vf.onclick=()=>locate();
       const nt=el.querySelector('#lNotes'); nt.oninput=()=>{ d.notes=nt.value; };
       bindWho(el, ()=>d.who, v=>{ d.who=v; keepScroll(paint); });
       el.querySelectorAll('[data-meal]').forEach(b=>b.onclick=()=>{ const m=b.dataset.meal; d.meals=d.meals.includes(m)?d.meals.filter(x=>x!==m):[...d.meals,m]; keepScroll(paint); });
@@ -333,8 +326,8 @@ function logFlow(opts){
       el.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{ const i=+b.dataset.rm; URL.revokeObjectURL(newPhotos[i].url); newPhotos.splice(i,1); keepScroll(paint); });
       el.querySelectorAll('[data-cap]').forEach(inp=>inp.oninput=()=>{ newPhotos[+inp.dataset.cap].caption=inp.value; });
       el.querySelectorAll('.reel [data-photo]').forEach(f=>{ if (!f.dataset.photo.startsWith('n')) f.onclick=()=>go.viewer(existingPhotos.map(p=>p.id), existingPhotos.findIndex(p=>p.id===f.dataset.photo)); });
-      const ph=el.querySelector('#lPh'); if (ph) ph.onchange=async()=>{
-        const files=[...ph.files]; const room=Math.min(APP.photosPerLog-allPhotos, APP.photoLimit-used);
+      const addFiles=async(input)=>{
+        const files=[...input.files]; const room=Math.min(APP.photosPerLog-allPhotos, APP.photoLimit-used);
         if (files.length>room) toast(`Only ${room} more photo${room===1?'':'s'} fit on this log`);
         for (const f of files.slice(0,room)){
           try{ const blob=await compressImage(f, 1400, 0.8); newPhotos.push({blob, url:URL.createObjectURL(blob), caption:''}); }
@@ -342,6 +335,7 @@ function logFlow(opts){
         }
         keepScroll(paint);
       };
+      ['#lPh', '#lCam'].forEach(s=>{ const i=el.querySelector(s); if (i) i.onchange=()=>addFiles(i); });
       el.querySelector('#lMore').onclick=()=>placeScreen(venue.id);
       el.querySelector('#lSave').onclick=save;
       const del=el.querySelector('#lDel'); if (del) del.onclick=async()=>{
@@ -398,16 +392,14 @@ function logFlow(opts){
         <div class="chip-wrap mt8" id="lDishSug">${sug.map(x=>`<button type="button" class="person-chip" data-dish-add="${esc(x.t)}">${x.photo ? icon('photo_camera') : icon('add')}${esc(x.t)}</button>`).join('')}</div>
         <input class="input mt8" id="lDish" maxlength="30" placeholder="Add a dish and press Enter" autocomplete="off" enterkeyhint="done">`;
     };
-    // "I'm here now": find you once. From the place list it also catches a critter living right where you
-    // stand (anywhere, even out in the desert); at a place, the check-in's own catch comes when you save.
-    const locate = async (anywhere)=>{
+    // "I'm here now" at a place: find you once; the check-in's catch comes when you save.
+    const locate = async ()=>{
       if (locating) return; locating = true; keepScroll(paint);
       try{ here = await whereAmI(); }
       catch(e){ toast(locationError(e), null, null, 4500); }
       locating = false;
       if (!el.isConnected) return;
       keepScroll(paint);
-      if (here && anywhere && go.critterCatch) go.critterCatch({ ...here, venue:false }, {}, ()=>{});
     };
     const save=async()=>{
       if (d.who===null){ el.querySelector('#lWho').scrollIntoView({ block:'center', behavior:'smooth' }); return toast('Choose who it’s for'); }
@@ -439,7 +431,7 @@ function logFlow(opts){
     };
     paint();
     // a place's own Check in button: find you straight away
-    if (opts.here && venue && !editing) locate(false);
+    if (opts.here && venue && !editing) locate();
   });
 }
 go.log = logFlow;
