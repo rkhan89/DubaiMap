@@ -1,13 +1,11 @@
-// Phase 3 (own design, no Stitch frames): crew events ("plan a bite"), check-ins and share links.
+// Phase 3 (own design, no Stitch frames): crew events ("plan a bite") and share links (check-ins live in the Check in flow, place.js).
 import { APP } from './config.js';
 import * as S from './store.js';
 import * as MAP from './map.js';
-import { esc, plural, todayISO, fmtDate } from './data.js';
+import { esc, plural, fmtDate } from './data.js';
 import { avatarHTML, avatarStack } from './avatar.js';
-import { icon, toast, openSheet, back, seg, bindSeg, share, askWho } from './ui.js';
+import { icon, toast, openSheet, back, seg, bindSeg, share } from './ui.js';
 import { go } from './go.js';
-import { whereAmI, locationError } from './locate.js';
-import { haversine } from './catch.js';
 
 /* =========================================================
    SHARE LINKS: <origin>/?place=<id>, carrying the place's name, area, kind and spot so
@@ -153,33 +151,3 @@ go.bindEventsCard = (el, repaint)=>{
   el.querySelectorAll('[data-event]').forEach(b=>b.onclick=()=>eventSheet(b.dataset.event, repaint));
 };
 
-/* =========================================================
-   CHECK-INS: "I'm here" when your phone agrees you're at the place
-   ========================================================= */
-const CHECKIN_M = 300;             // metres from the exact spot
-const AREA_M = 1500;               // places without an exact spot: within the area
-export async function checkIn(venueId, after){
-  const v = S.venue(venueId), me = S.me(); if (!v || !me) return;
-  if (S.entries({venueId, userId:me.id, kind:'visit'}).some(e=>e.checkin && e.date===todayISO())) return toast('Already checked in here today');
-  toast('Finding you…');
-  let here;
-  try{ here = await whereAmI(); }
-  catch(e){ return toast(locationError(e), null, null, 4500); }
-  const exact = typeof v.lat==='number', z = MAP.zoneById(v.zone);
-  const target = exact ? {lat:v.lat, lng:v.lng} : (z ? {lat:z.lat, lng:z.lng} : null);
-  const d = target ? haversine(here, target) : Infinity, limit = exact ? CHECKIN_M : AREA_M;
-  if (d > limit){
-    const km = d>=1000 ? (d/1000).toFixed(1)+' km' : Math.round(d)+' m';
-    return toast(`You're ${km} away. Check-ins work when you're there.`, 'Log it', ()=>go.log({venueId}), 5000);
-  }
-  askWho({ title:'Check in at '+v.name, action:'Check in' }, sel=>{
-  const e = S.addEntry({ venueId, kind:'visit', checkin:true, date:todayISO(), crewIds:sel });
-  go.quietStrip && go.quietStrip();
-  go.refresh();
-  // the check-in is a visit, so it's a page: tape it in, then offer to add a rating and photos
-  // then any critter living here (a place check-in counts for venue-only spots too), then the nudge to rate it
-  go.tapeIn(e, ()=>go.critterCatch({ ...here, venue:true }, { venueId }, caught=>setTimeout(()=>{ toast('Checked in! Add a rating and photos?', 'Add', ()=>go.log({entryId:e.id}), 5000); setTimeout(()=>go.checkBadges && go.checkBadges(), 5200); }, caught ? 300 : 4200)));
-  after && after();
-  });
-}
-go.checkIn = checkIn;

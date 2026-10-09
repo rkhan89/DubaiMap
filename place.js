@@ -1,4 +1,4 @@
-// Place sheet (frame 13) and Log a Place (frame 14).
+// Place sheet (frame 13) and Check in (frame 14: one flow for a visit now or one in the past).
 import { APP } from './config.js';
 import * as S from './store.js';
 import * as M from './model.js';
@@ -7,7 +7,9 @@ import { CATEGORIES, MEALS, mealById, catById, iconSvg, esc, fmtRating, fmtDate,
 import { avatarHTML, avatarStack } from './avatar.js';
 import { $, icon, toast, openScreen, openSheet, back, closeAll, topbar, stampHTML, catChip, polaroidHTML, starInput, toggleHTML, bindToggle, ratingPill, share, compressImage, whoHTML, bindWho, whoDefault, whoText, askWho, catPickerHTML, bindCatPicker } from './ui.js';
 import { go, state } from './go.js';
-import { sharePlace, eventRowHTML, planBite, eventSheet, checkIn } from './events.js';
+import { sharePlace, eventRowHTML, planBite, eventSheet } from './events.js';
+import { whereAmI, locationError } from './locate.js';
+import { haversine } from './catch.js';
 import { placesApi, zoneFor } from './share.js';
 import { overallHTML, miniStars, rateSheet } from './rate.js';
 import * as RT from './ratings.js';
@@ -98,7 +100,7 @@ ${S.events({venueId:v.id, upcoming:true}).length?`<div class="card mt16"><span c
       el.querySelectorAll('.strip [data-photo]').forEach(f=>f.onclick=()=>go.viewer(photos.map(p=>p.id), photos.findIndex(p=>p.id===f.dataset.photo)));
       el.querySelector('#pLog').onclick=()=>logFlow({venueId:v.id});
       el.querySelector('#pSend').onclick=()=>sharePlace(v);
-      el.querySelector('#pCheck').onclick=()=>checkIn(v.id, ()=>setTimeout(paint, 300));
+      el.querySelector('#pCheck').onclick=()=>go.log({ venueId:v.id, here:true });
       el.querySelector('#pPlan').onclick=()=>planBite(v.id, ()=>paint());
       el.querySelectorAll('[data-event]').forEach(b=>b.onclick=()=>eventSheet(b.dataset.event, paint));
       el.querySelector('#pMap').onclick=()=>{ closeAll(); go.switchView('map'); const w=MAP.placeWorld(v); MAP.flyToSeparate(w, S.venues().filter(x=>x.id!==v.id).map(x=>MAP.placeWorld(x)).filter(p=>Math.hypot(p.x-w.x,p.y-w.y)<60)); MAP.highlight(v.id); };
@@ -197,8 +199,18 @@ function venueForm(initial, onSave, title){
 function editVenue(v, after){ venueForm(v, d=>{ S.updateVenue(v.id, d); toast('Place updated'); go.refresh(); after&&after(); }, 'Edit place'); }
 
 /* =========================================================
-   14. LOG A PLACE
+   14. CHECK IN: one flow whether you're there now or it was last week.
+   "I'm here now" finds you once (never tracked): it lists the places near you and catches any critter
+   living right where you stand. A visit saved today within CHECKIN_M of the place (AREA_M of its area
+   when it has no exact spot) is a check-in; otherwise it's a visit you're logging after.
    ========================================================= */
+const CHECKIN_M = 300, AREA_M = 1500, NEAR_M = 1000;
+function placeDistance(v, here){
+  if (!here || !v) return Infinity;
+  if (typeof v.lat === 'number') return haversine(here, { lat:v.lat, lng:v.lng });
+  const z = MAP.zoneById(v.zone); return z ? haversine(here, { lat:z.lat, lng:z.lng }) : Infinity;
+}
+const distText = m=>m >= 1000 ? (m/1000).toFixed(1)+' km' : Math.round(m)+' m';
 function logFlow(opts){
   opts=opts||{};
   const me=S.me();
@@ -217,6 +229,10 @@ function logFlow(opts){
   const existingPhotos = editing ? S.photos({entryId:editing.id}) : [];
   const newPhotos = (opts.photos||[]).slice(0, APP.photosPerLog);   // {blob, url, caption}: some may arrive picked already
   let query = '';
+  // where you are, once you've said "I'm here now"
+  let here = null, locating = false;
+  const checkedIn = ()=>{ if (!here || !venue || editing || d.kind!=='visit' || d.date!==todayISO()) return false;
+    return placeDistance(venue, here) <= (typeof venue.lat==='number' ? CHECKIN_M : AREA_M); };
   // Google suggestions while typing a new place (one session per search: the typing is free, a pick costs one lookup)
   const newToken = ()=> (crypto.randomUUID ? crypto.randomUUID() : Array.from(crypto.getRandomValues(new Uint8Array(16)), b=>b.toString(16).padStart(2,'0')).join(''));
   const g = { token:newToken(), list:[], q:'', loading:false, off:false, seq:0, timer:null };
@@ -224,22 +240,29 @@ function logFlow(opts){
     let stars=null;
     const paint=()=>{
       const crew=S.myCrew();
-      const header = topbar({title: editing?'Edit visit':'Log a visit', center:true, actions:`<button class="icon-btn" id="lMore" aria-label="More">${icon('more_vert')}</button>`});
+      const header = topbar({title: editing?'Edit visit':'Check in', center:true, actions:`<button class="icon-btn" id="lMore" aria-label="More">${icon('more_vert')}</button>`});
       const stepRow = `<div class="row between mt8"><span class="row" style="gap:6px"><i style="width:14px;height:14px;border-radius:50%;background:${venue?'var(--gold-deep)':'var(--gold)'};display:inline-block"></i><i style="width:46px;height:8px;border-radius:4px;background:var(--gold);display:inline-block"></i><i style="width:14px;height:14px;border-radius:50%;background:${venue?'var(--gold)':'var(--sc-highest)'};display:inline-block"></i></span><span class="hand">${venue?'Step 2: details and memories':'Step 1: find the place'}</span></div>`;
       if (!venue){
-        const results = S.searchVenues(query, 10);
+        // after "I'm here now" (and with nothing typed) the list is the places pinned near you, nearest first
+        // (places with an exact spot by distance; then ones only known by their area, if you're in it)
+        const near = here && !query.trim() ? S.venues().map(v=>({ v, m:placeDistance(v, here), exact:typeof v.lat==='number' }))
+          .filter(x=>x.m <= (x.exact ? NEAR_M : AREA_M)).sort((a,b)=>(b.exact-a.exact) || (a.m-b.m)).slice(0, 12) : null;
+        const results = near ? near.map(x=>x.v) : S.searchVenues(query, 10);
+        const hereRow = `<button class="search-result mt16" id="lHere"${locating?' disabled':''}><span class="sr-ico">${icon(here?'my_location':'location_searching')}</span><span class="grow"><b style="display:block">${locating?'Finding you…':here?'You’re here':'I’m here now'}</b><span class="muted small" style="display:block">${here ? (near && near.length ? 'Places pinned near you' : 'Nothing pinned near you. Search for it, or type its name to add it.') : 'Show places near you. Uses your location once.'}</span></span>${here?'':icon('chevron_right')}</button>`;
         el.innerHTML = header + `<div class="screen-body">${stepRow}
+          ${hereRow}
           <label class="search mt16">${icon('search')}<input id="logQ" placeholder="Search a café, bakery, karak stop…" value="${esc(query)}" autocomplete="off"></label>
-          <div class="stack mt16" id="lRes">${results.map(v=>{
+          <div class="stack mt16" id="lRes">${results.map((v,k)=>{
             const sum=M.venueSummary(v,{...state.scope, mode:'crew', members:null}), z=MAP.zoneById(v.zone);
-            return `<button class="search-result" data-v="${v.id}">${stampHTML(sum.state,{cat:M.primaryCat(v)})}<span class="grow"><b class="trunc" style="display:block">${esc(v.name)}</b><span class="muted small">${esc(z?z.label:'')}${sum.visitorIds.length?` • ${plural(sum.visitorIds.length,'crew visit')}`:''}</span></span>${icon('chevron_right')}</button>`;
+            return `<button class="search-result" data-v="${v.id}">${stampHTML(sum.state,{cat:M.primaryCat(v)})}<span class="grow"><b class="trunc" style="display:block">${esc(v.name)}</b><span class="muted small">${near?(near[k].exact?distText(near[k].m)+' away • ':'In this area • '):''}${esc(z?z.label:'')}${sum.visitorIds.length?` • ${plural(sum.visitorIds.length,'crew visit')}`:''}</span></span>${icon('chevron_right')}</button>`;
           }).join('')}
           ${googleHTML()}
           ${query.trim()?`<button class="search-result" id="lNew" style="background:var(--sc)"><span class="sr-ico">${icon('add_location_alt')}</span><span class="grow"><b>Add “${esc(query.trim())}”</b><span class="muted small" style="display:block">New place on the map</span></span>${icon('chevron_right')}</button>`:''}
           </div>
-          ${!query.trim()?`<div class="empty"><span class="stamp st-want big"><span class="st-paper"><span class="st-ico">${iconSvg('karak','#7e5700')}</span></span><span class="st-ribbon">TRY</span></span><span class="hand">Where did you eat?</span><p class="muted small">${S.venues().length ? 'Search places you and your crew have pinned, or type a new name to add it.' : 'Type its name to add it. Every place on the map starts with someone pinning it.'}</p></div>`:''}
+          ${!query.trim() && !here?`<div class="empty"><span class="stamp st-want big"><span class="st-paper"><span class="st-ico">${iconSvg('karak','#7e5700')}</span></span><span class="st-ribbon">TRY</span></span><span class="hand">Where did you eat?</span><p class="muted small">${S.venues().length ? 'Search places you and your crew have pinned, or type a new name to add it.' : 'Type its name to add it. Every place on the map starts with someone pinning it.'}</p></div>`:''}
         </div>`;
-        const q=el.querySelector("#logQ"); q.focus();
+        const q=el.querySelector("#logQ"); if (!here && !locating) q.focus();
+        el.querySelector('#lHere').onclick=()=>locate(true);
         q.oninput=()=>{ query=q.value; const pos=q.selectionStart; paint(); const n=el.querySelector("#logQ"); n.setSelectionRange(pos,pos); suggestSoon(); };
         el.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>pickGoogle(b.dataset.g, b));
         el.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{ venue=S.venue(b.dataset.v); paint(); });
@@ -262,7 +285,10 @@ function logFlow(opts){
         <div class="card mt16" style="border-radius:var(--r-xl)">
           <div class="seg"><button data-k="visit" class="${d.kind==='visit'?'on':''}">Been here</button><button data-k="want" class="${d.kind==='want'?'on':''}">Want to try</button></div>
           ${d.kind==='visit'?`<div class="row between mt20" style="align-items:flex-end;flex-wrap:wrap;gap:12px"><div><span class="eyebrow">Rating</span><div class="star-input mt8" id="lStars"></div></div>
-            <div><span class="eyebrow">Date</span><label class="date-pill mt8">${icon('calendar_month')}<span id="lDateTxt">${d.date===todayISO()?'Today, ':''}${fmtDate(d.date,{day:'numeric',month:'short'})}</span><input type="date" id="lDate" value="${d.date}" max="${todayISO()}"></label></div></div>`:''}
+            <div><span class="eyebrow">Date</span><label class="date-pill mt8">${icon('calendar_month')}<span id="lDateTxt">${d.date===todayISO()?'Today, ':''}${fmtDate(d.date,{day:'numeric',month:'short'})}</span><input type="date" id="lDate" value="${d.date}" max="${todayISO()}"></label></div></div>
+            ${!editing && d.date===todayISO() ? (checkedIn() ? `<p class="tag green mt12">${icon('where_to_vote')}Checked in: you’re here</p>`
+              : here ? `<p class="muted small mt12">You’re ${distText(placeDistance(venue, here))} away, so this saves as a visit, not a check-in.</p>`
+              : `<button type="button" class="btn btn-soft mt12" id="lVerify"${locating?' disabled':''}>${icon('my_location')}${locating?'Finding you…':'I’m here now'}</button>`) : ''}`:''}
           <div class="row between mt20"><span class="eyebrow">Meal</span><span class="hand">Optional</span></div>
           <div class="chip-wrap mt8" id="lMeals">${MEALS.map(m=>`<button type="button" class="person-chip meal-chip${d.meals.includes(m.id)?' on':''}" data-meal="${m.id}" aria-pressed="${d.meals.includes(m.id)}">${icon(m.icon)}${m.label}</button>`).join('')}</div>
           <div class="field-label mt20"><span class="eyebrow">${d.kind==='visit'?'Notes':'Why you want to go'}</span><span class="hand">Optional</span></div>
@@ -288,7 +314,8 @@ function logFlow(opts){
       const ch=el.querySelector('#lChange'); if (ch) ch.onclick=()=>{ venue=null; paint(); };
       el.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{ d.kind=b.dataset.k; keepScroll(paint); });
       const st=el.querySelector('#lStars'); if (st) stars=starInput(st, d.rating, v=>{ d.rating=v; });
-      const dt=el.querySelector('#lDate'); if (dt) dt.onchange=()=>{ d.date=dt.value||todayISO(); el.querySelector('#lDateTxt').textContent=(d.date===todayISO()?'Today, ':'')+fmtDate(d.date,{day:'numeric',month:'short'}); };
+      const dt=el.querySelector('#lDate'); if (dt) dt.onchange=()=>{ d.date=dt.value||todayISO(); keepScroll(paint); };
+      const vf=el.querySelector('#lVerify'); if (vf) vf.onclick=()=>locate(false);
       const nt=el.querySelector('#lNotes'); nt.oninput=()=>{ d.notes=nt.value; };
       bindWho(el, ()=>d.who, v=>{ d.who=v; keepScroll(paint); });
       el.querySelectorAll('[data-meal]').forEach(b=>b.onclick=()=>{ const m=b.dataset.meal; d.meals=d.meals.includes(m)?d.meals.filter(x=>x!==m):[...d.meals,m]; keepScroll(paint); });
@@ -350,11 +377,24 @@ function logFlow(opts){
         dd=>{ venue=S.addVenue(dd); if (dd.meals && dd.meals.length) d.meals=dd.meals.slice(); paint(); });
     };
     const keepScroll=(fn)=>{ const s=el.scrollTop; fn(); el.scrollTop=s; };
+    // "I'm here now": find you once. From the place list it also catches a critter living right where you
+    // stand (anywhere, even out in the desert); at a place, the check-in's own catch comes when you save.
+    const locate = async (anywhere)=>{
+      if (locating) return; locating = true; keepScroll(paint);
+      try{ here = await whereAmI(); }
+      catch(e){ toast(locationError(e), null, null, 4500); }
+      locating = false;
+      if (!el.isConnected) return;
+      keepScroll(paint);
+      if (here && anywhere && go.critterCatch) go.critterCatch({ ...here, venue:false }, {}, ()=>{});
+    };
     const save=async()=>{
       if (d.who===null){ el.querySelector('#lWho').scrollIntoView({ block:'center', behavior:'smooth' }); return toast('Choose who it’s for'); }
       const btn=el.querySelector('#lSave'); btn.disabled=true;
       go.tourSaved && go.tourSaved();
-      const data={ kind:d.kind, rating:d.kind==='visit'?d.rating:0, date:d.kind==='visit'?d.date:todayISO(), notes:d.notes.trim(), crewIds:d.who, meals:d.meals, taggedIds:d.kind==='visit' ? [...new Set([...d.tags, ...S.mentionIds(d.notes)])] : [] };
+      // one check-in per place a day; another visit the same day is just a visit
+      const isCheckin = checkedIn() && !S.entries({venueId:venue.id, userId:me.id, kind:'visit'}).some(x=>x.checkin && x.date===todayISO());
+      const data={ kind:d.kind, ...(isCheckin ? { checkin:true } : {}), rating:d.kind==='visit'?d.rating:0, date:d.kind==='visit'?d.date:todayISO(), notes:d.notes.trim(), crewIds:d.who, meals:d.meals, taggedIds:d.kind==='visit' ? [...new Set([...d.tags, ...S.mentionIds(d.notes)])] : [] };
       let e;
       if (editing){ e=S.updateEntry(editing.id, data); }
       else e=S.addEntry({venueId:venue.id, ...data});
@@ -368,11 +408,15 @@ function logFlow(opts){
         MAP.markDropped(venue.id);
         MAP.flyToSeparate(w, S.venues().filter(x=>x.id!==venue.id).map(x=>MAP.placeWorld(x)).filter(p=>Math.hypot(p.x-w.x,p.y-w.y)<60));
         // a new visit is taped into its book; then any sticker it earned
-        if (!editing && e.kind==='visit') go.tapeIn(e, ()=>go.checkBadges && go.checkBadges());
+        // a check-in also catches any critter living at this place (spots for places count too), then stickers
+        const badges = ()=>go.checkBadges && go.checkBadges();
+        if (!editing && e.kind==='visit') go.tapeIn(e, ()=>isCheckin && go.critterCatch ? go.critterCatch({ ...here, venue:true }, { venueId:venue.id }, caught=>setTimeout(badges, caught ? 300 : 0)) : badges());
         else { toast(editing ? 'Saved' : 'Saved to try'); setTimeout(()=>go.checkBadges && go.checkBadges(), 600); }
       }, 120);
     };
     paint();
+    // a place's own Check in button: find you straight away
+    if (opts.here && venue && !editing) locate(false);
   });
 }
 go.log = logFlow;

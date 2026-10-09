@@ -1,5 +1,5 @@
 // Critters on screen: the collection (your field guide), a critter's page, the catch moment,
-// the favourite picker, and "Check in where I am". Content: critters.js; where they live:
+// the favourite picker, and "I'm here now" (also on the Check in screen). Content: critters.js; where they live:
 // config.js (CRITTER_SPOTS); the catching rule: catch.js.
 //
 // No hints anywhere: an uncaught critter is a grey silhouette and "? ? ?", nothing else, and a
@@ -46,7 +46,7 @@ function collection(userId){
             ? `<button class="critter-card caught" data-critter="${c.id}">${fav===c.id?`<span class="fav-tag">${icon('favorite','',true)}Favourite</span>`:''}<span class="cc-art">${critterArt(c.id, 96)}</span><b>${esc(c.name)}</b>${themeChip(c.theme)}</button>`
             : `<div class="critter-card unknown" aria-label="Not found yet"><span class="cc-art">${critterArt(c.id, 96, { silhouette:true })}</span><b>? ? ?</b><span class="theme-chip blank">&nbsp;</span></div>`;
         }).join('')}</div>
-        ${mine ? `<button class="btn btn-gold btn-block mt24" id="crHere">${icon('where_to_vote')}Check in where I am</button>
+        ${mine ? `<button class="btn btn-gold btn-block mt24" id="crHere">${icon('my_location')}I’m here now</button>
         <p class="center muted small mt8">Uses your location once, only when you tap.</p>` : ''}
       </div>`;
       el.querySelectorAll('[data-theme]').forEach(b=>b.onclick=()=>{ theme = b.dataset.theme; paint(); });

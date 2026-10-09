@@ -41,7 +41,7 @@ export const APP = {
 /* Where each critter can be caught. PLACEHOLDERS: every coordinate and radius below was estimated
    from the area name in critters.json and has NOT been verified. Check each one on the ground
    before treating it as final, then set placeholder:false.
-   trigger: 'checkin'  any check-in while you're inside the radius ("Check in where I am" or a place's Check in)
+   trigger: 'checkin'  any check-in while you're inside the radius ("I'm here now" on Check in, or saving a check-in at a place)
             'venue'    only a place check-in (a café or venue) inside the radius
    radius in metres: small for a building, large for a reserve. */
 export const CRITTER_SPOTS = {
