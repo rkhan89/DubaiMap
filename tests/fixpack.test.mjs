@@ -100,11 +100,11 @@ test('every landmark, mall, boat and plane sprite is drawn 1:1 at the map scale 
     const name = o.k==='sprite' ? o.sprite : o.k==='boat' ? o.kind + '_' + o.head : 'plane_' + o.head;
     const [w, h] = o.k==='sprite' ? [o.w*2, o.h*2] : L.PROPS[name];
     const sp = fake(w, h, w*7 + h);
-    MR.setSprites({ [name]:sp }); MR.setPropLimits(L.PROPS);
+    MR.setSprites({ [name]:sp }); MR.setPropLimits(L.PROPS); MR.setPost(false);
     const x0 = Math.round(o.x*MR.S) - w/2, y0 = Math.round(o.y*MR.S) - h;
     const buf = MR.renderRect(Math.floor(x0), y0, Math.ceil(w), h, MR.S);
     let same = 0; for (let y=0; y<h; y++) for (let x=0; x<w; x++) if (buf.data[y*buf.w + x] === sp.data[y*w + x]) same++;
     assert.ok(same > 0.25*w*h, `${name}: only ${same} of ${w*h} pixels land 1:1`);
   }
-  MR.setSprites({});
+  MR.setSprites({}); MR.setPost(true);
 });

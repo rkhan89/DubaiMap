@@ -10,7 +10,7 @@
 import { RAW as M } from './map.js';
 import { PixelBuffer, PixelCtx, rgba, hex, mix, scale, scanPolys, fillPolys, line, thickRings } from './pixel.js';
 import { NIGHT_FX } from './nightfx.js';
-import { WORLD_BOX, isleAt, onBreakwater } from './world.js';
+import { TERRAINS } from './terrains.js';
 
 export const S = 2;          // art pixels per world unit (the approved scale)
 // landmark and prop sprites (map-art/*.png), handed over by map.js: { name: { w, h, data:Uint32Array, ax, ay } }
@@ -45,7 +45,8 @@ function objBox(o){
   }
   if (o.k==='sprite'){
     const sp = SPRITES[o.sprite]; if (!sp) return [o.x-4, o.y-4, o.x+4, o.y+4];
-    return [o.x - sp.ax/S - 2, o.y - sp.ay/S - 2, o.x + (sp.w - sp.ax)/S + 2, o.y + (sp.h - sp.ay)/S + 2];
+    // (and its shadow, which runs down-left by up to 0.55 of its height)
+    return [o.x - sp.ax/S - 2 - SHADOW.cap/S, o.y - sp.ay/S - 2, o.x + (sp.w - sp.ax)/S + 2, o.y + (sp.h - sp.ay)/S + 2 + SHADOW.cap/S];
   }
   if (o.k==='rail') return [Math.min(o.x0,o.x1)-6, Math.min(o.y0,o.y1)-14, Math.max(o.x0,o.x1)+6, Math.max(o.y0,o.y1)+6];
   if (o.k==='lm') return [o.x-70, o.y-280, o.x+70, o.y+40];
@@ -194,50 +195,37 @@ function drawGround(buf, s, groundMask){
 }
 
 /* =========================================================
-   THE WORLD ISLANDS (world.js): each island's own shape, pixel by pixel, raised a little off the water
+   TERRAINS (terrains.js): ground art out at sea, the World Islands
    ========================================================= */
-// sand tops with a lighter wet rim, a thin lit left face and a darker right face (1 px of rise per art px
-// scale step, 2 at full size), a stepped halo of pale shallows round each, the breakwater crescent
-const WORLD_DAY   = { top:'#F2DCAA', rim:'#FBEED0', left:'#E3C68E', right:'#B8935D', halo1:'#A7E6DA', halo2:'#8ADCD0', bw:'#A88A5E', bwFace:'#7A5F3F' };
-const WORLD_NIGHT = { top:'#6E6A78', rim:'#7E7A88', left:'#5D5A6A', right:'#46435A', halo1:'#22406A', halo2:'#1B375E', bw:'#4C4754', bwFace:'#36323F' };
-function drawWorld(buf, s, groundMask){
-  const ox = buf.ox, oy = buf.oy, W = buf.w, H = buf.h;
-  // the box the islands live in, in art pixels (its corners through the projection)
-  const cs = [[WORLD_BOX.a0,WORLD_BOX.i0],[WORLD_BOX.a0,WORLD_BOX.i1],[WORLD_BOX.a1,WORLD_BOX.i0],[WORLD_BOX.a1,WORLD_BOX.i1]].map(([a,i])=>M.aiToWorld(a,i));
-  const bx0 = Math.floor(Math.min(...cs.map(p=>p.x))*s), bx1 = Math.ceil(Math.max(...cs.map(p=>p.x))*s), by0 = Math.floor(Math.min(...cs.map(p=>p.y))*s), by1 = Math.ceil(Math.max(...cs.map(p=>p.y))*s);
-  const x0 = Math.max(ox, bx0), x1 = Math.min(ox+W, bx1), y0 = Math.max(oy, by0), y1 = Math.min(oy+H, by1);
-  if (x0 >= x1 || y0 >= y1) return;
-  const P = night() ? WORLD_NIGHT : WORLD_DAY, col = {}; for (const k in P) col[k] = rgba(P[k]);
-  const rise = s >= 2 ? 2 : s >= 1 ? 1 : 0, kmPerPx = 0.2/(16*s);
-  // the island distance for a ground pixel (memoised per pixel row, rise rows below are asked again)
-  const cache = new Map(), at = (x, y)=>{ const kk = y*65536 + (x & 65535); let v = cache.get(kk); if (v === undefined){ const ai = M.worldToAI((x+0.5)/s, (y+0.5)/s); v = isleAt(ai.a, ai.i).d; cache.set(kk, v); } return v; };
-  for (let y=y0; y<y1; y++) for (let x=x0; x<x1; x++){
-    const q = (y-oy)*W + (x-ox);
-    if (groundMask && groundMask[q] && !M.isWaterT(groundMask[q]-1)) continue;     // only over the sea
-    const top = at(x, y+rise);
-    if (top < 0){
-      // the raised top: the wet rim in its last metres, a little grain
-      const hh = h32(x, y, 21);
-      buf.data[q] = top > -kmPerPx*1.6 ? col.rim : hh < 0.05 ? scale(col.top, 0.96) : hh < 0.08 ? scale(col.top, 1.03) : col.top;
-      if (groundMask) groundMask[q] = M.L_BEACH + 1;
-      continue;
+// drawn on the ground, before anything stands on it: centred on its real point, each sprite pixel a whole
+// number of art pixels (nearest neighbour), only where the map has ground. At night its own palette (warm
+// blue-grey sand) and its few lit windows; land pixels count as land for what's drawn after.
+const terrainNight = new Map();
+function drawTerrains(buf, s, groundMask){
+  for (const t of TERRAINS){
+    const sp = SPRITES[t.sprite]; if (!sp) continue;
+    let data = sp.data;
+    if (night()){
+      data = terrainNight.get(t.id);
+      if (!data){
+        const lit = new Set(t.lights), map = {}; for (const [d, n] of Object.entries(t.night || {})) map[rgba(d) & 0xffffff] = rgba(n);
+        data = sp.data.map((c, k)=>!(c>>>24) ? 0 : lit.has(k) ? rgba('#ffd470') : (map[c & 0xffffff] || nightPx(c)));
+        terrainNight.set(t.id, data);
+      }
     }
-    let side = false; for (let j=0; j<rise; j++) if (at(x, y+j) < 0){ side = true; break; }
-    if (side){
-      // a face: lit if the island is up and to the right of it (it faces down-left), else in shade
-      const lit = at(x+1, y+rise) < at(x-1, y+rise);
-      buf.data[q] = lit ? col.left : col.right;
-      if (groundMask) groundMask[q] = M.L_BEACH + 1;
-      continue;
-    }
-    // the water round it: two steps of pale shallows, then the breakwater out on the seaward side
-    const d = at(x, y);
-    if (d < 0.022) buf.data[q] = col.halo1;
-    else if (d < 0.045) buf.data[q] = col.halo2;
-    else {
-      const ai = M.worldToAI((x+0.5)/s, (y+0.5)/s), ab = M.worldToAI((x+0.5)/s, (y+0.5+rise)/s);
-      if (onBreakwater(ab.a, ab.i)){ buf.data[q] = col.bw; if (groundMask) groundMask[q] = M.L_SAND + 1; }
-      else if (rise && onBreakwater(ai.a, ai.i)){ buf.data[q] = col.bwFace; if (groundMask) groundMask[q] = M.L_SAND + 1; }
+    const [ca, ci] = M.G(t.centre[0], t.centre[1]), cw = M.aiToWorld(ca, ci), k = t.scale*s/S;
+    const x0 = Math.round(cw.x*s - t.w*k/2), y0 = Math.round(cw.y*s - t.h*k/2);
+    const bx0 = Math.max(x0, buf.ox), by0 = Math.max(y0, buf.oy), bx1 = Math.min(x0 + Math.ceil(t.w*k), buf.ox+buf.w), by1 = Math.min(y0 + Math.ceil(t.h*k), buf.oy+buf.h);
+    for (let y=by0; y<by1; y++){
+      const sy = Math.floor((y - y0)/k); if (sy < 0 || sy >= t.h) continue;
+      for (let x=bx0; x<bx1; x++){
+        const sx = Math.floor((x - x0)/k); if (sx < 0 || sx >= t.w) continue;
+        const q = (y-buf.oy)*buf.w + (x-buf.ox), c = data[sy*t.w + sx];
+        if ((c>>>24) < 128 || (groundMask && !groundMask[q])) continue;      // off the art, or off the map
+        buf.data[q] = (c | 0xff000000) >>> 0;
+        const raw = sp.data[sy*t.w + sx], rr = raw & 255, gg = raw>>8 & 255, bb = raw>>16 & 255;
+        if (groundMask && !(gg > rr + 20 && bb > rr + 20)) groundMask[q] = M.L_BEACH + 1;   // its sand and buildings are land
+      }
     }
   }
 }
@@ -359,17 +347,38 @@ function hull(pts){
   for (const p of pts.slice().reverse()){ while (up.length>=2 && cr(up[up.length-2], up[up.length-1], p) <= 0) up.pop(); up.push(p); }
   return lo.slice(0,-1).concat(up.slice(0,-1));
 }
+// cast shadows: hard edged and flat, falling left and down, on land only; length = height x k, capped (art px at full scale)
+const SHADOW = { colour:'#121426', day:0.28, night:0.10, k:0.5, cap:18 };
+const SH_X = 0.894, SH_Y = 0.447;   // the direction (down-left along the iso diagonal)
+// the lowest opaque row of each column of a sprite (where that column stands), -1 if empty
+function spriteFeet(sp){
+  if (sp.feet) return sp.feet;
+  const f = new Int16Array(sp.w).fill(-1);
+  for (let x=0; x<sp.w; x++) for (let y=sp.h-1; y>=0; y--) if ((sp.data[y*sp.w + x]>>>24) >= 128){ f[x] = y; break; }
+  return (sp.feet = f);
+}
 function drawShadows(buf, s, list, groundMask){
   const W = buf.w, H = buf.h, sm = new Uint8Array(W*H), clip = { x0:buf.ox, y0:buf.oy, x1:buf.ox+W, y1:buf.oy+H };
   for (const k of list){
     const o = M.OBJECTS[k]; if (o.k !== 'box' || (o.z0||0) > 0 || o.h < 3) continue;
-    const g = geom(o, s), L = o.h*0.55*s, dx = -L*0.894, dy = L*0.447;   // along +gy on screen: left and down
+    const g = geom(o, s), L = Math.min(SHADOW.cap*s/2, o.h*s*SHADOW.k), dx = -L*SH_X, dy = L*SH_Y;   // along +gy on screen: left and down
     const base = [g.N, g.E, g.S, g.W];
     const ring = hull(base.concat(base.map(p=>[p[0]+dx, p[1]+dy]))).flat();
     scanPolys([ring], (y,a,b)=>{ for (let x=a;x<b;x++) sm[(y-buf.oy)*W + x-buf.ox] = 1; }, clip);
   }
-  const shade = night() ? rgba('#05070D') : rgba('#3A3150'), t = night() ? 0.35 : 0.24;
-  for (let q=0; q<W*H; q++) if (sm[q] && (!groundMask || groundMask[q])) buf.data[q] = mix(buf.data[q], shade, t);
+  // landmark and mall sprites too: each pixel at height z over its column's foot throws its shadow the
+  // same way, so the shadow is the sprite's own silhouette, sheared and capped
+  if (s >= 1) for (const k of list){
+    const o = M.OBJECTS[k]; if (o.k !== 'sprite') continue;
+    const sp = spriteFor(o.sprite, s); if (!sp) continue;
+    const [x0, y0] = spriteOrigin(o, sp, s), foot = spriteFeet(sp);
+    for (let x=0; x<sp.w; x++){ const fy = foot[x]; if (fy < 0) continue;
+      for (let y=0; y<=fy; y++){ if ((sp.data[y*sp.w + x]>>>24) < 128) continue;
+        const z = fy - y, off = Math.min(SHADOW.cap*s/2, z*SHADOW.k), X = Math.round(x0 + x - off*SH_X), Y = Math.round(y0 + fy + off*SH_Y);
+        if (X >= buf.ox && Y >= buf.oy && X < buf.ox+W && Y < buf.oy+H) sm[(Y-buf.oy)*W + X-buf.ox] = 1; } }
+  }
+  const shade = rgba(SHADOW.colour), t = night() ? SHADOW.night : SHADOW.day;
+  for (let q=0; q<W*H; q++) if (sm[q] && (!groundMask || (groundMask[q] && !M.isWaterT(groundMask[q]-1)))) buf.data[q] = mix(buf.data[q], shade, t);
 }
 
 /* =========================================================
@@ -424,8 +433,9 @@ function boxPart(L, g, z0, h, mat, kind, s){
   const right = [g.S[0], g.S[1]-z0, g.E[0], g.E[1]-z0, g.E[0], g.E[1]-z0-h, g.S[0], g.S[1]-z0-h];
   const top = [g.N[0], g.N[1]-z0-h, g.E[0], g.E[1]-z0-h, g.S[0], g.S[1]-z0-h, g.W[0], g.W[1]-z0-h];
   const nt = night(), b = N2(mat.base), id = mat.id;
-  const fL = scale(b, nt ? 0.8 : 0.72), fR = scale(b, nt ? 0.95 : 0.88);
-  const fT = mat.topOver && kind === 'main' ? N2(mat.topOver) : scale(b, nt ? 1.05 : 1.08);
+  const fL = scale(b, nt ? DEPTH.leftNight : DEPTH.left), fR = scale(b, nt ? DEPTH.rightNight : DEPTH.right);
+  const fT = mat.topOver && kind === 'main' ? N2(mat.topOver) : scale(b, nt ? DEPTH.topNight : DEPTH.top);
+  const foot = z0 === 0 && kind === 'main' ? (s >= 2 ? 2 : 1) : 0;   // the contact band's rows
   const detail = s >= 2 && (kind === 'main' || kind === 'setback' || kind === 'crown' || kind === 'tower');
   const U0 = { L: g.W[0], R: g.S[0] };
   const face = (poly, side, fc)=>{
@@ -433,12 +443,15 @@ function boxPart(L, g, z0, h, mat, kind, s){
     scanPolys([poly], (y, a, bb)=>{
       for (let x=a; x<bb; x++){
         const u = x - ux0, by = side === 'L' ? baseY + (u+0.5)/2 : baseY - (u+0.5)/2, v = Math.floor(by - (y+0.5));
-        L.set(x, y, detail ? wallPixel(mat, side, fc, u, v, U, h, id) : fc);
+        const c = detail ? wallPixel(mat, side, fc, u, v, U, h, id) : fc;
+        L.set(x, y, v < foot ? scale(c, DEPTH.contact) : c);
       }
     });
   };
   face(left, 'L', fL);
   face(right, 'R', fR);
+  // the front corner: a 1 px dark vertical line where the two faces meet
+  if (s >= 1 && kind !== 'ac'){ const cx = g.S[0] - 1, cl = scale(fL, DEPTH.corner); for (let y = Math.ceil(g.S[1]-z0-h); y < g.S[1]-z0; y++) L.set(cx, y, cl); }
   // roof, with a light rim along its front edges
   const rows = new Map();
   scanPolys([top], (y, a, bb)=>{ rows.set(y, [a, bb]); for (let x=a; x<bb; x++) L.set(x, y, roofPixel(mat, fT, x, y, kind, s)); });
@@ -516,21 +529,13 @@ function drawBuilding(buf, o, s){
   const mat = material(o), id = mat.id, z0 = Math.round((o.z0||0)*s), H = Math.max(2, Math.round(o.h*s));
   const g = geom(o, s);
   const parts = [];
-  const tall = o.st === 'glass' && o.h > 34 && (o.z0||0) === 0;
-  const top = h32(id, 30);   // tower tops: a spire, a stepped top, one setback, or flat
-  if (tall && top < 0.22){
-    const h1 = Math.round(H*0.78), h2 = Math.round(H*0.14), h3 = H - h1 - h2;
+  const tall = !!o.tower && (o.z0||0) === 0;
+  const top = h32(id, 30);   // which rooftop kit a tower gets
+  if (tall){
+    // a tower: its top fifth set back, 20 % narrower
+    const h1 = Math.round(H*0.8);
     parts.push([g, z0, h1, 'main']);
-    parts.push([geom(o, s, o.hx*0.78, o.hy*0.78), z0+h1, h2, 'setback']);
-    parts.push([geom(o, s, o.hx*0.5, o.hy*0.5), z0+h1+h2, h3, 'crown']);
-  } else if (tall && top < 0.5){
-    const h1 = Math.round(H*0.84);
-    parts.push([g, z0, h1, 'main']);
-    parts.push([geom(o, s, o.hx*0.72, o.hy*0.72), z0+h1, H-h1, 'setback']);
-  } else if (tall && top < 0.68){
-    const h1 = Math.round(H*0.9);
-    parts.push([g, z0, h1, 'main']);
-    parts.push([geom(o, s, o.hx, o.hy*0.55), z0+h1, H-h1, 'setback']);
+    parts.push([geom(o, s, o.hx*0.8, o.hy*0.8), z0+h1, H-h1, 'setback']);
   } else parts.push([g, z0, H, 'main']);
   const topZ = z0 + H, roof = [];
   // roof details: a few small parts on top, placed in the roof's own coordinates
@@ -546,9 +551,12 @@ function drawBuilding(buf, o, s){
       parts.push([small(0.25, 0.5, 0.05, 0.05), topZ, 3, 'ac']);
       if (r1 < 0.5) parts.push([small(0.75, 0.5, 0.05, 0.05), topZ, 3, 'ac']);
     } else if (tall){
-      if (top < 0.22 || r1 < 0.3) roof.push(['antenna', at(0.5, 0.5)]);
-      else if (top >= 0.68 && r1 < 0.75) roof.push(['helipad', at(0.5, 0.5)]);
-      else parts.push([small(0.35, 0.4, 0.06, 0.06), topZ, 2, 'ac']);
+      // the rooftop kit on the setback: a mast, a helipad, plant rooms, plant and a tank, or a crown
+      if (top < 0.25) roof.push(['antenna', at(0.5, 0.5)]);
+      else if (top < 0.42) roof.push(['helipad', at(0.5, 0.5)]);
+      else if (top < 0.62){ parts.push([small(0.35, 0.4, 0.06, 0.06), topZ, 2, 'ac']); parts.push([small(0.62, 0.6, 0.05, 0.05), topZ, 3, 'ac']); }
+      else if (top < 0.8){ parts.push([small(0.4, 0.45, 0.06, 0.05), topZ, 2, 'ac']); roof.push(['tank', at(0.62, 0.62)]); }
+      else parts.push([geom(o, s, o.hx*0.45, o.hy*0.45), topZ, Math.max(2, Math.round(H*0.06)), 'crown']);
     } else if (o.st === 'glass' && r1 < 0.5) parts.push([small(0.4, 0.4, 0.07, 0.07), topZ, 3, 'ac']);
     else if (o.st === 'villa' && r1 < 0.3) parts.push([small(0.3, 0.3, 0.07, 0.07), topZ, 3, 'ac']);   // a stair housing
   }
@@ -723,7 +731,7 @@ export function renderRect(x0, y0, w, h, s=S){
   prepare();
   const buf = new PixelBuffer(w, h, x0, y0), groundMask = new Uint8Array(w*h);
   drawGround(buf, s, groundMask);
-  drawWorld(buf, s, groundMask);
+  drawTerrains(buf, s, groundMask);
   const list = s === S && w === CH && h === CH && x0 % CH === 0 && y0 % CH === 0
     ? (chunkObjs || (indexChunks(), chunkObjs))[(y0/CH)*chunkGrid().cols + x0/CH]
     : objectsIn(x0/s, y0/s, (x0+w)/s, (y0+h)/s, s);
@@ -755,8 +763,27 @@ export function renderRect(x0, y0, w, h, s=S){
     for (let q=0; q<w*h; q++) if (groundMask[q] && M.isWaterT(groundMask[q]-1) && buf.data[q] === ground[q]){ water[q] = 1; any = true; }
     buf.water = any ? water : null;
   }
-  addHaze(buf, s);
+  if (POST){ addHaze(buf, s); addHorizon(buf, s); }
   return buf;
+}
+// the soft passes over the finished pixels (edge haze, horizon); tests turn them off to compare pixels exactly
+let POST = true;
+export function setPost(on){ POST = !!on; }
+// depth: face shading (left in shade, right lit) and the horizon's tint
+// light from the upper right: the left face is in shade, the right one lit, the roof lightest
+const DEPTH = { left:0.62, right:0.86, top:1.12, leftNight:0.72, rightNight:0.92, topNight:1.05,
+  corner:0.78,            // the 1 px vertical line down each building's front corner (times the left face)
+  contact:0.82,           // the 1-2 px band at each building's foot (times its face)
+  // the horizon: three hard bands toward the sky colour, strongest at the back edge (share of the map's height)
+  horizonDay:'#CFE0EC', horizonNight:'#2A3654', bands:[[0.12, 0.18], [0.24, 0.12], [0.36, 0.06]], nightBands:0.6 };
+// further away (higher up the map) things take on a little of the sky: cooler and lighter
+function addHorizon(buf, s){
+  const col = rgba(night() ? DEPTH.horizonNight : DEPTH.horizonDay), H = M.WORLD.h, k = night() ? DEPTH.nightBands : 1;
+  for (let y=0; y<buf.h; y++){
+    const wy = (y + buf.oy + 0.5)/s, band = DEPTH.bands.find(([f])=>wy < H*f); if (!band) continue;
+    const t = band[1]*k, row = y*buf.w;
+    for (let x=0; x<buf.w; x++){ const q = row + x; if (buf.data[q]) buf.data[q] = mix(buf.data[q], col, t); }
+  }
 }
 // a soft haze toward the edges of the map (the only soft thing besides glow; it sits on top of the pixels)
 function addHaze(buf, s){

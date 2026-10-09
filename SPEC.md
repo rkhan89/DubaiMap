@@ -435,16 +435,31 @@ neighbourhoods, ~7,400 objects); only the drawing changed.
   of 750 ms), so only a few change at once and the water never pulses as a whole. Lit windows never animate.
   Static glows: street lamps 0.16, edge haze 0.19 at night, car headlights at half strength. With
   prefers-reduced-motion nothing animates.
-- **The World Islands** (`world.js`): about 140 narrow, elongated islands laid out as a world map (seven
-  continents, channels between), smaller than life so they fit offshore. Each is drawn at pixel level: a sand
-  top with a lighter wet rim, raised 2 px, with a lit left face and a darker right face. Round each are two
-  steps of pale shallows, and a dark-sand breakwater crescent runs along the seaward side. The Heart of Europe
-  (six islands) and Lebanon have small pastel houses and palms, with a few lit windows at night; the rest are
-  bare sand. The 200 m tiles under the islands are sand in the data, so pins and areas on them work as before.
-- **Port Rashid**: an open concrete quay with bollards along its edge. The QE2 (`qe2_ne`) is moored
-  parallel to it, and no boat is placed on it. The old cranes and the grey sheds that stood there are gone.
-  `QUAY_SLOTS` (landmarks.js) keeps spots for the quay crane and container stack art; each is drawn once its
-  sprite is listed in `SLOT_ART`.
+- **The World Islands** are a terrain sprite (`the_world_islands.png`, placed by `terrains.js`, made by
+  `tools/terrain-prep.mjs`). It is centred on the real centre (25.21667 N, 55.16667 E, Wikipedia) and sized by real
+  distance: 9 km east-west is ~1,010 art px on this projection, so the 239 px art is drawn at x4. It's drawn on
+  the ground before anything stands on it, only where the map has ground. Its seaward edge runs past the map's
+  current edge, so the outer breakwater is cut until the map grows. The tiles whose middle is on its land are sand
+  in the data, so pins and areas there work. At night: warm blue-grey sand, and a few lit windows on the Heart of
+  Europe only.
+- **Port Rashid**: an open concrete quay with bollards. The QE2 (`qe2_ne`) is moored parallel to its edge.
+  Two quay cranes (`quay_crane_nw`) stand on the edge with their booms over the water; three container stacks
+  (`container_stack{1,2,3}_ne`) stand behind, their rows along the quay. The old cranes and grey sheds are
+  gone. `QUAY_SLOTS` (landmarks.js) places them; the pier tile is a slot (`port_rashid_pier`) for the art on
+  its way.
+- **Depth**: all baked into the art (no per-frame cost). Constants in mapraster.js (`DEPTH`, `SHADOW`).
+  - Light from the upper right: faces x0.62 (left), x0.86 (right), x1.12 (roof); a 1 px lighter top edge and a
+    1 px dark corner line on every building; a 1 to 2 px darker contact band at each foot.
+  - Cast shadows: hard and flat, #121426 at 28 % (10 % at night), half the height long, capped at 18 px, down
+    and left, on land only. Landmark and mall sprites cast them too, from their own silhouette.
+  - Horizon: three hard bands toward #CFE0EC at the back of the map (18, 12, 6 %).
+  - Heights (`assignHeights` in map.js) come from the zone and smooth noise; the buildings and their count
+    stay as placed. About 41 % are low rise (1 to 3 floors), 32 % mid rise (4 to 8) and 25 % 9 to 11 floors.
+    Towers (12 floors and up, about 3 %) stand only in Downtown, the Marina, JLT and Business Bay; each has its
+    top fifth set back 20 % narrower and its own rooftop kit.
+- **Regions** (`regions.js`): the map grows by data (coast, palms, zoning, roads, area labels). None are live
+  yet, so the frame and tile (0,0) are exactly the city's own. The Jebel Ali draft waits for sign-off on the
+  branch `map-extent-wip`.
 
 ## Critters (no more points)
 

@@ -100,20 +100,27 @@ export const PROPS = {
   ...Object.fromEntries([['dhow',[38,28]], ['abra',[24,18]], ['yacht',[36,20]], ['plane',[46,34]]].flatMap(([k, sz])=>HEADINGS.map(h=>[k+'_'+h, sz]))),
   qe2_ne:[84,60], qe2_nw:[84,60],   // the QE2, moored (along the quay only, so two headings)
 };
-// Marked slots on Port Rashid's quay for art that's on its way: the map keeps these spots clear and draws
-// each one as soon as its sprite is listed in SLOT_ART (and the PNG is in map-art/). Anchor = bottom centre.
-// at = [km along the coast, km inland]; the quay is a 24.4..26.0, i -1.0 (water side) .. 0.15.
+// Port Rashid's quay (Mina Rashid). at = [km along the coast, km inland]; the quay is a 24.4..26.0, i -1.0 (the
+// water side) .. 0.15, and the QE2 is moored along its edge at a 25.6. Anchor = bottom centre of the canvas.
+//   quay cranes stand on the edge, their booms out over the water: the water is up-left on screen (nw)
+//   container stacks stand back from the edge, their rows along the quay (ne)
+//   the pier tile itself is a slot: the quay's paving is drawn until its sprite is in (listed in SLOT_ART)
 export const QUAY_SLOTS = [
-  { sprite:'quay_crane', at:[24.75, -0.92] },        // on the quay edge, over the water
-  { sprite:'quay_crane', at:[25.05, -0.92] },
-  { sprite:'container_stack', at:[24.70, -0.55] },   // back from the edge
-  { sprite:'container_stack', at:[24.95, -0.45] },
-  { sprite:'container_stack', at:[25.20, -0.55] },
+  { sprite:'quay_crane_nw', at:[24.55, -0.93] },        // two, a crane's width apart, clear of the QE2 (a 25.1..26.1)
+  { sprite:'quay_crane_nw', at:[24.95, -0.93] },
+  { sprite:'container_stack1_ne', at:[24.60, -0.50] },
+  { sprite:'container_stack2_ne', at:[24.85, -0.42] },
+  { sprite:'container_stack3_ne', at:[25.10, -0.50] },
+  { sprite:'container_stack2_ne', at:[24.70, -0.15] },
+  { sprite:'port_rashid_pier', at:[25.2, -0.42], terrain:true },   // the pier tile: on its way
 ];
-// slot sprites whose PNGs are in: add 'quay_crane' and 'container_stack' (with their sizes) when they arrive
-export const SLOT_ART = {};   // e.g. quay_crane:[w,h], container_stack:[w,h]
+// the slot art that's in (its PNG in map-art/), with its size; a slot whose art isn't listed isn't drawn
+export const SLOT_ART = {
+  ...Object.fromEntries(HEADINGS.map(h=>['quay_crane_'+h, [64,60]])),
+  ...Object.fromEntries([1,2,3].flatMap(n=>['ne','nw'].map(h=>['container_stack'+n+'_'+h, [60,44]]))),
+};
 Object.assign(PROPS, SLOT_ART);
 // every file the map loads from map-art/
-export const SPRITE_FILES = [...new Set([...LANDMARKS.map(l=>l.sprite), 'dubai_fountain_1','dubai_fountain_2','dubai_fountain_3','dubai_fountain_4','dubai_fountain_5', ...Object.keys(PROPS)])];   // (the slots' art joins through PROPS once listed in SLOT_ART)
+export const SPRITE_FILES = [...new Set([...LANDMARKS.map(l=>l.sprite), 'dubai_fountain_1','dubai_fountain_2','dubai_fountain_3','dubai_fountain_4','dubai_fountain_5', ...Object.keys(PROPS), 'the_world_islands'])];   // (slot art joins through PROPS once listed in SLOT_ART)
 // footprints for the pack's other sprites (art pixels: [coast, inland])
 for (const lm of LANDMARKS){ const c = CARDS[lm.sprite]; if (c && !lm.fpx) lm.fpx = c.fpx; }
