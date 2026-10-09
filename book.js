@@ -57,7 +57,7 @@ function shelf(){
         .sort((a,b)=>(b[0].date||'').localeCompare(a[0].date||'') || (b[0].createdAt||0)-(a[0].createdAt||0))
         .forEach(([p, b])=>{ const k = p.entry ? p.entry.id : p.id; if (!seen.has(k) && latest.length<4){ seen.add(k); latest.push([p, b]); } });
       const members = crew ? S.crewMembers(crew) : [];
-      el.innerHTML = topbar({title:'Scrapbooks', back:true, actions:`<button class="icon-btn" id="shNew" aria-label="Log a visit">${icon('add_a_photo')}</button>`}) + `<div class="screen-body">
+      el.innerHTML = topbar({title:'Scrapbooks', back:true, actions:`<button class="icon-btn" id="shSearch" aria-label="Search scrapbooks">${icon('search')}</button><button class="icon-btn" id="shNew" aria-label="Log a visit">${icon('add_a_photo')}</button>`}) + `<div class="screen-body">
         <div class="deck mt8">
           ${critterSpine()}
           ${spineHTML(personal, { kind:'Personal scrapbook', kicon:'auto_stories', hand: personal.byline || (topZ.length ? `Mostly ${topZ.slice(0,2).join(' and ')}` : 'Everywhere you’ve been'), meta:[`${icon('menu_book')}${plural(mine.length,'page')}`, photoN(mine)?`${icon('photo_library')}${plural(photoN(mine),'photo')}`:''] })}
@@ -328,7 +328,7 @@ function openBook(bookId, opts){
       if (opts.pageId){ const i = pgs.findIndex(p=>p.id===opts.pageId); if (i>=0){ mode='date'; shown = Math.max(shown, i+2); } }
       shown = Math.min(Math.max(shown, BATCH), total() || BATCH);
       const nf=filterCount(filter);
-      const head = topbar({title:b.title, eyebrow: b.kind==='crew' ? 'Crew scrapbook' : b.kind==='tagged' ? 'Tagged scrapbook' : 'Scrapbook', actions:`<button class="icon-btn" id="bkAddTop" aria-label="Log a visit">${icon('add_a_photo')}</button><button class="icon-btn" id="bkCover" aria-label="Customise cover">${icon('palette')}</button><button class="icon-btn" id="bkShare" aria-label="Share">${icon('share')}</button>`}) +
+      const head = topbar({title:b.title, eyebrow: b.kind==='crew' ? 'Crew scrapbook' : b.kind==='tagged' ? 'Tagged scrapbook' : 'Scrapbook', actions:`<button class="icon-btn" id="bkSearch" aria-label="Search scrapbooks">${icon('search')}</button><button class="icon-btn" id="bkAddTop" aria-label="Log a visit">${icon('add_a_photo')}</button><button class="icon-btn" id="bkCover" aria-label="Customise cover">${icon('palette')}</button><button class="icon-btn" id="bkShare" aria-label="Share">${icon('share')}</button>`}) +
         `<div class="screen-body"><div class="row mt8" style="gap:10px"><div class="grow">${seg('bmode',[['date','By Date','calendar_month'],['place','By Place','location_on']],mode)}</div><button class="sq-btn${nf?' filtered':''}" id="bkFilter" aria-label="Filter pages" style="width:48px;height:48px">${icon('tune')}</button></div>`;
       let body='';
       if (b.kind!=='crew' && pgs.some(p=>p.entry && p.entry.private)) body += `<div class="privacy-banner mt16">${icon('shield_lock')}<span><b>Just me pages are only visible to you.</b> They never appear in a crew’s book.</span></div>`;
@@ -520,3 +520,6 @@ function addPhotos(opts){
   input.click();
 }
 go.addPhotos = addPhotos;
+
+// search from the Shelf or a book: the same search, as a sheet (searchui.js)
+if (typeof document !== 'undefined') document.addEventListener('click', e=>{ if (e.target.closest('#shSearch, #bkSearch')) go.scrapbookSearch && go.scrapbookSearch(); });

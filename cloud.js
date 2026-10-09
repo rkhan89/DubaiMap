@@ -77,12 +77,12 @@ export const MAP = {
   feedback: { to: f => ({ id:f.id, user_id:f.userId, kind:f.kind, message:f.message, app_info:f.appInfo||{} }) },
   client_errors: { to: e => ({ id:e.id, user_id:e.userId, message:e.message, stack:e.stack||'', where_:e.where||'', app_info:e.appInfo||{} }) },
   entries: {
-    to: e => ({ id:e.id, venue_id:e.venueId, user_id:e.userId, kind:e.kind, rating:e.rating||0, notes:e.notes||'', date:e.date, private:!!e.private, crew_ids:uuids(e.crewIds), tagged_ids:uuids(e.taggedIds), ...((e.meals||[]).length ? { meals:e.meals } : {}), checkin:!!e.checkin, created_at:ts(e.createdAt), ...(e.sourceType ? { source_type:e.sourceType } : {}) }),
-    from: r => ({ id:r.id, venueId:r.venue_id, userId:r.user_id, kind:r.kind, rating:+r.rating||0, notes:r.notes||'', date:r.date, private:r.private, crewIds:r.crew_ids||[], taggedIds:r.tagged_ids||[], meals:r.meals||[], checkin:r.checkin, createdAt:ms(r.created_at), sourceType:r.source_type||null }),
+    to: e => ({ id:e.id, venue_id:e.venueId, user_id:e.userId, kind:e.kind, rating:e.rating||0, notes:e.notes||'', date:e.date, private:!!e.private, crew_ids:uuids(e.crewIds), tagged_ids:uuids(e.taggedIds), ...((e.meals||[]).length ? { meals:e.meals } : {}), ...(Array.isArray(e.dishTags) ? { dish_tags:e.dishTags } : {}), checkin:!!e.checkin, created_at:ts(e.createdAt), ...(e.sourceType ? { source_type:e.sourceType } : {}) }),
+    from: r => ({ id:r.id, venueId:r.venue_id, userId:r.user_id, kind:r.kind, rating:+r.rating||0, notes:r.notes||'', date:r.date, private:r.private, crewIds:r.crew_ids||[], taggedIds:r.tagged_ids||[], meals:r.meals||[], ...(r.dish_tags && r.dish_tags.length ? { dishTags:r.dish_tags } : {}), checkin:r.checkin, createdAt:ms(r.created_at), sourceType:r.source_type||null }),
   },
   photos: {
     to: p => ({ id:p.id, user_id:p.userId, venue_id:p.venueId, entry_id:p.entryId||null, caption:p.caption||'', date:p.date, private:!!p.private, crew_ids:uuids(p.crewIds), path:p.path, created_at:ts(p.createdAt) }),
-    from: r => ({ id:r.id, userId:r.user_id, venueId:r.venue_id, entryId:r.entry_id, caption:r.caption||'', date:r.date, private:r.private, crewIds:r.crew_ids||[], path:r.path, src:'cloud', bookmarkedBy:r.bookmarked_by||[], createdAt:ms(r.created_at) }),
+    from: r => ({ id:r.id, userId:r.user_id, venueId:r.venue_id, entryId:r.entry_id, caption:r.caption||'', date:r.date, private:r.private, crewIds:r.crew_ids||[], path:r.path, src:'cloud', bookmarkedBy:r.bookmarked_by||[], createdAt:ms(r.created_at), ...(r.ai_tags && r.ai_tags.length ? { aiTags:r.ai_tags, aiTaggedAt:ms(r.ai_tagged_at) } : {}) }),
     fields: { caption:'caption', private:'private', crewIds:'crew_ids', date:'date' },
   },
   books: {
@@ -195,11 +195,11 @@ export async function sign(paths){
 
 /* ---------- the outbox: writes wait here until the server has them ---------- */
 // op: { k:'put'|'ins'|'upd'|'del'|'rpc'|'upload'|'rmfile', t:table, id, row, patch, fn, args, path }
-let outbox = [], outKey = null, flushing = false, retryT = null, onSynced = null, onFailed = null, getBlob = null;
+let outbox = [], outKey = null, flushing = false, retryT = null, onSynced = null, onFailed = null, getBlob = null, onPhotoSaved = null;
 export function setOutboxOwner(userId, hooks){
   outKey = userId ? 'koko-outbox-'+userId : null;
   try{ outbox = outKey ? JSON.parse(localStorage.getItem(outKey)) || [] : []; }catch(_){ outbox = []; }
-  onSynced = hooks && hooks.synced; onFailed = hooks && hooks.failed; getBlob = hooks && hooks.blob;
+  onSynced = hooks && hooks.synced; onFailed = hooks && hooks.failed; getBlob = hooks && hooks.blob; onPhotoSaved = hooks && hooks.photoSaved;
 }
 const persist = ()=>{ if (outKey) try{ localStorage.setItem(outKey, JSON.stringify(outbox)); }catch(_){} };
 export function pending(){ return outbox.slice(); }
@@ -221,6 +221,8 @@ async function send(c, o){
     o.k==='rmfile' ? await c.storage.from('photos').remove([o.path]) :
     o.k==='upload' ? await (async()=>{ const blob = getBlob && await getBlob(o.id); if (!blob) return { error:null }; return c.storage.from('photos').upload(o.path, blob, { contentType:'image/jpeg', upsert:true }); })() :
     { error:null };
+  // a server without 0013_search.sql yet doesn't know dish_tags: send the visit without it rather than lose it
+  if (res && res.error && o.row && 'dish_tags' in o.row && /dish_tags/.test(String(res.error.message||'') + String(res.error.details||''))){ const { dish_tags, ...row } = o.row; return send(c, { ...o, row }); }
   if (res && res.error) throw res.error;
 }
 export async function flush(){
@@ -231,7 +233,7 @@ export async function flush(){
   try{
     while (outbox.length){
       const o = outbox[0];
-      try{ await send(c, o); }
+      try{ await send(c, o); if (o.t === 'photos' && (o.k === 'put' || o.k === 'ins') && onPhotoSaved) setTimeout(()=>onPhotoSaved(o.id), 0); }
       catch(e){
         if (transient(e)){ clearTimeout(retryT); retryT = setTimeout(flush, 15000); break; }
         console.warn('Koko sync: dropped a write the server refused', o, e);

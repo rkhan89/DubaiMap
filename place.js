@@ -10,6 +10,8 @@ import { go, state } from './go.js';
 import { sharePlace, eventRowHTML, planBite, eventSheet } from './events.js';
 import { whereAmI, locationError } from './locate.js';
 import { haversine } from './catch.js';
+import { DISH_SEED } from './search-data.js';
+import { aiTagsOn } from './aitags.js';
 import { placesApi, zoneFor } from './share.js';
 import { overallHTML, miniStars, rateSheet } from './rate.js';
 import * as RT from './ratings.js';
@@ -224,6 +226,7 @@ function logFlow(opts){
     // who it's for: chosen every time (an edit starts from what it was)
     tags: editing ? (editing.taggedIds||[]).slice() : [],
     meals: editing ? (editing.meals||[]).slice() : (opts.meals||[]).slice(),
+    dish: editing ? (editing.dishTags||[]).slice() : [],
     who: editing ? (editing.private ? [] : (editing.crewIds&&editing.crewIds.length ? editing.crewIds.slice() : (S.myCrew()?[S.myCrew().id]:[]))) : whoDefault(opts.who),
   };
   const existingPhotos = editing ? S.photos({entryId:editing.id}) : [];
@@ -292,9 +295,11 @@ function logFlow(opts){
               : `<button type="button" class="btn btn-soft mt12" id="lVerify"${locating?' disabled':''}>${icon('my_location')}${locating?'Finding you…':'I’m here now'}</button>`) : ''}`:''}
           <div class="row between mt20"><span class="eyebrow">Meal</span><span class="hand">Optional</span></div>
           <div class="chip-wrap mt8" id="lMeals">${MEALS.map(m=>`<button type="button" class="person-chip meal-chip${d.meals.includes(m.id)?' on':''}" data-meal="${m.id}" aria-pressed="${d.meals.includes(m.id)}">${icon(m.icon)}${m.label}</button>`).join('')}</div>
+          ${d.kind==='visit' ? dishHTML() : ''}
           <div class="field-label mt20"><span class="eyebrow">${d.kind==='visit'?'Notes':'Why you want to go'}</span><span class="hand">Optional</span></div>
           <textarea class="input mt8" id="lNotes" maxlength="400" placeholder="${d.kind==='visit'?'Tasting notes, hidden gems, dish recommendations…':'Who recommended it, what to order…'}">${esc(d.notes)}</textarea>
           <div class="row between mt20"><span class="eyebrow">Photos</span><span class="muted small">${allPhotos} of ${APP.photosPerLog}</span></div>
+          ${aiTagsOn() ? '<p class="muted small mt4 ai-note">Photos are read by AI to make them searchable.</p>' : ''}
           <div class="reel mt12">
             ${existingPhotos.map(p=>polaroidHTML({src:S.photoURL(p), caption:p.caption, id:p.id, tape:false, rot:0})).join('')}
             ${newPhotos.map((p,i)=>`<div style="position:relative"><button class="rm" data-rm="${i}" aria-label="Remove photo">${icon('close')}</button>${polaroidHTML({src:p.url, id:'n'+i, tape:false, rot:0, sub:`<input data-cap="${i}" value="${esc(p.caption)}" placeholder="caption" maxlength="40">`})}</div>`).join('')}
@@ -320,6 +325,10 @@ function logFlow(opts){
       const nt=el.querySelector('#lNotes'); nt.oninput=()=>{ d.notes=nt.value; };
       bindWho(el, ()=>d.who, v=>{ d.who=v; keepScroll(paint); });
       el.querySelectorAll('[data-meal]').forEach(b=>b.onclick=()=>{ const m=b.dataset.meal; d.meals=d.meals.includes(m)?d.meals.filter(x=>x!==m):[...d.meals,m]; keepScroll(paint); });
+      // what you had: tap a suggestion to add it, tap a chosen one to take it off, or type one and press Enter
+      el.querySelectorAll('[data-dish-add]').forEach(b=>b.onclick=()=>{ d.dish = S.dishTagsOf([...d.dish, b.dataset.dishAdd]); keepScroll(paint); });
+      el.querySelectorAll('[data-dish-rm]').forEach(b=>b.onclick=()=>{ d.dish = d.dish.filter(t=>t!==b.dataset.dishRm); keepScroll(paint); });
+      const di = el.querySelector('#lDish'); if (di) di.onkeydown = e=>{ if (e.key==='Enter' || e.key===','){ e.preventDefault(); const v = di.value; if (v.trim()){ d.dish = S.dishTagsOf([...d.dish, v]); keepScroll(paint); const n = el.querySelector('#lDish'); if (n) n.focus(); } } };
       el.querySelectorAll('[data-tag]').forEach(b=>b.onclick=()=>{ const id=b.dataset.tag; d.tags=d.tags.includes(id)?d.tags.filter(x=>x!==id):[...d.tags,id]; const sx=el.querySelector('#lTags').scrollLeft; keepScroll(paint); el.querySelector('#lTags').scrollLeft=sx; });
       el.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{ const i=+b.dataset.rm; URL.revokeObjectURL(newPhotos[i].url); newPhotos.splice(i,1); keepScroll(paint); });
       el.querySelectorAll('[data-cap]').forEach(inp=>inp.oninput=()=>{ newPhotos[+inp.dataset.cap].caption=inp.value; });
@@ -378,6 +387,17 @@ function logFlow(opts){
         dd=>{ venue=S.addVenue(dd); if (dd.meals && dd.meals.length) d.meals=dd.meals.slice(); paint(); });
     };
     const keepScroll=(fn)=>{ const s=el.scrollTop; fn(); el.scrollTop=s; };
+    // "What did you have?": the chosen ones, then suggestions (from this visit's photos when tagging is on, your own
+    // tags, then a starter list), never required
+    const dishHTML = ()=>{
+      const photoTags = [...new Set(existingPhotos.flatMap(p=>p.aiTags||[]))];
+      const own = S.myDishTags(), seen = new Set(d.dish);
+      const sug = [...photoTags.map(t=>({ t, photo:true })), ...[...own, ...DISH_SEED].map(t=>({ t }))].filter(x=>!seen.has(x.t) && (seen.add(x.t), true)).slice(0, 10);
+      return `<div class="row between mt20"><span class="eyebrow">What did you have?</span><span class="hand">Optional</span></div>
+        ${d.dish.length ? `<div class="chip-wrap mt8" id="lDishOn">${d.dish.map(t=>`<button type="button" class="person-chip on" data-dish-rm="${esc(t)}" aria-label="Remove ${esc(t)}">${esc(t)}${icon('close')}</button>`).join('')}</div>` : ''}
+        <div class="chip-wrap mt8" id="lDishSug">${sug.map(x=>`<button type="button" class="person-chip" data-dish-add="${esc(x.t)}">${x.photo ? icon('photo_camera') : icon('add')}${esc(x.t)}</button>`).join('')}</div>
+        <input class="input mt8" id="lDish" maxlength="30" placeholder="Add a dish and press Enter" autocomplete="off" enterkeyhint="done">`;
+    };
     // "I'm here now": find you once. From the place list it also catches a critter living right where you
     // stand (anywhere, even out in the desert); at a place, the check-in's own catch comes when you save.
     const locate = async (anywhere)=>{
@@ -395,7 +415,9 @@ function logFlow(opts){
       go.tourSaved && go.tourSaved();
       // one check-in per place a day; another visit the same day is just a visit
       const isCheckin = checkedIn() && !S.entries({venueId:venue.id, userId:me.id, kind:'visit'}).some(x=>x.checkin && x.date===todayISO());
-      const data={ kind:d.kind, ...(isCheckin ? { checkin:true } : {}), rating:d.kind==='visit'?d.rating:0, date:d.kind==='visit'?d.date:todayISO(), notes:d.notes.trim(), crewIds:d.who, meals:d.meals, taggedIds:d.kind==='visit' ? [...new Set([...d.tags, ...S.mentionIds(d.notes)])] : [] };
+      // dish tags only once there are some (or you've cleared ones a visit had)
+      const dishChanged = d.kind==='visit' && (d.dish.length || (editing && (editing.dishTags||[]).length));
+      const data={ kind:d.kind, ...(isCheckin ? { checkin:true } : {}), ...(dishChanged ? { dishTags:d.dish } : {}), rating:d.kind==='visit'?d.rating:0, date:d.kind==='visit'?d.date:todayISO(), notes:d.notes.trim(), crewIds:d.who, meals:d.meals, taggedIds:d.kind==='visit' ? [...new Set([...d.tags, ...S.mentionIds(d.notes)])] : [] };
       let e;
       if (editing){ e=S.updateEntry(editing.id, data); }
       else e=S.addEntry({venueId:venue.id, ...data});

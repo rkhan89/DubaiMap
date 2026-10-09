@@ -505,6 +505,43 @@ neighbourhoods, ~7,400 objects); only the drawing changed.
   - A generated building in front of a landmark tower that would reach into its sprite is drawn just before it, so
     nothing covers a spire or wing.
 
+## Search
+- **Where:** the search icon on the map (a panel) and on the Shelf and in each book (a sheet, scrapbook
+  entries first). Same box, same results: Places, and Scrapbook entries.
+- **How it runs:** on the phone (search.js) over everything you and your crews can see. It's instant, works
+  offline, and needs no server call per keystroke. 0013 adds pg_trgm and GIN indexes for a later server search.
+- **Matching:** every word must match one of: place name, area (name or alias, plus also_matches), cuisine
+  (categories), what you had (dish tags), notes, photo captions, scrapbook text, who was there, or photo tags.
+  - Phrases ("ice cream", "dubai marina") count as one word, synonyms as the same word.
+  - Typos within one edit (two for long words) still match, plus pg_trgm-style trigram similarity.
+- **Ranking:** your own dish tags and notes, then the place name, then the area, then the rest, then photo
+  tags; ties go to the most recent visit. A match only through photo tags shows "from photo".
+- **Taps:** a place flies the map to its pin and opens its card; an entry opens its scrapbook page. "Show on
+  map" dims every pin but the matches, and clearing or closing the search restores them.
+- **Areas** (`areas` table; the app's copy is search-data.js, made by tools/search-seed.mjs):
+  - The 51 map zones. A place's area is the nearest area centre within radius_km (3), from its coordinates,
+    or its chosen zone if it has none.
+  - Places outside every area keep no area but are still found by name. 0013 lists them.
+  - Aliases are only the agreed ones: Dubai Marina (marina, dubai marina, marina walk), JBR (jbr, jumeirah
+    beach residence, the walk), JLT (jlt, jumeirah lakes towers), Downtown (downtown, burj khalifa area, dubai
+    mall), Palm Jumeirah (palm, the palm). Every area also matches its own name. also_matches is empty.
+- **Synonyms** (`search_synonyms`): groups such as ice cream = gelato = soft serve, and coffee = latte = flat white.
+- **Dish tags** ("What did you have?" on a visit, optional):
+  - Suggestions come from your own tags first, then a starter list, so it's two taps for the common case. You
+    can also type one and press Enter. Saved lowercase and trimmed; edit them on any visit.
+  - With photo tagging on, a photo's tags show as suggestions marked with a camera, added only on a tap.
+- **Photo tags** (off by default; /api/photo-tags):
+  - Switched on by AI_PHOTO_TAGS=on with ANTHROPIC_API_KEY in Vercel. Monthly cap: AI_TAGS_MONTHLY_CAP_USD
+    (default 5).
+  - After a photo's row reaches the server, the phone sends an ~800 px copy. The server checks the photo is
+    yours and the cap, then sends Claude Haiku 4.5 only the image and the prompt.
+  - The prompt asks for 3 to 8 food and scene tags, never people. The server saves them in photos.ai_tags,
+    retries once on a failure, and logs tokens and estimated cost in ai_tag_log.
+  - While it's on, one line where photos are added says they're read by AI to make them searchable. While
+    it's off there's no AI call and no AI UI.
+  - tools/ai-tags-backfill.mjs tags older photos: a dry run with the cost estimate first, then --run --max N.
+    It's resumable and capped.
+
 ## Critters (no more points)
 
 Points, levels, the leaderboard and every counter toward a reward are gone (migration 0011 backs up `profiles.points` to `archive.profiles_points`, then drops it). Stickers stay as milestones; critters are the collectible.

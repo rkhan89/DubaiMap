@@ -2264,6 +2264,7 @@ function makeEl(cl){
   });
   const ids = cl.items.map(i=>i.id);
   if (highlightId && ids.includes(highlightId)) el.classList.add('highlight');
+  if (searchSet && !ids.some(id=>searchSet.has(id))) el.classList.add('dim');
   if (droppedId && cl.kind==='single' && ids[0]===droppedId){ el.classList.add('dropped'); droppedId = null; }
   if (selectedId && cl.kind==='single' && ids[0]===selectedId) el.classList.add('selected');
   return el;
@@ -2765,6 +2766,9 @@ function viewZone(){
 }
 function zoomRatio(){ return cam.s/baseFit; }
 function setPicking(on){ picking=!!on; wrap.classList.toggle('picking', picking); }
+// search's "Show on map": every pin but these venues is dimmed (null puts them all back)
+let searchSet = null;
+function setSearchMatches(ids){ searchSet = ids && ids.size ? ids : (ids ? new Set() : null); clustersDirty = true; requestRender(); }
 function highlight(id, ms){ highlightId=id; clustersDirty=true; requestRender(); setTimeout(()=>{ if (highlightId===id){ highlightId=null; clustersDirty=true; requestRender(); } }, ms||2600); }
 function markDropped(id){ droppedId=id; clustersDirty=true; }
 function setMeSprite(html){ meEl.querySelector('.me-sprite').innerHTML = html; }
@@ -2807,7 +2811,7 @@ function setTheme(t){
 }
 function resize(){ if (built && resizeCanvas()){ if (needsCenter) initialView(); requestRender(); } }
 
-export { focusLandmark, buildStats,
+export { setSearchMatches, focusLandmark, buildStats,
   initMap, whenReady, viewAt, rasterPending, rasterStats, landmarkAt, landmarkWorld, showInfo, setStamps, setAreaCounts, placeWorld, fitPoints, fitCity, flyToWorld, flyToSeparate,
   centerLatLng, viewZone, zoomRatio, setPicking, highlight, markDropped, setMeSprite, setSelected, startTracking,
   stopTracking, isTracking, drawSnapshot, snapshotPoint, refresh, resize, visible, setTheme, setShow, setZoneTint, setCars,

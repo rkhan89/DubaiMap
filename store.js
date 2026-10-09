@@ -95,6 +95,12 @@ export function photoURL(p){
   if (p.src==='idb' || p.src==='cloud') return p.path ? C.signedURL(p.path) : '';
   return p.src;
 }
+// a photo's row reached the server (aitags.js reads it for search tags when that's switched on)
+let photoSavedHook = null;
+export function onPhotoSaved(fn){ photoSavedHook = fn; }
+export const photoBlob = id=>getBlob(id);
+// tags read from a photo: kept with it here (the server has already saved them)
+export function setPhotoAiTags(id, tags){ const p = db.photos[id]; if (!p) return; p.aiTags = tags.slice(0, 8); p.aiTaggedAt = Date.now(); save('photos'); emit('photos'); }
 async function getBlob(id){ try{ return await idbDo('readonly', st=>st.get(id)); }catch(_){ return null; } }
 
 /* =========================================================
@@ -147,7 +153,7 @@ async function startCloud(){
   db.meId = uidNow;
   if (!db.users[uidNow]) db.users[uidNow] = { id:uidNow, handle:'', name:'', avatar:{}, shareDefault:'crew', onboarded:false, createdAt:Date.now() };
   db.users[uidNow].email = s.user.email || '';
-  C.setOutboxOwner(uidNow, { blob:getBlob, failed:()=>{ emit('sync-error'); schedulePull(); }, synced:()=>emit('synced') });
+  C.setOutboxOwner(uidNow, { blob:getBlob, failed:()=>{ emit('sync-error'); schedulePull(); }, synced:()=>emit('synced'), photoSaved:id=>photoSavedHook && photoSavedHook(id) });
   await pullNow();
   C.flush();
   C.subscribe(schedulePull);
@@ -327,6 +333,10 @@ export function audience(d){
 }
 // breakfast / lunch / dinner
 const mealsOf = a => [...new Set(a||[])].filter(m=>['breakfast','lunch','dinner'].includes(m));
+// what you had: lowercase, trimmed, one space between words, letters and numbers (and & ' -), up to 12 of 30 characters
+export const dishTagsOf = a => [...new Set((a||[]).map(t=>String(t).toLowerCase().replace(/[^a-z0-9 &'-]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 30).trim()).filter(t=>/^[a-z0-9]/.test(t)))].slice(0, 12);
+// the dish tags you've used, most used first
+export function myDishTags(){ const n = new Map(); Object.values(db.entries).filter(e=>e.userId===db.meId).forEach(e=>(e.dishTags||[]).forEach(t=>n.set(t, (n.get(t)||0) + 1))); return [...n.entries()].sort((a,b)=>b[1]-a[1]).map(([t])=>t); }
 // everyone in any of your crews (not you), for tagging
 export function crewmates(){ const m=me(); if (!m) return []; const ids=new Set(myCrews().flatMap(c=>c.memberIds)); ids.delete(m.id); return [...ids].map(user).filter(Boolean).sort((a,b)=>(a.name||a.handle||'').localeCompare(b.name||b.handle||'')); }
 // tags: only people who share a crew with you
@@ -478,7 +488,7 @@ export function crewsForTags(tagIds, crewIds, before){
 }
 export function addEntry(data){
   const m=me();
-  const e = { id:uid(), userId:m.id, kind:'visit', rating:0, notes:'', date:todayISO(), createdAt:Date.now(), ...data, ...audience(data), taggedIds:tagsOf(data.taggedIds), meals:mealsOf(data.meals) };
+  const e = { id:uid(), userId:m.id, kind:'visit', rating:0, notes:'', date:todayISO(), createdAt:Date.now(), ...data, ...audience(data), taggedIds:tagsOf(data.taggedIds), meals:mealsOf(data.meals), ...(data.dishTags ? { dishTags:dishTagsOf(data.dishTags) } : {}) };
   shareWithTagged(e, []);
   db.entries[e.id]=e; save('entries'); push('entries', e);
   // where it came from: the link is private to you, so it goes to its own owner-only table
@@ -490,6 +500,7 @@ export function updateEntry(id, patch){
   if ('crewIds' in patch || 'private' in patch) patch = { ...patch, ...audience('crewIds' in patch ? patch : { private:patch.private }) };
   if ('taggedIds' in patch) patch = { ...patch, taggedIds:tagsOf(patch.taggedIds) };
   if ('meals' in patch) patch = { ...patch, meals:mealsOf(patch.meals) };
+  if ('dishTags' in patch) patch = { ...patch, dishTags:dishTagsOf(patch.dishTags) };
   const tagsBefore = (e.taggedIds||[]).slice();
   Object.assign(e, patch);
   if ('taggedIds' in patch) shareWithTagged(e, tagsBefore);

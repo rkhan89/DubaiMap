@@ -29,6 +29,10 @@ import { paintStrip, onThisDay, openMemory } from './memories.js';
 import './rate.js';
 import './critterui.js';
 import { openLandmark } from './landmarkui.js';
+import { openSearch } from './searchui.js';
+import { checkAiTags, tagAfterUpload } from './aitags.js';
+S.onPhotoSaved(id=>tagAfterUpload(id));
+checkAiTags();
 import { favouriteBadge } from './critterui.js';
 import { colorOf } from './pincolor.js';
 
@@ -212,6 +216,7 @@ go.showOnMap = (venueId)=>{
   MAP.flyToWorld(MAP.placeWorld(v), 3.6);
   setTimeout(()=>showPeek(venueId), 350);
 };
+go.peek = showPeek;
 function hidePeek(){ const p=$('#peek'); MAP.setSelected(null); if (p.hidden) return; p.classList.remove('in'); peekId=null; setTimeout(()=>{ if (!p.classList.contains('in')) p.hidden=true; }, 280); }
 $('#peek').addEventListener('click', e=>{
   const b=e.target.closest('[data-pk]');
@@ -426,6 +431,7 @@ go.plus = openPlus;
 window.addEventListener('online', ()=>{ const n = S.me() ? S.inbox().length : 0; if (n) toast(`Back online. ${plural(n,'share')} waiting in your Inbox`, 'Open', ()=>go.inbox(), 6000); });
 
 /* map controls */
+$('#btnSearch').onclick=()=>openSearch();
 $('#btnFit').onclick=()=>{ const pts=modelCache.filter(s=>s.state!=='unlit').map(s=>MAP.placeWorld(s.v)); pts.length?MAP.fitPoints(pts,true):MAP.fitCity(true); };
 $('#btnLocate').onclick=()=>MAP.startTracking(true);
 
