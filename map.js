@@ -3,7 +3,9 @@
 // and labels. The city itself is drawn as pixel art by mapraster.js, in a Web Worker (mapworker.js),
 // and composited here from overviews and chunks (see "the pixel city" below).
 import { APP } from './config.js';
-import { LANDMARKS as ART_LANDMARKS, PROPS, SPRITE_FILES } from './landmarks.js';
+import { LANDMARKS as ART_LANDMARKS, PROPS, SPRITE_FILES, QUAY_SLOTS } from './landmarks.js';
+import { NIGHT_FX } from './nightfx.js';
+import { ISLES, inWorldBox, isleAt } from './world.js';
 
 /* =========================================================
    GEOGRAPHY
@@ -129,6 +131,8 @@ function palmAt(a,i){
   return 0;
 }
 const ATLANTIS = [PALM.hub[0], PALM.hub[1]-PALM.cr];
+// the QE2's mooring at Port Rashid: just off the quay's seaward edge (the quay is a 24.4..26.0, i -1.0..0.15)
+const QE2_AT = [25.5, -1.05];
 // roughly: is this lat/lng on dry land (used by the synthetic test data)
 function onLand(lat,lng){ const {a,i}=toAI(lat,lng); if (!inMap(a,i)) return false; if (palmAt(a,i)) return true; return i > coastIn(a)+0.3 && distLine(a,i,CREEK) > 0.35 && distLine(a,i,MARINA) > 0.2; }
 
@@ -137,19 +141,11 @@ const ISLANDS = [
   {e:G(25.1412,55.1853), rx:0.14, ry:0.14, t:'beach'},    // Burj Al Arab
   {e:[18.6,-0.8], rx:0.3, ry:0.24, t:'beach'},            // Jumeirah Bay
   {r:[[2.35,3.05],[-0.6,0.12]], t:'urban'},               // Dubai Harbour
-  {r:[[24.4,26.0],[-1.0,0.15]], t:'urban'},               // Port Rashid
+  {r:[[24.4,26.0],[-1.0,0.15]], t:'quay'},                // Port Rashid (Mina Rashid): an open concrete quay
   {r:[[27.2,28.4],[-1.9,-0.8]], t:'sand'},                // Deira Islands
   {r:[[28.7,31.2],[-2.6,-1.3]], t:'sand'},
   {r:[[29.6,32.2],[-3.9,-3.0]], t:'sand'},
 ];
-const WORLD_ISLES = (function(){
-  const rng=mulberry32(7), out=[];
-  for (let k=0;k<95;k++){
-    const ang=rng()*Math.PI*2, rr=Math.sqrt(rng());
-    out.push({a:14.8+Math.cos(ang)*rr*3.0, i:-6.4+Math.sin(ang)*rr*1.8, r:0.09+rng()*0.15});
-  }
-  return out;
-})();
 
 const DISTRICTS = [
   {a:[-2.0,2.1],  i:[0.1,1.15], st:'glass', h:[24,70],  p:0.42},   // Marina + JBR
@@ -323,6 +319,7 @@ const isWaterT = t => t===W_SEA || t===W_SHALLOW || t===W_CANAL || t===W_DEEP;
 const tType = new Uint8Array(ROWS*COLS);
 const roadMask = new Uint8Array(ROWS*COLS);
 const reserved = new Uint8Array(ROWS*COLS);
+const worldTile = new Uint8Array(ROWS*COLS), worldUnder = new Uint8Array(ROWS*COLS);   // the World Islands' tiles
 const inRect = (a,i,R)=> a>=R.a[0] && a<=R.a[1] && i>=R.i[0] && i<=R.i[1];
 // the terrain type under a/i, or -1 off the map
 function tileAt(a,i){ if (!inMap(a,i)) return -1; const g=aiToGrid(a,i), c=Math.floor(g.gx), r=Math.floor(g.gy); return (r>=0&&c>=0&&r<ROWS&&c<COLS) ? tType[r*COLS+c] : -1; }
@@ -457,7 +454,7 @@ const LANDMARKS2 = [
   {k:'expo',      at:G(24.9630,55.1490)}, {k:'maktoum', at:[-13.0,15.0]},          {k:'sohq', at:G(25.1200,55.3820)},
   {k:'mirdifcc',  at:G(25.2160,55.4070)}, {k:'theview', at:[3.5,-0.6]},
   {k:'pointe',    at:[ATLANTIS[0]+0.55, ATLANTIS[1]+0.5]},                        {k:'lamer', at:[20.9,-0.05]},
-  {k:'qe2',       at:[25.6,-1.3]},        {k:'festival', at:G(25.2220,55.3570)},   {k:'alserkal', at:G(25.1430,55.2250)},
+  {k:'festival', at:G(25.2220,55.3570)},   {k:'alserkal', at:G(25.1430,55.2250)},
 ];
 
 RUNWAYS.push(...MAKTOUM_RUNWAYS);
@@ -486,10 +483,7 @@ function buildTerrain(){
         for (const is of ISLANDS){
           const hit = is.e ? (((a-is.e[0])/is.rx)**2 + ((i-is.e[1])/is.ry)**2 < 1)
                            : (a>=is.r[0][0] && a<=is.r[0][1] && i>=is.r[1][0] && i<=is.r[1][1]);
-          if (hit){ t = is.t==='urban' ? L_URBAN : is.t==='sand' ? L_SAND : L_BEACH; break; }
-        }
-        if (t===W_SEA && a>11 && a<19 && i<-4 && i>-8.8){
-          for (const w of WORLD_ISLES){ if (Math.hypot(a-w.a, i-w.i) < w.r){ t=L_BEACH; break; } }
+          if (hit){ t = is.t==='urban' ? L_URBAN : is.t==='quay' ? L_TARMAC : is.t==='sand' ? L_SAND : L_BEACH; break; }
         }
       }
     } else {
@@ -546,6 +540,14 @@ function buildTerrain(){
   for (let h=0; h<q.length; h++){ const k=q[h], d=dist[k]; if (d>=9) continue; const r=Math.floor(k/COLS), c=k%COLS;
     for (const [dr,dc] of [[1,0],[-1,0],[0,1],[0,-1]]){ const rr=r+dr, cc=c+dc; if (rr<0||cc<0||rr>=ROWS||cc>=COLS) continue; const kk=rr*COLS+cc; if (dist[kk]!==-1) continue; dist[kk]=d+1; q.push(kk); } }
   for (let k=0;k<ROWS*COLS;k++) if (tType[k]===W_SEA && (dist[k]===-1 || dist[k]>8)) tType[k]=W_DEEP;
+  // the World Islands (world.js): their tiles are sand in the data; the renderer draws the sea under them
+  // (worldUnder) and each island's real shape on top
+  for (let r=0;r<ROWS;r++) for (let c=0;c<COLS;c++){
+    const {a,i} = gridToAI(c+0.5, r+0.5), k = r*COLS+c;
+    if (!inWorldBox(a,i) || !isWaterT(tType[k])) continue;
+    worldTile[k] = 1; worldUnder[k] = tType[k];
+    if (isleAt(a,i).d < 0) tType[k] = L_BEACH;
+  }
 }
 
 /* =========================================================
@@ -680,6 +682,14 @@ function buildObjects(){
   // A spot that fails moves to the nearest one that passes within 800 m, else the boat isn't drawn.
   // dir = the way it's going (a/i): its bow points that way on screen, one of the four sprite headings
   const boatTile = new Set();
+  // the QE2, moored at Port Rashid parallel to the quay's seaward edge (i = -1.0): bow along the quay, so ne
+  { const [a, i] = QE2_AT, g = aiToGrid(a, i), p = proj(g.gx, g.gy);
+    OBJECTS.push({ k:'ship', kind:'qe2', head:headingOf(a, i, [1, 0]), x:p.x, y:p.y, d:g.gx+g.gy+0.5 });
+    for (let da=-0.8; da<=0.8; da+=T/2) for (let di=-0.3; di<=0.3; di+=T/2){ const q=aiToGrid(a+da, i+di); boatTile.add(Math.floor(q.gy)*COLS + Math.floor(q.gx)); } }
+  // bollards along Port Rashid's quay edge, so it reads as a quay
+  for (let a=24.5; a<=25.95; a+=0.18){ const g = aiToGrid(a, -0.97), p = proj(g.gx, g.gy); OBJECTS.push({k:'box', x:p.x, y:p.y, hx:0.025, hy:0.025, h:1.2, st:'shed', d:g.gx+g.gy+0.9, keep:true, opts:{ top:'#5E5A55', left:'#6E6964', right:'#4F4B47' }}); }
+  // slots on the quay for the quay crane and container stacks (drawn once their sprites are in map-art/)
+  QUAY_SLOTS.forEach(sl=>{ const g = aiToGrid(sl.at[0], sl.at[1]), p = proj(g.gx, g.gy); OBJECTS.push({ k:'slot', sprite:sl.sprite, x:p.x, y:p.y, d:g.gx+g.gy+0.6 }); });
   const openWater = (c,r)=>{ for (let dr=-1;dr<=1;dr++) for (let dc=-1;dc<=1;dc++){ const rr=r+dr, cc=c+dc; if (rr<0||cc<0||rr>=ROWS||cc>=COLS || !isWaterT(tType[rr*COLS+cc])) return false; } return true; };
   const boatAt = (a,i,kind,dir)=>{
     const g=aiToGrid(a,i), c0=Math.floor(g.gx), r0=Math.floor(g.gy); let best=null, bd=Infinity;
@@ -773,7 +783,7 @@ function buildObjects(){
       const {a,i} = gridToAI(c+0.5,r+0.5), p = tileWorld(c,r);
       if (t===L_BEACH){
         if (i>-0.5 && rng()<0.1) OBJECTS.push({k:'palm', x:p.x+(rng()-0.5)*6, y:p.y, d:c+r+1, s:0.8+rng()*0.3});
-        if (PUBLIC_BEACH.some(([x0,x1])=>a>x0 && a<x1) && rng()<0.3) OBJECTS.push({k:'parasol', x:p.x+(rng()-0.5)*8, y:p.y+(rng()-0.5)*3, d:c+r+0.9, near:true, col:['#E86A5C','#F2B84B','#5FA8D3','#FFFFFF','#8BC34A'][Math.floor(rng()*5)]});
+        if (i>-0.5 && PUBLIC_BEACH.some(([x0,x1])=>a>x0 && a<x1) && rng()<0.3) OBJECTS.push({k:'parasol', x:p.x+(rng()-0.5)*8, y:p.y+(rng()-0.5)*3, d:c+r+0.9, near:true, col:['#E86A5C','#F2B84B','#5FA8D3','#FFFFFF','#8BC34A'][Math.floor(rng()*5)]});
       } else if (t===L_SAND || t===L_DUNE || t===L_CREST){
         const roll = rng();
         if (roll<0.045) OBJECTS.push({k:'shrub', x:p.x+(rng()-0.5)*8, y:p.y+(rng()-0.5)*4, d:c+r+1, near:true});
@@ -788,6 +798,16 @@ function buildObjects(){
         else OBJECTS.push({k:'box', x:p.x, y:p.y, hx:0.4, hy:0.32, h:3+rng()*3, st:'shed', d:c+r+1, opts:{ top:'#CBC3B5', left:'#DAD2C4', right:'#B9AE9C' }});
       }
     }
+    // the World's developed islands (the Heart of Europe, Lebanon): a few small pastel buildings and palms
+    { const r2 = mulberry32(1971), PASTEL = ['#F6D7C3','#F3E3B5','#CFE3E8','#E8D3EA','#F7EEDC','#D9EBCF'];
+      ISLES.filter(s=>s.dev).forEach(s=>{
+        // two small low buildings and a palm on each, standing on the raised top
+        [[-0.45,'box'],[0.05,'palm'],[0.5,'box']].forEach(([f,kind])=>{ const a = s.a + s.cos*s.ra*f, i = s.i + s.sin*s.ra*f, g = aiToGrid(a,i), p = proj(g.gx,g.gy);
+          if (kind==='box'){ const base = PASTEL[Math.floor(r2()*PASTEL.length)];
+            OBJECTS.push({k:'box', x:p.x, y:p.y-1, hx:0.14, hy:0.12, h:3.5+r2()*2, st:'villa', d:g.gx+g.gy+1, keep:true, opts:{ top:shade(base,1.06), left:shade(base,0.92), right:shade(base,0.76) }}); }
+          else OBJECTS.push({k:'palm', x:p.x, y:p.y-1, d:g.gx+g.gy+1.05, s:0.7});
+        });
+      }); }
     // flamingos at Ras Al Khor: pink flocks along the lagoon's edge
     for (let q=0;q<9;q++){ const th=0.6+q*0.35, a=LAGOON.c[0]+Math.cos(th)*(LAGOON.r-0.12), i=LAGOON.c[1]+Math.sin(th)*(LAGOON.r-0.12), w=aiToWorld(a,i);
       OBJECTS.push({k:'flamingo', x:w.x, y:w.y, d:aiToGrid(a,i).gx+aiToGrid(a,i).gy+0.5, near:true, n:3+q%3}); }
@@ -825,7 +845,8 @@ function buildObjects(){
   // (index into RUNWAYS: DXB's two, then Al Maktoum's two; i along the runway; +1/-1 which way it faces)
   [[0,6.4,1],[0,8.7,-1],[1,7.3,1],[1,9.0,-1],[2,14.0,1],[3,15.4,-1],[3,16.4,1]].forEach(([n,i,sg])=>{ const rw=RUNWAYS[n], w=aiToWorld(rw.a,i), g=aiToGrid(rw.a,i);
     OBJECTS.push({k:'plane', head:headingOf(rw.a, i, [0, sg]), x:w.x, y:w.y, d:g.gx+g.gy+0.8}); });
-  [[-11.75,-2.0],[-11.75,-2.5],[-10.65,-2.2],[-9.85,-2.0],[-9.85,-2.6],[-8.55,-2.3],[-11.2,-1.4],[-9.2,-1.4],[24.6,-0.95],[25.1,-0.95],[25.7,-0.95]].forEach(([a,i],q)=>{
+  // (Jebel Ali's; Port Rashid's quay crane is a slot for its own sprite, see QUAY_SLOTS in landmarks.js)
+  [[-11.75,-2.0],[-11.75,-2.5],[-10.65,-2.2],[-9.85,-2.0],[-9.85,-2.6],[-8.55,-2.3],[-11.2,-1.4],[-9.2,-1.4]].forEach(([a,i],q)=>{
     const w=aiToWorld(a,i), g=aiToGrid(a,i); OBJECTS.push({k:'crane', x:w.x, y:w.y, d:g.gx+g.gy+0.9, col:q%2?'#3F78B5':'#D9443A'}); });
 
   // palms down both sides of the palm-lined roads, every ~150 m, where there's free land
@@ -1290,17 +1311,13 @@ function drawLandmark2(ctx, o){
       for (let q=0;q<5;q++){ const [px,py]=at2(x,y,q*0.35-0.7,Math.abs(q-2)*0.18); isoBox(ctx,px,py,0.2,0.22,0,5,'#F1E3C9',{top:'#E3A071'}); } break;
     case 'lamer':      // La Mer: low beach-shack blocks in bright colours
       ['#5FA8D3','#F2B84B','#E86A5C','#8BC34A'].forEach((c,k)=>{ const [px,py]=at2(x,y,k*0.45-0.6,(k%2)*0.3); isoBox(ctx,px,py,0.2,0.2,0,4,'#F4E8D4',{top:c}); }); break;
-    case 'qe2':        // the QE2, moored at Port Rashid
-      face(ctx,[[x-18,y+3],[x+18,y-12],[x+20,y-9],[x-16,y+7]],'#2B2B2F');
-      face(ctx,[[x-14,y+1],[x+14,y-11],[x+14,y-15],[x-14,y-3]],'#F4F2EE');
-      isoBox(ctx,x+2,y-7,0.25,0.2,6,5,'#D9443A',{top:'#1F1F1F'}); break;
     case 'alserkal':   // Alserkal Avenue: warehouses painted as galleries
       ['#E86A5C','#5FA8D3','#F2B84B','#2B2B2F'].forEach((c,k)=>{ const [px,py]=at2(x,y,(k%2)*0.9-0.45,Math.floor(k/2)*0.8-0.4); isoBox(ctx,px,py,0.4,0.34,0,5,'#D8D3CA',{left:c}); }); break;
   }
 }
 
 function drawObjectVector(ctx, o){
-  if (o.k==='sprite' || o.k==='boat' || o.k==='plane') return;   // sprites only (no old vector boats or planes)
+  if (o.k==='sprite' || o.k==='boat' || o.k==='plane' || o.k==='ship' || o.k==='slot') return;   // sprites only (no old vector boats or planes)
   ctx.strokeStyle=C(OUT); ctx.lineWidth=LW;
   if (o.k==='box') isoBox(ctx,o.x,o.y,o.hx,o.hy,o.z0||0,o.h,null,o.opts);
   else if (o.k==='lm2') drawLandmark2(ctx,o);
@@ -1440,7 +1457,7 @@ function drawCars(){
     if (cam.s > 1.2){ carCtx.lineWidth = 0.25; carCtx.strokeStyle = C(OUT); carCtx.stroke(); }
     if (NIGHT){
       // headlights ahead, taillights behind
-      carCtx.drawImage(glowSprite('#FFF1C9'), x+dx*(L+1.2)-1.6, y+dy*(L+1.2)-1.6, 3.2, 3.2);
+      carCtx.globalAlpha = NIGHT_FX.headlightAlpha; carCtx.drawImage(glowSprite('#FFF1C9'), x+dx*(L+1.2)-1.6, y+dy*(L+1.2)-1.6, 3.2, 3.2); carCtx.globalAlpha = 1;
       carCtx.fillStyle = '#FF3B30'; const t = q(-L,0); carCtx.fillRect(t[0]-0.35, t[1]-0.35, 0.7, 0.7);
     } else {
       const r0 = q(0.5,0.55), r1 = q(-0.6,-0.55);   // roof
@@ -1558,7 +1575,7 @@ function shownStore(){
 /* ---------- finished overviews are kept in the browser's cache (per app version and theme), so the
    next launch shows the whole city at once and the worker only renders close-ups ---------- */
 // bump ART_REV whenever mapraster.js draws anything differently, so nobody keeps old art
-const ART_REV = 15, ART_CACHE = 'koko-map-art', ART_VER = `${APP.version}-r${ART_REV}`;
+const ART_REV = 16, ART_CACHE = 'koko-map-art', ART_VER = `${APP.version}-r${ART_REV}`;
 const artURL = (th, s)=>`/__map-art/${ART_VER}/${th}/${s}.png`;
 // The finished overviews ship with the app (map-art/overview, made by tools/build-overviews.mjs), so a
 // phone never shows half-finished ones. Wide first (small), then mid. If they can't be had, the worker
@@ -1826,7 +1843,7 @@ function rasterPending(){
 function rasterStats(){
   const st = RS.stores[themeKey()] || {};
   return { theme:themeKey(), lo:!!st.lo, mid:!!st.mid, chunks:st.chunks ? st.chunks.size : 0, refined:st.refined ? st.refined.size : 0,
-    total:RS.grid ? RS.grid.rows*RS.grid.cols : 0, saved:!!st.saved, worker:!!RS.worker, inline:!!RS.inline, lastWant:(RS.lastWant||'').slice(0,80) };
+    total:RS.grid ? RS.grid.rows*RS.grid.cols : 0, saved:!!st.saved, worker:!!RS.worker, inline:!!RS.inline, lastWant:(RS.lastWant||'').slice(0,80), liveMs:RS.liveMs };
 }
 function rasterWantSoon(){ clearTimeout(RS.wantTimer); RS.wantTimer = setTimeout(rasterWant, interacting ? 120 : 30); }
 // snapshots (place header, welcome screen) repaint as sharper pieces arrive
@@ -1875,7 +1892,7 @@ function render(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
   // the city, on whole device pixels so the pixel art stays crisp
   paintCity(ctx, cam.s*dpr/RS.S, Math.round(dpr*cam.x), Math.round(dpr*cam.y), canvas.width, canvas.height);
-  drawLive();
+  { const t0 = performance.now(); drawLive(); const dt = performance.now() - t0; RS.liveMs = RS.liveMs == null ? dt : RS.liveMs*0.9 + dt*0.1; }   // the live layer's cost (tests)
   drawShows();
   ctx.setTransform(dpr*cam.s,0,0,dpr*cam.s,dpr*cam.x,dpr*cam.y);
   const view = { x0:-cam.x/cam.s, y0:-cam.y/cam.s, x1:(viewW-cam.x)/cam.s, y1:(viewH-cam.y)/cam.s };
@@ -2256,10 +2273,11 @@ function setShow(st){
 function liveWanted(){
   if (reduceMotion || !built || !viewW || (HAS_DOM && document.hidden)) return 0;
   if (showOn && fxVisible()) return 83;
-  if (cam.s*dpr/RS.S >= 1 && !coveredByScreen()) return 250;
+  if (cam.s*dpr/RS.S >= 1 && !coveredByScreen()) return LIVE_MS;
   return 0;
 }
 let liveFrame = 0;
+const LIVE_MS = 250;   // the water and the camels' clock
 function liveKick(){ if (!fxLoop && liveWanted()) fxLoop = setTimeout(liveTick, liveWanted()); }
 function liveTick(){
   fxLoop = 0;
@@ -2268,14 +2286,19 @@ function liveTick(){
   if (!interacting) requestRender();
   fxLoop = setTimeout(liveTick, ms);
 }
-// four shimmer patterns: short pale glints scattered over the water, a different set each frame
+// the water's glints (NIGHT_FX): a fixed set of short pale dashes, each with its own slow blink (on for
+// 2 steps in every 6, 8, 12 or 24, at its own phase), so only a few change from one step to the next.
+// One pattern per step of the loop; each chunk starts at its own step.
 let shimmer = null;
 function shimmerFrames(){
   if (shimmer && shimmer.night === NIGHT) return shimmer.list;
-  const list = [0,1,2,3].map(f=>{
+  const F = NIGHT_FX.glintLoop, n = NIGHT ? NIGHT_FX.glintsNight : NIGHT_FX.glintsDay, periods = [6, 8, 12, 24];
+  const glints = Array.from({length:n}, (_, k)=>({ x:Math.floor(hash2(k, 97)*RS.CH), y:Math.floor(hash2(31, k)*RS.CH), len:2 + (k % 3),
+    p:periods[Math.floor(hash2(k, 7)*periods.length)], ph:Math.floor(hash2(k, 11)*F) }));
+  const list = Array.from({length:F}, (_, f)=>{
     const cv = newCanvas(RS.CH, RS.CH), c = cv.getContext('2d');
-    c.fillStyle = NIGHT ? 'rgba(150,185,255,0.55)' : 'rgba(255,255,255,0.8)';
-    for (let k=0; k<260; k++){ const x = Math.floor(hash2(k, f*97+1)*RS.CH), y = Math.floor(hash2(f*31+3, k)*RS.CH), len = 2 + (k % 3); c.fillRect(x, y, len, 1); }
+    c.fillStyle = NIGHT ? `rgba(150,185,255,${NIGHT_FX.glintAlphaNight})` : `rgba(255,255,255,${NIGHT_FX.glintAlphaDay})`;
+    for (const g of glints) if ((f + g.ph) % g.p < 2) c.fillRect(g.x, g.y, g.len, 1);
     return cv;
   });
   shimmer = { night:NIGHT, list };
@@ -2307,7 +2330,8 @@ function drawLive(){
   for (const [cx, cy] of chunksFor(k, ox, oy, canvas.width, canvas.height)){
     const ch = st.chunks.get(cx + ',' + cy); if (!ch || !ch.water) continue;
     tc.globalCompositeOperation = 'source-over'; tc.clearRect(0, 0, CH, CH);
-    tc.drawImage(frames[(liveFrame + cx + cy) & 3], 0, 0);
+    const step = Math.floor(liveFrame*LIVE_MS/NIGHT_FX.glintStepMs), F = NIGHT_FX.glintLoop;
+    tc.drawImage(frames[(step + Math.floor(hash2(cx, cy)*F)) % F], 0, 0);
     tc.globalCompositeOperation = 'destination-in'; tc.drawImage(ch.water, 0, 0);
     tc.globalCompositeOperation = 'source-over';
     const dx = Math.round(ox + cx*CH*k), dy = Math.round(oy + cy*CH*k);
@@ -2633,5 +2657,5 @@ export const RAW = { buildData, setNight, setLineWidth, drawObjectVector, C, sha
   tileAt, inFootprint, prepCarRoads, RUNWAYS, BRIDGE_KM, get FOOTPRINTS(){ return FOOTPRINTS; },
   TW, TH, LIP, SLAB, ROWS, COLS, WORLD, RD, OUT, TILE_COLORS, TILE_NIGHT, DISTRICTS, HOODS, TRAM,
   W_SEA, W_SHALLOW, L_BEACH, L_SAND, L_DUNE, L_URBAN, L_PARK, W_CANAL, L_TARMAC, L_PALM, L_LOT, L_GOLF, W_DEEP, L_FARM, L_CREST,
-  get tType(){ return tType; }, get roadMask(){ return roadMask; }, get OBJECTS(){ return OBJECTS; },
+  get tType(){ return tType; }, get roadMask(){ return roadMask; }, worldTile, worldUnder, get OBJECTS(){ return OBJECTS; },
   get ROADS_W(){ return ROADS_W; }, get RUNWAYS_W(){ return RUNWAYS_W; }, get NIGHT(){ return NIGHT; } };

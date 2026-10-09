@@ -430,6 +430,21 @@ neighbourhoods, ~7,400 objects); only the drawing changed.
   Dubai wedge beside Mall of the Emirates, the IMG Worlds placeholder box, and the navy waterline and tan
   driveway baked into atlantis_the_palm.png (`tools/clean-sprite.mjs`). Sprites are drawn 1:1 into the map's
   pixels (`tests/fixpack.test.mjs` checks every one); only the zoomed-out overviews are averaged down.
+- **Night effects** (`nightfx.js`, every intensity in one block). The only animation is the water's glints:
+  70 a 256 px chunk at night (160 by day), faint, each blinking on its own slow, irregular period (6 to 24 steps
+  of 750 ms), so only a few change at once and the water never pulses as a whole. Lit windows never animate.
+  Static glows: street lamps 0.16, edge haze 0.19 at night, car headlights at half strength. With
+  prefers-reduced-motion nothing animates.
+- **The World Islands** (`world.js`): about 140 narrow, elongated islands laid out as a world map (seven
+  continents, channels between), smaller than life so they fit offshore. Each is drawn at pixel level: a sand
+  top with a lighter wet rim, raised 2 px, with a lit left face and a darker right face. Round each are two
+  steps of pale shallows, and a dark-sand breakwater crescent runs along the seaward side. The Heart of Europe
+  (six islands) and Lebanon have small pastel houses and palms, with a few lit windows at night; the rest are
+  bare sand. The 200 m tiles under the islands are sand in the data, so pins and areas on them work as before.
+- **Port Rashid**: an open concrete quay with bollards along its edge. The QE2 (`qe2_ne`) is moored
+  parallel to it, and no boat is placed on it. The old cranes and the grey sheds that stood there are gone.
+  `QUAY_SLOTS` (landmarks.js) keeps spots for the quay crane and container stack art; each is drawn once its
+  sprite is listed in `SLOT_ART`.
 
 ## Critters (no more points)
 

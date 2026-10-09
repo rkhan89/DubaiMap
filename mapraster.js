@@ -9,6 +9,8 @@
 //   everything else (trees, the Metro, landmarks…) through PixelCtx, so it shares the pixel grid
 import { RAW as M } from './map.js';
 import { PixelBuffer, PixelCtx, rgba, hex, mix, scale, scanPolys, fillPolys, line, thickRings } from './pixel.js';
+import { NIGHT_FX } from './nightfx.js';
+import { WORLD_BOX, isleAt, onBreakwater } from './world.js';
 
 export const S = 2;          // art pixels per world unit (the approved scale)
 // landmark and prop sprites (map-art/*.png), handed over by map.js: { name: { w, h, data:Uint32Array, ax, ay } }
@@ -49,6 +51,7 @@ function objBox(o){
   if (o.k==='lm') return [o.x-70, o.y-280, o.x+70, o.y+40];
   if (o.k==='lm2') return [o.x-70, o.y-140, o.x+70, o.y+40];
   if (o.k==='plane' || o.k==='crane') return [o.x-30, o.y-50, o.x+30, o.y+16];
+  if (o.k==='ship' || o.k==='slot') return [o.x-48, o.y-56, o.x+48, o.y+8];
   return [o.x-20, o.y-40, o.x+20, o.y+12];
 }
 // which objects touch each chunk, in the global depth order
@@ -144,9 +147,9 @@ function drawGround(buf, s, groundMask){
     if ((u+v) & 1) continue;
     const c = (u+v)/2, r = (v-u)/2;
     if (c<0 || r<0 || c>=COLS || r>=ROWS) continue;
-    const k = r*COLS + c, t = tt[k], water = isW(t), base = TB[t];
+    const k = r*COLS + c, t = M.worldTile[k] ? M.worldUnder[k] : tt[k], water = isW(t), base = TB[t];
     const X = (c-r)*hw + ox, Y = (c+r)*hh + oy;
-    const backL = !water && c>0 && isW(tt[k-1]), backR = !water && r>0 && isW(tt[k-COLS]);
+    const backL = !water && c>0 && isW(tt[k-1]) && !M.worldTile[k-1], backR = !water && r>0 && isW(tt[k-COLS]) && !M.worldTile[k-COLS];
     const seam = t===T.L_URBAN || t===T.L_PARK || t===T.L_TARMAC;
     // spans come unclipped in x (edges are measured against the whole tile, so chunks join up)
     scanPolys([[X,Y, X+hw,Y+hh, X,Y+2*hh, X-hw,Y+hh]], (y, a, b)=>{
@@ -162,8 +165,8 @@ function drawGround(buf, s, groundMask){
       }
     }, rowClip);
     // front faces: a low lip where land meets water, the deep slab along the map's front edges
-    const dR = c===COLS-1 ? slab : (!water && isW(tt[k+1]) ? lip : 0);
-    const dL = r===ROWS-1 ? slab : (!water && isW(tt[k+COLS]) ? lip : 0);
+    const dR = c===COLS-1 ? slab : (!water && isW(tt[k+1]) && !M.worldTile[k+1] ? lip : 0);
+    const dL = r===ROWS-1 ? slab : (!water && isW(tt[k+COLS]) && !M.worldTile[k+COLS] ? lip : 0);
     if (dR) faces.push([t, 'R', X, Y, dR]);
     if (dL) faces.push([t, 'L', X, Y, dL]);
   }
@@ -186,6 +189,55 @@ function drawGround(buf, s, groundMask){
       // outline along the bottom of the face
       const [ax, ay, bx, by] = side==='R' ? [X, Y+2*hh+d, X+hw, Y+hh+d] : [X-hw, Y+hh+d, X, Y+2*hh+d];
       line(buf, ax, ay, bx-1, by + (side==='R' ? 0.5 : -0.5), out);
+    }
+  }
+}
+
+/* =========================================================
+   THE WORLD ISLANDS (world.js): each island's own shape, pixel by pixel, raised a little off the water
+   ========================================================= */
+// sand tops with a lighter wet rim, a thin lit left face and a darker right face (1 px of rise per art px
+// scale step, 2 at full size), a stepped halo of pale shallows round each, the breakwater crescent
+const WORLD_DAY   = { top:'#F2DCAA', rim:'#FBEED0', left:'#E3C68E', right:'#B8935D', halo1:'#A7E6DA', halo2:'#8ADCD0', bw:'#A88A5E', bwFace:'#7A5F3F' };
+const WORLD_NIGHT = { top:'#6E6A78', rim:'#7E7A88', left:'#5D5A6A', right:'#46435A', halo1:'#22406A', halo2:'#1B375E', bw:'#4C4754', bwFace:'#36323F' };
+function drawWorld(buf, s, groundMask){
+  const ox = buf.ox, oy = buf.oy, W = buf.w, H = buf.h;
+  // the box the islands live in, in art pixels (its corners through the projection)
+  const cs = [[WORLD_BOX.a0,WORLD_BOX.i0],[WORLD_BOX.a0,WORLD_BOX.i1],[WORLD_BOX.a1,WORLD_BOX.i0],[WORLD_BOX.a1,WORLD_BOX.i1]].map(([a,i])=>M.aiToWorld(a,i));
+  const bx0 = Math.floor(Math.min(...cs.map(p=>p.x))*s), bx1 = Math.ceil(Math.max(...cs.map(p=>p.x))*s), by0 = Math.floor(Math.min(...cs.map(p=>p.y))*s), by1 = Math.ceil(Math.max(...cs.map(p=>p.y))*s);
+  const x0 = Math.max(ox, bx0), x1 = Math.min(ox+W, bx1), y0 = Math.max(oy, by0), y1 = Math.min(oy+H, by1);
+  if (x0 >= x1 || y0 >= y1) return;
+  const P = night() ? WORLD_NIGHT : WORLD_DAY, col = {}; for (const k in P) col[k] = rgba(P[k]);
+  const rise = s >= 2 ? 2 : s >= 1 ? 1 : 0, kmPerPx = 0.2/(16*s);
+  // the island distance for a ground pixel (memoised per pixel row, rise rows below are asked again)
+  const cache = new Map(), at = (x, y)=>{ const kk = y*65536 + (x & 65535); let v = cache.get(kk); if (v === undefined){ const ai = M.worldToAI((x+0.5)/s, (y+0.5)/s); v = isleAt(ai.a, ai.i).d; cache.set(kk, v); } return v; };
+  for (let y=y0; y<y1; y++) for (let x=x0; x<x1; x++){
+    const q = (y-oy)*W + (x-ox);
+    if (groundMask && groundMask[q] && !M.isWaterT(groundMask[q]-1)) continue;     // only over the sea
+    const top = at(x, y+rise);
+    if (top < 0){
+      // the raised top: the wet rim in its last metres, a little grain
+      const hh = h32(x, y, 21);
+      buf.data[q] = top > -kmPerPx*1.6 ? col.rim : hh < 0.05 ? scale(col.top, 0.96) : hh < 0.08 ? scale(col.top, 1.03) : col.top;
+      if (groundMask) groundMask[q] = M.L_BEACH + 1;
+      continue;
+    }
+    let side = false; for (let j=0; j<rise; j++) if (at(x, y+j) < 0){ side = true; break; }
+    if (side){
+      // a face: lit if the island is up and to the right of it (it faces down-left), else in shade
+      const lit = at(x+1, y+rise) < at(x-1, y+rise);
+      buf.data[q] = lit ? col.left : col.right;
+      if (groundMask) groundMask[q] = M.L_BEACH + 1;
+      continue;
+    }
+    // the water round it: two steps of pale shallows, then the breakwater out on the seaward side
+    const d = at(x, y);
+    if (d < 0.022) buf.data[q] = col.halo1;
+    else if (d < 0.045) buf.data[q] = col.halo2;
+    else {
+      const ai = M.worldToAI((x+0.5)/s, (y+0.5)/s), ab = M.worldToAI((x+0.5)/s, (y+0.5+rise)/s);
+      if (onBreakwater(ab.a, ab.i)){ buf.data[q] = col.bw; if (groundMask) groundMask[q] = M.L_SAND + 1; }
+      else if (rise && onBreakwater(ai.a, ai.i)){ buf.data[q] = col.bwFace; if (groundMask) groundMask[q] = M.L_SAND + 1; }
     }
   }
 }
@@ -284,7 +336,7 @@ function drawLamps(buf, s, groundMask, vis){
             for (let gy=-7; gy<=7; gy++) for (let gx=-7; gx<=7; gx++){
               const r = Math.hypot(gx, gy*1.4); if (r > 7) continue;
               const px = x+gx, py = y-5+gy; if (px < buf.ox || py < buf.oy || px >= buf.ox+W || py >= buf.oy+H) continue;
-              const q = (py-buf.oy)*W + px-buf.ox; buf.data[q] = mix(buf.data[q], glow, 0.32*(1 - r/7)**2);
+              const q = (py-buf.oy)*W + px-buf.ox; buf.data[q] = mix(buf.data[q], glow, NIGHT_FX.lampGlowNight*(1 - r/7)**2);
             }
           }
           for (let k2=0; k2<5; k2++) buf.put(x, y-k2, post);
@@ -671,6 +723,7 @@ export function renderRect(x0, y0, w, h, s=S){
   prepare();
   const buf = new PixelBuffer(w, h, x0, y0), groundMask = new Uint8Array(w*h);
   drawGround(buf, s, groundMask);
+  drawWorld(buf, s, groundMask);
   const list = s === S && w === CH && h === CH && x0 % CH === 0 && y0 % CH === 0
     ? (chunkObjs || (indexChunks(), chunkObjs))[(y0/CH)*chunkGrid().cols + x0/CH]
     : objectsIn(x0/s, y0/s, (x0+w)/s, (y0+h)/s, s);
@@ -693,7 +746,7 @@ export function renderRect(x0, y0, w, h, s=S){
     else if (o.k === 'sprite') drawSprite(buf, o, s);
     else if (o.k === 'camel' && propOk('camel_a')) continue;   // walking camels are drawn live by map.js
     else if (propOk(propOf(o))) drawSprite(buf, { x:o.x, y:o.y, sprite:propOf(o) }, s);
-    else if (o.k === 'boat' || o.k === 'plane') continue;       // no sprite, no boat (the old vector ones are gone)
+    else if (o.k === 'boat' || o.k === 'plane' || o.k === 'ship' || o.k === 'slot') continue;       // no sprite, no boat (the old vector ones are gone)
     else { try { M.drawObjectVector(ctx, o); } catch(e){ /* one odd shape never stops the city */ } }
   }
   // the water you can see (not under a boat, a bridge or a building in front)
@@ -707,7 +760,7 @@ export function renderRect(x0, y0, w, h, s=S){
 }
 // a soft haze toward the edges of the map (the only soft thing besides glow; it sits on top of the pixels)
 function addHaze(buf, s){
-  const hz = night() ? rgba('#0D1426') : rgba('#EFE3CF'), ox = M.WORLD.ox, oy = M.WORLD.oy, R = 14;
+  const hz = night() ? rgba('#0D1426') : rgba('#EFE3CF'), amt = night() ? NIGHT_FX.hazeNight : NIGHT_FX.hazeDay, ox = M.WORLD.ox, oy = M.WORLD.oy, R = 14;
   for (let y=0; y<buf.h; y++){
     const wy = (y + buf.oy + 0.5)/s;
     for (let x=0; x<buf.w; x++){
@@ -715,7 +768,7 @@ function addHaze(buf, s){
       const wx = (x + buf.ox + 0.5)/s, a = (wx - ox)/8, b = (wy - oy)/4, gx = (a + b)/2, gy = (b - a)/2;
       const d = Math.min(gx, gy, M.COLS - gx, M.ROWS - gy);
       if (d >= R) continue;
-      const t = (R - Math.max(d, 0))/R; buf.data[q] = mix(buf.data[q], hz, 0.38*t*t);
+      const t = (R - Math.max(d, 0))/R; buf.data[q] = mix(buf.data[q], hz, amt*t*t);
     }
   }
 }
@@ -728,6 +781,8 @@ function propOf(o){
   if (o.k === 'palm') return (o.s || 1) < 0.95 ? 'palm_short' : 'palm';
   if (o.k === 'boat') return o.kind + '_' + o.head;   // dhow, abra, yacht in one of four headings
   if (o.k === 'plane') return 'plane_' + o.head;
+  if (o.k === 'ship') return o.kind + '_' + o.head;   // the QE2 (moored: ne or nw only)
+  if (o.k === 'slot') return o.sprite;                // quay crane, container stack: once their art is in
   return null;
 }
 function propOk(name){ if (!name) return false; const sp = SPRITES[name], m = PROP_MAX[name]; return sp && m && sp.w <= m[0] && sp.h <= m[1]; }
