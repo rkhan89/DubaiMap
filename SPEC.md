@@ -438,9 +438,8 @@ neighbourhoods, ~7,400 objects); only the drawing changed.
 - **The World Islands** are a terrain sprite (`the_world_islands.png`, placed by `terrains.js`, made by
   `tools/terrain-prep.mjs`). It is centred on the real centre (25.21667 N, 55.16667 E, Wikipedia) and sized by real
   distance: 9 km east-west is ~1,010 art px on this projection, so the 239 px art is drawn at x4. It's drawn on
-  the ground before anything stands on it, only where the map has ground. Its seaward edge runs past the map's
-  current edge, so the outer breakwater is cut until the map grows. The tiles whose middle is on its land are sand
-  in the data, so pins and areas there work. At night: warm blue-grey sand, and a few lit windows on the Heart of
+  the ground before anything stands on it, over sea and sand only. The map's frame grows to hold it whole. The
+  tiles whose middle is on its land are sand in the data, so pins and areas there work. At night: warm blue-grey sand, and a few lit windows on the Heart of
   Europe only.
 - **Port Rashid**: an open concrete quay with bollards. The QE2 (`qe2_ne`) is moored parallel to its edge.
   Two quay cranes (`quay_crane_nw`) stand on the edge with their booms over the water; three container stacks
@@ -457,9 +456,18 @@ neighbourhoods, ~7,400 objects); only the drawing changed.
     stay as placed. About 41 % are low rise (1 to 3 floors), 32 % mid rise (4 to 8) and 25 % 9 to 11 floors.
     Towers (12 floors and up, about 3 %) stand only in Downtown, the Marina, JLT and Business Bay; each has its
     top fifth set back 20 % narrower and its own rooftop kit.
-- **Regions** (`regions.js`): the map grows by data (coast, palms, zoning, roads, area labels). None are live
-  yet, so the frame and tile (0,0) are exactly the city's own. The Jebel Ali draft waits for sign-off on the
-  branch `map-extent-wip`.
+- **Regions** (`regions.js`): the map grows by data. Each region has an id, a stage, a status (live, fogged or
+  locked), bounds, coast, terrains, zoning, roads, area labels and its sources. The frame grows to hold every
+  live and fogged region and every terrain whole, plus 1.6 km for the fog. Pins and crew data are stored as
+  lat/lng, so none of them move. Tile numbers are recomputed, and nothing stored uses them.
+  - Stage 1, live: Palm Jebel Ali (`palm_jebel_ali.png`, centred on 25.010 N, 54.985 E at x4, about twice Palm
+    Jumeirah; bare, with sparse lots), Jebel Ali Port and the free zone, the coast from the Marina.
+  - Stage 2, live: Jebel Ali Village, Dubai Investments Park, Expo City, Dubai South and Al Maktoum airport
+    (already in the city's own data).
+  - Stage 3, fogged: the coast to Ghantoot on the Abu Dhabi border, under haze, with nothing built and no roads
+    or cars.
+- **The map's edge**: no hard edge or earth slab. The last 6 tiles fade through a pale haze to transparent, so
+  the page's own background shows through.
 
 ## Critters (no more points)
 

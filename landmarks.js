@@ -8,6 +8,7 @@
 //   plot:   what it stands on: 'plaza' (paving), 'lake', 'island' (already in the terrain), 'none'
 //   venue:  names a matching place in the app might have (the card links to it)
 import { CARDS } from './landmark-cards.js';
+import { TERRAINS } from './terrains.js';
 export const LANDMARKS = [
   { id:'burj_khalifa', size:[76,220], name:'Burj Khalifa', lat:25.1972, lng:55.2744, sprite:'burj_khalifa', clear:2, plot:'plaza', plotR:2,
     fact:'At 828 m it has been the world’s tallest building since it opened in 2010.', venue:['Burj Khalifa', 'At the Top'] },
@@ -121,6 +122,6 @@ export const SLOT_ART = {
 };
 Object.assign(PROPS, SLOT_ART);
 // every file the map loads from map-art/
-export const SPRITE_FILES = [...new Set([...LANDMARKS.map(l=>l.sprite), 'dubai_fountain_1','dubai_fountain_2','dubai_fountain_3','dubai_fountain_4','dubai_fountain_5', ...Object.keys(PROPS), 'the_world_islands'])];   // (slot art joins through PROPS once listed in SLOT_ART)
+export const SPRITE_FILES = [...new Set([...LANDMARKS.map(l=>l.sprite), 'dubai_fountain_1','dubai_fountain_2','dubai_fountain_3','dubai_fountain_4','dubai_fountain_5', ...Object.keys(PROPS), ...TERRAINS.map(t=>t.sprite)])];   // (slot art joins through PROPS once listed in SLOT_ART)
 // footprints for the pack's other sprites (art pixels: [coast, inland])
 for (const lm of LANDMARKS){ const c = CARDS[lm.sprite]; if (c && !lm.fpx) lm.fpx = c.fpx; }

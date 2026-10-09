@@ -166,8 +166,9 @@ function drawGround(buf, s, groundMask){
       }
     }, rowClip);
     // front faces: a low lip where land meets water, the deep slab along the map's front edges
-    const dR = c===COLS-1 ? slab : (!water && isW(tt[k+1]) && !M.worldTile[k+1] ? lip : 0);
-    const dL = r===ROWS-1 ? slab : (!water && isW(tt[k+COLS]) && !M.worldTile[k+COLS] ? lip : 0);
+    // (no deep slab along the map's front edges any more: the land fades into the fog there)
+    const dR = c===COLS-1 ? 0 : (!water && isW(tt[k+1]) && !M.worldTile[k+1] ? lip : 0);
+    const dL = r===ROWS-1 ? 0 : (!water && isW(tt[k+COLS]) && !M.worldTile[k+COLS] ? lip : 0);
     if (dR) faces.push([t, 'R', X, Y, dR]);
     if (dL) faces.push([t, 'L', X, Y, dL]);
   }
@@ -222,6 +223,7 @@ function drawTerrains(buf, s, groundMask){
         const sx = Math.floor((x - x0)/k); if (sx < 0 || sx >= t.w) continue;
         const q = (y-buf.oy)*buf.w + (x-buf.ox), c = data[sy*t.w + sx];
         if ((c>>>24) < 128 || (groundMask && !groundMask[q])) continue;      // off the art, or off the map
+        if (groundMask){ const g0 = groundMask[q]-1; if (!M.isWaterT(g0) && g0 !== M.L_BEACH && g0 !== M.L_SAND && g0 !== M.L_DUNE && g0 !== M.L_CREST) continue; }   // only over sea and sand
         buf.data[q] = (c | 0xff000000) >>> 0;
         const raw = sp.data[sy*t.w + sx], rr = raw & 255, gg = raw>>8 & 255, bb = raw>>16 & 255;
         if (groundMask && !(gg > rr + 20 && bb > rr + 20)) groundMask[q] = M.L_BEACH + 1;   // its sand and buildings are land
@@ -763,7 +765,7 @@ export function renderRect(x0, y0, w, h, s=S){
     for (let q=0; q<w*h; q++) if (groundMask[q] && M.isWaterT(groundMask[q]-1) && buf.data[q] === ground[q]){ water[q] = 1; any = true; }
     buf.water = any ? water : null;
   }
-  if (POST){ addHaze(buf, s); addHorizon(buf, s); }
+  if (POST){ addHaze(buf, s); addHorizon(buf, s); if (buf.water) for (let q=0; q<w*h; q++) if ((buf.data[q]>>>24) < 230) buf.water[q] = 0; }
   return buf;
 }
 // the soft passes over the finished pixels (edge haze, horizon); tests turn them off to compare pixels exactly
@@ -785,17 +787,24 @@ function addHorizon(buf, s){
     for (let x=0; x<buf.w; x++){ const q = row + x; if (buf.data[q]) buf.data[q] = mix(buf.data[q], col, t); }
   }
 }
-// a soft haze toward the edges of the map (the only soft thing besides glow; it sits on top of the pixels)
+// the fog: the map has no hard edge, its land and sea fade through a pale haze to nothing over the last
+// FOG.edge tiles (the page's own background shows through), and a fogged region (regions.js) lies under haze
+const FOG = { edge:6, dayCol:'#F3E6D8', nightCol:'#121A2E', region:0.62, regionRamp:1.2 };   // ramp: km over which a region's fog thickens
 function addHaze(buf, s){
-  const hz = night() ? rgba('#0D1426') : rgba('#EFE3CF'), amt = night() ? NIGHT_FX.hazeNight : NIGHT_FX.hazeDay, ox = M.WORLD.ox, oy = M.WORLD.oy, R = 14;
+  const fc = rgba(night() ? FOG.nightCol : FOG.dayCol), ox = M.WORLD.ox, oy = M.WORLD.oy, edgeTint = night() ? NIGHT_FX.hazeNight : NIGHT_FX.hazeDay;
+  const fogA = M.FOG_A, aMax = M.A_MAX;
   for (let y=0; y<buf.h; y++){
     const wy = (y + buf.oy + 0.5)/s;
     for (let x=0; x<buf.w; x++){
       const q = y*buf.w + x; if (!buf.data[q]) continue;
       const wx = (x + buf.ox + 0.5)/s, a = (wx - ox)/8, b = (wy - oy)/4, gx = (a + b)/2, gy = (b - a)/2;
       const d = Math.min(gx, gy, M.COLS - gx, M.ROWS - gy);
-      if (d >= R) continue;
-      const t = (R - Math.max(d, 0))/R; buf.data[q] = mix(buf.data[q], hz, amt*t*t);
+      const te = d >= FOG.edge ? 0 : Math.min(1, (FOG.edge - Math.max(d, 0))/FOG.edge);
+      const ka = aMax - gy*0.2, tr = ka < fogA ? FOG.region*Math.min(1, (fogA - ka)/FOG.regionRamp) : 0;
+      if (!te && !tr) continue;
+      let c = mix(buf.data[q], fc, Math.max(tr, te*edgeTint*2));
+      if (te > 0){ const al = Math.round(255*(1 - te*te)); c = ((c & 0xffffff) | (al << 24)) >>> 0; }
+      buf.data[q] = c;
     }
   }
 }

@@ -16,6 +16,10 @@ const TERRAINS = [
     // the Heart of Europe's lit windows at night (its pale-blue glass pixels), and its warm blue-grey night palette
     lights:['#a0c8e8'],
     night:{ '#f4e2b0':'#8a8092', '#c4a270':'#6c6476', '#a88860':'#564f62', '#96e2d6':'#23436c', '#7ad4cc':'#1e3c63', '#68c8c4':'#19345a' } },
+  { id:'palm_jebel_ali', sprite:'palm_jebel_ali', centre:[25.010, 54.985], scale:4,
+    source:'Wikipedia, 25.010 N 54.985 E; 13.4 km², about twice Palm Jumeirah (Nakheel). Its trunk-to-crescent and coast-wise spans come to ~1,080 art px here; the art is 271 px, so x4',
+    lights:[],   // mid-redevelopment: bare, no lights
+    night:{ '#f4e2b0':'#8a8092', '#e8cc96':'#7e7586', '#c4a270':'#6c6476', '#a88860':'#564f62', '#d6b67e':'#746b7c', '#cec0a4':'#7a7484', '#96e2d6':'#23436c', '#7ad4cc':'#1e3c63', '#68c8c4':'#19345a' } },
 ];
 const water = (r, g, b)=>g > r + 20 && b > r + 20;     // the shallows halo: turquoise
 const out = [];

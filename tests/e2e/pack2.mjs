@@ -15,6 +15,9 @@ const VIEWS = [
   ['pja',         { ll:[25.0000, 55.0000] }, 4],      // Palm Jebel Ali
   ['ghantoot',    { ll:[24.8950, 54.8700] }, 8],      // the coast at the Abu Dhabi border
   ['gv',          { ll:[25.0660, 55.3080] }, 10],     // a landmark on open sand: its shadow
+  ['pja-wide',    { ll:[25.0100, 54.9850] }, 3],      // Palm Jebel Ali whole
+  ['fog',         { ll:[24.9300, 54.9200] }, 4],      // the fogged border coast
+  ['edge',        { ll:[25.3300, 55.4600] }, 3],      // the map's NE edge: fog, no hard cut
 ];
 export default async function pack2(h){
   const tag = process.env.TAG || 'after', only = process.env.ONLY ? process.env.ONLY.split(',') : null;

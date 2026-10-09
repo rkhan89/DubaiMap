@@ -32,11 +32,29 @@ const T = 0.2;                                   // km per tile
 const A_MAX=36.0, I_MAX=21.6, T0=0.2;
 // the frame grows to cover each region (regions.js): its coast, palms, zoning and roads, plus 1 km of margin
 // along the coast and 1.2 km of sea out from it, rounded to whole tiles
-const REGION_PTS = REGIONS.flatMap(rg=>[...(rg.coast||[]), ...(rg.roads||[]).flatMap(r=>r.pts), ...(rg.zoning||[]).flatMap(z=>[z.sw, z.ne]),
-  ...(rg.palms||[]).flatMap(p=>[p.base, p.hub])].map(([lat,lng])=>toAI(lat,lng)))
-  .concat(REGIONS.flatMap(rg=>(rg.palms||[]).map(p=>{ const h=toAI(p.hub[0],p.hub[1]); return { a:h.a, i:h.i - p.crescent.r - p.crescent.w }; })));
-const A_MIN = Math.min(-15.6, A_MAX - T0*Math.ceil((A_MAX - (Math.min(...REGION_PTS.map(p=>p.a)) - 1.0))/T0 - 1e-9));
-const I_MIN = Math.min(-9.0, I_MAX - T0*Math.ceil((I_MAX - (Math.min(...REGION_PTS.map(p=>p.i)) - 1.2))/T0 - 1e-9));
+// regions that are on the map: live ones, and fogged ones (there, under haze); locked ones aren't
+const ACTIVE_REGIONS = REGIONS.filter(rg=>rg.status === 'live' || rg.status === 'fogged');
+// a terrain sprite's land, as a/i km: the art is centred on its real point, each sprite pixel scale/2 world units
+function terrainLandAI(t){
+  const [ca, ci] = (()=>{ const p = toAI(t.centre[0], t.centre[1]); return [p.a, p.i]; })(), out = [];
+  for (let sy=0; sy<t.h; sy+=2) for (let sx=0; sx<t.w; sx+=2){
+    if (!isLandPx(t, sy*t.w + sx)) continue;
+    const dx = (sx + 0.5 - t.w/2)*t.scale/2, dy = (sy + 0.5 - t.h/2)*t.scale/2, dgx = (dx/8 + dy/4)/2, dgy = (dy/4 - dx/8)/2;
+    out.push({ a:ca - dgy*T0, i:ci + dgx*T0 });
+  }
+  return out;
+}
+const regionPts = rg=>[...(rg.coast||[]), ...(rg.roads||[]).flatMap(r=>r.pts), ...(rg.zoning||[]).flatMap(z=>[z.sw, z.ne]),
+  ...(rg.palms||[]).flatMap(p=>[p.base, p.hub])].map(([lat,lng])=>toAI(lat,lng))
+  .concat((rg.terrains||[]).flatMap(id=>{ const t = TERRAINS.find(t=>t.id===id); return t ? terrainLandAI(t) : []; }));
+// the city's own terrains (the World Islands) and the active regions' content; 1.6 km of margin for the fog at the edge
+const REGION_PTS = [...ACTIVE_REGIONS.flatMap(regionPts), ...TERRAINS.filter(t=>!REGIONS.some(rg=>(rg.terrains||[]).includes(t.id))).flatMap(terrainLandAI)];
+const A_MIN = Math.min(-15.6, A_MAX - T0*Math.ceil((A_MAX - (Math.min(...REGION_PTS.map(p=>p.a)) - 1.6))/T0 - 1e-9));
+const I_MIN = Math.min(-9.0, I_MAX - T0*Math.ceil((I_MAX - (Math.min(...REGION_PTS.map(p=>p.i)) - 1.6))/T0 - 1e-9));
+// where the fogged regions begin (along the coast): past the city and every live region's content
+const LIVE_PTS = ACTIVE_REGIONS.filter(rg=>rg.status === 'live').flatMap(regionPts);
+const FOG_A = ACTIVE_REGIONS.some(rg=>rg.status === 'fogged') ? Math.min(-15.6, ...LIVE_PTS.map(p=>p.a)) - 0.3 : -Infinity;
+const inFog = a=>a < FOG_A;
 const ROWS = Math.round((A_MAX-A_MIN)/T);        // along the coast
 const COLS = Math.round((I_MAX-I_MIN)/T);        // inland
 const TW=16, TH=8, LIP=3.5, SLAB=16;
@@ -107,7 +125,7 @@ function hashOffset(str, range){
 const COAST = [[-16,-2.5],[-14,-2.2],[-12,-1.9],[-10,-1.6],[-8,-1.3],[-6,-1.0],[-3.4,-0.55],[-2.87,-0.49],[-1,-0.15],[0,0],[1.2,0.1],[2.24,0.05],[3.41,0.35],[5.4,0.6],[9,0.5],
   [12,0.45],[15,0.45],[17.5,0.35],[19.6,0.25],[20.2,-0.2],[21.2,-0.25],[21.8,0.15],[23.5,0.05],[26.6,-0.2],
   [28,0.1],[30,0.35],[31.5,0.8],[32.6,1.9],[34,2.8],[36,3.3]];
-REGIONS.forEach(rg=>{ const pts = (rg.coast||[]).map(([lat,lng])=>G(lat,lng));
+ACTIVE_REGIONS.forEach(rg=>{ const pts = (rg.coast||[]).map(([lat,lng])=>G(lat,lng));
   const lo = COAST[0][0], hi = COAST[COAST.length-1][0];
   COAST.unshift(...pts.filter(p=>p[0] < lo - 0.5).sort((p,q)=>p[0]-q[0])); COAST.push(...pts.filter(p=>p[0] > hi + 0.5).sort((p,q)=>p[0]-q[0])); });
 const coastIn = a => lerpPts(COAST,a) + 0.06*Math.sin(a*2.1);
@@ -144,7 +162,7 @@ function palmShape(P, a, i){
   return 0;
 }
 // the regions' palm islands (regions.js), in the same form as PALM
-const REGION_PALMS = REGIONS.flatMap(rg=>(rg.palms||[]).map(p=>({ name:p.name, base:G(...p.base), hub:G(...p.hub), fr0:p.frond[0], fr1:p.frond[1], fronds:p.fronds,
+const REGION_PALMS = ACTIVE_REGIONS.flatMap(rg=>(rg.palms||[]).map(p=>({ name:p.name, base:G(...p.base), hub:G(...p.hub), fr0:p.frond[0], fr1:p.frond[1], fronds:p.fronds,
   span:p.span, cr:p.crescent.r, crW:p.crescent.w, crSpan:p.crescent.span, bare:!!p.bare })));
 const ATLANTIS = [PALM.hub[0], PALM.hub[1]-PALM.cr];
 // the QE2's mooring at Port Rashid: just off the quay's seaward edge (the quay is a 24.4..26.0, i -1.0..0.15)
@@ -244,7 +262,7 @@ const ROADS = [
   {k:2, causeway:true, pts:[[18.6,-0.6],[18.6,0.8]]},                                                                 // Jumeirah Bay bridge
 ];
 
-REGIONS.forEach(rg=>(rg.roads||[]).forEach(r=>ROADS.push({ k:r.k, pts:r.pts.map(([lat,lng])=>G(lat,lng)) })));
+ACTIVE_REGIONS.forEach(rg=>(rg.roads||[]).forEach(r=>ROADS.push({ k:r.k, pts:r.pts.map(([lat,lng])=>G(lat,lng)) })));
 const LANDMARKS = [
   {k:'burj',     at:G(25.1972,55.2744), name:'Burj Khalifa'},
   {k:'mall',     at:G(25.1985,55.2796)},
@@ -319,7 +337,7 @@ const ZONES = [
   {id:'discovery',   label:'Discovery Gardens', lat:25.0400, lng:55.1400},
   {id:'ibnbattuta',  label:'Ibn Battuta',   lat:25.0450, lng:55.1180},
 ];
-REGIONS.forEach(rg=>(rg.zones||[]).forEach(z=>ZONES.push({ ...z })));
+ACTIVE_REGIONS.forEach(rg=>(rg.zones||[]).forEach(z=>ZONES.push({ ...z })));
 ZONES.forEach(z=>{ const p=toAI(z.lat,z.lng); z.a=p.a; z.i=p.i; });
 const zoneById = id => ZONES.find(z=>z.id===id);
 function nearestZone(a,i){
@@ -476,7 +494,7 @@ const LANDMARKS2 = [
 ];
 
 RUNWAYS.push(...MAKTOUM_RUNWAYS);
-REGIONS.forEach(rg=>(rg.zoning||[]).forEach(z=>{ const p=toAI(...z.sw), q=toAI(...z.ne), r=toAI(z.sw[0], z.ne[1]), u=toAI(z.ne[0], z.sw[1]);
+ACTIVE_REGIONS.forEach(rg=>(rg.zoning||[]).forEach(z=>{ const p=toAI(...z.sw), q=toAI(...z.ne), r=toAI(z.sw[0], z.ne[1]), u=toAI(z.ne[0], z.sw[1]);
   HOODS.push({ n:z.name, a:[Math.min(p.a,q.a,r.a,u.a), Math.max(p.a,q.a,r.a,u.a)], i:[Math.min(p.i,q.i,r.i,u.i), Math.max(p.i,q.i,r.i,u.i)], st:z.st, h:z.h, p:z.p, ...(z.ground!=null ? { ground:z.ground } : {}) }); }));
 const HOODS_ALL = [...HOODS, ...REGEN.map(di=>({ ...DISTRICTS[di], n:'rest of the district' }))];
 const METRO_AI = METRO.map(l=>l.stations.map(([lat,lng])=>G(lat,lng)));
@@ -881,6 +899,8 @@ function buildObjects(){
     });
   }
   assignHeights();
+  // nothing stands in a fogged region
+  if (FOG_A > -Infinity) for (let k=OBJECTS.length-1; k>=0; k--) if (inFog(worldToAI(OBJECTS[k].x, OBJECTS[k].y).a)) OBJECTS.splice(k, 1);
   OBJECTS.sort((p,q)=>p.d-q.d);
 }
 // Building heights, by zone and smooth noise (the buildings themselves, and how many, stay as placed). In the
@@ -984,7 +1004,7 @@ function landPieces(rd){
   for (let k=1;k<rd.pts.length;k++){ const [a0,i0]=rd.pts[k-1], [a1,i1]=rd.pts[k], n=Math.max(1, Math.ceil(Math.hypot(a1-a0,i1-i0)/0.05));
     for (let q=(k===1?0:1); q<=n; q++){ const a=a0+(a1-a0)*q/n, i=i0+(i1-i0)*q/n, t=tileAt(a,i);
       // 2 land (or a causeway), 1 creek, canal or lake, 0 off the map or the sea
-      smp.push({ a, i, vtx:q===n, st: t<0 ? 0 : (!isWaterT(t) || rd.causeway) ? 2 : t===W_CANAL ? 1 : 0 }); } }
+      smp.push({ a, i, vtx:q===n, st: t<0 || inFog(a) ? 0 : (!isWaterT(t) || rd.causeway) ? 2 : t===W_CANAL ? 1 : 0 }); } }
   // a run over the creek is a bridge if it's short and has land at both ends
   for (let s=0; s<smp.length; ){ if (smp[s].st!==1){ s++; continue; } let e=s; while (e<smp.length && smp[e].st===1) e++;
     const ok = s>0 && e<smp.length && smp[s-1].st===2 && smp[e].st===2 && (e-s)*0.05 <= BRIDGE_KM;
@@ -1620,7 +1640,7 @@ function shownStore(){
 /* ---------- finished overviews are kept in the browser's cache (per app version and theme), so the
    next launch shows the whole city at once and the worker only renders close-ups ---------- */
 // bump ART_REV whenever mapraster.js draws anything differently, so nobody keeps old art
-const ART_REV = 18, ART_CACHE = 'koko-map-art', ART_VER = `${APP.version}-r${ART_REV}`;
+const ART_REV = 20, ART_CACHE = 'koko-map-art', ART_VER = `${APP.version}-r${ART_REV}`;
 const artURL = (th, s)=>`/__map-art/${ART_VER}/${th}/${s}.png`;
 // The finished overviews ship with the app (map-art/overview, made by tools/build-overviews.mjs), so a
 // phone never shows half-finished ones. Wide first (small), then mid. If they can't be had, the worker
@@ -1957,7 +1977,7 @@ function aiBounds(pts){
   return { x0:Math.min(...xs), x1:Math.max(...xs), y0:Math.min(...ys)-60, y1:Math.max(...ys) };
 }
 // how far the camera may roam (all the land), and what "fit city" frames (palm crescent to the airport)
-const FRAME = aiBounds([[A_MIN+0.4,Math.min(-4.8, I_MIN+1.0)],[35.8,Math.min(-4.8, I_MIN+1.0)],[35.8,21.2],[A_MIN+0.4,21.2]]);
+const FRAME_A0 = Math.max(A_MIN+0.4, FOG_A-1.5), FRAME = aiBounds([[FRAME_A0,Math.min(-4.8, I_MIN+1.0)],[35.8,Math.min(-4.8, I_MIN+1.0)],[35.8,21.2],[FRAME_A0,21.2]]);
 const CORE  = aiBounds([[-2.4,-4.8],[31.8,-4.8],[31.8,9.9],[-2.4,9.9]]);
 function clampCam(){
   cam.s = Math.max(MIN_S, Math.min(MAX_S, cam.s));
@@ -2700,7 +2720,7 @@ export { buildStats,
 function buildData(){ buildTerrain(); buildObjects(); prepRoads(); }
 function setNight(on){ NIGHT = !!on; nightCache.clear(); }
 function setLineWidth(w){ LW = w; }
-export const RAW = { G, A_MIN, I_MIN, REGION_PALMS, buildData, setNight, setLineWidth, drawObjectVector, C, shade, hash2, vnoise, isWaterT, proj, aiToGrid, gridToAI, aiToWorld, worldToAI, inRect,
+export const RAW = { G, A_MIN, A_MAX, I_MIN, FOG_A, ACTIVE_REGIONS, REGION_PALMS, buildData, setNight, setLineWidth, drawObjectVector, C, shade, hash2, vnoise, isWaterT, proj, aiToGrid, gridToAI, aiToWorld, worldToAI, inRect,
   tileAt, inFootprint, prepCarRoads, RUNWAYS, BRIDGE_KM, get FOOTPRINTS(){ return FOOTPRINTS; },
   TW, TH, LIP, SLAB, ROWS, COLS, WORLD, RD, OUT, TILE_COLORS, TILE_NIGHT, DISTRICTS, HOODS, TRAM,
   W_SEA, W_SHALLOW, L_BEACH, L_SAND, L_DUNE, L_URBAN, L_PARK, W_CANAL, L_TARMAC, L_PALM, L_LOT, L_GOLF, W_DEEP, L_FARM, L_CREST,
