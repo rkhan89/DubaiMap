@@ -45,7 +45,8 @@ function objBox(o){
   }
   if (o.k==='sprite'){
     const sp = SPRITES[o.sprite]; if (!sp) return [o.x-4, o.y-4, o.x+4, o.y+4];
-    return [o.x - sp.ax/S - 2, o.y - sp.ay/S - 2, o.x + (sp.w - sp.ax)/S + 2, o.y + (sp.h - sp.ay)/S + 2];
+    // (and its shadow, which runs down-left by up to 0.55 of its height)
+    return [o.x - sp.ax/S - 2 - sp.h/S*SHADOW_DX, o.y - sp.ay/S - 2, o.x + (sp.w - sp.ax)/S + 2, o.y + (sp.h - sp.ay)/S + 2 + sp.h/S*SHADOW_DY];
   }
   if (o.k==='rail') return [Math.min(o.x0,o.x1)-6, Math.min(o.y0,o.y1)-14, Math.max(o.x0,o.x1)+6, Math.max(o.y0,o.y1)+6];
   if (o.k==='lm') return [o.x-70, o.y-280, o.x+70, o.y+40];
@@ -359,6 +360,14 @@ function hull(pts){
   for (const p of pts.slice().reverse()){ while (up.length>=2 && cr(up[up.length-2], up[up.length-1], p) <= 0) up.pop(); up.push(p); }
   return lo.slice(0,-1).concat(up.slice(0,-1));
 }
+const SHADOW_DX = 0.55*0.894, SHADOW_DY = 0.55*0.447;   // a shadow's run per unit of height (light from the upper right)
+// the lowest opaque row of each column of a sprite (where that column stands), -1 if empty
+function spriteFeet(sp){
+  if (sp.feet) return sp.feet;
+  const f = new Int16Array(sp.w).fill(-1);
+  for (let x=0; x<sp.w; x++) for (let y=sp.h-1; y>=0; y--) if ((sp.data[y*sp.w + x]>>>24) >= 128){ f[x] = y; break; }
+  return (sp.feet = f);
+}
 function drawShadows(buf, s, list, groundMask){
   const W = buf.w, H = buf.h, sm = new Uint8Array(W*H), clip = { x0:buf.ox, y0:buf.oy, x1:buf.ox+W, y1:buf.oy+H };
   for (const k of list){
@@ -367,6 +376,17 @@ function drawShadows(buf, s, list, groundMask){
     const base = [g.N, g.E, g.S, g.W];
     const ring = hull(base.concat(base.map(p=>[p[0]+dx, p[1]+dy]))).flat();
     scanPolys([ring], (y,a,b)=>{ for (let x=a;x<b;x++) sm[(y-buf.oy)*W + x-buf.ox] = 1; }, clip);
+  }
+  // landmark and mall sprites too: each pixel at height z over its column's foot throws its shadow the
+  // same way (down-left, 0.55 of its height), so the shadow is the sprite's own silhouette, sheared
+  if (s >= 1) for (const k of list){
+    const o = M.OBJECTS[k]; if (o.k !== 'sprite') continue;
+    const sp = spriteFor(o.sprite, s); if (!sp) continue;
+    const [x0, y0] = spriteOrigin(o, sp, s), foot = spriteFeet(sp);
+    for (let x=0; x<sp.w; x++){ const fy = foot[x]; if (fy < 0) continue;
+      for (let y=0; y<=fy; y++){ if ((sp.data[y*sp.w + x]>>>24) < 128) continue;
+        const z = fy - y, X = Math.round(x0 + x - SHADOW_DX*z), Y = Math.round(y0 + fy + SHADOW_DY*z);
+        if (X >= buf.ox && Y >= buf.oy && X < buf.ox+W && Y < buf.oy+H) sm[(Y-buf.oy)*W + X-buf.ox] = 1; } }
   }
   const shade = night() ? rgba('#05070D') : rgba('#3A3150'), t = night() ? 0.35 : 0.24;
   for (let q=0; q<W*H; q++) if (sm[q] && (!groundMask || groundMask[q])) buf.data[q] = mix(buf.data[q], shade, t);
@@ -424,7 +444,7 @@ function boxPart(L, g, z0, h, mat, kind, s){
   const right = [g.S[0], g.S[1]-z0, g.E[0], g.E[1]-z0, g.E[0], g.E[1]-z0-h, g.S[0], g.S[1]-z0-h];
   const top = [g.N[0], g.N[1]-z0-h, g.E[0], g.E[1]-z0-h, g.S[0], g.S[1]-z0-h, g.W[0], g.W[1]-z0-h];
   const nt = night(), b = N2(mat.base), id = mat.id;
-  const fL = scale(b, nt ? 0.8 : 0.72), fR = scale(b, nt ? 0.95 : 0.88);
+  const fL = scale(b, nt ? DEPTH.leftNight : DEPTH.left), fR = scale(b, nt ? DEPTH.rightNight : DEPTH.right);
   const fT = mat.topOver && kind === 'main' ? N2(mat.topOver) : scale(b, nt ? 1.05 : 1.08);
   const detail = s >= 2 && (kind === 'main' || kind === 'setback' || kind === 'crown' || kind === 'tower');
   const U0 = { L: g.W[0], R: g.S[0] };
@@ -755,8 +775,23 @@ export function renderRect(x0, y0, w, h, s=S){
     for (let q=0; q<w*h; q++) if (groundMask[q] && M.isWaterT(groundMask[q]-1) && buf.data[q] === ground[q]){ water[q] = 1; any = true; }
     buf.water = any ? water : null;
   }
-  addHaze(buf, s);
+  if (POST){ addHaze(buf, s); addHorizon(buf, s); }
   return buf;
+}
+// the soft passes over the finished pixels (edge haze, horizon); tests turn them off to compare pixels exactly
+let POST = true;
+export function setPost(on){ POST = !!on; }
+// depth: face shading (left in shade, right lit) and the horizon's tint
+const DEPTH = { left:0.64, right:0.92, leftNight:0.74, rightNight:0.97,
+  horizonDay:'#DDE9F2', horizonNight:'#25324F', horizonMax:0.16, horizonReach:0.6 };   // reach: share of the map's height it fades over
+// further away (higher up the map) things take on a little of the sky: cooler and lighter
+function addHorizon(buf, s){
+  const col = rgba(night() ? DEPTH.horizonNight : DEPTH.horizonDay), H = M.WORLD.h, reach = H*DEPTH.horizonReach;
+  for (let y=0; y<buf.h; y++){
+    const wy = (y + buf.oy + 0.5)/s; if (wy >= reach) continue;
+    const t = DEPTH.horizonMax*Math.pow(1 - wy/reach, 1.5), row = y*buf.w;
+    for (let x=0; x<buf.w; x++){ const q = row + x; if (buf.data[q]) buf.data[q] = mix(buf.data[q], col, t); }
+  }
 }
 // a soft haze toward the edges of the map (the only soft thing besides glow; it sits on top of the pixels)
 function addHaze(buf, s){

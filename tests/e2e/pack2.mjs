@@ -10,6 +10,11 @@ const VIEWS = [
   ['rashid-wide', { ai:[25.2, -0.6] }, 5],
   ['creek-night', { ll:[25.2600, 55.3020] }, 12],
   ['city-wide',   { ll:[25.2050, 55.2700] }, 3],
+  ['downtown',    { ll:[25.1950, 55.2760] }, 12],     // depth: shadows, face contrast, tower heights
+  ['marina',      { ll:[25.0800, 55.1420] }, 8],
+  ['pja',         { ll:[25.0000, 55.0000] }, 4],      // Palm Jebel Ali
+  ['ghantoot',    { ll:[24.8950, 54.8700] }, 8],      // the coast at the Abu Dhabi border
+  ['gv',          { ll:[25.0660, 55.3080] }, 10],     // a landmark on open sand: its shadow
 ];
 export default async function pack2(h){
   const tag = process.env.TAG || 'after', only = process.env.ONLY ? process.env.ONLY.split(',') : null;
