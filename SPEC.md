@@ -469,6 +469,28 @@ neighbourhoods, ~7,400 objects); only the drawing changed.
 - **The map's edge**: no hard edge or earth slab. The last 6 tiles fade through a pale haze to transparent, so
   the page's own background shows through.
 
+- **Landmark taps** (TAP_BEHAVIOUR.md; cards in `landmarkui.js`, words bundled in `landmark-facts.js` from the pack's
+  landmarks.json, so a card works offline and nothing is fetched on a tap).
+  - The hit area is a sprite's opaque pixels plus 6 CSS px. A sprite smaller than 44 CSS px on screen gets a
+    44 px box. Where landmarks overlap, the one drawn on top wins. The QE2 counts too; the terrains (the World,
+    Palm Jebel Ali) count on their land only. Pins sit above the map, so a pin always wins.
+  - On a tap the camera eases (250 ms) to put the landmark in the upper part of the map. It zooms only if it was
+    further out than the first whole-pixel step. The sprite lifts 2 px for 120 ms with a one-off 1 px #ffd470 outline.
+  - The card shows the sprite at 3x (or the biggest whole size that fits), the name, the area, "Did you know",
+    and "More" (the bonus fact and its source; no More without a bonus fact). Buttons: "Add a pin here" (the add
+    flow, prefilled with the landmark's name and spot) and "Directions" (the phone's maps app).
+  - A distance chip appears only if location is already allowed; it never asks.
+  - The Dubai Fountain's chip says "Show on now", or "Next show HH:MM" (Dubai time) from its schedule (Wikipedia's
+    times, to check).
+  - The eight landmarks with a critter return it from `landmarkCritter`. Nothing hints at them on the map, and the
+    card's silhouette stays off (`SHOW_LANDMARK_CRITTER`).
+- **The Burj Khalifa and its neighbours**: the new 124 x 340 sprite.
+  - Generated buildings are capped at 130 px (and at 45 % of the Burj within 8 tiles of it, 60 % in Downtown,
+    Business Bay and on Sheikh Zayed Road; the 130 px cap is the one that binds: 22 towers were lowered).
+  - Generated glass towers are darker and greyer, so the landmark towers read as the light ones.
+  - A generated building in front of a landmark tower that would reach into its sprite is drawn just before it, so
+    nothing covers a spire or wing.
+
 ## Critters (no more points)
 
 Points, levels, the leaderboard and every counter toward a reward are gone (migration 0011 backs up `profiles.points` to `archive.profiles_points`, then drops it). Stickers stay as milestones; critters are the collectible.

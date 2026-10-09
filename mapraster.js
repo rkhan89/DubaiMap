@@ -397,8 +397,9 @@ function geom(o, s, hxOver, hyOver){
     N:[cx - ex + ey, cy - ex/2 - ey/2], E:[cx + ex + ey, cy + ex/2 - ey/2],
     S:[cx + ex - ey, cy + ex/2 + ey/2], W:[cx - ex - ey, cy - ex/2 + ey/2] };
 }
-const GLASS_STEEL = ['#6E8FB0','#7B9BBA','#88A6C3','#5F80A2','#93AFC9'];
-const GLASS_TEAL  = ['#5C9DA7','#6CADB4','#7BB9BD','#4D8D98','#8AC4C5'];
+// generated glass towers: muted and a little dark, so the landmark towers (Burj Khalifa, Emirates Towers) read as the light ones
+const GLASS_STEEL = ['#5E6A76','#66717C','#6E7883','#56626D','#76808A'];
+const GLASS_TEAL  = ['#57696C','#5F7174','#677A7C','#506265','#6F8183'];
 const OLD_SAND    = ['#E6D1A6','#DCBD8A','#E2C698','#D3AD76','#EAD8B6'];
 const WARM_LIT = ['#FFD27A','#FFC56B','#FFE0A3','#FFB85C'];
 const WARM = WARM_LIT.map(rgba), SKY = rgba('#EAF4FB'), NIGHT_GLASS_L = rgba('#141C2C'), NIGHT_GLASS_R = rgba('#1A2436');

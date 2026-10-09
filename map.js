@@ -189,9 +189,9 @@ const DISTRICTS = [
   {a:[6.3,17.6],  i:[0.75,2.5], st:'villa', h:[5,7],    p:0.55},   // Umm Suqeim
   {a:[9.8,16.6],  i:[3.2,6.3],  st:'ind',   h:[6,10],   p:0.5},    // Al Quoz
   {a:[17.6,23.9], i:[0.6,2.35], st:'low',   h:[7,16],   p:0.45},   // Jumeirah / Satwa / City Walk
-  {a:[19.4,23.8], i:[2.35,3.5], st:'glass', h:[26,68],  p:0.45},   // SZR / DIFC
-  {a:[17.9,20.6], i:[3.1,4.5],  st:'glass', h:[20,54],  p:0.3, towers:true},    // Downtown
-  {a:[16.8,20.6], i:[4.5,6.4],  st:'glass', h:[20,56],  p:0.38, towers:true},   // Business Bay
+  {a:[19.4,23.8], i:[2.35,3.5], st:'glass', h:[26,68],  p:0.45, corridor:true},   // SZR / DIFC
+  {a:[17.9,20.6], i:[3.1,4.5],  st:'glass', h:[20,54],  p:0.3, towers:true, corridor:true},    // Downtown
+  {a:[16.8,20.6], i:[4.5,6.4],  st:'glass', h:[20,56],  p:0.38, towers:true, corridor:true},   // Business Bay
   {a:[23.9,26.0], i:[1.7,5.3],  st:'mid',   h:[9,18],   p:0.4},    // Karama / Oud Metha
   {a:[23.9,26.3], i:[0.3,1.7],  st:'low',   h:[8,16],   p:0.55},   // Bur Dubai
   {a:[26.8,32.2], i:[0.4,5.3],  st:'mid',   h:[8,22],   p:0.42},   // Deira
@@ -899,6 +899,7 @@ function buildObjects(){
     });
   }
   assignHeights();
+  landmarkTowers();
   // nothing stands in a fogged region
   if (FOG_A > -Infinity) for (let k=OBJECTS.length-1; k>=0; k--) if (inFog(worldToAI(OBJECTS[k].x, OBJECTS[k].y).a)) OBJECTS.splice(k, 1);
   OBJECTS.sort((p,q)=>p.d-q.d);
@@ -907,6 +908,38 @@ function buildObjects(){
 // tower districts (Downtown, the Marina, JLT, Business Bay): a few low blocks, some mid rise, mostly towers
 // (12 floors and up, with a setback top). Everywhere else: low rise (1 to 3 floors), mid rise (4 to 8) and a few
 // of 9 to 11. Neighbouring blocks get similar heights (smooth noise); each its own floor count (by its spot).
+// The landmark towers stay the tallest and nothing generated covers them (budget in art px, the map's full scale):
+//  - within 8 tiles of the Burj Khalifa no generated building is taller than 45 % of the Burj as drawn
+//  - elsewhere in Downtown, Business Bay and on Sheikh Zayed Road (DIFC), no taller than 60 % of it
+//  - anywhere, no taller than 130 px
+// and a generated building standing in front of a landmark tower (whose top would cover its spire or wing) is
+// drawn just before it instead.
+const HEIGHT_BUDGET = { nearBurj:0.45, nearTiles:8, corridor:0.6, globalPx:130 };
+const BURJ_PX = 332;   // the Burj Khalifa sprite's drawn height (its opaque rows)
+const budgetStats = { capped:0, near:0, corridor:0, global:0, reordered:0 };
+function landmarkTowers(){
+  const burj = OBJECTS.find(o=>o.k==='sprite' && o.id==='burj_khalifa');
+  const bAI = burj ? worldToAI(burj.px, burj.py) : null, corridor = DISTRICTS.filter(d=>d.corridor);
+  for (const o of OBJECTS){
+    if (o.k !== 'box' || (o.z0||0) > 0) continue;
+    const ai = worldToAI(o.x, o.y), near = bAI && Math.hypot(ai.a - bAI.a, ai.i - bAI.i) <= HEIGHT_BUDGET.nearTiles*T;
+    const inCorr = corridor.some(d=>inRect(ai.a, ai.i, d));
+    let cap = HEIGHT_BUDGET.globalPx, why = 'global';
+    if (near && BURJ_PX*HEIGHT_BUDGET.nearBurj < cap){ cap = BURJ_PX*HEIGHT_BUDGET.nearBurj; why = 'near'; }
+    else if (inCorr && BURJ_PX*HEIGHT_BUDGET.corridor < cap){ cap = BURJ_PX*HEIGHT_BUDGET.corridor; why = 'corridor'; }
+    const capH = cap/2 - (o.tower ? 8 : 0);   // world units; a tower keeps room for its rooftop kit
+    if (o.h > capH){ o.h = Math.floor(capH/FLOOR)*FLOOR; budgetStats.capped++; budgetStats[why]++; if (o.h < 12*FLOOR) o.tower = false; }
+  }
+  // generated buildings in front of a landmark tower that reach into its sprite draw just before it
+  for (const L of OBJECTS.filter(o=>o.k==='sprite' && o.h >= 75)){
+    const lx0 = L.x - L.w/2, lx1 = L.x + L.w/2, ly0 = L.y - L.h;
+    for (const o of OBJECTS){
+      if (o.k !== 'box' || o.d <= L.d || o.d > L.d + 10) continue;
+      const hw = TW/2*(o.hx + o.hy), top = o.y - (o.z0||0) - o.h - TH/2*(o.hx + o.hy);
+      if (o.x + hw > lx0 && o.x - hw < lx1 && top < L.y && o.y > ly0){ o.d = L.d - 0.01; budgetStats.reordered++; }
+    }
+  }
+}
 const FLOOR = 3;   // world units a floor
 const HEIGHT_MIX = { towers:[0.15, 0.40], other:[0.42, 0.74] };   // the shares below which a block is low, then mid
 function assignHeights(){
@@ -1640,7 +1673,7 @@ function shownStore(){
 /* ---------- finished overviews are kept in the browser's cache (per app version and theme), so the
    next launch shows the whole city at once and the worker only renders close-ups ---------- */
 // bump ART_REV whenever mapraster.js draws anything differently, so nobody keeps old art
-const ART_REV = 20, ART_CACHE = 'koko-map-art', ART_VER = `${APP.version}-r${ART_REV}`;
+const ART_REV = 21, ART_CACHE = 'koko-map-art', ART_VER = `${APP.version}-r${ART_REV}`;
 const artURL = (th, s)=>`/__map-art/${ART_VER}/${th}/${s}.png`;
 // The finished overviews ship with the app (map-art/overview, made by tools/build-overviews.mjs), so a
 // phone never shows half-finished ones. Wide first (small), then mid. If they can't be had, the worker
@@ -1960,6 +1993,7 @@ function render(){
   paintCity(ctx, cam.s*dpr/RS.S, Math.round(dpr*cam.x), Math.round(dpr*cam.y), canvas.width, canvas.height);
   { const t0 = performance.now(); drawLive(); const dt = performance.now() - t0; RS.liveMs = RS.liveMs == null ? dt : RS.liveMs*0.9 + dt*0.1; }   // the live layer's cost (tests)
   drawShows();
+  drawTapFx();
   ctx.setTransform(dpr*cam.s,0,0,dpr*cam.s,dpr*cam.x,dpr*cam.y);
   const view = { x0:-cam.x/cam.s, y0:-cam.y/cam.s, x1:(viewW-cam.x)/cam.s, y1:(viewH-cam.y)/cam.s };
   drawTint(view);
@@ -2104,7 +2138,7 @@ function initGestures(){
         } else {
           lastTap={t:now, x:e.clientX, y:e.clientY};
           const r=wrap.getBoundingClientRect(), lm = landmarkAt(e.clientX-r.left, e.clientY-r.top);
-          if (lm && opts.onLandmarkTap && !picking) opts.onLandmarkTap(lm);
+          if (lm && opts.onLandmarkTap && !picking){ focusLandmark(lm); opts.onLandmarkTap(lm); }
           else if (opts.onEmptyTap) opts.onEmptyTap();
         }
       }
@@ -2632,25 +2666,89 @@ function flyToWorld(w, minZoomMult){
   const s = Math.max(cam.s, baseFit*(minZoomMult||4));
   flyTo(w.x, w.y-30/s, Math.min(MAX_S, s));
 }
-// the landmark sprite under a point on screen (its opaque pixels, a little forgiving when zoomed out)
+/* ---------- tapping a landmark (TAP_BEHAVIOUR.md) ---------- */
+// what's under a point on screen: a landmark sprite's opaque pixels plus TAP_PAD CSS px, and always a box of at least
+// TAP_MIN CSS px round its middle; where they overlap the one drawn on top (by depth) wins. The QE2 the same way.
+// Terrains (the World, Palm Jebel Ali) on their land only, under everything else. (Pins sit above the map in the
+// page, so a tap on a pin never reaches here: the pin wins.)
+const TAP_PAD = 6, TAP_MIN = 44;
+const spriteOf = o=>o.k==='ship' ? o.kind + '_' + o.head : o.sprite;
+const tapId = o=>o.k==='ship' ? o.kind : o.id;
+// a sprite's opaque bounding box (sprite px), worked out once
+function opaqueBox(sp){
+  if (sp.box) return sp.box;
+  let x0 = sp.w, y0 = sp.h, x1 = -1, y1 = -1;
+  for (let y=0; y<sp.h; y++) for (let x=0; x<sp.w; x++) if (sp.data[y*sp.w + x] >>> 24){ x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+  return (sp.box = { x0, y0, x1:x1+1, y1:y1+1 });
+}
+function nearOpaque(sp, lx, ly, pad){
+  const st = Math.max(1, Math.floor(pad/6)), r = Math.ceil(pad);
+  for (let dy=-r; dy<=r; dy+=st) for (let dx=-r; dx<=r; dx+=st){
+    if (dx*dx + dy*dy > pad*pad) continue;
+    const X = Math.floor(lx+dx), Y = Math.floor(ly+dy); if (X<0 || Y<0 || X>=sp.w || Y>=sp.h) continue;
+    if (sp.data[Y*sp.w + X] >>> 24) return true;
+  }
+  return false;
+}
 function landmarkAt(sx, sy){
   if (!built) return null;
-  const ax = (sx - cam.x)/cam.s*RS.S, ay = (sy - cam.y)/cam.s*RS.S, k = cam.s*dpr/RS.S, pad = Math.min(10, Math.max(0, Math.round(2/Math.max(k, 0.2))));
-  const list = OBJECTS.filter(o=>o.k==='sprite' && SPR[o.sprite]).sort((p,q)=>q.d-p.d);   // front first
+  const ax = (sx - cam.x)/cam.s*RS.S, ay = (sy - cam.y)/cam.s*RS.S, perCss = RS.S/cam.s, pad = TAP_PAD*perCss, half = TAP_MIN/2*perCss;
+  const list = OBJECTS.filter(o=>(o.k==='sprite' || (o.k==='ship' && o.kind==='qe2')) && SPR[spriteOf(o)]).sort((p,q)=>q.d-p.d);   // front first
   for (const o of list){
-    const sp = SPR[o.sprite], x0 = Math.round(o.x*RS.S) - Math.round(sp.ax), y0 = Math.round(o.y*RS.S) - Math.round(sp.ay);
-    const lx = Math.floor(ax - x0), ly = Math.floor(ay - y0);
-    if (lx < -pad || ly < -pad || lx >= sp.w + pad || ly >= sp.h + pad) continue;
-    for (let dy=-pad; dy<=pad; dy++) for (let dx=-pad; dx<=pad; dx++){
-      const X = lx+dx, Y = ly+dy; if (X<0 || Y<0 || X>=sp.w || Y>=sp.h) continue;
-      if (sp.data[Y*sp.w + X] >>> 24) return { id:o.id, x:o.x, y:o.y };
-    }
+    const sp = SPR[spriteOf(o)], x0 = Math.round(o.x*RS.S) - Math.round(sp.ax), y0 = Math.round(o.y*RS.S) - Math.round(sp.ay);
+    const lx = ax - x0, ly = ay - y0, b = opaqueBox(sp), cx = (b.x0 + b.x1)/2, cy = (b.y0 + b.y1)/2;
+    const hit = { id:tapId(o), x:o.x, y:o.y, sprite:spriteOf(o), x0, y0 };
+    // the 44 px minimum: a sprite smaller than that on screen hits anywhere in a 44 px box round its middle
+    if ((b.x1 - b.x0 < 2*half || b.y1 - b.y0 < 2*half) && Math.abs(lx - cx) <= Math.max(half, (b.x1-b.x0)/2) && Math.abs(ly - cy) <= Math.max(half, (b.y1-b.y0)/2)) return hit;
+    if (lx < b.x0 - pad || ly < b.y0 - pad || lx >= b.x1 + pad || ly >= b.y1 + pad) continue;
+    if (nearOpaque(sp, lx, ly, pad)) return hit;
+  }
+  for (const t of TERRAINS){
+    if (!SPR[t.sprite]) continue;
+    const [ca, ci] = G(t.centre[0], t.centre[1]), cw = aiToWorld(ca, ci), k = t.scale;   // art px per sprite px
+    const x0 = Math.round(cw.x*RS.S - t.w*k/2), y0 = Math.round(cw.y*RS.S - t.h*k/2), px = Math.floor((ax - x0)/k), py = Math.floor((ay - y0)/k);
+    if (px >= 0 && py >= 0 && px < t.w && py < t.h && isLandPx(t, py*t.w + px)) return { id:t.id, x:cw.x, y:cw.y, sprite:t.sprite, x0, y0, scale:k, terrain:true };
   }
   return null;
 }
+// on a tap: ease the camera (250 ms) so the landmark sits in the upper part of the map, zoomed in to the first
+// whole-pixel step if it was further out than that; lift its sprite 2 px for 120 ms and outline it once in #ffd470
+let tapFx = null;
+function focusLandmark(hit){
+  const sp = SPR[hit.sprite]; if (!sp) return;
+  const k = hit.scale || 1, midY = (hit.y0 + sp.h*k/2)/RS.S, midX = (hit.x0 + sp.w*k/2)/RS.S;
+  const sMin = RS.S/dpr, s = cam.s < sMin ? snappedScale(sMin, true) : cam.s;
+  flyTo(midX, midY + (0.5 - 0.3)*viewH/s, s, 250);
+  tapFx = { hit, t0:performance.now() };
+  requestRender();
+}
+const outlineCache = new Map();
+function outlineOf(sp){
+  let c = outlineCache.get(sp); if (c) return c;
+  c = newCanvas(sp.w + 2, sp.h + 2); const g = c.getContext('2d'), id = g.createImageData(sp.w + 2, sp.h + 2), d = new Uint32Array(id.data.buffer), gold = 0xff70d4ff;
+  const on = (x, y)=>x>=0 && y>=0 && x<sp.w && y<sp.h && (sp.data[y*sp.w + x] >>> 24) >= 128;
+  for (let y=-1; y<=sp.h; y++) for (let x=-1; x<=sp.w; x++) if (!on(x, y) && (on(x-1,y) || on(x+1,y) || on(x,y-1) || on(x,y+1))) d[(y+1)*(sp.w+2) + x+1] = gold;
+  g.putImageData(id, 0, 0); outlineCache.set(sp, c); return c;
+}
+function drawTapFx(){
+  if (!tapFx) return;
+  const t = performance.now() - tapFx.t0; if (t > 420){ tapFx = null; return; }
+  const { hit } = tapFx, sp = SPR[hit.sprite]; if (!sp){ tapFx = null; return; }
+  const k = cam.s*dpr/RS.S, sk = hit.scale || 1, ox = Math.round(dpr*cam.x), oy = Math.round(dpr*cam.y), lift = (t < 120 && !reduceMotion) ? Math.round(2*dpr) : 0;
+  ctx.setTransform(1,0,0,1,0,0); ctx.imageSmoothingEnabled = false;
+  const x = Math.round(ox + hit.x0*k), y = Math.round(oy + hit.y0*k) - lift, w = sp.w*sk*k, h = sp.h*sk*k;
+  ctx.drawImage(outlineOf(sp), x - sk*k, y - sk*k, w + 2*sk*k, h + 2*sk*k);
+  if (lift) ctx.drawImage(nightSprite(sp).img, x, y, w, h);
+  requestRender();
+}
 // tests and screenshots: centre on a world point at an exact zoom (multiple of the fit-city zoom)
 // where a landmark stands (world point at the middle of its footprint)
-function landmarkWorld(id){ const o = OBJECTS.find(o=>o.k==='sprite' && o.id===id); return o ? { x:o.px, y:o.py, top:o.y - o.h } : null; }
+function landmarkWorld(id){
+  const o = OBJECTS.find(o=>(o.k==='sprite' && o.id===id) || (o.k==='ship' && o.kind===id));
+  if (o) return o.k==='ship' ? { x:o.x, y:o.y - 8, top:o.y - 30 } : { x:o.px, y:o.py, top:o.y - o.h };
+  const t = TERRAINS.find(t=>t.id===id); if (!t) return null;
+  const [ca, ci] = G(t.centre[0], t.centre[1]), cw = aiToWorld(ca, ci); return { x:cw.x, y:cw.y, top:cw.y };
+}
 function viewAt(w, ratio){ setView(w.x, w.y, Math.max(MIN_S, Math.min(MAX_S, baseFit*ratio))); }
 // zoom that separates one stamp from its nearest neighbour
 function flyToSeparate(w, others){
@@ -2709,7 +2807,7 @@ function setTheme(t){
 }
 function resize(){ if (built && resizeCanvas()){ if (needsCenter) initialView(); requestRender(); } }
 
-export { buildStats,
+export { focusLandmark, buildStats,
   initMap, whenReady, viewAt, rasterPending, rasterStats, landmarkAt, landmarkWorld, showInfo, setStamps, setAreaCounts, placeWorld, fitPoints, fitCity, flyToWorld, flyToSeparate,
   centerLatLng, viewZone, zoomRatio, setPicking, highlight, markDropped, setMeSprite, setSelected, startTracking,
   stopTracking, isTracking, drawSnapshot, snapshotPoint, refresh, resize, visible, setTheme, setShow, setZoneTint, setCars,
@@ -2721,7 +2819,7 @@ function buildData(){ buildTerrain(); buildObjects(); prepRoads(); }
 function setNight(on){ NIGHT = !!on; nightCache.clear(); }
 function setLineWidth(w){ LW = w; }
 export const RAW = { G, A_MIN, A_MAX, I_MIN, FOG_A, ACTIVE_REGIONS, REGION_PALMS, buildData, setNight, setLineWidth, drawObjectVector, C, shade, hash2, vnoise, isWaterT, proj, aiToGrid, gridToAI, aiToWorld, worldToAI, inRect,
-  tileAt, inFootprint, prepCarRoads, RUNWAYS, BRIDGE_KM, get FOOTPRINTS(){ return FOOTPRINTS; },
+  tileAt, inFootprint, prepCarRoads, budgetStats, HEIGHT_BUDGET, RUNWAYS, BRIDGE_KM, get FOOTPRINTS(){ return FOOTPRINTS; },
   TW, TH, LIP, SLAB, ROWS, COLS, WORLD, RD, OUT, TILE_COLORS, TILE_NIGHT, DISTRICTS, HOODS, TRAM,
   W_SEA, W_SHALLOW, L_BEACH, L_SAND, L_DUNE, L_URBAN, L_PARK, W_CANAL, L_TARMAC, L_PALM, L_LOT, L_GOLF, W_DEEP, L_FARM, L_CREST,
   get tType(){ return tType; }, get roadMask(){ return roadMask; }, worldTile, worldUnder, get OBJECTS(){ return OBJECTS; },

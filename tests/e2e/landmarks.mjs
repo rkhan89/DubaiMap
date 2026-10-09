@@ -29,9 +29,9 @@ export default async function landmarks(h){
       return L.LANDMARKS.map(l=>{ const w=M.landmarkWorld(l.id); return { id:l.id, ok:!!w, hit:w ? !!M.landmarkAt : false }; }); });
     const bad = r.filter(x=>!x.ok); if (bad.length) throw new Error(JSON.stringify(bad));
   });
-  await step('the critter hook is there and returns nothing yet', async ()=>{
-    const v = await h.js(async ()=>{ const L=await import('/landmarks.js'); return L.LANDMARKS.map(l=>L.landmarkCritter(l.id)); });
-    if (v.some(x=>x)) throw new Error('a landmark critter is set');
+  await step('the critter hook: the eight landmarks with a critter return it; the card shows no silhouette (flag off)', async ()=>{
+    const v = await h.js(async ()=>{ const L=await import('/landmarks.js'); return { n:[...L.LANDMARKS, ...L.TAPPABLE].filter(l=>L.landmarkCritter(l.id)).length, flag:L.SHOW_LANDMARK_CRITTER }; });
+    if (v.n !== 8 || v.flag) throw new Error(JSON.stringify(v));
   });
   for (const id of ['museum_of_the_future','dubai_frame','al_fahidi','atlantis_the_palm','emirates_towers','jumeirah_mosque','burj_al_arab','global_village','dubai_mall','mall_of_the_emirates','ibn_battuta','dragon_mart','wafi','city_centre_deira']){
     await go(id, 9); await h.shot('lm-' + id);

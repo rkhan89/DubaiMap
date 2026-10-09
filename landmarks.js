@@ -9,8 +9,9 @@
 //   venue:  names a matching place in the app might have (the card links to it)
 import { CARDS } from './landmark-cards.js';
 import { TERRAINS } from './terrains.js';
+import { factsFor } from './landmark-facts.js';
 export const LANDMARKS = [
-  { id:'burj_khalifa', size:[76,220], name:'Burj Khalifa', lat:25.1972, lng:55.2744, sprite:'burj_khalifa', clear:2, plot:'plaza', plotR:2,
+  { id:'burj_khalifa', size:[124,340], name:'Burj Khalifa', lat:25.1972, lng:55.2744, sprite:'burj_khalifa', clear:2, plot:'plaza', plotR:2,
     fact:'At 828 m it has been the world’s tallest building since it opened in 2010.', venue:['Burj Khalifa', 'At the Top'] },
   { id:'dubai_fountain', size:[136,100], name:'The Dubai Fountain', lat:25.19518, lng:55.27506, sprite:'dubai_fountain_0', clear:0, plot:'lake',
     fact:'The world’s largest choreographed fountain: 275 m long, with jets up to 152 m high. Shows run every half hour in the evening.', venue:['Dubai Fountain'] },
@@ -85,12 +86,18 @@ MALLS.forEach(m=>{
 });
 LANDMARKS.push({ id:'global_village', name:'Global Village', lat:25.06815, lng:55.30731, sprite:'global_village', size:[108,96], clear:2, plot:'none', kind:'park',
   fact:'A seasonal festival park of country pavilions, rides and food, open each winter from October to spring. It first opened in 1996.', venue:['Global Village'] });
-export const landmarkById = id=>LANDMARKS.find(l=>l.id===id);
+// other things you can tap that aren't placed as landmark sprites: the QE2 (a moored ship, map.js) and the
+// terrains (terrains.js), which hit on their land only
+export const TAPPABLE = [
+  { id:'qe2', name:'Queen Elizabeth 2', lat:25.26826, lng:55.27617, sprite:'qe2_ne', size:[84,60], ship:true },   // its mooring on the map, at Port Rashid
+  ...TERRAINS.map(t=>({ id:t.id, name:(factsFor(t.id)||{}).name || t.id, lat:t.centre[0], lng:t.centre[1], sprite:t.sprite, size:[t.w, t.h], terrain:true })),
+];
+export const landmarkById = id=>LANDMARKS.find(l=>l.id===id) || TAPPABLE.find(l=>l.id===id);
 
-// The landmark critters (one per landmark, art to come). Until they're confirmed this returns
-// nothing, and the card shows no critter. HOOK: return { id, name, art } here to show a locked
-// silhouette on the card (caught only by checking in at the landmark).
-export function landmarkCritter(id){ return null; }
+// The landmark critters: eight landmarks have one (landmark-facts.js critter). Nothing on the map hints at
+// them. The card's locked silhouette is a decision still to make, so it stays off behind this flag.
+export const SHOW_LANDMARK_CRITTER = false;
+export function landmarkCritter(id){ const f = factsFor(id); return f && f.critter ? { id:f.critter, landmark:id } : null; }
 
 // The small props. A file is only used if it's no bigger than this; until then the map keeps its own
 // small placeholders (camels, palms). Boats and planes come in four headings, by the bow's direction on

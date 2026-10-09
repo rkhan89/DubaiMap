@@ -228,7 +228,7 @@ function logFlow(opts){
   };
   const existingPhotos = editing ? S.photos({entryId:editing.id}) : [];
   const newPhotos = (opts.photos||[]).slice(0, APP.photosPerLog);   // {blob, url, caption}: some may arrive picked already
-  let query = '';
+  let query = opts.prefill && opts.prefill.name ? opts.prefill.name : '';
   // where you are, once you've said "I'm here now"
   let here = null, locating = false;
   const checkedIn = ()=>{ if (!here || !venue || editing || d.kind!=='visit' || d.date!==todayISO()) return false;
@@ -266,7 +266,8 @@ function logFlow(opts){
         q.oninput=()=>{ query=q.value; const pos=q.selectionStart; paint(); const n=el.querySelector("#logQ"); n.setSelectionRange(pos,pos); suggestSoon(); };
         el.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>pickGoogle(b.dataset.g, b));
         el.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{ venue=S.venue(b.dataset.v); paint(); });
-        const nb=el.querySelector('#lNew'); if (nb) nb.onclick=()=>venueForm({name:query.trim(), zone:opts.zone}, dd=>{ venue=S.addVenue(dd); if (dd.meals && dd.meals.length) d.meals=dd.meals.slice(); paint(); });
+        // a landmark's 'Add a pin here' brings its spot along
+        const nb=el.querySelector('#lNew'); if (nb) nb.onclick=()=>venueForm({name:query.trim(), ...(opts.prefill && opts.prefill.lat!=null ? { lat:opts.prefill.lat, lng:opts.prefill.lng, zone:zoneFor(opts.prefill.lat, opts.prefill.lng) || opts.zone } : { zone:opts.zone })}, dd=>{ venue=S.addVenue(dd); if (dd.meals && dd.meals.length) d.meals=dd.meals.slice(); paint(); });
         el.querySelector('#lMore').onclick=()=>toast('Search your crew’s places, or type a new name to add it');
         return;
       }
