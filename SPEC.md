@@ -509,6 +509,19 @@ neighbourhoods, ~7,400 objects); only the drawing changed.
   - A generated building in front of a landmark tower that would reach into its sprite is drawn just before it, so
     nothing covers a spire or wing.
 
+## Dubai Marina, JBR and Bluewaters (the Marina pack)
+- Princess Tower, Marina 101 and Ciel Tower stand at their real positions (Wikipedia / Wikidata); on this stylised channel
+  a tower whose spot falls in the water moves to the nearest land. Dubai Marina Mall uses the pack's sprite. Each has a card
+  (landmark-facts.js, all marked for checking). Cayan Tower has no sprite yet (generated towers stand round it).
+- The canal: `marina_canal_ne` where the channel runs along the coast, `marina_canal_nw` where it turns inland, laid along
+  the channel flat on the ground (drawn with the terrain); the promenades are cleared; yachts stay on the water tiles.
+- JBR: blocks a, b, c in turn along the beachfront (three span JBR's 1.7 km at this map's scale), The Walk on the sand side
+  (two copies; both open its card). The blocks have no card and nothing to tap (FILLERS in landmarks.js).
+- Bluewaters is a terrain sprite (terrains.js, x1, larger than life: the smallest whole scale) with Ain Dubai on it; the old
+  drawn island and wheel are gone. Its sand gets no generated beach props.
+- Search: the areas_marina.json aliases (marina mall, the beach, blue waters, ain dubai, the wheel, dubai eye), in
+  search-data.js and migration 0014.
+
 ## Search
 - **Where:** the search icon on the map (a panel) and on the Shelf and in each book (a sheet, scrapbook
   entries first). Same box, same results: Places, and Scrapbook entries.

@@ -80,11 +80,23 @@ export const MALLS = [
   ['al_khawaneej_walk','Al Khawaneej Walk',25.23341,55.47287,[220,150],4,'garden'],
   ['the_springs_souk','The Springs Souk',25.06565,55.19285,[180,220],6,'skylight'],
 ].map(([id, name, lat, lng, fp, h, roof, fact])=>({ id, name, lat, lng, fp, h, roof, fact, kind:'mall' }));
+const MALL_ART = { dubai_marina_mall:{ sprite:'marina_mall', size:[100,104], fpx:[68,31] } };   // malls redrawn by a later pack
 MALLS.forEach(m=>{
-  const c = CARDS['mall_'+m.id];
-  LANDMARKS.push({ id:m.id, name:m.name, lat:m.lat, lng:m.lng, sprite:'mall_'+m.id, size:c.size, fpx:c.fpx, clear:Math.max(1, Math.round(Math.max(c.fpx[0], c.fpx[1])/32)),
+  const c = { ...CARDS['mall_'+m.id], ...MALL_ART[m.id] };
+  LANDMARKS.push({ id:m.id, name:m.name, lat:m.lat, lng:m.lng, sprite:c.sprite || 'mall_'+m.id, size:c.size, fpx:c.fpx, clear:Math.max(1, Math.round(Math.max(c.fpx[0], c.fpx[1])/32)),
     plot:'parking', kind:'mall', fp:m.fp, fact:m.fact || '', venue:[m.name] });
 });
+// The Marina pack (marina_pack, Oct 2026). Towers at their real positions (Wikipedia / Wikidata coordinates); a tower
+// whose spot lands in the map's stylised channel moves to the nearest land (plot 'plaza'). Ain Dubai stands on
+// Bluewaters (a terrain, terrains.js). The Walk at JBR is one landmark with a second copy along the beach (FILLERS).
+// ai: [km along the coast, km inland], when the drawing goes somewhere other than its lat/lng (the card keeps the real spot)
+LANDMARKS.push(
+  { id:'princess_tower', size:[44,196], fpx:[21,21], name:'Princess Tower', lat:25.088625, lng:55.146858, sprite:'princess_tower', clear:1, plot:'plaza', plotR:1, venue:['Princess Tower'] },
+  { id:'marina_101', size:[52,206], fpx:[25,25], name:'Marina 101', lat:25.08898, lng:55.14863, sprite:'marina_101', clear:1, plot:'plaza', plotR:1, venue:['Marina 101', 'Hard Rock Hotel Dubai'] },
+  { id:'ciel_tower', size:[46,196], fpx:[22,23], name:'Ciel Tower', lat:25.08744, lng:55.14454, sprite:'ciel_tower', clear:1, plot:'plaza', plotR:1, venue:['Ciel Tower', 'Ciel Dubai Marina'] },
+  { id:'ain_dubai', size:[124,150], fpx:[36,28], name:'Ain Dubai', lat:25.080111, lng:55.124056, sprite:'ain_dubai', clear:0, plot:'none', venue:['Ain Dubai'] },
+  { id:'jbr_walk', size:[108,62], fpx:[85,19], name:'The Walk, JBR', lat:25.0772222, lng:55.1348694, ai:[-0.36, 0.20], sprite:'jbr_walk', clear:0, plot:'none', venue:['The Walk', 'JBR', 'The Beach'] },
+);
 LANDMARKS.push({ id:'global_village', name:'Global Village', lat:25.06815, lng:55.30731, sprite:'global_village', size:[108,96], clear:2, plot:'none', kind:'park',
   fact:'A seasonal festival park of country pavilions, rides and food, open each winter from October to spring. It first opened in 1996.', venue:['Global Village'] });
 // other things you can tap that aren't placed as landmark sprites: the QE2 (a moored ship, map.js) and the
@@ -94,6 +106,20 @@ export const TAPPABLE = [
   ...TERRAINS.map(t=>({ id:t.id, name:(factsFor(t.id)||{}).name || t.id, lat:t.centre[0], lng:t.centre[1], sprite:t.sprite, size:[t.w, t.h], terrain:true })),
 ];
 export const landmarkById = id=>LANDMARKS.find(l=>l.id===id) || TAPPABLE.find(l=>l.id===id);
+
+// Filler art: drawn like a landmark but no card and nothing to tap (tap: tapping it opens that landmark instead).
+//   JBR's blocks, a, b, c in turn along the beachfront (six sectors over 1.7 km; at this map's scale three
+//   blocks span it), with the second copy of The Walk on the sand side
+//   ground: drawn flat on the ground with the terrain, before anything stands on it (the Marina's canal, map.js
+//   lays its pieces along the channel)
+export const FILLERS = [
+  { sprite:'jbr_block_a', ai:[-0.55, 0.50], size:[84,124], fpx:[58,25] },
+  { sprite:'jbr_block_b', ai:[0.17, 0.50], size:[84,124], fpx:[58,25] },
+  { sprite:'jbr_block_c', ai:[0.89, 0.50], size:[84,124], fpx:[58,25] },
+  { sprite:'jbr_walk', ai:[0.70, 0.20], size:[108,62], fpx:[85,19], tap:'jbr_walk' },
+];
+// the Marina's canal pieces: ne runs along the coast, nw inland (map.js picks one per stretch of the channel)
+export const CANAL_ART = { marina_canal_ne:{ size:[104,60], fpx:[63,40], km:0.74 }, marina_canal_nw:{ size:[104,60], fpx:[41,40], km:0.48 } };
 
 // The landmark critters (landmark-critters.js): one at each of 13 landmarks. Nothing on the map hints at them;
 // they're found from the landmark's card (landmarkui.js).
@@ -129,6 +155,6 @@ export const SLOT_ART = {
 };
 Object.assign(PROPS, SLOT_ART);
 // every file the map loads from map-art/
-export const SPRITE_FILES = [...new Set([...LANDMARKS.map(l=>l.sprite), 'dubai_fountain_1','dubai_fountain_2','dubai_fountain_3','dubai_fountain_4','dubai_fountain_5', ...Object.keys(PROPS), ...TERRAINS.map(t=>t.sprite)])];   // (slot art joins through PROPS once listed in SLOT_ART)
+export const SPRITE_FILES = [...new Set([...LANDMARKS.map(l=>l.sprite), ...FILLERS.map(f=>f.sprite), ...Object.keys(CANAL_ART), 'dubai_fountain_1','dubai_fountain_2','dubai_fountain_3','dubai_fountain_4','dubai_fountain_5', ...Object.keys(PROPS), ...TERRAINS.map(t=>t.sprite)])];   // (slot art joins through PROPS once listed in SLOT_ART)
 // footprints for the pack's other sprites (art pixels: [coast, inland])
 for (const lm of LANDMARKS){ const c = CARDS[lm.sprite]; if (c && !lm.fpx) lm.fpx = c.fpx; }

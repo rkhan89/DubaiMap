@@ -94,7 +94,8 @@ test('every landmark, mall, boat and plane sprite is drawn 1:1 at the map scale 
   const fake = (w, h, seed)=>{ const d = new Uint32Array(w*h); let x = seed; for (let q=0; q<d.length; q++){ x = (x*1103515245 + 12345) >>> 0; d[q] = (0xff000000 | (x >>> 8)) >>> 0; } return { w, h, data:d, ax:w/2, ay:h }; };
   // (not those in the soft haze along the map's edges, which tints every pixel there)
   const inHaze = o=>{ const ai = R.worldToAI(o.x, o.y), g = R.aiToGrid(ai.a, ai.i); return Math.min(g.gx, g.gy, R.COLS - g.gx, R.ROWS - g.gy) < 16; };
-  const objs = O.filter(o=>(o.k==='sprite' || o.k==='boat' || o.k==='plane') && !inHaze(o));
+  // (the Marina's canal pieces are laid on the ground and overlap end to end, so not those)
+  const objs = O.filter(o=>(o.k==='sprite' || o.k==='boat' || o.k==='plane') && !o.ground && !inHaze(o));
   assert.ok(objs.length > 40, 'sprites checked: ' + objs.length);
   for (const o of objs){
     const name = o.k==='sprite' ? o.sprite : o.k==='boat' ? o.kind + '_' + o.head : 'plane_' + o.head;

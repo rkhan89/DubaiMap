@@ -138,6 +138,69 @@ export const LANDMARK_FACTS = [
   "bonus": "Announced as up to twice the size of Palm Jumeirah, with about 110 km of additional coastline.",
   "source": "https://en.wikipedia.org/wiki/Palm_Jebel_Ali",
   "verify": true
- }
+ },
+{
+ "id": "princess_tower",
+ "name": "Princess Tower",
+ "area": "Dubai Marina",
+ "fact": "Princess Tower is 413.4 m tall with 101 floors. It was the world's tallest residential building from 2012 to 2015.",
+ "bonus": "It was completed in September 2012, and 432 Park Avenue in New York overtook it in 2015.",
+ "source": "https://en.wikipedia.org/wiki/Princess_Tower",
+ "verify": true
+},
+{
+ "id": "marina_101",
+ "name": "Marina 101",
+ "area": "Dubai Marina",
+ "fact": "Marina 101 is about 425 m tall. Its first 33 floors are a 281-room Hard Rock hotel, and floors 34 to 100 are residential.",
+ "bonus": "The 101st floor has a club lounge and restaurant. Construction began in 2006 and stalled when the original developer ran out of capital.",
+ "source": "https://en.wikipedia.org/wiki/Marina_101",
+ "verify": true
+},
+{
+ "id": "ciel_tower",
+ "name": "Ciel Tower",
+ "area": "Dubai Marina",
+ "fact": "Ciel Tower is the world's tallest hotel-only building, at 377 m with 82 floors and 1,042 rooms.",
+ "bonus": "Its silver facade tapers at the top and bottom, with recesses at the apex. The hotel opened in November 2025.",
+ "source": "https://en.wikipedia.org/wiki/Ciel_Tower",
+ "verify": true
+},
+{
+ "id": "dubai_marina_mall",
+ "name": "Dubai Marina Mall",
+ "area": "Dubai Marina",
+ "fact": "Dubai Marina Mall opened in December 2008 and has 140 retail outlets. It is linked to the JW Marriott Marina hotel.",
+ "bonus": "A zipline called XLine runs from the mall into the Marina, starting 170 m above ground and reaching up to 80 km/h.",
+ "source": "https://en.wikipedia.org/wiki/Dubai_Marina",
+ "verify": true
+},
+{
+ "id": "jbr_walk",
+ "name": "The Walk, JBR",
+ "area": "JBR",
+ "fact": "The Walk at Jumeirah Beach Residence is a 1.7 km strip of shops and restaurants at ground and plaza level. It officially opened in August 2008.",
+ "bonus": "Next to it, The Beach is a retail complex with four plazas and about 70 shops and restaurants.",
+ "source": "https://en.wikipedia.org/wiki/Jumeirah_Beach_Residence",
+ "verify": true
+},
+{
+ "id": "ain_dubai",
+ "name": "Ain Dubai",
+ "area": "Bluewaters",
+ "fact": "Ain Dubai is a 250 m observation wheel on Bluewaters Island, and has been the world's tallest since it opened on 21 October 2021. It has 48 cabins and carries up to 1,750 passengers.",
+ "bonus": "It closed in March 2022 for 'periodic enhancements', stayed closed indefinitely from April 2023, and reopened to visitors on 26 December 2024.",
+ "source": "https://en.wikipedia.org/wiki/Ain_Dubai",
+ "verify": true
+},
+{
+ "id": "bluewaters_island",
+ "name": "Bluewaters Island",
+ "area": "Bluewaters",
+ "fact": "Bluewaters is an artificial island about 400 m off the JBR coast. It opened in November 2018.",
+ "bonus": "Madame Tussauds Dubai opened there in September 2021, and the island also has retail, hotels and residences.",
+ "source": "https://en.wikipedia.org/wiki/Bluewaters_Island",
+ "verify": true
+}
 ];
 export const factsFor = id=>LANDMARK_FACTS.find(f=>f.id===id) || null;

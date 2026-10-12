@@ -8,10 +8,11 @@ import { fileURLToPath } from 'url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const M = await import(new URL('../map.js', import.meta.url));
 
-// agreed aliases (the brief); every area's own name matches too
+// agreed aliases (the brief, then areas_marina.json from the Marina pack); every area's own name matches too
 export const ALIASES = {
-  marina:['marina', 'dubai marina', 'marina walk'],
-  jbr:['jbr', 'jumeirah beach residence', 'the walk'],
+  marina:['marina', 'dubai marina', 'marina walk', 'marina mall'],
+  jbr:['jbr', 'jumeirah beach residence', 'the walk', 'the beach'],
+  bluewaters:['bluewaters', 'blue waters', 'bluewaters island', 'ain dubai', 'the wheel', 'dubai eye'],
   jlt:['jlt', 'jumeirah lakes towers'],
   downtown:['downtown', 'burj khalifa area', 'dubai mall'],
   palm:['palm', 'the palm'],

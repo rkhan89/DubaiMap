@@ -3,7 +3,7 @@
 // and labels. The city itself is drawn as pixel art by mapraster.js, in a Web Worker (mapworker.js),
 // and composited here from overviews and chunks (see "the pixel city" below).
 import { APP } from './config.js';
-import { LANDMARKS as ART_LANDMARKS, PROPS, SPRITE_FILES, QUAY_SLOTS } from './landmarks.js';
+import { LANDMARKS as ART_LANDMARKS, PROPS, SPRITE_FILES, QUAY_SLOTS, FILLERS, CANAL_ART } from './landmarks.js';
 import { NIGHT_FX } from './nightfx.js';
 import { TERRAINS, isLandPx } from './terrains.js';
 import { REGIONS } from './regions.js';
@@ -171,7 +171,6 @@ const QE2_AT = [25.6, -1.05];
 function onLand(lat,lng){ const {a,i}=toAI(lat,lng); if (!inMap(a,i)) return false; if (palmAt(a,i)) return true; return i > coastIn(a)+0.3 && distLine(a,i,CREEK) > 0.35 && distLine(a,i,MARINA) > 0.2; }
 
 const ISLANDS = [
-  {e:G(25.0806,55.1205), rx:0.42, ry:0.3, t:'urban'},     // Bluewaters
   {e:G(25.1412,55.1853), rx:0.14, ry:0.14, t:'beach'},    // Burj Al Arab
   {e:[18.6,-0.8], rx:0.3, ry:0.24, t:'beach'},            // Jumeirah Bay
   {r:[[2.35,3.05],[-0.6,0.12]], t:'urban'},               // Dubai Harbour
@@ -625,8 +624,8 @@ function reserveAround(a,i,rad){
 }
 
 // old landmark drawings now done by the art pack's sprites (landmarks.js)
-const ART_KEYS = new Set(['burj','baa','frame','motf','atlantis','jmosque','emtowers','wildwadi','gv','mall','moe','ibn','festival','dcc','mirdifcc','dhmall','dragonmart']);
-function landmarkPoint(l){ return l.at==='palm-crescent' ? ATLANTIS : l.plot==='lake' ? BURJ_LAKE.c : G(l.lat, l.lng); }
+const ART_KEYS = new Set(['ain','burj','baa','frame','motf','atlantis','jmosque','emtowers','wildwadi','gv','mall','moe','ibn','festival','dcc','mirdifcc','dhmall','dragonmart']);
+function landmarkPoint(l){ return l.ai ? l.ai : l.at==='palm-crescent' ? ATLANTIS : l.plot==='lake' ? BURJ_LAKE.c : G(l.lat, l.lng); }
 function buildObjects(){
   OBJECTS.length = 0; FOOTPRINTS.length = 0;
   // the art-pack landmarks: the point is the middle of the sprite's footprint (its anchor sits half the
@@ -660,6 +659,28 @@ function buildObjects(){
       plotHx: l.fp ? l.fp[1]/400 + 0.6 : 0, plotHy: l.fp ? l.fp[0]/400 + 0.6 : 0 });
     FOOTPRINTS.push({ a:at[0], i:at[1], ha:fha, hi:fhi, o:OBJECTS[OBJECTS.length-1] });
   });
+  // filler art (landmarks.js): JBR's blocks and The Walk's second copy. Its ground is cleared; nothing to tap
+  // unless it names a landmark (tap)
+  FILLERS.forEach(f=>{
+    const [a, i] = f.ai, ha = f.fpx[0]/16*T/2, hi = f.fpx[1]/16*T/2, g = aiToGrid(a, i), p = proj(g.gx, g.gy);
+    forRect({ a:[a-ha, a+ha], i:[i-hi, i+hi] }, (r,c)=>{ reserved[r*COLS+c] = 1; });
+    OBJECTS.push({ k:'sprite', id:'filler:' + f.sprite, filler:true, tap:f.tap || null, sprite:f.sprite, x:p.x, y:p.y + (f.fpx[0] + f.fpx[1])/8, px:p.x, py:p.y,
+      w:f.size[0]/2, h:f.size[1]/2, d:g.gx + g.gy + f.size[0]/32 + 0.4, plot:'none' });
+    FOOTPRINTS.push({ a, i, ha, hi, o:OBJECTS[OBJECTS.length-1] });
+  });
+  // the Marina's canal: its pieces laid along the channel, flat on the ground (drawn with the terrain), ne pieces
+  // where the channel runs along the coast and nw where it turns inland; the promenades either side are cleared
+  for (let s=0; s<MARINA.length-1; s++){
+    const A = MARINA[s], B = MARINA[s+1], da = B[0]-A[0], di = B[1]-A[1], L = Math.hypot(da, di);
+    const name = Math.abs(da) >= Math.abs(di) ? 'marina_canal_ne' : 'marina_canal_nw', art = CANAL_ART[name], n = Math.max(1, Math.round(L/art.km));
+    for (let q=0; q<n; q++){
+      const u = (q + 0.5)/n, a = A[0] + da*u, i = A[1] + di*u, g = aiToGrid(a, i), p = proj(g.gx, g.gy);
+      const ha = art.fpx[0]/16*T/2, hi = art.fpx[1]/16*T/2;
+      forRect(name === 'marina_canal_ne' ? { a:[a-ha, a+ha], i:[i-hi*0.7, i+hi*0.7] } : { a:[a-hi*0.7, a+hi*0.7], i:[i-ha, i+ha] }, (r,c)=>{ reserved[r*COLS+c] = 1; });
+      OBJECTS.push({ k:'sprite', id:'canal:' + s + ':' + q, filler:true, ground:true, sprite:name, x:p.x, y:p.y + (art.fpx[0] + art.fpx[1])/8, px:p.x, py:p.y,
+        w:art.size[0]/2, h:art.size[1]/2, d:-1, plot:'none' });
+    }
+  }
   // nothing tall in front of the lake, so the fountain's show is never hidden
   { const [ca, ci] = BURJ_LAKE.c, h = BURJ_LAKE.h + 0.5;
     for (let r=0;r<ROWS;r++) for (let c=0;c<COLS;c++){ const {a,i} = gridToAI(c+0.5,r+0.5); if (Math.abs(a-ca) <= h && Math.abs(i-ci) <= h && (i-ci) - (a-ca) > -0.3) reserved[r*COLS+c] = 1; } }
@@ -823,7 +844,7 @@ function buildObjects(){
   { const rng = mulberry32(31337);
     const PUBLIC_BEACH = [[-1.2,1.0],[11.0,12.6],[20.2,21.4],[32.0,33.2],[16.5,18.5],[8.4,9.4]];   // JBR, Kite Beach, La Mer, Mamzar, Jumeirah, Sunset
     for (let r=0;r<ROWS;r++) for (let c=0;c<COLS;c++){
-      const k=r*COLS+c, t=tType[k]; if (roadMask[k] || reserved[k]) continue;
+      const k=r*COLS+c, t=tType[k]; if (roadMask[k] || reserved[k] || worldTile[k]) continue;   // (terrain art brings its own)
       const {a,i} = gridToAI(c+0.5,r+0.5), p = tileWorld(c,r);
       if (t===L_BEACH){
         if (i>-0.5 && rng()<0.1) OBJECTS.push({k:'palm', x:p.x+(rng()-0.5)*6, y:p.y, d:c+r+1, s:0.8+rng()*0.3});
@@ -1673,7 +1694,7 @@ function shownStore(){
 /* ---------- finished overviews are kept in the browser's cache (per app version and theme), so the
    next launch shows the whole city at once and the worker only renders close-ups ---------- */
 // bump ART_REV whenever mapraster.js draws anything differently, so nobody keeps old art
-const ART_REV = 21, ART_CACHE = 'koko-map-art', ART_VER = `${APP.version}-r${ART_REV}`;
+const ART_REV = 22, ART_CACHE = 'koko-map-art', ART_VER = `${APP.version}-r${ART_REV}`;
 const artURL = (th, s)=>`/__map-art/${ART_VER}/${th}/${s}.png`;
 // The finished overviews ship with the app (map-art/overview, made by tools/build-overviews.mjs), so a
 // phone never shows half-finished ones. Wide first (small), then mid. If they can't be had, the worker
@@ -2674,7 +2695,7 @@ function flyToWorld(w, minZoomMult){
 // page, so a tap on a pin never reaches here: the pin wins.)
 const TAP_PAD = 6, TAP_MIN = 44;
 const spriteOf = o=>o.k==='ship' ? o.kind + '_' + o.head : o.sprite;
-const tapId = o=>o.k==='ship' ? o.kind : o.id;
+const tapId = o=>o.k==='ship' ? o.kind : o.tap || o.id;
 // a sprite's opaque bounding box (sprite px), worked out once
 function opaqueBox(sp){
   if (sp.box) return sp.box;
@@ -2694,7 +2715,7 @@ function nearOpaque(sp, lx, ly, pad){
 function landmarkAt(sx, sy){
   if (!built) return null;
   const ax = (sx - cam.x)/cam.s*RS.S, ay = (sy - cam.y)/cam.s*RS.S, perCss = RS.S/cam.s, pad = TAP_PAD*perCss, half = TAP_MIN/2*perCss;
-  const list = OBJECTS.filter(o=>(o.k==='sprite' || (o.k==='ship' && o.kind==='qe2')) && SPR[spriteOf(o)]).sort((p,q)=>q.d-p.d);   // front first
+  const list = OBJECTS.filter(o=>((o.k==='sprite' && (!o.filler || o.tap)) || (o.k==='ship' && o.kind==='qe2')) && SPR[spriteOf(o)]).sort((p,q)=>q.d-p.d);   // front first
   for (const o of list){
     const sp = SPR[spriteOf(o)], x0 = Math.round(o.x*RS.S) - Math.round(sp.ax), y0 = Math.round(o.y*RS.S) - Math.round(sp.ay);
     const lx = ax - x0, ly = ay - y0, b = opaqueBox(sp), cx = (b.x0 + b.x1)/2, cy = (b.y0 + b.y1)/2;

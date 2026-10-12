@@ -30,10 +30,10 @@ drop policy if exists "areas: everyone reads" on public.areas;
 create policy "areas: everyone reads" on public.areas for select to anon, authenticated using (true);
 -- AREAS SEED START (tools/search-seed.mjs)
 insert into public.areas (id, name, aliases, zone_id, lat, lng) values
-  ('marina', 'Dubai Marina', array['marina','dubai marina','marina walk']::text[], 'marina', 25.0805, 55.1403),
-  ('jbr', 'JBR', array['jbr','jumeirah beach residence','the walk']::text[], 'jbr', 25.078, 55.134),
+  ('marina', 'Dubai Marina', array['marina','dubai marina','marina walk','marina mall']::text[], 'marina', 25.0805, 55.1403),
+  ('jbr', 'JBR', array['jbr','jumeirah beach residence','the walk','the beach']::text[], 'jbr', 25.078, 55.134),
   ('jlt', 'JLT', array['jlt','jumeirah lakes towers']::text[], 'jlt', 25.0693, 55.144),
-  ('bluewaters', 'Bluewaters', array[]::text[], 'bluewaters', 25.0806, 55.1205),
+  ('bluewaters', 'Bluewaters', array['bluewaters','blue waters','bluewaters island','ain dubai','the wheel','dubai eye']::text[], 'bluewaters', 25.0806, 55.1205),
   ('palm', 'Palm Jumeirah', array['palm','the palm']::text[], 'palm', 25.1124, 55.139),
   ('mediacity', 'Media City', array[]::text[], 'mediacity', 25.095, 55.156),
   ('barsha', 'Al Barsha', array[]::text[], 'barsha', 25.11, 55.2),

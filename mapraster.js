@@ -232,6 +232,24 @@ function drawTerrains(buf, s, groundMask){
   }
 }
 
+// art laid flat on the ground (the Marina's canal pieces): drawn with the terrain, before anything stands on it.
+// Its water is water and the rest is land for what's drawn after (roads, the visible-water mask).
+function drawGroundArt(buf, s, list, groundMask){
+  for (const k of list){
+    const o = M.OBJECTS[k]; if (!o.ground) continue;
+    const sp = spriteFor(o.sprite, s); if (!sp) continue;
+    const raw = spriteFor(o.sprite, s, true) || sp, [x0, y0] = spriteOrigin(o, sp, s);
+    const bx0 = Math.max(x0, buf.ox), by0 = Math.max(y0, buf.oy), bx1 = Math.min(x0+sp.w, buf.ox+buf.w), by1 = Math.min(y0+sp.h, buf.oy+buf.h);
+    for (let y=by0; y<by1; y++) for (let x=bx0; x<bx1; x++){
+      const j = (y-y0)*sp.w + (x-x0), c = sp.data[j]; if ((c>>>24) < 128) continue;
+      const q = (y-buf.oy)*buf.w + (x-buf.ox); if (groundMask && !groundMask[q]) continue;
+      buf.data[q] = (c | 0xff000000) >>> 0;
+      const r0 = raw.data[j], rr = r0 & 255, gg = r0>>8 & 255, bb = r0>>16 & 255;
+      if (groundMask) groundMask[q] = (gg > rr + 20 && bb > rr + 20 ? M.W_CANAL : M.L_URBAN) + 1;
+    }
+  }
+}
+
 /* =========================================================
    ROADS (asphalt, kerbs, markings) and the tram
    ========================================================= */
@@ -620,11 +638,12 @@ function nightPx(c){
   return hex(k(r*0.16 + 22 + l*44), k(g*0.18 + 28 + l*46), k(b*0.24 + 46 + l*52), a);
 }
 // a sprite at scale s (native at full scale; averaged down for the overviews), in the current theme
-function spriteFor(name, s){
+// day: the daytime colours whatever the time (to tell water from land in the art)
+function spriteFor(name, s, day){
   const sp = SPRITES[name]; if (!sp) return null;
-  const f = Math.max(1, Math.round(S/s)), key = name + '|' + (night() ? 1 : 0) + '|' + f;
+  const nt = night() && !day, f = Math.max(1, Math.round(S/s)), key = name + '|' + (nt ? 1 : 0) + '|' + f;
   let out = spriteCache.get(key); if (out) return out;
-  let data = night() ? sp.data.map(nightPx) : sp.data, w = sp.w, h = sp.h;
+  let data = nt ? sp.data.map(nightPx) : sp.data, w = sp.w, h = sp.h;
   if (f > 1){
     // average f x f blocks (colour weighted by alpha); a block shows if at least half of it is opaque
     const W = Math.ceil(w/f), H = Math.ceil(h/f), d2 = new Uint32Array(W*H);
@@ -735,9 +754,11 @@ export function renderRect(x0, y0, w, h, s=S){
   const buf = new PixelBuffer(w, h, x0, y0), groundMask = new Uint8Array(w*h);
   drawGround(buf, s, groundMask);
   drawTerrains(buf, s, groundMask);
-  const list = s === S && w === CH && h === CH && x0 % CH === 0 && y0 % CH === 0
+  const list0 = s === S && w === CH && h === CH && x0 % CH === 0 && y0 % CH === 0
     ? (chunkObjs || (indexChunks(), chunkObjs))[(y0/CH)*chunkGrid().cols + x0/CH]
     : objectsIn(x0/s, y0/s, (x0+w)/s, (y0+h)/s, s);
+  drawGroundArt(buf, s, list0, groundMask);
+  const list = list0.filter(k=>!M.OBJECTS[k].ground);
   drawPlazas(buf, s, list, groundMask);
   drawRoads(buf, s, groundMask);
   const ground = s >= 2 ? buf.data.slice() : null;   // to tell which water nothing stands in front of
