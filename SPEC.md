@@ -522,6 +522,19 @@ neighbourhoods, ~7,400 objects); only the drawing changed.
 - Search: the areas_marina.json aliases (marina mall, the beach, blue waters, ain dubai, the wheel, dubai eye), in
   search-data.js and migration 0014.
 
+## The missing packs: landmark art, hero pictures, cars
+- AHS Tower, One Za'abeel, Zabeel Palace and Cayan Tower (v1 sprite) placed from Wikipedia / Wikidata coordinates (the packs give
+  none); the new Emirates Towers (112x196) and Dubai Frame (64x100) replace the old sprites. Where the stylised map put two
+  footprints on top of each other, the drawing moves (ai in landmarks.js; the card keeps the real spot): the Marina towers
+  and Cayan 150 to 350 m, AHS Tower 150 m, Emirates Towers ~350 m north-east so the Museum of the Future stands in front.
+- Zabeel Palace is private: its card is facts only (no pin, directions, distance or critter).
+- Cards show the hero pack's picture (195x120, day or night by the theme) at 2x when the sheet is 390 px wide, else 1x;
+  landmarks without one show their sprite.
+- Cars: the cars pack sprites (sedan, SUV, taxi, van, bus; six colours weighted to white and silver, kept for life), the
+  pre-drawn heading for the way each goes, whole-number scale, bottom-centre anchor, right-hand lane, one car length of
+  gap. Ground breadth 4 art px (bus 5.4) against lanes of 6.5 (main), 4.4 (arterial) and 3 (side): buses on main roads
+  only, the rest on main and arterial roads, none on side roads. Night: the body in dusk colours, the lamps as drawn.
+
 ## Search
 - **Where:** the search icon on the map (a panel) and on the Shelf and in each book (a sheet, scrapbook
   entries first). Same box, same results: Places, and Scrapbook entries.

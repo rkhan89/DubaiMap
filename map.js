@@ -1471,14 +1471,25 @@ function glowSprite(col){
 }
 
 /* =========================================================
-   CARS: little pixel cars driving the map's own roads
-   Sheikh Zayed Road is busiest, side roads quiet. Coloured cars by day, headlights and
-   taillights at night. They live on their own canvas under the stamps and labels,
-   never take taps, fade out when zoomed out, and only roads in view get cars (80 max).
+   CARS: pixel cars from the cars pack (map-art/cars/{kind}_{colour}_{heading}.png) driving the map's own roads
+   Sheikh Zayed Road is busiest. Each car is drawn from its pre-drawn heading (ne, nw, sw, se: the way it's going on
+   screen), at a whole-number scale, anchored at the bottom centre on its lane, driving on the right. Lane widths
+   (art px, one direction): main 6.5, arterial 4.4, side 3. A car's ground breadth is 4 art px (outline included) and
+   a bus's 5.4, so buses drive main roads only, the rest main and arterial roads, and side roads have no cars.
+   No two cars in a lane come closer than one car length. They live on their own canvas under the stamps and
+   labels, never take taps, fade out when zoomed out, and only roads in view get cars (80 max).
    The loop runs at ~30 fps and stops in the background, on low battery, when a
    full screen covers the map, and under reduced motion (a static frame instead).
    ========================================================= */
-const CAR_MAX = 80, CAR_COLORS = ['#E5533D','#F2B233','#3F7FD9','#F7F4EE','#34343C','#4FAE6B','#C7CED6','#8E5BD6','#E07BAA'];
+const CAR_MAX = 80;
+// kinds: the mix on a main road (%), the length along the lane (art px), and the roads it may use (k: 0 main, 1 arterial)
+const CAR_KINDS = { sedan:{ p:55, len:11.6, roads:[0,1] }, suv:{ p:25, len:13, roads:[0,1] }, taxi:{ p:8, len:11.6, roads:[0,1], one:'taxi' },
+  van:{ p:6, len:13, roads:[0,1], one:'van_white' }, bus:{ p:6, len:22.4, roads:[0], one:'bus' } };
+// colours (the six variants), weighted toward white and silver; taxi, van and bus have one livery
+const CAR_COLOURS = [['white',30],['silver',25],['black',15],['navy',10],['sand',10],['red',10]];
+const CAR_HEADS = ['ne','nw','sw','se'];
+// the lamp pixels: headlights and taillights stay lit and keep their colour at night
+const CAR_LAMPS = new Set([0xffd470, 0xd63c38]);
 let carCanvas = null, carCtx = null, cars = [], carLoop = null, carLast = 0, lowPower = false, carRng = mulberry32(77);
 function prepCarRoads(){
   ROADS_W.forEach((r,idx)=>{
@@ -1486,7 +1497,7 @@ function prepCarRoads(){
     for (let k=1;k<r.pts.length;k++){ L += Math.hypot(r.pts[k][0]-r.pts[k-1][0], r.pts[k][1]-r.pts[k-1][1]); r.cum.push(L); }
     r.len = L;
     r.bb = { x0:Math.min(...r.pts.map(p=>p[0])), x1:Math.max(...r.pts.map(p=>p[0])), y0:Math.min(...r.pts.map(p=>p[1])), y1:Math.max(...r.pts.map(p=>p[1])) };
-    r.busy = r.main ? 7 : r.k===0 ? 3 : r.k===1 ? 1 : 0.35;          // Sheikh Zayed Road is busiest
+    r.busy = r.main ? 7 : r.k===0 ? 3 : r.k===1 ? 1 : 0;             // Sheikh Zayed Road is busiest; none on side roads (too narrow)
     r.speed = r.k===0 ? 20 : r.k===1 ? 13 : 8;                     // world px per second
   });
   markHiddenRoad();
@@ -1525,7 +1536,7 @@ function roadPoint(r, s){
 }
 const inView = (x,y,v,m)=> x>v.x0-m && x<v.x1+m && y>v.y0-m && y<v.y1+m;
 function roadsInView(v){
-  return ROADS_W.filter(r=>r.bb.x1>v.x0 && r.bb.x0<v.x1 && r.bb.y1>v.y0 && r.bb.y0<v.y1).map(r=>{
+  return ROADS_W.filter(r=>r.busy > 0 && r.bb.x1>v.x0 && r.bb.x0<v.x1 && r.bb.y1>v.y0 && r.bb.y0<v.y1).map(r=>{
     // how much of this road is on screen, weighted by how busy it is
     let on = 0; for (let k=1;k<r.pts.length;k++){ const [x,y]=r.pts[k]; if (inView(x,y,v,40)) on += r.cum[k]-r.cum[k-1]; }
     return { r, w:Math.max(on, 1)*r.busy };
@@ -1538,7 +1549,35 @@ function spawnCar(list, v){
   let s = carRng()*r.len;
   for (let tries=0; tries<6; tries++){ const p = roadPoint(r, s); if (inView(p.x,p.y,v,20)) break; s = carRng()*r.len; }
   const dir = carRng()<0.5 ? 1 : -1;
-  return { r, s, dir, v:r.speed*(0.75+carRng()*0.5), lane:dir*RD[r.k].w*0.22, c:CAR_COLORS[Math.floor(carRng()*CAR_COLORS.length)] };
+  const choose = list=>{ let t = carRng()*list.reduce((a,x)=>a+x[1], 0); for (const x of list){ t -= x[1]; if (t <= 0) return x[0]; } return list[0][0]; };
+  const kind = choose(Object.entries(CAR_KINDS).filter(([,k])=>k.roads.includes(r.k)).map(([n,k])=>[n, k.p])), K = CAR_KINDS[kind];
+  // the middle of the right-hand lane (half a carriageway out from the centre line); len in world px
+  return { r, s, dir, v:r.speed*(0.75+carRng()*0.5), lane:RD[r.k].w*0.25, kind, base:K.one || kind + '_' + choose(CAR_COLOURS), len:K.len/2 };
+}
+// the pre-drawn heading for a way of going on screen (dx, dy in world px; y down): ne up-right, nw up-left, sw down-left, se down-right
+function carHeading(dx, dy){ return dy < 0 || (dy === 0 && dx > 0) ? (dx >= 0 ? 'ne' : 'nw') : (dx >= 0 ? 'se' : 'sw'); }
+// the sprites: loaded once, a day and a night canvas each (night: the body in the city's dusk colours, the lamps as drawn)
+const CAR_SPR = {}; let carSprLoading = false;
+function loadCarSprites(){
+  if (carSprLoading || !HAS_DOM) return; carSprLoading = true;
+  const names = Object.entries(CAR_KINDS).flatMap(([n,k])=>k.one ? [k.one] : CAR_COLOURS.map(([c])=>n + '_' + c)).flatMap(b=>CAR_HEADS.map(h=>b + '_' + h));
+  names.forEach(name=>{
+    const img = new Image();
+    img.onload = ()=>{
+      const w = img.width, h = img.height, day = newCanvas(w, h), dc = day.getContext('2d'); dc.drawImage(img, 0, 0);
+      const id = dc.getImageData(0, 0, w, h), d = new Uint32Array(id.data.buffer), nd = new Uint32Array(d.length);
+      for (let q=0; q<d.length; q++){
+        const p = d[q], al = p>>>24; if (al < 128){ nd[q] = 0; continue; }
+        const r = p&255, g = p>>8&255, b = p>>16&255;
+        if (CAR_LAMPS.has((r<<16)|(g<<8)|b)){ nd[q] = (0xff000000 | (p & 0xffffff)) >>> 0; continue; }
+        const l = (0.299*r + 0.587*g + 0.114*b)/255, k = v=>Math.max(0, Math.min(255, Math.round(v)));
+        nd[q] = ((255<<24) | (k(b*0.24 + 46 + l*52)<<16) | (k(g*0.18 + 28 + l*46)<<8) | k(r*0.16 + 22 + l*44)) >>> 0;
+      }
+      const night = newCanvas(w, h), nc = night.getContext('2d'), nid = nc.createImageData(w, h); new Uint32Array(nid.data.buffer).set(nd); nc.putImageData(nid, 0, 0);
+      CAR_SPR[name] = { w, h, day, night };
+    };
+    img.src = 'map-art/cars/' + name + '.png';
+  });
 }
 function carView(){ return { x0:-cam.x/cam.s, y0:-cam.y/cam.s, x1:(viewW-cam.x)/cam.s, y1:(viewH-cam.y)/cam.s }; }
 let carsEnabled = true;
@@ -1560,30 +1599,47 @@ function updateCars(dt){
     const p = c.s>=0 && c.s<=c.r.len ? roadPoint(c.r, c.s) : null;
     if (!p || !inView(p.x,p.y,v,60)) cars[k] = spawnCar(list, v);
   }
+  keepGaps();
 }
-function drawCars(){
+// one car length of clear road between a car and the one ahead in its lane: the one behind waits (and slows to match)
+function keepGaps(){
+  const lanes = new Map();
+  for (const c of cars){ let m = lanes.get(c.r); if (!m) lanes.set(c.r, m = { '1':[], '-1':[] }); m[c.dir].push(c); }
+  for (const m of lanes.values()) for (const lane of [m['1'], m['-1']]){
+    if (lane.length < 2) continue;
+    lane.sort((a,b)=>(b.s - a.s)*a.dir);                   // the one furthest along first
+    for (let k=1; k<lane.length; k++){
+      const ahead = lane[k-1], c = lane[k], need = ahead.len/2 + c.len/2 + c.len;
+      if ((ahead.s - c.s)*c.dir < need){ c.s = ahead.s - c.dir*need; c.v = Math.min(c.v, ahead.v); }
+    }
+  }
+}
+// what drawing the cars costs (a running average of drawCars, ms) and how many were drawn, for the perf tests
+const carPerf = { ms:null, n:0 };
+function carStats(){
+  return { ms:carPerf.ms, cars:cars.length, list:cars.map(c=>{ const p = roadPoint(c.r, c.s), dx = p.dx*c.dir, dy = p.dy*c.dir;
+    return { road:ROADS_W.indexOf(c.r), k:c.r.k, dir:c.dir, s:c.s, len:c.len, kind:c.kind, base:c.base, dx, dy, head:carHeading(dx, dy) }; }), sprites:Object.keys(CAR_SPR).length };
+}
+function drawCars(){ const t0 = performance.now(); drawCars0(); const dt = performance.now() - t0; carPerf.ms = carPerf.ms == null ? dt : carPerf.ms*0.9 + dt*0.1; }
+function drawCars0(){
   if (!carCtx) return;
   carCtx.setTransform(1,0,0,1,0,0); carCtx.clearRect(0,0,carCanvas.width,carCanvas.height);
   if (!carsWanted()) return;
-  carCtx.setTransform(dpr*cam.s,0,0,dpr*cam.s,dpr*cam.x,dpr*cam.y);
-  const L = 1.7, Wd = 0.8;                     // half length / half width in world px
+  loadCarSprites();
+  carCtx.imageSmoothingEnabled = false;
+  // device px per art px, rounded to a whole number (never below 1): sprites only ever at whole sizes
+  const k = Math.max(1, Math.round(dpr*cam.s/RS.S)), list = [];
   for (const c of cars){
-    if (c.r.occ[Math.round(c.s/OCC_STEP)]) continue;       // behind a building
-    const p = roadPoint(c.r, c.s), dx = p.dx*c.dir, dy = p.dy*c.dir, nx = -dy, ny = dx;
-    const x = p.x + nx*c.lane*c.dir, y = p.y + ny*c.lane*c.dir;
-    const q = (a,b)=>[x+dx*a+nx*b, y+dy*a+ny*b];
-    const body = [q(L,Wd), q(L,-Wd), q(-L,-Wd), q(-L,Wd)];
-    carCtx.beginPath(); body.forEach((pt,i)=>i?carCtx.lineTo(pt[0],pt[1]):carCtx.moveTo(pt[0],pt[1])); carCtx.closePath();
-    carCtx.fillStyle = C(c.c); carCtx.fill();
-    if (cam.s > 1.2){ carCtx.lineWidth = 0.25; carCtx.strokeStyle = C(OUT); carCtx.stroke(); }
-    if (NIGHT){
-      // headlights ahead, taillights behind
-      carCtx.globalAlpha = NIGHT_FX.headlightAlpha; carCtx.drawImage(glowSprite('#FFF1C9'), x+dx*(L+1.2)-1.6, y+dy*(L+1.2)-1.6, 3.2, 3.2); carCtx.globalAlpha = 1;
-      carCtx.fillStyle = '#FF3B30'; const t = q(-L,0); carCtx.fillRect(t[0]-0.35, t[1]-0.35, 0.7, 0.7);
-    } else {
-      const r0 = q(0.5,0.55), r1 = q(-0.6,-0.55);   // roof
-      carCtx.fillStyle = 'rgba(255,255,255,0.45)'; carCtx.fillRect(Math.min(r0[0],r1[0]), Math.min(r0[1],r1[1]), Math.abs(r0[0]-r1[0])||0.6, Math.abs(r0[1]-r1[1])||0.6);
-    }
+    if (c.r.occ[Math.round(c.s/OCC_STEP)]) continue;       // behind a building, or on a landmark's footprint
+    const p = roadPoint(c.r, c.s), dx = p.dx*c.dir, dy = p.dy*c.dir;
+    const x = p.x - dy*c.lane, y = p.y + dx*c.lane;        // the right-hand lane (screen y is down)
+    const sp = CAR_SPR[c.base + '_' + carHeading(dx, dy)]; if (!sp) continue;
+    list.push({ x, y, sp });
+  }
+  list.sort((p,q)=>p.y - q.y);                             // further up the screen first, so nearer cars draw over
+  for (const o of list){
+    const X = Math.round(dpr*(cam.x + o.x*cam.s)), Y = Math.round(dpr*(cam.y + o.y*cam.s));
+    carCtx.drawImage(NIGHT ? o.sp.night : o.sp.day, X - Math.floor(o.sp.w*k/2), Y - o.sp.h*k, o.sp.w*k, o.sp.h*k);
   }
 }
 function coveredByScreen(){ return !!document.querySelector('#screens .screen.in'); }
@@ -1696,7 +1752,7 @@ function shownStore(){
 /* ---------- finished overviews are kept in the browser's cache (per app version and theme), so the
    next launch shows the whole city at once and the worker only renders close-ups ---------- */
 // bump ART_REV whenever mapraster.js draws anything differently, so nobody keeps old art
-const ART_REV = 23, ART_CACHE = 'koko-map-art', ART_VER = `${APP.version}-r${ART_REV}`;
+const ART_REV = 24, ART_CACHE = 'koko-map-art', ART_VER = `${APP.version}-r${ART_REV}`;
 const artURL = (th, s)=>`/__map-art/${ART_VER}/${th}/${s}.png`;
 // The finished overviews ship with the app (map-art/overview, made by tools/build-overviews.mjs), so a
 // phone never shows half-finished ones. Wide first (small), then mid. If they can't be had, the worker
@@ -2834,7 +2890,7 @@ function setTheme(t){
 }
 function resize(){ if (built && resizeCanvas()){ if (needsCenter) initialView(); requestRender(); } }
 
-export { setSearchMatches, focusLandmark, buildStats,
+export { carStats, setSearchMatches, focusLandmark, buildStats,
   initMap, whenReady, viewAt, rasterPending, rasterStats, landmarkAt, landmarkWorld, showInfo, setStamps, setAreaCounts, placeWorld, fitPoints, fitCity, flyToWorld, flyToSeparate,
   centerLatLng, viewZone, zoomRatio, setPicking, highlight, markDropped, setMeSprite, setSelected, startTracking,
   stopTracking, isTracking, drawSnapshot, snapshotPoint, refresh, resize, visible, setTheme, setShow, setZoneTint, setCars,

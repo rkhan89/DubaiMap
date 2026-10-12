@@ -28,20 +28,20 @@ export default async function taps(h){
       return best || { x:r.left + r.width/2, y:r.top + r.height/2 }; }, id || target); await h.page.mouse.click(p.x, p.y); await h.sleep(900); };
   const card = ()=>h.js(()=>{ const c = document.querySelector('.lm-card'); if (!c) return null;
     return { text:c.innerText, more:!!c.querySelector('.lm-more'), source:!!c.querySelector('.lm-more .lm-source a'), chip:(c.querySelector('.lm-chip-t')||{}).textContent||'', dist:!(c.querySelector('.lm-dist')||{hidden:true}).hidden,
-      img:(()=>{ const i = c.querySelector('.lm-art img'); return i ? { w:i.width, nw:i.naturalWidth, src:i.getAttribute('src') } : null; })() }; });
+      img:(()=>{ const i = c.querySelector('.lm-art img, .lm-hero img'); return i ? { w:i.width, nw:i.naturalWidth, src:i.getAttribute('src') } : null; })() }; });
 
   const all = await h.js(async ()=>{ const L = await import('/landmarks.js'), F = await import('/landmark-facts.js');
-    return [...L.LANDMARKS, ...L.TAPPABLE].map(l=>({ id:l.id, name:l.name, facts:!!F.factsFor(l.id), bonus:!!(F.factsFor(l.id)||{}).bonus })); });
+    return [...L.LANDMARKS, ...L.TAPPABLE].map(l=>({ id:l.id, name:l.name, facts:!!F.factsFor(l.id), bonus:!!(F.factsFor(l.id)||{}).bonus, factsOnly:(F.factsFor(l.id)||{}).check_in === false })); });
   const failed = [];
   for (const l of all){
     await hide(); await aim(l.id); await tapMid(l.id);
     const c = await card();
-    const ok = c && (!l.facts || (/Did you know/i.test(c.text) && c.more === l.bonus && (!l.bonus || c.source))) && /Add a pin here/.test(c.text) && /Directions/.test(c.text) && c.img && c.img.w % c.img.nw === 0;
+    const ok = c && (!l.facts || (/Did you know/i.test(c.text) && c.more === l.bonus && (!l.bonus || c.source))) && (l.factsOnly ? !/Add a pin here|Directions/.test(c.text) : /Add a pin here/.test(c.text) && /Directions/.test(c.text)) && c.img && c.img.w % c.img.nw === 0;
     if (!ok) failed.push(l.id + ': ' + JSON.stringify(c && { more:c.more, text:c.text.slice(0,60) }));
     if (['burj_khalifa','dubai_fountain','qe2','the_world_islands','palm_jebel_ali','atlantis_the_royal'].includes(l.id)) await h.shot('tap-' + l.id);
     await close();
   }
-  await step(`every landmark's card (${all.length}): name, Did you know, More only with a bonus fact, the buttons, the sprite at a whole size`, async ()=>{ if (failed.length) throw new Error(failed.length + ' failed: ' + failed.slice(0,4).join(' | ')); });
+  await step(`every landmark's card (${all.length}): name, Did you know, More only with a bonus fact, the buttons (none on a private one), the sprite or hero picture at a whole size`, async ()=>{ if (failed.length) throw new Error(failed.length + ' failed: ' + failed.slice(0,4).join(' | ')); });
 
   await step('More opens the bonus fact and its source', async ()=>{
     await aim('burj_khalifa'); await tapMid('burj_khalifa');

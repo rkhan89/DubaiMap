@@ -201,6 +201,44 @@ export const LANDMARK_FACTS = [
  "bonus": "Madame Tussauds Dubai opened there in September 2021, and the island also has retail, hotels and residences.",
  "source": "https://en.wikipedia.org/wiki/Bluewaters_Island",
  "verify": true
+},
+{
+ "id": "ahs_tower",
+ "name": "AHS Tower (the \"Big Ben\" tower)",
+ "area": "Sheikh Zayed Road",
+ "fact": "AHS Tower on Sheikh Zayed Road is 328 m tall with 69 floors. Its design was inspired by Elizabeth Tower (Big Ben) in London, so it is nicknamed the \"Big Ben of Dubai\".",
+ "bonus": "It has no clock face. A working clock was dropped over concerns it would distract drivers on the road below.",
+ "source": "https://en.wikipedia.org/wiki/AHS_Tower",
+ "verify": true
+},
+{
+ "id": "one_zabeel",
+ "name": "One Za'abeel",
+ "area": "Za'abeel",
+ "fact": "One Za'abeel has two towers, 305 m and 235 m, joined by The Link, a 230 m long structure sitting about 100 m above the ground.",
+ "bonus": "The Link holds the Guinness World Record for the longest cantilevered building, granted on 1 March 2024. It carries restaurants and a rooftop infinity pool with views of the Burj Khalifa.",
+ "source": "https://en.wikipedia.org/wiki/One_Za%27abeel",
+ "verify": true
+},
+{
+ "id": "zabeel_palace",
+ "name": "Zabeel Palace",
+ "area": "Za'abeel",
+ "fact": "Zabeel Palace is the official residence of Dubai's ruling Al Maktoum family and its administrative headquarters. It was built from 1963 and completed in 1965 for Sheikh Rashid bin Saeed Al Maktoum.",
+ "bonus": "It is not open to the public, but its facade and gardens can be seen from a distance, and peacocks are often seen in the gardens.",
+ "source": "https://en.wikipedia.org/wiki/Zabeel_Palace",
+ "verify": true,
+ "check_in": false,
+ "bonus_critter": false
+},
+{
+ "id": "cayan_tower",
+ "name": "Cayan Tower",
+ "area": "Dubai Marina",
+ "fact": "Cayan Tower is 306 m tall and twists through 90 degrees from bottom to top: each floor is turned about 1.2 degrees round its core.",
+ "bonus": "Designed by Skidmore, Owings and Merrill, it opened on 10 June 2013.",
+ "source": "https://en.wikipedia.org/wiki/Cayan_Tower",
+ "verify": true
 }
 ];
 export const factsFor = id=>LANDMARK_FACTS.find(f=>f.id===id) || null;

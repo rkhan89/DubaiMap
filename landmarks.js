@@ -20,9 +20,9 @@ export const LANDMARKS = [
     fact:'It stands on its own man-made island about 280 m offshore, joined to the beach by a curving bridge. It opened in 1999.', venue:['Burj Al Arab'] },
   { id:'museum_of_the_future', size:[120,92], name:'Museum of the Future', lat:25.21912, lng:55.2821, sprite:'museum_of_the_future', clear:2, plot:'plaza', plotR:2,
     fact:'Its windows are Arabic calligraphy: three quotes about the future by Sheikh Mohammed bin Rashid, written by Emirati artist Matar Bin Lahej. It opened in February 2022.', venue:['Museum of the Future'] },
-  { id:'emirates_towers', size:[80,164], name:'Emirates Towers', lat:25.21722, lng:55.28306, sprite:'emirates_towers', clear:1, plot:'plaza', plotR:1,
+  { id:'emirates_towers', size:[112,196], fpx:[71,31], ai:[21.85, 2.80], name:'Emirates Towers', lat:25.21722, lng:55.28306, sprite:'emirates_towers', clear:1, plot:'plaza', plotR:1,
     fact:'Two triangular towers on Sheikh Zayed Road: the office tower is 355 m tall and the hotel tower 309 m.', venue:['Emirates Towers', 'Jumeirah Emirates Towers'] },
-  { id:'dubai_frame', size:[60,96], name:'Dubai Frame', lat:25.23548, lng:55.30034, sprite:'dubai_frame', clear:1, plot:'plaza', plotR:1,
+  { id:'dubai_frame', size:[64,100], fpx:[49,14], name:'Dubai Frame', lat:25.23548, lng:55.30034, sprite:'dubai_frame', clear:1, plot:'plaza', plotR:1,
     fact:'About 150 m tall. From the glass-floored deck across the top you see old Dubai on one side and the Sheikh Zayed Road towers on the other.', venue:['Dubai Frame'] },
   { id:'jumeirah_mosque', size:[104,96], name:'Jumeirah Mosque', lat:25.2340, lng:55.2655, sprite:'jumeirah_mosque', clear:2, plot:'plaza', plotR:2,
     fact:'One of the few mosques in Dubai that welcomes non-Muslim visitors, with guided tours.', venue:['Jumeirah Mosque'] },
@@ -89,13 +89,25 @@ MALLS.forEach(m=>{
 // The Marina pack (marina_pack, Oct 2026). Towers at their real positions (Wikipedia / Wikidata coordinates); a tower
 // whose spot lands in the map's stylised channel moves to the nearest land (plot 'plaza'). Ain Dubai stands on
 // Bluewaters (a terrain, terrains.js). The Walk at JBR is one landmark with a second copy along the beach (FILLERS).
-// ai: [km along the coast, km inland], when the drawing goes somewhere other than its lat/lng (the card keeps the real spot)
+// ai: [km along the coast, km inland], when the drawing goes somewhere other than its lat/lng (the card keeps the real spot):
+// the Marina towers sit 100 to 400 m apart in life, but the map's channel leaves one patch of land there, so each stands
+// on the nearest clear land that doesn't overlap another (150 to 350 m from its real spot); AHS Tower likewise clears
+// the Emirates Towers' plaza (150 m)
 LANDMARKS.push(
-  { id:'princess_tower', size:[44,196], fpx:[21,21], name:'Princess Tower', lat:25.088625, lng:55.146858, sprite:'princess_tower', clear:1, plot:'plaza', plotR:1, venue:['Princess Tower'] },
-  { id:'marina_101', size:[52,206], fpx:[25,25], name:'Marina 101', lat:25.08898, lng:55.14863, sprite:'marina_101', clear:1, plot:'plaza', plotR:1, venue:['Marina 101', 'Hard Rock Hotel Dubai'] },
-  { id:'ciel_tower', size:[46,196], fpx:[22,23], name:'Ciel Tower', lat:25.08744, lng:55.14454, sprite:'ciel_tower', clear:1, plot:'plaza', plotR:1, venue:['Ciel Tower', 'Ciel Dubai Marina'] },
+  { id:'princess_tower', size:[44,196], fpx:[21,21], name:'Princess Tower', lat:25.088625, lng:55.146858, sprite:'princess_tower', ai:[1.9, 0.31], clear:1, plot:'none', venue:['Princess Tower'] },
+  { id:'marina_101', size:[52,206], fpx:[25,25], name:'Marina 101', lat:25.08898, lng:55.14863, sprite:'marina_101', ai:[2.26, 0.74], clear:1, plot:'none', venue:['Marina 101', 'Hard Rock Hotel Dubai'] },
+  { id:'ciel_tower', size:[46,196], fpx:[22,23], name:'Ciel Tower', lat:25.08744, lng:55.14454, sprite:'ciel_tower', ai:[1.6, 0.32], clear:1, plot:'none', venue:['Ciel Tower', 'Ciel Dubai Marina'] },
   { id:'ain_dubai', size:[124,150], fpx:[36,28], name:'Ain Dubai', lat:25.080111, lng:55.124056, sprite:'ain_dubai', clear:0, plot:'none', venue:['Ain Dubai'] },
   { id:'jbr_walk', size:[108,62], fpx:[85,19], name:'The Walk, JBR', lat:25.0772222, lng:55.1348694, ai:[-0.36, 0.20], sprite:'jbr_walk', clear:0, plot:'none', venue:['The Walk', 'JBR', 'The Beach'] },
+);
+// The missing packs (Oct 2026): AHS Tower (ahs_pack), One Za'abeel and Zabeel Palace (zabeel_pack), Cayan Tower
+// (cayan_pack, the older v1 sprite). The packs' json gives no coordinates: these are Wikipedia's (AHS Tower, Zabeel
+// Palace, Cayan Tower) and Wikidata's (One Za'abeel). Zabeel Palace is private: facts only (no pin, directions or critter).
+LANDMARKS.push(
+  { id:'ahs_tower', size:[52,156], fpx:[21,21], name:'AHS Tower', lat:25.2163528, lng:55.2798167, sprite:'ahs_tower', ai:[21.21, 2.56], clear:1, plot:'none', venue:['AHS Tower'] },
+  { id:'one_zabeel', size:[132,214], fpx:[64,24], name:"One Za'abeel", lat:25.2280833, lng:55.2907778, sprite:'one_zabeel', clear:2, plot:'plaza', plotR:2, venue:["One Za'abeel", 'One Zabeel'] },
+  { id:'zabeel_palace', size:[112,86], fpx:[65,45], name:'Zabeel Palace', lat:25.2113, lng:55.3020, sprite:'zabeel_palace', clear:2, plot:'none', private:true },
+  { id:'cayan_tower', size:[48,112], fpx:[20,20], name:'Cayan Tower', lat:25.0868889, lng:55.1452472, sprite:'cayan_tower', ai:[1.95, 0.73], clear:1, plot:'none', venue:['Cayan Tower'] },
 );
 LANDMARKS.push({ id:'global_village', name:'Global Village', lat:25.06815, lng:55.30731, sprite:'global_village', size:[108,96], clear:2, plot:'none', kind:'park',
   fact:'A seasonal festival park of country pavilions, rides and food, open each winter from October to spring. It first opened in 1996.', venue:['Global Village'] });

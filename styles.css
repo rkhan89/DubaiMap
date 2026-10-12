@@ -1343,3 +1343,5 @@ html.still .mem-strip.in{opacity:1;}
 .tagged-by q{display:block;margin-top:4px;}
 .pg-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
 .pg-actions .btn{flex:1 1 auto;}
+.lm-hero{display:flex;justify-content:center;margin:0 -20px;overflow:hidden;}
+.lm-hero img{image-rendering:pixelated;image-rendering:crisp-edges;display:block;border-radius:0;}

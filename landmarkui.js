@@ -16,6 +16,13 @@ import { now } from './shows.js';
 import { whereAmI } from './locate.js';
 import { haversine } from './catch.js';
 import * as MAP from './map.js';
+import { resolvedTheme } from './theme.js';
+
+// the hero pack: a 195x120 picture per landmark, day and night (map-art/hero/<id>_day|night.png), shown at a whole
+// number size: 2x where the sheet is 390 px wide or more, else 1x. Landmarks without one show their sprite.
+const HEROES = new Set(['al_fahidi','atlantis_the_palm','atlantis_the_royal','burj_al_arab','burj_khalifa','dubai_fountain','dubai_frame',
+  'emirates_towers','jumeirah_mosque','museum_of_the_future','palm_jebel_ali','qe2','the_world_islands']);
+const HERO_W = 195, HERO_H = 120;
 
 // a place in the app that is this landmark (first name match, ignoring case)
 function venueFor(lm){
@@ -55,9 +62,12 @@ export function openLandmark(id){
   // the sprite at 3x, or the biggest whole size up to that which fits the sheet
   const [w, h] = lm.size, k = Math.max(1, Math.min(3, Math.floor(300/h), Math.floor(330/w)));
   const chip = id === 'dubai_fountain' && f && f.schedule ? fountainChip(f.schedule) : '';
+  // private (Zabeel Palace): facts only, no pin, no directions, no distance, no critter
+  const factsOnly = !!(f && f.check_in === false);
+  const hero = HEROES.has(id) ? `map-art/hero/${id}_${resolvedTheme() === 'dark' ? 'night' : 'day'}.png` : null;
   openSheet(body=>{
     body.innerHTML = `<div class="lm-card">
-      <div class="lm-art"><img src="map-art/${esc(lm.sprite)}.png" alt="" width="${w*k}" height="${h*k}"></div>
+      ${hero ? `<div class="lm-hero"><img src="${esc(hero)}" alt="" width="${HERO_W*2}" height="${HERO_H*2}"></div>` : `<div class="lm-art"><img src="map-art/${esc(lm.sprite)}.png" alt="" width="${w*k}" height="${h*k}"></div>`}
       <h2 class="h-lg mt12">${esc(name)}</h2>
       <p class="lm-area">${esc(area)}</p>
       <div class="lm-chips">${chip ? `<span class="tag soft lm-show">${icon('water_drop')}<span class="lm-chip-t">${esc(chip)}</span></span>` : ''}<span class="tag soft lm-dist" hidden></span></div>
@@ -65,10 +75,13 @@ export function openLandmark(id){
         ${card && !f && card.verify ? `<p class="fact-check mt8">${icon('fact_check')}Fact being checked</p>` : ''}</div>` : ''}
       ${bonus ? `<details class="lm-more"><summary>More</summary><p class="mt4">${esc(bonus)}</p>${source ? `<p class="lm-source mt8"><a href="${esc(source)}" target="_blank" rel="noopener">Source</a></p>` : ''}</details>`
         : (source && !f ? `<p class="lm-source mt8"><a href="${esc(source)}" target="_blank" rel="noopener">Source</a></p>` : '')}
-      <div class="lm-critter-slot"></div>
-      <div class="btn-grid mt20"><button class="btn btn-gold" id="lmPin">${icon('add_location_alt')}Add a pin here</button><button class="btn btn-soft" id="lmDir">${icon('directions')}Directions</button></div>
+      ${factsOnly ? '<p class="muted small mt12">A private residence, not open to visitors.</p>' : `<div class="lm-critter-slot"></div>
+      <div class="btn-grid mt20"><button class="btn btn-gold" id="lmPin">${icon('add_location_alt')}Add a pin here</button><button class="btn btn-soft" id="lmDir">${icon('directions')}Directions</button></div>`}
       ${v ? `<button class="btn btn-soft btn-block mt12" id="lmPlace">${icon('storefront')}Open ${esc(v.name)}</button>` : ''}
     </div>`;
+    // the hero at 2x if the sheet has room, else 1x (whole pixels only)
+    const hi = body.querySelector('.lm-hero img'); if (hi){ const k2 = body.querySelector('.lm-hero').clientWidth >= HERO_W*2 ? 2 : 1; hi.width = HERO_W*k2; hi.height = HERO_H*k2; }
+    if (factsOnly) return;
     body.querySelector('#lmPin').onclick = ()=>{ back(); setTimeout(()=>go.log({ prefill:{ name, lat:lm.lat, lng:lm.lng } }), 250); };
     body.querySelector('#lmDir').onclick = ()=>window.open(directionsURL(lm.lat, lm.lng), '_blank', 'noopener');
     if (v) body.querySelector('#lmPlace').onclick = ()=>{ back(); setTimeout(()=>go.place(v.id), 300); };
