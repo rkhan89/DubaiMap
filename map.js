@@ -144,7 +144,9 @@ const BURJ_LAKE = (()=>{ const b=G(25.1972,55.2744), f=G(25.19518,55.27506), da=
 const inLake = (a,i)=>Math.abs(a-BURJ_LAKE.c[0]) <= BURJ_LAKE.h && Math.abs(i-BURJ_LAKE.c[1]) <= BURJ_LAKE.h;
 
 // Palm Jumeirah: trunk off Al Sufouh, a fan of fronds, and the crescent with Atlantis at its apex
-const PALM = { base:[3.43,0.45], hub:[3.56,-1.15], fr0:0.3, fr1:2.35, fronds:15, span:1.72, cr:3.3, crW:0.13, crSpan:1.84 };
+// crescent: its ends ~60° either side of Atlantis, ~2.9 km offshore (OpenStreetMap: the west end at 25.097 N 55.110 E, ~2.3 km
+// from Ain Dubai with Dubai Harbour between), with a breakwater gap each side (gap, radians from the apex)
+const PALM = { base:[3.43,0.45], hub:[3.56,-1.15], fr0:0.3, fr1:2.35, fronds:15, span:1.72, cr:3.3, crW:0.13, crSpan:1.05, gap:0.62 };
 function palmAt(a,i){ return palmShape(PALM, a, i); }
 // a palm island: 2 on the trunk and hub, 1 on a frond or the crescent, 0 off it
 function palmShape(P, a, i){
@@ -158,7 +160,7 @@ function palmShape(P, a, i){
     const thk=-P.span+Math.round((th+P.span)/step)*step;
     if (Math.abs(th-thk)*r < 0.15) return 1;
   }
-  if (Math.abs(r-P.cr)<P.crW && Math.abs(th)<P.crSpan && Math.abs(Math.abs(th)-0.95)>0.07) return 1;
+  if (Math.abs(r-P.cr)<P.crW && Math.abs(th)<P.crSpan && Math.abs(Math.abs(th)-(P.gap ?? 0.95))>0.07) return 1;
   return 0;
 }
 // the regions' palm islands (regions.js), in the same form as PALM
@@ -1694,7 +1696,7 @@ function shownStore(){
 /* ---------- finished overviews are kept in the browser's cache (per app version and theme), so the
    next launch shows the whole city at once and the worker only renders close-ups ---------- */
 // bump ART_REV whenever mapraster.js draws anything differently, so nobody keeps old art
-const ART_REV = 22, ART_CACHE = 'koko-map-art', ART_VER = `${APP.version}-r${ART_REV}`;
+const ART_REV = 23, ART_CACHE = 'koko-map-art', ART_VER = `${APP.version}-r${ART_REV}`;
 const artURL = (th, s)=>`/__map-art/${ART_VER}/${th}/${s}.png`;
 // The finished overviews ship with the app (map-art/overview, made by tools/build-overviews.mjs), so a
 // phone never shows half-finished ones. Wide first (small), then mid. If they can't be had, the worker

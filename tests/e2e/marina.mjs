@@ -19,6 +19,7 @@ export default async function marina(h){
       await look(25.0780, 55.1330, 9); await h.shot('mr-jbr-' + (n ? 'night' : 'day'));
       await look(25.0800, 55.1240, 9); await h.shot('mr-bluewaters-' + (n ? 'night' : 'day'));
       await look(25.0820, 55.1360, 5); await h.shot('mr-wide-' + (n ? 'night' : 'day'));
+      await look(25.1000, 55.1250, 3); await h.shot('mr-palm-' + (n ? 'night' : 'day'));
     }
     await night(false);
   });
