@@ -80,3 +80,18 @@ test('every word must match: no results for a word that matches nothing', ()=>{
   const r = search(index, 'pasta zzzzqq');
   assert.equal(r.places.length + r.entries.length, 0);
 });
+
+test('a month or a year finds visits then; "ice cream with Rabia" finds her ice cream visit; no typo months', ()=>{
+  const data = { me:'u1', users:{ u1:{ name:'Me', handle:'me' }, u2:{ name:'Rabia', handle:'rabia' } }, areas:[], synonyms:[['ice cream','gelato']], categories:{ icecream:'Ice cream', cafe:'Cafe' },
+    venues:[{ id:'v1', name:'Scoop Shop', categories:['icecream'] }, { id:'v2', name:'Bean Bar', categories:['cafe'] }],
+    entries:[{ id:'e1', venueId:'v1', kind:'visit', userId:'u2', taggedIds:['u1'], date:'2026-09-14' }, { id:'e2', venueId:'v2', kind:'visit', userId:'u1', date:'2026-06-02' }, { id:'e3', venueId:'v1', kind:'visit', userId:'u1', date:'2025-03-01' }],
+    photos:[], pages:{} };
+  const I = buildIndex(data), ids = r=>r.entries.map(x=>x.entry.id).sort();
+  assert.deepEqual(ids(search(I, 'September')), ['e1']);
+  assert.deepEqual(ids(search(I, 'sept')), ['e1']);
+  assert.deepEqual(ids(search(I, 'june 2026')), ['e2']);
+  assert.deepEqual(ids(search(I, '2025')), ['e3']);
+  assert.deepEqual(ids(search(I, 'ice cream with Rabia')), ['e1']);
+  assert.deepEqual(ids(search(I, 'gelato with rabia in september')), ['e1']);
+  assert.deepEqual(ids(search(I, 'jane')), []);
+});

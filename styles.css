@@ -341,7 +341,10 @@ textarea.input{min-height:110px;resize:none;line-height:1.45;}
 
 /* floating map UI: one slim row */
 .map-ui{pointer-events:auto;}
-.map-top{position:absolute;left:12px;right:12px;top:10px;display:flex;align-items:center;gap:8px;z-index:15;pointer-events:none;}
+.map-top{position:absolute;left:12px;right:12px;top:10px;display:flex;flex-direction:column;align-items:stretch;gap:8px;z-index:15;pointer-events:none;}
+.map-top-row{display:flex;align-items:center;gap:8px;pointer-events:none;}
+.map-top-row>*{pointer-events:auto;}
+.map-search{pointer-events:auto;}
 .map-top>*{pointer-events:auto;}
 .seg-mode{flex:none;padding:3px;gap:3px;background:var(--glass);box-shadow:var(--shadow-sm);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);}
 .seg-mode button{min-height:32px;padding:0 12px;font-family:var(--f-mono);font-size:12.5px;font-weight:700;letter-spacing:0;gap:6px;}
@@ -1326,22 +1329,46 @@ html.still .mem-strip.in{opacity:1;}
 .lm-crit-chip{display:inline-flex;align-items:center;gap:10px;padding:6px 14px 6px 6px;border-radius:999px;background:var(--sc-low);font:inherit;color:var(--ink-1);}
 .lm-shelf-link{display:inline-flex;align-items:center;gap:2px;background:none;border:0;font:inherit;font-weight:700;color:var(--ink-2);text-decoration:underline;}
 /* search */
-.search-panel{position:absolute;left:12px;right:12px;top:12px;z-index:30;display:flex;flex-direction:column;max-height:min(70%,560px);padding:12px;border-radius:24px;background:var(--surface);box-shadow:var(--shadow-md, 0 10px 30px rgba(0,0,0,.18));}
-.search-panel .sr-bar{display:flex;align-items:center;gap:8px;}
-.search-panel .sr-bar .search{margin:0;}
-.search-panel .sr-toggle{display:flex;align-items:center;gap:8px;margin:10px 4px 0;font-size:14px;font-weight:700;color:var(--ink-2);}
-.search-panel .sr-out{overflow-y:auto;margin-top:10px;min-height:48px;overscroll-behavior:contain;}
-.search-panel.min .sr-out,.search-panel.min .sr-toggle{display:none;}
 .sr-hint{color:var(--ink-3);font-size:14px;padding:12px 4px;}
-.sr-photo{display:inline-flex;align-items:center;gap:3px;margin-left:6px;font-size:11px;font-weight:700;color:var(--ink-3);vertical-align:middle;}
+.sr-photo{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:700;color:var(--ink-3);vertical-align:middle;}
 .sr-photo .ms{font-size:13px;}
 .stamp-anchor.dim,.map-dot.dim{opacity:.22;filter:grayscale(1);}
-.search-panel input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;appearance:none;}
-.search-sheet .sr-out{margin-top:12px;min-height:120px;}
-.search-sheet input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;appearance:none;}
 .tagged-by{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:14px;background:var(--sc-low);}
 .tagged-by q{display:block;margin-top:4px;}
 .pg-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
 .pg-actions .btn{flex:1 1 auto;}
 .lm-hero{display:flex;justify-content:center;margin:0 -20px;overflow:hidden;}
 .lm-hero img{image-rendering:pixelated;image-rendering:crisp-edges;display:block;border-radius:0;}
+
+/* the search bar: the same on the Map and the Shelf (searchui.js) */
+.ksearch{position:relative;}
+.ksearch-bar{display:flex;align-items:center;gap:10px;height:48px;padding:0 6px 0 16px;border-radius:999px;background:var(--card);box-shadow:var(--shadow-sm), inset 0 0 0 1px var(--outline-v);color:var(--ink-2);}
+.ksearch-map .ksearch-bar{background:var(--glass);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);}
+.ksearch-bar input{flex:1;min-width:0;height:100%;border:0;background:transparent;font:inherit;font-size:16px;color:var(--ink);outline:none;}
+.ksearch-bar input::placeholder{color:var(--ink-3, var(--ink-2));opacity:.8;}
+.ksearch-bar input::-webkit-search-cancel-button{-webkit-appearance:none;appearance:none;}
+.ksearch-bar:focus-within{box-shadow:var(--shadow-sm), inset 0 0 0 2px var(--gold-deep, var(--gold));}
+.ksearch-x{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--ink-2);}
+.ksearch-drop{position:absolute;left:0;right:0;top:56px;z-index:30;max-height:min(62vh,560px);overflow-y:auto;overscroll-behavior:contain;padding:12px;border-radius:24px;background:var(--surface);box-shadow:var(--shadow-md, 0 10px 30px rgba(0,0,0,.18));}
+.ksearch-drop .sr-toggle{display:flex;align-items:center;gap:8px;margin:0 4px 10px;font-size:14px;font-weight:700;color:var(--ink-2);}
+.sr-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
+.sr-card{display:flex;flex-direction:column;text-align:left;border-radius:16px;background:var(--card);box-shadow:var(--shadow-sm);overflow:hidden;min-width:0;}
+.sr-img{position:relative;display:flex;align-items:center;justify-content:center;aspect-ratio:4/3;background:var(--sc-low);overflow:hidden;}
+.sr-img img{width:100%;height:100%;object-fit:cover;display:block;}
+.sr-stamp{color:var(--rust);}
+.sr-stamp .ms{font-size:34px;}
+.sr-body{display:flex;flex-direction:column;gap:2px;padding:8px 10px 10px;min-width:0;}
+.sr-body b{font-size:15px;}
+.sr-meta{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:4px;min-height:22px;}
+.sr-rate{font-family:var(--f-mono);font-size:12px;font-weight:700;color:var(--green);}
+.sr-who{display:inline-flex;}
+.sr-add{flex-direction:row;align-items:center;width:100%;margin-bottom:10px;}
+.sr-add .sr-img{width:64px;flex:none;aspect-ratio:1;}
+.sr-add .sr-body{padding:10px 12px;}
+.ksearch-shelf .ksearch-bar,.search-sheet .ksearch-bar{background:var(--card);}
+.ss-out{margin-top:12px;min-height:120px;}
+.shelf-chip em{font-style:normal;font-family:var(--f-mono);font-size:11px;opacity:.7;margin-left:2px;}
+.roll-group{padding:12px;}
+.roll-thumbs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;position:relative;}
+.roll-thumbs img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;display:block;}
+.roll-more{position:absolute;right:6px;bottom:6px;padding:2px 8px;border-radius:999px;background:rgba(0,0,0,.6);color:#fff;font-family:var(--f-mono);font-size:12px;font-weight:700;}

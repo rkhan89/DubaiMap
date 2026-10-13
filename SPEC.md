@@ -572,6 +572,25 @@ neighbourhoods, ~7,400 objects); only the drawing changed.
   - tools/ai-tags-backfill.mjs tags older photos: a dry run with the cost estimate first, then --run --max N.
     It's resumable and capped.
 
+## The search bar and the Shelf
+- One search bar (searchui.js), always visible: across the top of the Map (Me/Crew and the filter button in a row under
+  it) and at the top of the Shelf; in a book it opens as a sheet. No magnifier buttons.
+- Results are photo cards, one per place with its matching visits folded in: a photo from a matching visit (else any you
+  can see of the place, else its stamp), name, area, date and what you had, rating, who's been, "from photo". On the Map a
+  card flies to the pin and opens its card (Show on map dims the rest); on the Shelf it opens the visit's page (or the
+  place, if nobody has logged it). Only what you can already see is searched.
+- Matching as before, plus a visit's month and year ("September", "sept 2026"; exact, no typos) and joining words skipped
+  ("ice cream with Rabia" = ice cream + Rabia).
+- Search doubles as add: a link, or a name with no match, puts "Add this place" first, which opens the add-from-link flow
+  with it (resolve, confirm, crew map first, Undo). The + button is unchanged.
+- The Shelf: the bar, then the books as chips (All, Personal, Crew, Tagged, albums; Critters opens its own screen) that
+  filter the photo grid of latest pages below (12 at a time, Show more; Open book for a chosen one), then New Album and
+  Import Roll.
+- Import Roll groups photos into visits by the day and place they were taken (photometa.js reads the EXIF date and GPS
+  before the photo is shrunk; a group is one day, within 500 m) and suggests the nearest place on your map within 200 m.
+  You use it or pick another; each group goes through Check in with its photos and date, then "Next" for the rest.
+  Phones often drop GPS from photos picked in a browser: then it groups by day and suggests nothing.
+
 ## Critters (no more points)
 
 Points, levels, the leaderboard and every counter toward a reward are gone (migration 0011 backs up `profiles.points` to `archive.profiles_points`, then drops it). Stickers stay as milestones; critters are the collectible.

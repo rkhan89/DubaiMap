@@ -3,7 +3,8 @@
 // Pure: no DOM, no store, so it's tested on its own (tests/search.test.mjs). It runs on the phone over what the
 // phone already has (everything you and your crews can see): instant, and it works offline.
 //
-// Every word of the query has to match something. Words that run together into a known phrase ("ice cream",
+// Every word of the query has to match something (small joining words like "with" or "in" are skipped, so "ice cream
+// with Rabia" means ice cream and Rabia). A visit also matches its month and year ("September", "sept 2026"). Words that run together into a known phrase ("ice cream",
 // "dubai marina") count as one; synonyms count as the same word; small typos still match ("pasat" finds pasta).
 // Ranking: your own dish tags and notes, then the place's name, then its area, then the rest, then photo tags;
 // ties go to the most recent visit. A match only through a photo's tags is marked "from photo".
@@ -12,6 +13,12 @@ const CLASS = { mine:0, name:1, area:2, other:3, photo:4 };
 
 export const norm = s=>String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
 const words = s=>norm(s).split(' ').filter(Boolean);
+// joining words a query can have without them having to match anything
+const STOP = new Set(['with','and','at','in','on','of','the','a','an','for','from','by','to','my']);
+const MONTHS = ['january','february','march','april','may','june','july','august','september','october','november','december'];
+// a visit's date as words: its month (in full, short, and "sept"), its year
+const dateWords = d=>{ const m = /^([0-9]{4})-([0-9]{2})-([0-9]{2})/.exec(d || ''); if (!m) return ''; const name = MONTHS[+m[2] - 1]; if (!name) return '';
+  return [name, name.slice(0, 3), name === 'september' ? 'sept' : '', m[1]].filter(Boolean).join(' '); };
 
 // edit distance with transpositions (optimal string alignment), stopping early past `max`
 export function osa(a, b, max){
@@ -71,6 +78,7 @@ export function buildIndex(data){
     ps.forEach(p=>{ if (p.caption) out.push({ f:field(p.caption), c:CLASS.other }); (p.aiTags||[]).forEach(t=>out.push({ f:field(t), c:CLASS.photo, tag:true, photo:true })); });
     (pagesBy.get(e.id)||[]).forEach(n=>out.push({ f:field(n), c:CLASS.other }));
     [e.userId, ...(e.taggedIds||[])].forEach(id=>{ const t = userText(id); if (t) out.push({ f:field(t), c:CLASS.other }); });
+    const dw = dateWords(e.date); if (dw) out.push({ f:field(dw), c:CLASS.other, date:true });
     return out;
   };
   const venueFields = v=>{
@@ -113,13 +121,14 @@ export function parse(index, q){
     if (took === 1) out.push(ws[i]);
     i += took;
   }
-  return out.map((t, k)=>{
+  const kept = out.filter(t=>!STOP.has(t));
+  return (kept.length ? kept : out).map((t, k, list)=>{
     // the word itself, and its synonyms
     const alts = new Set([t]); index.synonyms.forEach(g=>{ if (g.includes(t)) g.forEach(x=>alts.add(x)); });
     // the areas it names (an exact name or alias, or one typo off one), and their neighbours (also_matches)
     const areas = new Set();
     index.areas.forEach(a=>{ if (a.terms.some(x=>x === t || (t.length >= 4 && osa(t, x, 1) <= 1))){ areas.add(a.id); (a.also_matches||[]).forEach(id=>areas.add(id)); } });
-    return { t, alts:[...alts], areas, last:k === ws.length - 1 };
+    return { t, alts:[...alts], areas, last:k === list.length - 1 && t === ws[ws.length - 1] };
   });
 }
 // how well a record matches every term: the sum of each term's best class, or null if some term matches nothing
@@ -130,7 +139,8 @@ function score(rec, terms){
     if (rec.area && term.areas.has(rec.area)) best = CLASS.area;
     for (const fd of rec.fields){
       if (fd.c >= best) continue;
-      if (term.alts.some(a=>fd.tag ? (norm(fd.f.text) === a || termMatches(a, fd.f, term.last)) : termMatches(a, fd.f, term.last))) best = fd.c;
+      // a date word only matches as written or as its start (no typos: "jane" isn't June)
+      if (term.alts.some(a=>fd.date ? fd.f.words.some(w=>w === a || (a.length >= 3 && w.startsWith(a))) : fd.tag ? (norm(fd.f.text) === a || termMatches(a, fd.f, term.last)) : termMatches(a, fd.f, term.last))) best = fd.c;
     }
     if (best === Infinity) return null;
     if (best === CLASS.photo) photoOnly = true;

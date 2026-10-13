@@ -10,11 +10,13 @@ export default async function bookadd(h){
   const before = await crewBookPhotos();
   await step('open the crew book and tap the camera: the log form opens with the photo', async ()=>{
     await h.click('[data-tab="shelf"]'); await h.sleep(700);
-    await h.js(()=>[...document.querySelectorAll('.book-spine')].find(b=>/Crew scrapbook/i.test(b.textContent)).click()); await h.sleep(1100);
+    // the Crew chip, then Open book
+    await h.js(()=>[...document.querySelectorAll('.screen.in:last-of-type .shelf-chip')].find(c=>/Crew/.test(c.innerText)).click()); await h.sleep(400);
+    await h.js(()=>document.querySelector('.screen.in:last-of-type [data-book]').click()); await h.sleep(1100);
     await h.shot('b-crewbook');
     const [chooser] = await Promise.all([p.waitForFileChooser({timeout:4000}), h.js(()=>document.querySelector('#bkAddTop').click())]);
     await chooser.accept([path.resolve('fixture.jpg')]); await h.sleep(1500);
-    if (!/Log a visit/i.test(await text())) throw new Error('not the log form');
+    if (!/Check in/i.test(await text())) throw new Error('not the log form');
     await h.shot('b-add-1');
   });
   await step('pick the place: the photo is there and the crew is picked; save', async ()=>{

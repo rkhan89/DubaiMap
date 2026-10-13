@@ -14,7 +14,8 @@ import { go, state } from './go.js';
 import * as RT from './ratings.js';
 import { ratersRowHTML, overallHTML, ratersSheet, rateSheet } from './rate.js';
 import { CRITTERS } from './critters.js';
-import { critterArt } from './critterui.js';
+import { mountSearchBar } from './searchui.js';
+import { readPhotoMeta, groupPhotos, suggestPlace } from './photometa.js';
 
 // whose ratings a book shows: a crew's book, that crew's; your own books, everyone you can see
 function rateScope(b){ const c = b.kind==='crew' && S.myCrews().find(x=>x.id===b.crewId); return c ? { kind:'crew', crew:c, label:'Crew' } : { kind:'friends', label:'Friends' }; }
@@ -42,72 +43,68 @@ const peopleOf = pg => pg.entry ? [...new Set([pg.entry.userId, ...(pg.entry.tag
 /* =========================================================
    SHELF
    ========================================================= */
+// The search bar at the top (the same one as the Map's, searchui.js), then the books as chips that filter the photo
+// grid of your latest pages (All, Personal, Crew, Tagged, your albums; Critters opens its own screen), then New Album
+// and Import Roll. While you search, the results take the grid's place.
+const GRID = 12;          // pages in the grid at first, and each "Show more"
 function shelf(){
   openScreen(el=>{
-    const paint=()=>{
-      const me=S.me(), crew=S.myCrew(), books=S.books();
-      const personal=books.find(b=>b.kind==='personal'), crewBook=books.find(b=>b.kind==='crew'), taggedBook=books.find(b=>b.kind==='tagged'), albums=books.filter(b=>b.kind==='album');
-      const mine=pagesOf(personal), crewPgs=crewBook?pagesOf(crewBook):[], tagPgs=taggedBook?pagesOf(taggedBook):[];
-      const zones = {}; mine.concat(crewPgs).forEach(p=>{ const z=venueOfPage(p)?.zone; if (z) zones[z]=(zones[z]||0)+1; });
-      const topZ = Object.keys(zones).sort((a,b)=>zones[b]-zones[a]).slice(0,2).map(zoneLabel);
-      const photoN = ps => ps.reduce((n,p)=>n+p.photos.length, 0);
-      // the newest pages from your books (a visit in two books shows once)
-      const seen = new Set(), latest = [];
-      [...mine.map(p=>[p, personal]), ...crewPgs.map(p=>[p, crewBook]), ...tagPgs.map(p=>[p, taggedBook])]
-        .sort((a,b)=>(b[0].date||'').localeCompare(a[0].date||'') || (b[0].createdAt||0)-(a[0].createdAt||0))
-        .forEach(([p, b])=>{ const k = p.entry ? p.entry.id : p.id; if (!seen.has(k) && latest.length<4){ seen.add(k); latest.push([p, b]); } });
-      const members = crew ? S.crewMembers(crew) : [];
-      el.innerHTML = topbar({title:'Scrapbooks', back:true, actions:`<button class="icon-btn" id="shSearch" aria-label="Search scrapbooks">${icon('search')}</button><button class="icon-btn" id="shNew" aria-label="Log a visit">${icon('add_a_photo')}</button>`}) + `<div class="screen-body">
-        <div class="deck mt8">
-          ${critterSpine()}
-          ${spineHTML(personal, { kind:'Personal scrapbook', kicon:'auto_stories', hand: personal.byline || (topZ.length ? `Mostly ${topZ.slice(0,2).join(' and ')}` : 'Everywhere you’ve been'), meta:[`${icon('menu_book')}${plural(mine.length,'page')}`, photoN(mine)?`${icon('photo_library')}${plural(photoN(mine),'photo')}`:''] })}
-          ${crewBook?spineHTML(crewBook, { kind:'Crew scrapbook', kicon:'groups', hand: crew.tagline || (members.length>1 ? `You and ${plural(members.length-1,'friend')}` : 'Just you so far'), meta:[`${avatarStack(members,30,6)} ${plural(members.length,'member')}`, `${icon('menu_book')}${plural(crewPgs.length,'page')}`] }):''}
-          ${!crewBook?`<button class="book-spine" id="shNoCrew" style="background:var(--sc-highest);color:var(--ink);box-shadow:none;border:2px dashed var(--outline-v)"><span class="rings" style="background:rgba(0,0,0,.05)"><i style="background:var(--outline-v)"></i><i style="background:var(--outline-v)"></i><i style="background:var(--outline-v)"></i></span><span class="grow"><span class="bs-kind">${icon('group_add')}Crew scrapbook</span><h3 style="font-size:20px">Start a crew to share a book</h3><span class="hand">Every visit you share becomes a page in it</span></span></button>`:''}
-          ${taggedBook?spineHTML(taggedBook, { kind:'Tagged', kicon:'sell', hand: taggedBook.byline || 'Visits friends tagged you on', meta:[`${icon('menu_book')}${plural(tagPgs.length,'page')}`] }):''}
-          ${albums.map(a=>spineHTML(a, { kind:'Custom album', kicon:'collections_bookmark', hand: a.byline || describeFilter(a.filter), meta:[`${icon('menu_book')}${plural(pagesOf(a).length,'page')}`] })).join('')}
-        </div>
-        ${latest.length?`<div class="row between mt32"><span class="row h-md" style="gap:8px">${icon('auto_stories')}Latest pages</span></div>
-        <div class="spreads mt16">${latest.map(([p,b],i)=>spreadHTML(p,b,i)).join('')}</div>`:
-        `<div class="card-soft mt24 center" style="padding:28px 18px"><div style="width:120px;margin:0 auto">${polaroidHTML({caption:'your first page', rot:-3})}</div><h3 class="h-md mt16">Every visit becomes a page</h3><p class="muted mt8">Log a place you've been and it's taped in here, photos or not.</p><button class="btn btn-gold btn-block mt16" id="shFirst">${icon('add_location_alt')}Log a visit</button></div>`}
-        <div class="btn-grid mt24 shelf-actions"><button class="btn btn-gold" id="shAlbum">${icon('library_add')}New Album</button><button class="btn btn-white" id="shImport">${icon('upload_file')}Import Roll</button></div>
-        <p class="row mono muted mt16" style="font-size:12px;gap:8px;justify-content:center">${icon('verified_user')}Just me visits never appear in shared books</p>
+    let pick = 'all', shown = GRID;
+    el.innerHTML = topbar({title:'Scrapbooks', back:true, actions:`<button class="icon-btn" id="shNew" aria-label="Log a visit">${icon('add_a_photo')}</button>`}) + `<div class="screen-body">
+        <div class="shelf-search mt8" id="shSearchHost"></div>
+        <div class="sr-out shelf-results mt12" id="shResults" hidden></div>
+        <div id="shDyn"></div>
       </div>`;
-      el.querySelectorAll('[data-book]').forEach(b=>b.onclick=()=>openBook(b.dataset.book));
-      el.querySelectorAll('[data-spread]').forEach(x=>x.onclick=()=>openBook(x.dataset.inbook, { pageId:x.dataset.spread }));
-      el.querySelector('#shAlbum').onclick=()=>bookFilters(null, {}, f=>newAlbum(f));
-      el.querySelector('#shImport').onclick=()=>addPhotos({});
-      el.querySelector('#shNew').onclick=()=>addPhotos({});
-      const first=el.querySelector('#shFirst'); if (first) first.onclick=()=>go.log();
-      const nc=el.querySelector('#shNoCrew'); if (nc) nc.onclick=()=>go.crew();
-      const cs=el.querySelector('#shCritters'); if (cs) cs.onclick=()=>go.critters();
+    const results = el.querySelector('#shResults'), dyn = el.querySelector('#shDyn');
+    mountSearchBar(el.querySelector('#shSearchHost'), 'shelf', { out:results, onActive:on=>{ results.hidden = !on; dyn.hidden = on; } });
+    el.querySelector('#shNew').onclick=()=>addPhotos({});
+    const paint=()=>{
+      const crew=S.myCrew(), books=S.books();
+      const personal=books.find(b=>b.kind==='personal'), crewBook=books.find(b=>b.kind==='crew'), taggedBook=books.find(b=>b.kind==='tagged'), albums=books.filter(b=>b.kind==='album');
+      const shelfBooks = [personal, crewBook, taggedBook, ...albums].filter(Boolean);
+      if (pick !== 'all' && !shelfBooks.some(b=>b.id===pick)) pick = 'all';
+      // the grid: the newest pages of the chosen book, or of your three books together (a visit in two shows once)
+      const grid = [];
+      if (pick === 'all'){
+        const seen = new Set();
+        [personal, crewBook, taggedBook].filter(Boolean).flatMap(b=>pagesOf(b).map(p=>[p, b]))
+          .sort((x,y)=>(y[0].date||'').localeCompare(x[0].date||'') || (y[0].createdAt||0)-(x[0].createdAt||0))
+          .forEach(([p, b])=>{ const k = p.entry ? p.entry.id : p.id; if (!seen.has(k)){ seen.add(k); grid.push([p, b]); } });
+      } else { const b = S.book(pick); pagesOf(b).forEach(p=>grid.push([p, b])); }
+      const have = S.caughtIds();
+      const chip = (id, label, ic, n)=>`<button class="person-chip shelf-chip${pick===id?' on':''}" data-pick="${esc(id)}" aria-pressed="${pick===id}">${icon(ic)}${esc(label)}${n!=null?` <em>${n}</em>`:''}</button>`;
+      const chosen = pick !== 'all' && S.book(pick);
+      dyn.innerHTML = `<div class="chip-scroll shelf-chips mt12" role="tablist" aria-label="Your books">
+          ${chip('all', 'All', 'auto_stories')}
+          ${chip(personal.id, 'Personal', 'menu_book', pagesOf(personal).length)}
+          ${crewBook ? chip(crewBook.id, 'Crew', 'groups', pagesOf(crewBook).length) : `<button class="person-chip shelf-chip" id="shNoCrew">${icon('group_add')}Start a crew</button>`}
+          ${taggedBook ? chip(taggedBook.id, 'Tagged', 'sell', pagesOf(taggedBook).length) : ''}
+          ${albums.map(a=>chip(a.id, a.title, 'collections_bookmark', pagesOf(a).length)).join('')}
+          <button class="person-chip shelf-chip" id="shCritters">${icon('pets')}Critters <em>${shownN(have)}/${CRITTERS.length}</em></button>
+        </div>
+        <div class="row between mt20"><span class="row h-md" style="gap:8px">${icon('photo_library')}${chosen ? esc(chosen.title) : 'Latest pages'}</span>
+          ${chosen ? `<button class="link small" data-book="${esc(chosen.id)}">Open book${icon('chevron_right')}</button>` : ''}</div>
+        ${grid.length ? `<div class="spreads mt12">${grid.slice(0, shown).map(([p,b],i)=>spreadHTML(p,b,i)).join('')}</div>
+          ${grid.length > shown ? `<button class="btn btn-soft btn-block mt16" id="shMore">Show more</button>` : ''}`
+        : `<div class="card-soft mt16 center" style="padding:28px 18px"><div style="width:120px;margin:0 auto">${polaroidHTML({caption:'your first page', rot:-3})}</div><h3 class="h-md mt16">${pick==='all' ? 'Every visit becomes a page' : 'No pages here yet'}</h3><p class="muted mt8">Log a place you've been and it's taped in here, photos or not.</p><button class="btn btn-gold btn-block mt16" id="shFirst">${icon('add_location_alt')}Log a visit</button></div>`}
+        <div class="btn-grid mt24 shelf-actions"><button class="btn btn-gold" id="shAlbum">${icon('library_add')}New Album</button><button class="btn btn-white" id="shImport">${icon('upload_file')}Import Roll</button></div>
+        <p class="row mono muted mt16" style="font-size:12px;gap:8px;justify-content:center">${icon('verified_user')}Just me visits never appear in shared books</p>`;
+      dyn.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>{ pick = b.dataset.pick; shown = GRID; paint(); });
+      dyn.querySelectorAll('[data-book]').forEach(b=>b.onclick=()=>openBook(b.dataset.book));
+      dyn.querySelectorAll('[data-spread]').forEach(x=>x.onclick=()=>openBook(x.dataset.inbook, { pageId:x.dataset.spread }));
+      const more=dyn.querySelector('#shMore'); if (more) more.onclick=()=>{ shown += GRID; paint(); };
+      dyn.querySelector('#shAlbum').onclick=()=>bookFilters(null, {}, f=>newAlbum(f));
+      dyn.querySelector('#shImport').onclick=()=>addPhotos({});
+      const first=dyn.querySelector('#shFirst'); if (first) first.onclick=()=>go.log();
+      const nc=dyn.querySelector('#shNoCrew'); if (nc) nc.onclick=()=>go.crew();
+      dyn.querySelector('#shCritters').onclick=()=>go.critters();
     };
     paint(); el._repaint=paint;
     const off=S.onChange(()=>{ if (el.isConnected) paint(); else off(); });
   });
 }
-// the critters: how many of the street critters you've found (landmark ones are a bonus), the ones you have peeking out
+// how many of the street critters you've found (landmark ones are a bonus)
 const shownN = have=>CRITTERS.filter(c=>have.has(c.id)).length;
-function critterSpine(){
-  const have = S.caughtIds(), shown = CRITTERS.filter(c=>have.has(c.id)).slice(0,3);
-  return `<button class="critter-spine" id="shCritters"><span class="grow" style="min-width:0"><span class="bs-kind">${icon('pets')}Collection</span><h3>Critters</h3>
-    <span class="hand">${shownN(have) ? `${shownN(have)} of ${CRITTERS.length} found around Dubai` : 'Animals living at real places in Dubai. Check in where they are.'}</span></span>
-    <span class="cs-art">${shown.length ? shown.map(c=>critterArt(c.id, 32)).join('') : critterArt('street_cat', 32, { silhouette:true })}</span></button>`;
-}
-function spineHTML(b, o){
-  const cover = b.coverPhotoId && S.photo(b.coverPhotoId);
-  return `<button class="book-spine" data-book="${b.id}" style="background:${b.tint}${['#f2cfb4','#fdae7e','#e5a93c'].includes(b.tint)?';color:var(--ink-on-light)':''}">
-    ${o.corner?`<span class="corner ${o.cornerCls||''}">${esc(o.corner)}</span>`:''}
-    <span class="rings"><i></i><i></i><i></i><i></i></span>
-    <span class="grow" style="min-width:0">
-      <span class="bs-kind">${icon(o.kicon)}${esc(o.kind)}</span>
-      <h3 class="clamp2">${esc(b.title)}</h3>
-      <span class="hand">${esc(o.hand||'')}</span>
-      <span class="bs-meta">${o.meta.filter(Boolean).map(m=>m.startsWith('gold:')?`<span class="bsm gold">${m.slice(5)}</span>`:`<span class="bsm">${m}</span>`).join('')}</span>
-      ${o.foot?`<span class="hand" style="display:block;margin-top:8px">${esc(o.foot)}</span>`:''}
-    </span>
-    <span class="bs-go">${cover?`<img src="${S.photoURL(cover)}" alt="" style="width:44px;height:44px;border-radius:50%;object-fit:cover">`:icon('arrow_forward')}</span>
-  </button>`;
-}
 // a small card for a page: its first photo, or its place's stamp
 function spreadHTML(pg, b, i){
   const v=venueOfPage(pg), e=pg.entry, me=S.me(), ph=pg.photos[0];
@@ -496,7 +493,12 @@ go.viewer = viewer;
    ADD PHOTOS: pick from the camera roll, then log the visit they're from
    (there's one flow: the photos arrive already in the log form)
    ========================================================= */
-function addPhotos(opts){
+// Import Roll (and the camera button): pick photos; they're grouped into visits by the day and place they were taken
+// (photometa.js reads that from each photo before it's shrunk), and each group suggests the place it most likely is
+// (the nearest place already on your map). You confirm or pick another; each group then goes through the usual
+// Check in screen with its photos and date, one after another. From a place or a book, it's one visit as before.
+const ROLL_MAX = 40;
+async function addPhotos(opts){
   opts=opts||{};
   const fromBook = opts.bookId ? S.book(opts.bookId) : null;
   const who = fromBook && fromBook.kind==='crew' && S.myCrews().some(c=>c.id===fromBook.crewId) ? [fromBook.crewId] : undefined;
@@ -504,23 +506,56 @@ function addPhotos(opts){
   input.style.display='none'; document.body.appendChild(input);
   input.onchange=async()=>{
     const files=[...input.files]; input.remove();
-    if (files.length > APP.photosPerLog) toast(`One visit holds ${APP.photosPerLog} photos; the first ${APP.photosPerLog} are in`);
+    const one = !!opts.venueId;                         // adding to a known place: one visit
+    const cap = one ? APP.photosPerLog : ROLL_MAX;
+    if (files.length > cap) toast(one ? `One visit holds ${APP.photosPerLog} photos; the first ${APP.photosPerLog} are in` : `The first ${ROLL_MAX} photos are in`);
     const photos=[];
-    for (const f of files.slice(0, APP.photosPerLog)){
+    for (const f of files.slice(0, cap)){
       try{
+        const meta = await readPhotoMeta(f);
         const blob=await compressImage(f, 1400, 0.8);
         const t=new Date(f.lastModified||Date.now()), iso=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
-        photos.push({ blob, url:URL.createObjectURL(blob), caption:'', date: iso <= todayISO() ? iso : todayISO() });
+        const date = meta.date && meta.date <= todayISO() ? meta.date : iso <= todayISO() ? iso : todayISO();
+        photos.push({ blob, url:URL.createObjectURL(blob), caption:'', date, time:meta.time || f.lastModified || 0, lat:meta.lat, lng:meta.lng });
       }catch(_){ toast(`Couldn't read ${f.name}`); }
     }
     if (!photos.length) return;
-    // the visit's date: when the earliest photo was taken
-    const date = photos.map(p=>p.date).sort()[0];
-    go.log({ venueId:opts.venueId, who, photos, date });
+    const groups = one ? [{ date:photos.map(p=>p.date).sort()[0], at:null, photos }] : groupPhotos(photos, APP.photosPerLog);
+    groups.forEach(g=>{ g.venue = opts.venueId ? S.venue(opts.venueId) : suggestPlace(g, S.venues()); });
+    // one group and nothing to suggest: straight to Check in, as before
+    if (groups.length === 1 && (one || !groups[0].venue)) return fileGroup(groups[0], who, []);
+    rollSheet(groups, who);
   };
   input.click();
 }
+// one group into the Check in screen (with the place if you confirmed one); the rest wait for "Next"
+function fileGroup(g, who, rest, venueId){
+  go.log({ venueId:venueId || undefined, who, photos:g.photos.map(p=>({ blob:p.blob, url:p.url, caption:'' })), date:g.date,
+    after: rest.length ? ()=>toast(`${plural(rest.length, 'more visit')} from your roll to file`, 'Next', ()=>rollSheet(rest, who), 8000) : null });
+}
+function rollSheet(groups, who){
+  openSheet(body=>{
+    const paint = ()=>{
+      const n = groups.reduce((k, g)=>k + g.photos.length, 0);
+      body.innerHTML = `<div class="sheet-head"><div class="grow"><span class="eyebrow">Import Roll</span><h2 class="h-md">${plural(n, 'photo')}, ${plural(groups.length, 'visit')}</h2>
+          <span class="hand">Grouped by the day and place they were taken</span></div></div>
+        <div class="stack mt12">${groups.map((g, i)=>`<div class="roll-group card">
+          <div class="roll-thumbs">${g.photos.slice(0, 4).map(p=>`<img src="${esc(p.url)}" alt="">`).join('')}${g.photos.length > 4 ? `<span class="roll-more">+${g.photos.length - 4}</span>` : ''}</div>
+          <div class="row between mt8"><b>${esc(fmtDate(g.date, { weekday:'short', day:'numeric', month:'short', year:'numeric' }))}</b><span class="muted small">${plural(g.photos.length, 'photo')}</span></div>
+          <p class="muted small mt4">${g.venue ? `${icon('location_on')}Taken at or near <b>${esc(g.venue.name)}</b>` : g.at ? `${icon('location_on')}No place on your map there yet` : `${icon('location_off')}These photos don't say where they were taken`}</p>
+          <div class="btn-grid mt8">${g.venue
+            ? `<button class="btn btn-gold btn-sm" data-use="${i}">${icon('check')}${esc(g.venue.name)}</button><button class="btn btn-soft btn-sm" data-pick="${i}">Another place</button>`
+            : `<button class="btn btn-gold btn-sm" data-pick="${i}">${icon('search')}Choose the place</button><button class="btn btn-ghost btn-sm" data-skip="${i}">Skip</button>`}</div>
+        </div>`).join('')}</div>`;
+      const take = (i, venueId)=>{ const g = groups[i], rest = groups.filter((_, k)=>k !== i); back(); setTimeout(()=>fileGroup(g, who, rest, venueId), 250); };
+      body.querySelectorAll('[data-use]').forEach(b=>b.onclick=()=>take(+b.dataset.use, groups[+b.dataset.use].venue.id));
+      body.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>take(+b.dataset.pick, null));
+      body.querySelectorAll('[data-skip]').forEach(b=>b.onclick=()=>{ const g = groups.splice(+b.dataset.skip, 1)[0]; g.photos.forEach(p=>URL.revokeObjectURL(p.url)); groups.length ? paint() : back(); });
+    };
+    paint();
+  });
+}
 go.addPhotos = addPhotos;
 
-// search from the Shelf or a book: the same search, as a sheet (searchui.js)
-if (typeof document !== 'undefined') document.addEventListener('click', e=>{ if (e.target.closest('#shSearch, #bkSearch')) go.scrapbookSearch && go.scrapbookSearch(); });
+// search inside a book: the same search bar, as a sheet (searchui.js); the Shelf has it at the top
+if (typeof document !== 'undefined') document.addEventListener('click', e=>{ if (e.target.closest('#bkSearch')) go.scrapbookSearch && go.scrapbookSearch(); });

@@ -1,17 +1,22 @@
-// Search, in two places: a panel on the map, and a sheet in the scrapbooks (the Shelf and each book), the same box
-// and the same results (search.js does the matching); in the scrapbooks the entries come first and there's no
-// "Show on map".
-// Tap a place: the map flies to its pin and its card opens. Tap an entry: its scrapbook page opens. "Show on map"
-// dims every pin but the matches; clearing the search (or closing the panel) puts the map back.
-// Areas and synonyms come from the areas and search_synonyms tables once signed in (so they're edited there), with
-// the copies the app ships with (search-data.js) until then and offline.
+// The search bar: one always-visible bar for finding and adding, the same on the Map and the Shelf (and in a book,
+// as a sheet). search.js does the matching; this file shows it.
+//   Results are photo cards: one per place, its matching scrapbook visits folded in (a photo, else its stamp; name,
+//   area, rating, who's been). On the Map a card flies to the pin and opens its card; on the Shelf it opens the
+//   visit's scrapbook page (or the place, if nobody has logged it yet). "Show on map" dims every other pin.
+//   A Google Maps (or any) link, or a name that matches nothing, gets "Add this place" first: it goes to the usual
+//   add-from-link flow (share.js), which finds it, checks the crew map first and asks you to confirm.
+// Only what you can already see is searched (the store's own visibility rules; nothing is fetched).
+// Areas and synonyms come from the areas and search_synonyms tables once signed in, with the copies the app ships
+// with (search-data.js) until then and offline.
 import * as S from './store.js';
+import * as M from './model.js';
 import * as MAP from './map.js';
 import * as C from './cloud.js';
 import * as P from './pages.js';
 import { esc, CATEGORIES, fmtDate } from './data.js';
-import { icon, openSheet, back, closeAll } from './ui.js';
-import { go } from './go.js';
+import { icon, openSheet, back, closeAll, stampHTML } from './ui.js';
+import { avatarStack } from './avatar.js';
+import { go, state } from './go.js';
 import { buildIndex, search } from './search.js';
 import { AREAS, SYNONYMS } from './search-data.js';
 
@@ -29,7 +34,7 @@ async function refreshData(){
   }catch(_){}
 }
 
-let index = null, panel = null, query = '', showOnMap = false, timer = 0, lastHits = null;
+let index = null;
 const catNames = Object.fromEntries(CATEGORIES.map(c=>[c.id, c.label]));
 function indexNow(){
   if (index) return index;
@@ -38,35 +43,46 @@ function indexNow(){
   index = buildIndex({ me:S.me()?.id, venues:S.venues(), entries:w.entries, photos:w.photos, pages:w.pages, users, areas, synonyms, categories:catNames });
   return index;
 }
-S.onChange(()=>{ index = null; if (panel && query) run(); });
+const bars = new Set();
+S.onChange(()=>{ index = null; bars.forEach(b=>b.rerun()); });
 
-const areaName = id=>{ const a = (index || indexNow()).areaById.get(id); return a ? a.name : ''; };
-const fromPhoto = `<span class="sr-photo">${icon('photo_camera')}from photo</span>`;
-function placeRow(r){
-  return `<button class="search-result" data-sv="${esc(r.venue.id)}"><span class="sr-ico">${icon('location_on')}</span><span class="grow"><b class="trunc" style="display:block">${esc(r.venue.name)}</b>
-    <span class="muted small">${esc(areaName(r.area) || 'Dubai')}</span>${r.fromPhoto ? fromPhoto : ''}</span>${icon('chevron_right')}</button>`;
-}
-function entryRow(r){
-  const e = r.entry, u = S.user(e.userId), who = u && e.userId !== S.me()?.id ? (u.name || u.handle) + ' • ' : '';
-  const what = (e.dishTags||[]).slice(0, 3).join(', ');
-  return `<button class="search-result" data-se="${esc(e.id)}"><span class="sr-ico">${icon('auto_stories')}</span><span class="grow"><b class="trunc" style="display:block">${esc(r.venue.name)}</b>
-    <span class="muted small">${esc(who)}${esc(fmtDate(e.date, { day:'numeric', month:'short', year:'numeric' }))}${what ? ' • ' + esc(what) : ''}</span>${r.fromPhoto ? fromPhoto : ''}</span>${icon('chevron_right')}</button>`;
-}
-function render(){ renderInto(panel.querySelector('#srOut'), query, lastHits, false); }
-function renderInto(out, q, hits, entriesFirst){
-  if (!q.trim()){ out.innerHTML = `<p class="sr-hint">Search places, dishes, areas and people.</p>`; return; }
-  const { places, entries } = hits;
-  if (!places.length && !entries.length){ out.innerHTML = `<p class="sr-hint">Nothing matches “${esc(q.trim())}”. Try a dish, a place or an area.</p>`; return; }
-  const P1 = places.length ? `<div class="eyebrow">Places</div><div class="stack mt8">${places.slice(0, 20).map(placeRow).join('')}</div>` : '';
-  const E1 = entries.length ? `<div class="eyebrow">Scrapbook entries</div><div class="stack mt8">${entries.slice(0, 30).map(entryRow).join('')}</div>` : '';
-  out.innerHTML = (entriesFirst ? [E1, P1] : [P1, E1]).filter(Boolean).join('<div class="mt16"></div>');
-}
-function applyMap(){
-  if (!showOnMap || !query.trim() || !lastHits){ MAP.setSearchMatches(null); return; }
-  MAP.setSearchMatches(new Set([...lastHits.places.map(r=>r.venue.id), ...lastHits.entries.map(r=>r.venue.id)]));
-}
-function run(){ lastHits = query.trim() ? search(indexNow(), query) : null; render(); applyMap(); }
+const areaName = id=>{ const a = indexNow().areaById.get(id); return a ? a.name : ''; };
+const isLink = q=>/https?:\/\/\S+/i.test(q);
 
+// one card per place: the place's own hit and its matching visits together, best first
+function merge(hits){
+  const by = new Map();
+  const add = (r, visit)=>{
+    let c = by.get(r.venue.id);
+    if (!c){ c = { venue:r.venue, area:r.area, score:r.score, recent:r.recent, entries:[], fromPhoto:true }; by.set(r.venue.id, c); }
+    c.score = Math.min(c.score, r.score); c.recent = Math.max(c.recent, r.recent); c.fromPhoto = c.fromPhoto && !!r.fromPhoto;
+    if (visit) c.entries.push(r.entry);
+  };
+  hits.places.forEach(r=>add(r, false)); hits.entries.forEach(r=>add(r, true));
+  return [...by.values()].sort((a, b)=>a.score - b.score || b.recent - a.recent);
+}
+// the photo a card shows: from a matching visit first, else any you can see of the place
+function cardPhoto(c){
+  for (const e of c.entries){ const p = S.photos({ entryId:e.id })[0]; if (p) return p; }
+  return S.photos({ venueId:c.venue.id })[0] || null;
+}
+function cardHTML(c){
+  const v = c.venue, sum = M.venueSummary(v, { ...state.scope, mode:'crew', members:null }), ph = cardPhoto(c);
+  const who = sum.visitorIds.map(S.user).filter(Boolean), e = c.entries[0];
+  const where = areaName(c.area) || MAP.zoneById(v.zone)?.label || 'Dubai';
+  const when = e && e.date ? fmtDate(e.date, { day:'numeric', month:'short', year:'numeric' }) : '';
+  return `<button class="sr-card" data-v="${esc(v.id)}"${e ? ` data-e="${esc(e.id)}"` : ''}>
+    <span class="sr-img${ph ? '' : ' sr-stamp'}">${ph ? `<img src="${esc(S.photoURL(ph))}" alt="" loading="lazy">` : stampHTML(sum.state, { cat:M.primaryCat(v) })}</span>
+    <span class="sr-body"><b class="trunc">${esc(v.name)}</b>
+      <span class="muted small trunc">${esc(where)}${when ? ' • ' + esc(when) : ''}${e && (e.dishTags||[]).length ? ' • ' + esc(e.dishTags.slice(0, 2).join(', ')) : ''}</span>
+      <span class="sr-meta">${sum.rating ? `<span class="sr-rate">★ ${sum.rating}</span>` : ''}${who.length ? `<span class="sr-who">${avatarStack(who, 22, 4)}</span>` : ''}${c.fromPhoto ? `<span class="sr-photo">${icon('photo_camera')}from photo</span>` : ''}</span></span>
+  </button>`;
+}
+function addHTML(q){
+  const link = isLink(q);
+  return `<button class="sr-card sr-add" data-add="1"><span class="sr-img sr-stamp">${icon('add_location_alt')}</span>
+    <span class="sr-body"><b>Add this place</b><span class="muted small trunc">${link ? 'From the link you pasted' : `Find “${esc(q.trim())}” and add it`}</span></span></button>`;
+}
 // the book a visit's page is in: yours for your visits, your Tagged book if you were tagged, else a crew book
 function bookFor(e){
   const bs = S.books(), me = S.me()?.id;
@@ -74,54 +90,73 @@ function bookFor(e){
   if ((e.taggedIds||[]).includes(me)) return bs.find(b=>b.kind === 'tagged') || bs.find(b=>b.kind === 'personal');
   return bs.find(b=>b.kind === 'crew' && (e.crewIds||[]).includes(b.crewId)) || bs.find(b=>b.kind === 'crew') || bs.find(b=>b.kind === 'personal');
 }
-export function openSearch(){
-  refreshData();
-  if (panel){ panel.querySelector('#srQ').focus(); return; }
-  panel = document.createElement('div'); panel.className = 'search-panel map-ui'; panel.setAttribute('role', 'search');
-  panel.innerHTML = `<div class="sr-bar"><label class="search grow">${icon('search')}<input id="srQ" type="search" placeholder="Search places, dishes, areas…" autocomplete="off" enterkeyhint="search" aria-label="Search" value="${esc(query)}"></label>
-      <button class="icon-btn" id="srClose" aria-label="Close search">${icon('close')}</button></div>
-    <label class="sr-toggle"><input type="checkbox" id="srMap"${showOnMap ? ' checked' : ''}><span>Show on map</span></label>
-    <div class="sr-out" id="srOut"></div>`;
-  document.querySelector('#mapWrap').appendChild(panel);
-  const q = panel.querySelector('#srQ');
-  q.addEventListener('input', ()=>{ query = q.value; panel.classList.remove('min'); clearTimeout(timer); timer = setTimeout(run, 60); });
-  panel.querySelector('#srMap').onchange = e=>{ showOnMap = e.target.checked; applyMap(); };
-  // the close button clears the search first, then closes
-  panel.querySelector('#srClose').onclick = ()=>{ if (query){ q.value = query = ''; panel.classList.remove('min'); run(); q.focus(); } else closeSearch(); };
-  panel.addEventListener('click', e=>{
-    const pv = e.target.closest('[data-sv]'), pe = e.target.closest('[data-se]');
-    if (pv){ const v = S.venue(pv.dataset.sv); if (!v) return; panel.classList.add('min');
-      MAP.flyToSeparate(MAP.placeWorld(v), S.venues().filter(x=>x.id !== v.id).map(x=>MAP.placeWorld(x)));
-      setTimeout(()=>go.peek && go.peek(v.id), 380); }
-    if (pe){ const en = S.entry(pe.dataset.se), b = en && bookFor(en); if (b) go.bookPage(b.id, P.pageId(b.id, en.id)); }
-  });
-  q.addEventListener('focus', ()=>panel.classList.remove('min'));
-  run(); q.focus();
-}
-export function closeSearch(){
-  if (!panel) return;
-  panel.remove(); panel = null; query = ''; lastHits = null; MAP.setSearchMatches(null);
-}
-go.search = openSearch;
 
-// in the scrapbooks: the same search as a sheet. A place goes to the map (flies to its pin, opens its card); an
-// entry opens its page.
-export function openScrapbookSearch(){
+/* ---------- the bar ---------- */
+// host: where it goes. ctx: 'map' (results open under the bar, over the map; a card flies to the pin) or 'shelf'
+// (results go in opts.out, in place of what's there; a card opens the page). opts.onActive(on) says when results show.
+export function mountSearchBar(host, ctx, opts){
+  opts = opts || {};
   refreshData();
-  let q = '', hits = null, t = 0;
+  let query = '', timer = 0, showOnMap = false, last = null;
+  host.innerHTML = `<div class="ksearch ksearch-${ctx}" role="search">
+      <label class="ksearch-bar">${icon('search')}<input type="search" class="ksearch-q" placeholder="${ctx === 'map' ? 'Search, or paste a Maps link' : 'Search your scrapbooks'}" autocomplete="off" enterkeyhint="search" aria-label="Search">
+        <button type="button" class="ksearch-x" aria-label="Clear search" hidden>${icon('close')}</button></label>
+      ${ctx === 'map' ? `<div class="ksearch-drop" hidden><label class="sr-toggle"><input type="checkbox" class="ksearch-show"><span>Show on map</span></label><div class="ksearch-out"></div></div>` : ''}
+    </div>`;
+  const root = host.firstElementChild, q = root.querySelector('.ksearch-q'), x = root.querySelector('.ksearch-x');
+  const drop = root.querySelector('.ksearch-drop'), out = ctx === 'map' ? root.querySelector('.ksearch-out') : opts.out;
+  const setOpen = on=>{ if (drop) drop.hidden = !on; root.classList.toggle('open', on); opts.onActive && opts.onActive(on); };
+  const applyMap = ()=>{
+    if (ctx !== 'map') return;
+    if (!showOnMap || !query.trim() || !last){ MAP.setSearchMatches(null); return; }
+    MAP.setSearchMatches(new Set(last.map(c=>c.venue.id)));
+  };
+  const run = ()=>{
+    const t = query.trim(); x.hidden = !query;
+    if (!t){ last = null; if (out) out.innerHTML = ''; setOpen(false); applyMap(); return; }
+    const cards = isLink(t) ? [] : merge(search(indexNow(), t));
+    last = cards;
+    const add = isLink(t) || (!cards.length && t.length >= 2);
+    out.innerHTML = (add ? addHTML(t) : '')
+      + (cards.length ? `<div class="sr-grid">${cards.slice(0, 40).map(cardHTML).join('')}</div>`
+        : add ? `<p class="sr-hint">Nothing on your map matches “${esc(t)}” yet.</p>` : '');
+    setOpen(true); applyMap();
+  };
+  const bar = { rerun:()=>{ if (query.trim() && root.isConnected) run(); }, focus:()=>q.focus(), set:v=>{ q.value = query = v; run(); } };
+  bars.add(bar);
+  q.addEventListener('input', ()=>{ query = q.value; clearTimeout(timer); timer = setTimeout(run, 70); });
+  q.addEventListener('focus', ()=>{ if (query.trim()) setOpen(true); });
+  q.addEventListener('keydown', e=>{ if (e.key === 'Escape'){ q.value = query = ''; run(); q.blur(); } });
+  x.onclick = ()=>{ q.value = query = ''; run(); q.focus(); };
+  const mapToggle = root.querySelector(".ksearch-show"); if (mapToggle) mapToggle.onchange = ()=>{ showOnMap = mapToggle.checked; applyMap(); };
+  out.addEventListener('click', e=>{
+    if (e.target.closest('[data-add]')){ const t = query.trim(); closeAll(); setTimeout(()=>go.shareAdd(t), 80); return; }
+    const card = e.target.closest('[data-v]'); if (!card) return;
+    const v = S.venue(card.dataset.v); if (!v) return;
+    const en = card.dataset.e && S.entry(card.dataset.e), b = en && bookFor(en);
+    if (ctx === 'map'){
+      setOpen(false); q.blur();
+      MAP.flyToSeparate(MAP.placeWorld(v), S.venues().filter(o=>o.id !== v.id).map(o=>MAP.placeWorld(o)));
+      setTimeout(()=>go.peek && go.peek(v.id), 380);
+    } else if (b){ opts.inSheet && back(); setTimeout(()=>go.bookPage(b.id, P.pageId(b.id, en.id)), opts.inSheet ? 200 : 0); }
+    else { opts.inSheet && back(); setTimeout(()=>go.place(v.id), opts.inSheet ? 200 : 0); }
+  });
+  // on the map, tapping elsewhere tucks the results away (the query stays; tap the bar to see them again)
+  if (ctx === 'map') document.addEventListener('pointerdown', e=>{ if (root.isConnected && !root.contains(e.target) && root.classList.contains('open')){ setOpen(false); q.blur(); } }, true);
+  return bar;
+}
+
+// the map's bar (app.js mounts it); go.search puts the cursor in it
+let mapBar = null;
+export function mountMapSearch(host){ mapBar = mountSearchBar(host, 'map'); return mapBar; }
+go.search = q=>{ if (!mapBar) return; go.switchView && go.switchView('map'); if (typeof q === 'string') mapBar.set(q); mapBar.focus(); };
+
+// in a book: the same bar, as a sheet
+export function openScrapbookSearch(){
   openSheet(body=>{
-    body.innerHTML = `<div class="search-sheet" role="search"><label class="search">${icon('search')}<input id="ssQ" type="search" placeholder="Search your scrapbooks…" autocomplete="off" enterkeyhint="search" aria-label="Search"></label>
-      <div class="sr-out" id="ssOut"></div></div>`;
-    const inp = body.querySelector('#ssQ'), out = body.querySelector('#ssOut');
-    const go2 = ()=>{ hits = q.trim() ? search(indexNow(), q) : null; renderInto(out, q, hits, true); };
-    inp.addEventListener('input', ()=>{ q = inp.value; clearTimeout(t); t = setTimeout(go2, 60); });
-    out.addEventListener('click', e=>{
-      const pv = e.target.closest('[data-sv]'), pe = e.target.closest('[data-se]');
-      if (pv){ const v = S.venue(pv.dataset.sv); if (!v) return; closeAll(); go.switchView && go.switchView('map');
-        setTimeout(()=>{ MAP.flyToSeparate(MAP.placeWorld(v), S.venues().filter(x=>x.id !== v.id).map(x=>MAP.placeWorld(x))); setTimeout(()=>go.peek && go.peek(v.id), 380); }, 120); }
-      if (pe){ const en = S.entry(pe.dataset.se), b = en && bookFor(en); if (b){ back(); setTimeout(()=>go.bookPage(b.id, P.pageId(b.id, en.id)), 200); } }
-    });
-    go2(); setTimeout(()=>inp.focus(), 60);
+    body.innerHTML = `<div class="search-sheet"><div class="ss-host"></div><div class="sr-out ss-out"></div></div>`;
+    const bar = mountSearchBar(body.querySelector('.ss-host'), 'shelf', { out:body.querySelector('.ss-out'), inSheet:true });
+    setTimeout(()=>bar.focus(), 60);
   }, { cls:'search-sheet-host' });
 }
 go.scrapbookSearch = openScrapbookSearch;

@@ -426,6 +426,7 @@ function logFlow(opts){
       if (newPhotos.length) await S.addPhotos(newPhotos.map(p=>({blob:p.blob, caption:p.caption.trim(), venueId:venue.id, entryId:e.id, date:e.date})));
       newPhotos.forEach(p=>URL.revokeObjectURL(p.url));
       closeAll();
+      if (opts.after) setTimeout(opts.after, 1800);   // (Import Roll: the next group from the roll)
       go.quietStrip && go.quietStrip();
       go.switchView('map'); go.refresh();
       setTimeout(()=>{

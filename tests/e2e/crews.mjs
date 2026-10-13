@@ -93,7 +93,9 @@ export default async function crews(h){
   });
   await step('scrapbook filter: Tagged with', async ()=>{
     await h.click('[data-tab="shelf"]'); await h.sleep(700);
-    await h.js(()=>document.querySelector('.book-spine').click()); await h.sleep(900);
+    // the Personal chip, then Open book
+    await h.js(()=>[...document.querySelectorAll('.screen.in:last-of-type .shelf-chip')].find(c=>/Personal/.test(c.innerText)).click()); await h.sleep(400);
+    await h.js(()=>document.querySelector('.screen.in:last-of-type [data-book]').click()); await h.sleep(900);
     await h.js(()=>document.querySelector('#bkFilter').click()); await h.sleep(600);
     if (!/Tagged with/i.test(await text())) throw new Error('no Tagged with section');
     await h.js(()=>document.querySelector('[data-with="demo-maya"]').scrollIntoView({block:'center'})); await h.sleep(200);

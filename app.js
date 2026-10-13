@@ -29,7 +29,7 @@ import { paintStrip, onThisDay, openMemory } from './memories.js';
 import './rate.js';
 import './critterui.js';
 import { openLandmark } from './landmarkui.js';
-import { openSearch } from './searchui.js';
+import { mountMapSearch } from './searchui.js';
 import { checkAiTags, tagAfterUpload } from './aitags.js';
 S.onPhotoSaved(id=>tagAfterUpload(id));
 checkAiTags();
@@ -431,7 +431,7 @@ go.plus = openPlus;
 window.addEventListener('online', ()=>{ const n = S.me() ? S.inbox().length : 0; if (n) toast(`Back online. ${plural(n,'share')} waiting in your Inbox`, 'Open', ()=>go.inbox(), 6000); });
 
 /* map controls */
-$('#btnSearch').onclick=()=>openSearch();
+mountMapSearch($('#mapSearch'));
 $('#btnFit').onclick=()=>{ const pts=modelCache.filter(s=>s.state!=='unlit').map(s=>MAP.placeWorld(s.v)); pts.length?MAP.fitPoints(pts,true):MAP.fitCity(true); };
 $('#btnLocate').onclick=()=>MAP.startTracking(true);
 
