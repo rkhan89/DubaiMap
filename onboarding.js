@@ -57,14 +57,15 @@ async function inviteCard(box, code){
    slowly, while crew pins (a pixel face in its owner's colour, like on the map) drop onto real
    places one after another, lift away and drop again. Still, with every pin placed, under reduced
    motion. */
+// (none lands on the Dubai Frame, so the landmark stays in view between drops)
 const INTRO_SPOTS = [
   { lat:25.2636, lng:55.2995 },   // Al Fahidi
   { lat:25.2215, lng:55.2770 },   // Satwa
   { lat:25.1972, lng:55.2744 },   // Downtown
-  { lat:25.2440, lng:55.3020 },   // Karama
+  { lat:25.2370, lng:55.3160 },   // Oud Metha
   { lat:25.2080, lng:55.2620 },   // City Walk
   { lat:25.2690, lng:55.3080 },   // Deira
-  { lat:25.2330, lng:55.2960 },   // Zabeel
+  { lat:25.2330, lng:55.2830 },   // Jafiliya
 ];
 const INTRO_FACES = [
   { skin:1, hair:'long',   hairColor:'#4A2E1C', outfit:'dress',   top:'#D9567A' },

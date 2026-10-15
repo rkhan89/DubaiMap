@@ -22,7 +22,7 @@ export const LANDMARKS = [
     fact:'Its windows are Arabic calligraphy: three quotes about the future by Sheikh Mohammed bin Rashid, written by Emirati artist Matar Bin Lahej. It opened in February 2022.', venue:['Museum of the Future'] },
   { id:'emirates_towers', size:[112,196], fpx:[71,31], ai:[21.85, 2.80], name:'Emirates Towers', lat:25.21722, lng:55.28306, sprite:'emirates_towers', clear:1, plot:'plaza', plotR:1,
     fact:'Two triangular towers on Sheikh Zayed Road: the office tower is 355 m tall and the hotel tower 309 m.', venue:['Emirates Towers', 'Jumeirah Emirates Towers'] },
-  { id:'dubai_frame', size:[64,100], fpx:[49,14], name:'Dubai Frame', lat:25.23548, lng:55.30034, sprite:'dubai_frame', clear:1, plot:'plaza', plotR:1,
+  { id:'dubai_frame', size:[64,100], fpx:[14,49], name:'Dubai Frame', lat:25.23548, lng:55.30034, sprite:'dubai_frame', clear:1, plot:'plaza', plotR:1,
     fact:'About 150 m tall. From the glass-floored deck across the top you see old Dubai on one side and the Sheikh Zayed Road towers on the other.', venue:['Dubai Frame'] },
   { id:'jumeirah_mosque', size:[104,96], name:'Jumeirah Mosque', lat:25.2340, lng:55.2655, sprite:'jumeirah_mosque', clear:2, plot:'plaza', plotR:2,
     fact:'One of the few mosques in Dubai that welcomes non-Muslim visitors, with guided tours.', venue:['Jumeirah Mosque'] },
