@@ -51,6 +51,7 @@ function mount(){
     if (x==='next') return advance();
     if (x==='start'){ advance(); go.switchView && go.switchView('map'); go.log({}); }
     if (x==='resume'){ go.log({}); }
+    if (x==='photos' || x==='link'){ finish(); startFrom(x); }
   });
 }
 function advance(){
@@ -70,6 +71,7 @@ function paintStep(){
        <h2 class="h-lg">Your map looks empty</h2>
        <p class="muted mt8">Let's fix that. Pin a place you've been to recently. It takes about a minute, and you'll see how everything works on the way.</p>
        <button class="btn btn-gold btn-block mt20" data-t="start">${icon('push_pin')}Pin my first place</button>
+       <div class="start-alt mt8">${startAlt('t')}</div>
        <button class="btn btn-ghost btn-block mt8" data-t="skip">Skip the tour</button>`
     : `<div class="row between"><span class="tour-step">${k} / ${n}</span><button class="tour-skip" data-t="skip">Skip tour</button></div>
        <b class="tour-title">${s.title}</b><p class="tour-body">${s.body}</p>
@@ -130,6 +132,11 @@ export function maybeStartTour(){
   setTimeout(()=>startTour(), 600);
 }
 
+/* ---------- other ways to start: your photos (Import Roll) or a link (Add from link) ---------- */
+// Import Roll picks photos on the phone and groups them; nothing is uploaded until you save a visit
+function startFrom(x){ if (x==='photos') go.addPhotos && go.addPhotos({}); else go.shareAdd && go.shareAdd(); }
+const startAlt = attr => `<button class="btn btn-white btn-sm" data-${attr}="photos">${icon('photo_library')}Start from your photos</button><button class="btn btn-white btn-sm" data-${attr}="link">${icon('link')}Paste a link</button>`;
+
 /* ---------- empty map: a gentle nudge whenever there's nothing to show ---------- */
 export function paintEmptyMap(count){
   let el = $('#emptyMap');
@@ -138,8 +145,9 @@ export function paintEmptyMap(count){
   if (!el){
     el = document.createElement('div'); el.id = 'emptyMap'; el.className = 'empty-map paper map-ui';
     el.innerHTML = `<span class="tape"></span><b>Your map looks empty</b><span class="muted small">Pin a place you've been to recently and it lands here as a stamp.</span>
-      <div class="row mt12" style="gap:8px"><button class="btn btn-gold btn-sm" data-e="pin">${icon('push_pin')}Pin a place</button><button class="btn btn-soft btn-sm" data-e="tour">${icon('tour')}Show me around</button></div>`;
-    el.addEventListener('click', e=>{ const x=e.target.closest('[data-e]')?.dataset.e; if (x==='pin') go.log({}); if (x==='tour') startTour({fromStart:true}); });
+      <div class="row mt12" style="gap:8px"><button class="btn btn-gold btn-sm" data-e="pin">${icon('push_pin')}Pin a place</button><button class="btn btn-soft btn-sm" data-e="tour">${icon('tour')}Show me around</button></div>
+      <div class="start-alt mt8">${startAlt('e')}</div>`;
+    el.addEventListener('click', e=>{ const x=e.target.closest('[data-e]')?.dataset.e; if (x==='pin') go.log({}); if (x==='tour') startTour({fromStart:true}); if (x==='photos' || x==='link') startFrom(x); });
     $('#mapWrap').appendChild(el);
   }
 }

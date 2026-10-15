@@ -124,7 +124,8 @@ add it → where is it → what kind → rate → add a photo → who sees it �
 Me / Crew, filters, the bell, the Crew tab and the Shelf. Each step moves on when you do the
 thing (or tap Next); Skip is on every step. If you leave the log screen midway, a small pill
 offers to pick up again. Anyone whose map is empty (skipped, or new to a crew) sees an
-empty-map card with Pin a place and Show me around. Replay from Settings → Replay the guide.
+empty-map card with Pin a place and Show me around, plus Start from your photos (Import Roll) and Paste a link
+(Add from link); the guide's intro card offers the same two. Replay from Settings → Replay the guide.
 The sample crew brings the 30 real places it has been to, and takes them away again when
 switched off (unless you logged or planned something there yourself).
 
@@ -607,4 +608,4 @@ Points, levels, the leaderboard and every counter toward a reward are gone (migr
 
 Welcome (the app's pixel city around Downtown, Satwa and Old Dubai, drifting slowly while crew pins, a
 pixel face in its owner's colour, drop onto real places one after another and lift away again; still with
-every pin placed under reduced motion) → sign in (email code or Google) → 2 handle → 3 avatar and pin colour → 4 who sees each place (crews, Just me, tagging shares with a crew you're both in) → 5 three things you'll collect (pages, critters, stickers; no points) → 6 crew setup. The first-run guide then walks through pinning a first place and the map: Me/Crew (pin colours and faces), filters, the bell (tags to rate, On this day), crew invites, the Shelf, and finding critters (check in at a place, or I'm here now on the Critters page).
+every pin placed under reduced motion) → sign in (email code or Google) → five setup steps, each with the same "Step n of 5" chip and bars: 1 handle → 2 avatar and pin colour → 3 who sees each place (crews, Just me, tagging shares with a crew you're both in) → 4 three things you'll collect (pages, critters, stickers; no points) → 5 crew setup. In crew setup a crew is made only when you tap Invite or Copy or type a name; "Continue to Scrapbook" with the untouched default carries on solo. Arriving from an invite link, the welcome screen shows the crew's name, its size and who started it (pixel avatar) above the sign-in buttons, read signed out through `crew_invite_preview` (migration 0015: a full 10-character code only; name, count, owner name and pixel avatar, nothing else). When onboarding ends the map flies to your first stamp if you have one. The first-run guide then walks through pinning a first place and the map: Me/Crew (pin colours and faces), filters, the bell (tags to rate, On this day), crew invites, the Shelf, and finding critters (check in at a place, or I'm here now on the Critters page).

@@ -355,5 +355,20 @@ await as(K1, `update profiles set favourite_critter_id=null where id=auth.uid()`
 await as(K1, `update profiles set favourite_critter_id='falcon' where id=auth.uid()`);
 await as(K2, `update profiles set favourite_critter_id=null where id='${K1}'`);
 (await as(K1, `select favourite_critter_id f from profiles where id=auth.uid()`)).rows[0].f==='falcon' ? ok('a crewmate can’t change your favourite') : bad('favourite changed by someone else');
+
+// ---- invite preview for someone not signed in yet (0015) ----
+await db.exec('reset role');
+const sql15 = fs.readFileSync(new URL('../../supabase/migrations/0015_invite_preview.sql', import.meta.url),'utf8');
+try{ await db.exec(sql15); await db.exec(sql15); ok('invite preview migration runs (twice)'); } catch(e){ bad('invite preview migration: '+e.message); }
+await db.exec(`grant usage on schema public to anon`);
+await db.exec(`update profiles set name='Kiran', avatar='{"pixel":{"skin":2},"photo":"secret.jpg"}' where id='${K1}'`);
+const asAnon = async (q, params)=>{ await db.exec(`reset role; select set_config('request.jwt.claim.sub','',false); set role anon;`); return db.query(q, params); };
+{ const p = (await asAnon(`select crew_invite_preview($1) as p`, [kx.code.toLowerCase()])).rows[0].p;
+  p && p.name==='Critter Crew' && p.count===2 && p.owner.name==='Kiran' && p.owner.avatar.pixel.skin===2 && !p.owner.avatar.photo ? ok('signed out, an invite code shows the crew name, size and who started it (pixel avatar, never a photo)') : bad('anon preview '+JSON.stringify(p));
+  const keys = p ? Object.keys(p).sort().join(',')+'|'+Object.keys(p.owner).sort().join(',') : '';
+  keys==='count,name,owner|avatar,name' ? ok('…and nothing else (no ids, handles or other members)') : bad('preview leaks '+keys); }
+(await asAnon(`select crew_invite_preview('ABC') as p`)).rows[0].p===null ? ok('a short or wrong code shows nothing') : bad('short code answered');
+{ let refused=false; try{ await asAnon(`select crew_preview($1)`, [kx.code]); }catch(_){ refused=true; } refused ? ok('the full crew preview stays signed-in only') : bad('anon read crew_preview'); }
+await db.exec('reset role');
 console.log(process.exitCode ? '\nSOME CHECKS FAILED' : '\nall checks passed');
 

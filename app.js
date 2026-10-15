@@ -492,7 +492,14 @@ function paintMe(){ const me=S.me(); if (me) MAP.setMeSprite(spriteSvg({...DEFAU
 go.paintMe = paintMe;
 go.afterOnboarding = ()=>{
   paintMe(); rebuild();
-  MAP.whenReady(()=>{ MAP.fitCity(false); const pts=modelCache.filter(s=>s.state!=='unlit').map(s=>MAP.placeWorld(s.v)); if (pts.length) MAP.fitPoints(pts,false); });
+  MAP.whenReady(()=>{
+    MAP.fitCity(false);
+    // open on your first stamp if you have one; otherwise fit whatever is lit (or the whole city)
+    const me=S.me(), first=me && S.entries({userId:me.id, kind:'visit'}).map(e=>({e, v:S.venue(e.venueId)})).filter(x=>x.v)
+      .sort((a,b)=>String(a.e.date||'').localeCompare(String(b.e.date||'')) || (a.e.createdAt||0)-(b.e.createdAt||0))[0];
+    if (first) return MAP.flyToWorld(MAP.placeWorld(first.v));
+    const pts=modelCache.filter(s=>s.state!=='unlit').map(s=>MAP.placeWorld(s.v)); if (pts.length) MAP.fitPoints(pts,false);
+  });
   primeBadges(); scheduleReminders();
   if (state.pendingJoin){ const code=state.pendingJoin; state.pendingJoin=null; go.inviteLanding(code); }
   else if (state.pendingPlace){ const p=state.pendingPlace; state.pendingPlace=null; MAP.whenReady(()=>openSharedPlace(p)); }

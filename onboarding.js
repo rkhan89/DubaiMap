@@ -4,7 +4,7 @@ import { APP } from './config.js';
 import * as S from './store.js';
 import { CATEGORIES, catById, iconSvg, esc, plural } from './data.js';
 import { SKINS, HAIR_COLORS, TOPS, HAIRS, OUTFITS, spriteSvg, spriteHead, DEFAULT_AVATAR, avatarHTML } from './avatar.js';
-import { $, icon, toast, openScreen, back, closeAll, topbar } from './ui.js';
+import { $, icon, toast, openScreen, back, closeAll, topbar, setupProgress } from './ui.js';
 import { go, state } from './go.js';
 import { zoneById } from './map.js';
 import * as MAP from './map.js';
@@ -12,8 +12,6 @@ import { PIN_COLORS, colorOf } from './pincolor.js';
 import { CRITTERS } from './critters.js';
 import { critterArt } from './critterui.js';
 
-const STEPS = 6;
-function bars(n){ return `<span class="bars">${Array.from({length:STEPS},(_,i)=>`<i class="${i<n-1?'done':i===n-1?'on':''}"></i>`).join('')}</span>`; }
 let root=null;
 
 /* ---------- 1. welcome (not a history layer: it's the bottom of the stack) ---------- */
@@ -25,6 +23,7 @@ function welcome(){
     <h1 class="w-brand"><span class="wordmark" role="img" aria-label="${esc(APP.name)}"></span></h1>
     <span class="hand">${esc(APP.tagline)}</span>
     <div class="w-city" aria-hidden="true"><div class="wc-layer"><canvas id="wCity"></canvas><div class="wc-pins"></div></div></div>
+    <div class="w-invite" id="wInvite" hidden></div>
     <div class="stack" style="width:100%">
       <button class="btn btn-google btn-block" id="wGoogle"><svg width="22" height="22" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 38.2 44 33 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>Continue with Google</button>
       <button class="btn btn-gold btn-block" id="wEmail">${icon('mail')}Continue with Email</button>
@@ -43,6 +42,15 @@ function welcome(){
   };
   root.querySelector('#wEmail').onclick=emailStep;
   cityIntro(root);
+  if (state.pendingJoin) inviteCard(root.querySelector('#wInvite'), state.pendingJoin);
+}
+
+/* Arriving from an invite link: which crew, and who started it, before you sign in */
+async function inviteCard(box, code){
+  const p = await S.invitePreview(code);
+  if (!p || !box.isConnected) return;
+  box.innerHTML = `${avatarHTML({ avatar:p.owner.avatar }, 44)}<div class="grow" style="min-width:0"><span class="muted small">You're invited to</span><b class="trunc">${esc(p.name)}</b><span class="muted small">${p.owner.name?`Started by ${esc(p.owner.name)} · `:''}${plural(p.count,'person','people')}</span></div>`;
+  box.hidden = false;
 }
 
 /* The welcome picture: the app's own pixel city around Downtown, Satwa and Old Dubai, drifting
@@ -147,7 +155,7 @@ function codeStep(email){
       <button class="btn btn-gold btn-block mt24" id="vfyGo">Continue ${icon('arrow_forward')}</button>
       <p class="center mt16"><span class="hand">Having trouble?</span> <button class="hand link" data-act="back" style="font-size:19px">Change email address</button></p>
     </div>`;
-    if (state.pendingJoin) S.findCrewByCode(state.pendingJoin).then(p=>{ const box=el.querySelector('#cPending'); if (p && box) box.innerHTML=`<div class="card mt16 row">${icon('menu_book')}<div class="grow"><span class="eyebrow">Scrapbook locked</span><div><b>${esc(p.name)}</b></div><span class="hand">crew memories waiting for you</span></div></div>`; });
+    if (state.pendingJoin) S.invitePreview(state.pendingJoin).then(p=>{ const box=el.querySelector('#cPending'); if (p && box) box.innerHTML=`<div class="card mt16 row">${icon('group_add')}<div class="grow"><span class="muted small">After you sign in, you'll join</span><div><b>${esc(p.name)}</b></div></div></div>`; });
     const ins=[...el.querySelectorAll('.code-box input')];
     ins.forEach((inp,i)=>{
       inp.addEventListener('input', ()=>{ inp.value=inp.value.replace(/\D/g,'').slice(-1); el.querySelector('#cErr').hidden=true; if (inp.value && ins[i+1]) ins[i+1].focus(); if (ins.every(x=>x.value)) verify(); });
@@ -184,14 +192,14 @@ function handleStep(opts){
   opts=opts||{};
   const me=S.me();
   openScreen(el=>{
-    el.innerHTML = topbar({title: opts.edit?'Name & handle':'Scrapbook Onboarding', profile:false}) + `<div class="screen-body">
-      ${opts.edit?'':`<div class="row between mt8"><span class="row" style="gap:6px;min-width:0"><span class="step" style="background:none;padding:0">Step 2 of ${STEPS}</span></span>${bars(2)}</div>`}
+    el.innerHTML = topbar({title: opts.edit?'Name & handle':'Your handle', profile:false}) + `<div class="screen-body">
+      ${opts.edit?'':setupProgress(1)}
       <h1 class="h-xl mt24">Pick your handle <span class="ms" style="color:var(--gold);font-size:30px">edit</span></h1>
       <p class="muted mt8" style="font-size:16px">This is how your food crew will tag you on visits and photos across ${esc(APP.city)}.</p>
       <div class="field-label mt24"><span class="eyebrow">Handle</span><span class="hand">letters, numbers &amp; underscores</span></div>
       <div class="handle-input mt8" id="hBox"><b>@</b><input id="hIn" maxlength="20" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(me.handle||'')}" placeholder="you"><span class="ok">${icon('check')}</span></div>
       <div class="mt12" id="hMsg"></div>
-      <div class="rules mt8"><span id="rLen">&gt; 2 chars</span><span id="rUniq">unique</span></div>
+      <div class="rules mt8"><span id="rLen">3+ characters</span><span id="rUniq">unique</span></div>
       <div class="field mt20"><label class="eyebrow" for="nIn">Display name <span style="text-transform:none;font-weight:400">(optional)</span></label><input class="input" id="nIn" maxlength="30" value="${esc(me.name||'')}" placeholder="What friends call you"></div>
       <div class="preview-card mt32"><span class="tape-label">live preview</span>
         <div class="row between"><span class="row h-sm">How your crew sees you</span></div>
@@ -199,10 +207,10 @@ function handleStep(opts){
           <div class="row"><span class="stamp st-visited"><span class="st-paper"><span class="st-ico">${iconSvg('coffee','#7e5700')}</span></span></span><div class="grow"><b id="pvH">@you</b><div>logged a spot at <b>Trio Cafe</b></div></div><span class="mono muted" style="font-size:12px">Just now</span></div>
           <div class="as-inner"><img src="demo/d08.jpg" alt="" style="width:56px;height:56px;border-radius:8px;object-fit:cover"><div><b>Iced Spanish Latte &amp; Brioche</b><div class="hand">"The cardamom note was crazy good"</div></div></div>
         </div>
-        <div class="row between mt12"><span class="hand">${esc(APP.city)} Food Diary · Vol. 01</span><span class="mono muted" style="font-size:12px">● verified alias</span></div>
+        <p class="muted small mt12">Your crews see this on visits you share.</p>
       </div>
       <button class="btn btn-gold btn-block mt32" id="hGo" disabled>${opts.edit?'Save':'Next: Choose Avatar'} ${icon(opts.edit?'check':'arrow_forward')}</button>
-      <p class="center hand mt12">You can always change your alias later in your profile.</p>
+      <p class="center hand mt12">You can change your handle later in your profile.</p>
     </div>`;
     const inp=el.querySelector('#hIn'), box=el.querySelector('#hBox'), msg=el.querySelector('#hMsg'), btn=el.querySelector('#hGo');
     const check=()=>{
@@ -213,7 +221,7 @@ function handleStep(opts){
       el.querySelector('#rLen').className = h ? (lenOk?'ok':'bad') : '';
       el.querySelector('#rUniq').className = !lenOk ? '' : (st==='taken'?'bad':'ok');
       box.classList.toggle('valid', st==='ok');
-      msg.innerHTML = !h ? '' : st==='ok' ? `<span class="ok-pill">${icon('check_circle')}✓ @${esc(h)} is available!</span>` :
+      msg.innerHTML = !h ? '' : st==='ok' ? `<span class="ok-pill">${icon('check_circle')}@${esc(h)} is available</span>` :
         st==='taken' ? `<span class="tag red" style="font-size:12px;padding:6px 12px">@${esc(h)} is taken</span>` :
         st==='short' ? `<span class="tag rust" style="font-size:12px;padding:6px 12px">too short</span>` : `<span class="tag red" style="font-size:12px;padding:6px 12px">letters, numbers &amp; _ only</span>`;
       btn.disabled = st!=='ok';
@@ -248,8 +256,8 @@ function avatarStep(opts){
   openScreen(el=>{
     const paint=()=>{
       const robe = av.outfit==='kandura' || av.outfit==='abaya';
-      el.innerHTML = topbar({title: opts.edit?'Your avatar':'Scrapbook Onboarding', profile:false}) + `<div class="screen-body">
-        ${opts.edit?'':`<div class="row between mt8"><span class="step">Step 3 of ${STEPS}</span>${bars(3)}</div>`}
+      el.innerHTML = topbar({title:'Your avatar', profile:false}) + `<div class="screen-body">
+        ${opts.edit?'':setupProgress(2)}
         <div class="row mt20" style="align-items:flex-start"><h1 class="h-xl grow">Style your pixel avatar</h1></div>
         <p class="muted mt8" style="font-size:16px">Visible only to your crew on the map and scrapbook pages.</p>
         <div class="avatar-stage mt20"><span class="tape rose" style="left:40px"></span><span class="tape" style="right:40px;left:auto"></span>
@@ -292,8 +300,8 @@ go.editAvatar = ()=>avatarStep({edit:true});
 /* ---------- 5. who sees what (you choose on every save) ---------- */
 function shareStep(){
   openScreen(el=>{
-    el.innerHTML = topbar({title:'Crew sharing', center:true, profile:false, progress:[0,4]}) + `<div class="screen-body center">
-      <span class="step mt8">Step 4 of ${STEPS}</span>
+    el.innerHTML = topbar({title:'Crew sharing', center:true, profile:false}) + `<div class="screen-body center">
+      ${setupProgress(3)}
       <h1 class="h-xl mt12">You decide who sees each place</h1>
       <p class="muted mt8" style="font-size:16px">Nothing is shared unless you choose.</p>
       <div class="card mt24" style="text-align:left">
@@ -311,8 +319,8 @@ function shareStep(){
 function collectStep(){
   openScreen(el=>{
     const shown = critterArt(CRITTERS[0].id, 64, { silhouette:true });   // one shape, no name: a taste, not a clue
-    el.innerHTML = topbar({title:'Your scrapbook', center:true, profile:false, progress:[0,4]}) + `<div class="screen-body center">
-      <span class="step mt8">Step 5 of ${STEPS}</span>
+    el.innerHTML = topbar({title:'Your scrapbook', center:true, profile:false}) + `<div class="screen-body center">
+      ${setupProgress(4)}
       <h1 class="h-xl mt12">Three things you'll collect</h1>
       <p class="muted mt8" style="font-size:16px">No points, no scores. Just memories.</p>
       <div class="collect-list mt20" style="text-align:left">
@@ -341,7 +349,7 @@ function importStep(fromOnboarding){
   openScreen(el=>{
     const paint=()=>{
       const n=sel.size;
-      el.innerHTML = topbar({title:'Import', center:true, profile:false, progress:fromOnboarding?[0,4]:null}) + `<div class="screen-body center">
+      el.innerHTML = topbar({title:'Import', center:true, profile:false}) + `<div class="screen-body center">
         <span class="tag soft mt8">AUTO-SYNC • THIS PHONE</span>
         <div style="margin:14px auto 0;width:52px;height:52px;border-radius:50%;background:var(--sc-high);display:flex;align-items:center;justify-content:center">${icon('photo_library')}</div>
         <h1 class="h-xl mt12">Found ${plural(list.length,'place')} on this phone</h1>

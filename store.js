@@ -415,6 +415,15 @@ export async function findCrewByCode(code){
   }
   const c = Object.values(db.crews).find(c=>c.code===code); return c ? { ...c, count:c.memberIds.length, members:c.memberIds.map(user).filter(Boolean) } : null;
 }
+// before sign-in: which crew an invite code is for, its size and who started it (0015; null until that's run)
+export async function invitePreview(code){
+  code=(code||'').trim().toUpperCase();
+  if (cloud){
+    try{ const p = await C.rpc('crew_invite_preview', { p_code:code }); return p ? { name:p.name, count:p.count, owner:{ name:p.owner?.name||'', avatar:p.owner?.avatar||{} } } : null; }catch(_){ return null; }
+  }
+  const c = Object.values(db.crews).find(c=>c.code===code), o = c && user(c.ownerId);
+  return c ? { name:c.name, count:c.memberIds.length, owner:{ name:o?.name||o?.handle||'', avatar:{ pixel:o?.avatar?.pixel } } } : null;
+}
 
 /* =========================================================
    VENUES
