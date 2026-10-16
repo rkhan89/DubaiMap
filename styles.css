@@ -1377,3 +1377,59 @@ html.still .mem-strip.in{opacity:1;}
 .roll-thumbs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;position:relative;}
 .roll-thumbs img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;display:block;}
 .roll-more{position:absolute;right:6px;bottom:6px;padding:2px 8px;border-radius:999px;background:rgba(0,0,0,.6);color:#fff;font-family:var(--f-mono);font-size:12px;font-weight:700;}
+
+/* =========================================================
+   IPHONE FEEL: safe areas on every edge, inset sheets with a real grabber,
+   press states, no text selection or callouts on chrome, no zoom on focus
+   ========================================================= */
+:root{ --safe-l:env(safe-area-inset-left,0px); --safe-r:env(safe-area-inset-right,0px); --sheet-off:calc(100% + 60px); }
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;}
+body{font-size:15px;text-rendering:optimizeLegibility;}
+/* landscape: keep chrome and reading columns clear of the notch / Dynamic Island */
+.app-header{padding-left:max(16px,var(--safe-l));padding-right:max(16px,var(--safe-r));}
+.bottomnav{padding-left:max(6px,var(--safe-l));padding-right:max(6px,var(--safe-r));}
+.topbar{padding-left:max(12px,var(--safe-l));padding-right:max(12px,var(--safe-r));}
+.screen-body{padding-left:max(20px,var(--safe-l));padding-right:max(20px,var(--safe-r));}
+.list-view{padding-left:max(16px,var(--safe-l));padding-right:max(16px,var(--safe-r));}
+.toast{max-width:calc(100% - 32px - var(--safe-l) - var(--safe-r));}
+
+/* chrome is for tapping, not selecting: no text selection, no long-press callout */
+:is(.bottomnav,.app-header,.topbar,.sheet-handle,.seg,.toast,.map-ctrl,.ksearch-x),
+button,.btn,.icon-btn,.cat-chip,.person-chip,.switch{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
+
+/* typing never zooms the page: iOS zooms into any field under 16px */
+/* (a zero-specificity default, so fields that set a bigger size keep it) */
+:where(input,select,textarea){font-size:16px;}
+@media (pointer:coarse){
+  .reel .polaroid figcaption input,.caption-box input,.sort-sel{font-size:16px;}
+}
+
+/* press states: a quick dim or squeeze under the finger, as native controls do */
+@media (hover:none){
+  .bottomnav button:not(.nav-log){transition:opacity .12s;}
+  .bottomnav button:not(.nav-log):active{opacity:.5;}
+  .icon-btn{transition:transform .14s var(--ease), background .14s;}
+  .icon-btn:active{transform:scale(.9);}
+  .btn:active{transform:scale(.97);opacity:.9;}
+  :is(.seg button,.toast-btn,.ksearch-x,.sr-card,.person-row):active{opacity:.6;}
+}
+/* 44pt targets for the small controls (the visible part stays the same size) */
+.switch::before,.ksearch-x::before{content:"";position:absolute;inset:-7px -4px;}
+.ksearch-x{position:relative;}
+
+/* sheets: inset from the screen edges with corners that follow the phone's own
+   (only on phones with a home indicator; square-cornered phones keep the flush sheet) */
+.sheet{transform:translateY(var(--sheet-off));}
+.sheet.in{transform:none;}
+@media (max-width:640px){
+  .sheet{left:calc(min(var(--safe-b),34px) * .25);right:calc(min(var(--safe-b),34px) * .25);bottom:calc(min(var(--safe-b),34px) * .25);
+    border-radius:32px 32px calc(min(var(--safe-b),34px) * 1.3) calc(min(var(--safe-b),34px) * 1.3);
+    padding-bottom:calc(var(--safe-b) * .75);max-height:calc(100dvh - var(--safe-t) - 12px);}
+}
+/* the grabber: a 36x5 pill with a full-width, 22px-tall grab zone */
+.sheet-handle{width:100%;height:22px;margin:0;background:none;border-radius:0;display:flex;align-items:center;justify-content:center;}
+.sheet-handle::before{content:"";width:36px;height:5px;border-radius:3px;background:var(--sc-highest);}
+.sheet-handle:active::before{background:var(--outline);}
+
+/* the screen being swiped back casts a shadow on what it reveals */
+.screen.swiping{box-shadow:-10px 0 30px rgba(var(--shade),.18);}

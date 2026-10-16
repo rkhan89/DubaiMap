@@ -5,7 +5,7 @@ import * as M from './model.js';
 import * as MAP from './map.js';
 import { CATEGORIES, MEALS, catById, iconSvg, esc, fmtRating, ago, agoLong, plural } from './data.js';
 import { avatarHTML, avatarStack, spriteSvg, DEFAULT_AVATAR } from './avatar.js';
-import { $, $$, icon, toast, openSheet, back, closeAll, stampHTML, catChip, seg, bindSeg, toggleHTML, bindToggle, ratingPill, catPickerHTML, bindCatPicker } from './ui.js';
+import { $, $$, icon, toast, openSheet, back, closeAll, stampHTML, catChip, seg, bindSeg, toggleHTML, bindToggle, ratingPill, catPickerHTML, bindCatPicker, haptic } from './ui.js';
 import { go, state } from './go.js';
 import { applyTheme, onTheme, themePref, setThemePref } from './theme.js';
 import { showState, now } from './shows.js';
@@ -408,6 +408,7 @@ function switchView(v){
 go.switchView = switchView;
 $('#nav').addEventListener('click', e=>{
   const b=e.target.closest('button'); if (!b) return;
+  haptic(b.id==='navLog' ? 'tap' : 'tick');
   if (b.id==='navLog') return openPlus();
   const t=b.dataset.tab;
   if (t==='map'||t==='list') switchView(t);

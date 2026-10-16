@@ -5,7 +5,7 @@
 import * as S from './store.js';
 import { userStats } from './stats.js';
 import { esc, CATEGORIES, monthKey, fmtDate } from './data.js';
-import { icon, openScreen, topbar, back } from './ui.js';
+import { icon, openScreen, topbar, back, haptic } from './ui.js';
 import { go } from './go.js';
 import { LANDMARK_CRITTERS } from './landmark-critters.js';
 
@@ -143,6 +143,7 @@ function peel(list){
   el.onclick = ()=>{ clearTimeout(t); hide(); const queue = list.slice(); const next = ()=>{ const x = queue.shift(); if (x) celebrate(x, next); }; next(); };
 }
 function celebrate(b, done){
+  haptic('success');
   const wrap = document.createElement('div'); wrap.className = 'unlock celebrate';
   const bits = Array.from({length:18}, (_,k)=>`<i style="--a:${k*20}deg;--d:${60+(k%4)*18}px;--c:${['#E5A93C','#E1699A','#3F7FD9','#5F8D4E','#fff'][k%5]}"></i>`).join('');
   wrap.innerHTML = `<div class="unlock-card paper"><span class="eyebrow" style="color:var(--rust)">New sticker</span>

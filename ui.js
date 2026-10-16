@@ -4,6 +4,8 @@ import { APP } from './config.js';
 import { CATEGORIES, catById, iconSvg, esc, fmtRating, tilt } from './data.js';
 import { avatarHTML } from './avatar.js';
 import { me as currentUser, myCrews, venues as allVenues } from './store.js';
+import { haptic } from './haptics.js';
+export { haptic };
 
 export const $ = (s, r)=> (r||document).querySelector(s);
 export const $$ = (s, r)=> Array.from((r||document).querySelectorAll(s));
@@ -47,6 +49,7 @@ export function openScreen(render, opts){
   }};
   el._layer = layer;
   render(el, layer);
+  edgeSwipe(el);
   nextFrame(()=>el.classList.add('in'));
   if (opts.replace && stack.length && stack[stack.length-1].kind==='screen'){
     // swap the current screen for this one (onboarding steps) without growing history
@@ -55,6 +58,45 @@ export function openScreen(render, opts){
   } else pushLayer(layer);
   return el;
 }
+// Swipe in from the left edge to go back, as on iPhone. Only when installed to the home
+// screen: in a Safari tab the browser already owns that gesture (and its popstate closes us).
+// Screens without a back button (onboarding steps) can't be swiped away either.
+const standalone = ()=> navigator.standalone===true || matchMedia('(display-mode: standalone)').matches;
+function edgeSwipe(el){
+  if (!standalone()) return;
+  let x0=null, y0=0, dx=0, lastX=0, lastT=0, v=0, live=false;
+  el.addEventListener('touchstart', e=>{
+    const t=e.touches[0];
+    x0 = (e.touches.length===1 && t.clientX<24 && el.querySelector('[data-act="back"]')) ? t.clientX : null;
+    y0=t.clientY; dx=0; v=0; live=false; lastX=t.clientX; lastT=performance.now();
+  }, {passive:true});
+  el.addEventListener('touchmove', e=>{
+    if (x0===null) return;
+    const t=e.touches[0], now=performance.now();
+    if (!live){
+      if (Math.abs(t.clientY-y0) > Math.abs(t.clientX-x0)){ x0=null; return; }
+      if (t.clientX-x0 < 8) return;
+      live=true; el.style.transition='none'; el.classList.add('swiping');
+    }
+    v=(t.clientX-lastX)/Math.max(1,now-lastT); lastX=t.clientX; lastT=now;
+    dx=Math.max(0, t.clientX-x0);
+    el.style.transform=`translateX(${dx}px)`;
+    e.preventDefault();
+  }, {passive:false});
+  const end=()=>{
+    if (x0===null) return; x0=null;
+    if (!live) return;
+    el.style.transition=''; el.classList.remove('swiping');
+    if (dx > el.offsetWidth*0.33 || (v>0.5 && dx>24)){ haptic('tap'); el.style.transform='translateX(100%)'; back(); }
+    else el.style.transform='';
+  };
+  el.addEventListener('touchend', end); el.addEventListener('touchcancel', end);
+}
+// iOS Safari only shows :active press states once a touchstart listener exists
+document.addEventListener('touchstart', ()=>{}, {passive:true});
+// Esc closes the top layer (keyboards on iPad and desktop)
+window.addEventListener('keydown', e=>{ if (e.key==='Escape' && stack.length && !e.defaultPrevented && !e.target.closest('input,textarea,select')) back(); });
+
 // Bottom sheet. render(body, layer). Drag the handle down to dismiss.
 export function openSheet(render, opts){
   opts=opts||{};
@@ -72,15 +114,52 @@ export function openSheet(render, opts){
     if (!fromPop){ const i=stack.indexOf(layer); if (i>-1){ stack.splice(i,1); ignorePop++; history.back(); } }
   }};
   el._layer = layer;
-  render(el.querySelector('.sheet-inner'), layer);
+  const inner=el.querySelector('.sheet-inner');
+  render(inner, layer);
   scrim.addEventListener('click', ()=>back());
-  // drag down to close
+  // drag down to close, as on iPhone: from the grabber, or from anywhere once the content is
+  // scrolled to the top. A flick closes it too; pulling up stretches a little and springs back.
   const handle=el.querySelector('.sheet-handle');
-  let y0=null, dy=0;
-  handle.addEventListener('pointerdown', e=>{ y0=e.clientY; dy=0; el.style.transition='none'; handle.setPointerCapture(e.pointerId); });
-  handle.addEventListener('pointermove', e=>{ if (y0===null) return; dy=Math.max(0,e.clientY-y0); el.style.transform=`translateY(${dy}px)`; });
-  const end=()=>{ if (y0===null) return; y0=null; el.style.transition=''; el.style.transform=''; if (dy>80) back(); };
+  let y0=null, dy=0, lastY=0, lastT=0, v=0;
+  const begin=y=>{ y0=lastY=y; dy=0; v=0; lastT=performance.now(); el.style.transition='none'; scrim.style.transition='none'; };
+  const move=y=>{
+    const t=performance.now(); v=(y-lastY)/Math.max(1,t-lastT); lastY=y; lastT=t;
+    dy=y-y0;
+    const shown = dy>=0 ? dy : -Math.sqrt(-dy)*2.4;   // rubber band past the top
+    el.style.transform=`translateY(${shown}px)`;
+    scrim.style.opacity = dy>0 ? String(Math.max(0, 1-dy/el.offsetHeight)) : '';
+  };
+  const end=()=>{
+    if (y0===null) return; y0=null;
+    el.style.transition=''; scrim.style.transition='';
+    if (dy > el.offsetHeight*0.3 || (v > 0.55 && dy > 16)){
+      haptic('tap');
+      el.style.transform='translateY(var(--sheet-off))'; scrim.style.opacity='0';
+      back();
+    } else { el.style.transform=''; scrim.style.opacity=''; }
+  };
+  handle.addEventListener('pointerdown', e=>{ begin(e.clientY); handle.setPointerCapture(e.pointerId); });
+  handle.addEventListener('pointermove', e=>{ if (y0!==null) move(e.clientY); });
   handle.addEventListener('pointerup', end); handle.addEventListener('pointercancel', end);
+  // the body: touch events, so the sheet can take over from scrolling at the top edge
+  let tx=0, ty=0, armed=false;
+  inner.addEventListener('touchstart', e=>{
+    const t=e.touches[0]; tx=t.clientX; ty=t.clientY;
+    armed = e.touches.length===1 && inner.scrollTop<=0 && !e.target.closest('input,textarea,select,[data-nodrag],.reel,canvas');
+  }, {passive:true});
+  inner.addEventListener('touchmove', e=>{
+    if (!armed) return;
+    const t=e.touches[0];
+    if (y0===null){
+      const ddx=t.clientX-tx, ddy=t.clientY-ty;
+      if (Math.abs(ddy)<6 && Math.abs(ddx)<6) return;
+      if (ddy<=0 || Math.abs(ddx)>Math.abs(ddy) || inner.scrollTop>0){ armed=false; return; }
+      begin(t.clientY);
+    }
+    e.preventDefault(); move(t.clientY);
+  }, {passive:false});
+  inner.addEventListener('touchend', ()=>{ armed=false; end(); });
+  inner.addEventListener('touchcancel', ()=>{ armed=false; end(); });
   nextFrame(()=>{ el.classList.add('in'); scrim.classList.add('in'); });
   pushLayer(layer);
   return el;
@@ -137,7 +216,7 @@ export function starInput(el, value, onChange){
     const b=e.target.closest('button'); if (!b) return;
     const r=b.getBoundingClientRect(), half = e.clientX && (e.clientX-r.left) < r.width/2;
     const v=parseInt(b.dataset.v,10)-(half?0.5:0);
-    value = v===value ? 0 : v; draw(); onChange && onChange(value);
+    value = v===value ? 0 : v; draw(); haptic('tick'); onChange && onChange(value);
   });
   return { get:()=>value, set:v=>{ value=v; draw(); } };
 }
@@ -182,13 +261,14 @@ export function bindSeg(root, name, fn){
   const el=root.querySelector(`[data-seg="${name}"]`); if (!el) return;
   el.addEventListener('click', e=>{
     const b=e.target.closest('button'); if (!b) return;
+    if (!b.classList.contains('on')) haptic('tick');
     el.querySelectorAll('button').forEach(x=>x.classList.toggle('on', x===b));
     fn(b.dataset.v);
   });
 }
 export function toggleHTML(id, on, label){ return `<button type="button" class="switch${on?' on':''}" role="switch" aria-checked="${on}" ${id?`id="${id}"`:''} aria-label="${esc(label||'')}"><i></i></button>`; }
 export function bindToggle(el, fn){
-  el.addEventListener('click', ()=>{ const on=!el.classList.contains('on'); el.classList.toggle('on',on); el.setAttribute('aria-checked',on); fn(on); });
+  el.addEventListener('click', ()=>{ haptic('tick'); const on=!el.classList.contains('on'); el.classList.toggle('on',on); el.setAttribute('aria-checked',on); fn(on); });
 }
 export async function share({title, text, url}){
   try{
