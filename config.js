@@ -21,6 +21,11 @@ export const APP = {
   // meant to be public: what anyone can read or write is decided by the database's row level
   // security (supabase/migrations). Never put the secret key here.
   supabase: { url:'https://crvadsjnqnxlkqzpywva.supabase.co', key:'sb_publishable_9I39ztDfQcQ9dRkTIK392g_zP6HJsVg' },
+  // Staging: preview builds (Vercel's address for every branch but main) use this second Supabase project once it's
+  // set ({ url, key }: its publishable key only), so testing never touches real accounts. Until then previews use
+  // the real project and say so on screen. The /api functions take theirs from Vercel's Preview settings
+  // (SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY).
+  stagingSupabase: null,
   // the sample crew (Maya, Omar…) can be switched on in Settings; it only ever exists on that phone
   sampleCrew: true,
   // shown on /terms, /privacy and /data (and in the app). Fill these in before launch.
@@ -62,3 +67,16 @@ export const CRITTER_SPOTS = {
   arabian_oryx:     [{ name:'Al Qudra Lakes',               lat:24.8390, lng:55.3770, radius:2000, trigger:'checkin', placeholder:true }],
   sand_gazelle:     [{ name:'Desert Conservation Reserve',  lat:24.8250, lng:55.6650, radius:5000, trigger:'checkin', placeholder:true }],
 };
+
+// where this copy of the app is running: 'production' (the live address), 'local' (this computer) or 'preview' (a
+// Vercel preview build, i.e. staging)
+export const ENV = (()=>{
+  try{
+    const h = location.hostname;
+    if (h === new URL(APP.siteUrl).hostname) return 'production';
+    if (h === 'localhost' || h === '127.0.0.1' || h.endsWith('.localhost')) return 'local';
+    return 'preview';
+  }catch(_){ return 'local'; }
+})();
+// the Supabase project this copy talks to
+export const SUPABASE = ENV === 'preview' && APP.stagingSupabase ? APP.stagingSupabase : APP.supabase;

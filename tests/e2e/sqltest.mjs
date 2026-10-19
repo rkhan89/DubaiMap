@@ -1,7 +1,8 @@
 import { PGlite } from '@electric-sql/pglite';
 import { citext } from '@electric-sql/pglite/contrib/citext';
+import { pg_trgm } from '@electric-sql/pglite/contrib/pg_trgm';
 import fs from 'fs';
-const db = new PGlite({ extensions:{ citext } });
+const db = new PGlite({ extensions:{ citext, pg_trgm } });
 const ok = (m)=>console.log('ok  ', m), bad = (m)=>{ console.log('FAIL', m); process.exitCode = 1; };
 // Supabase stand-ins
 await db.exec(`
@@ -369,6 +370,33 @@ const asAnon = async (q, params)=>{ await db.exec(`reset role; select set_config
   keys==='count,name,owner|avatar,name' ? ok('…and nothing else (no ids, handles or other members)') : bad('preview leaks '+keys); }
 (await asAnon(`select crew_invite_preview('ABC') as p`)).rows[0].p===null ? ok('a short or wrong code shows nothing') : bad('short code answered');
 { let refused=false; try{ await asAnon(`select crew_preview($1)`, [kx.code]); }catch(_){ refused=true; } refused ? ok('the full crew preview stays signed-in only') : bad('anon read crew_preview'); }
+await db.exec('reset role');
+// ---- landmark critters, search, Marina areas (0012-0014), then the security review (0016) ----
+for (const n of ['0012_landmark_critters', '0013_search', '0014_marina_areas']){
+  const q = fs.readFileSync(new URL('../../supabase/migrations/' + n + '.sql', import.meta.url),'utf8');
+  try{ await db.exec(q); ok(n + ' runs'); } catch(e){ bad(n + ': ' + e.message); }
+}
+await db.exec('reset role; grant all on all tables in schema public to authenticated; grant usage, select on all sequences in schema public to authenticated;');
+const sql16 = fs.readFileSync(new URL('../../supabase/migrations/0016_security_review.sql', import.meta.url),'utf8');
+try{ await db.exec(sql16); await db.exec(sql16); ok('security review migration runs (twice)'); } catch(e){ bad('0016: ' + e.message); }
+// K1 logs a visit shared with the crew, tagging K2, and another K2 isn't on; K3 is in no crew with them
+await as(K1, `insert into venues(id,name,zone) values ('zv1','Review Cafe','satwa')`);
+await as(K1, `insert into entries(id,venue_id,kind,private,crew_ids,tagged_ids) values
+  ('ze1','zv1','visit',false,array['${kx.id}']::uuid[],array['${K2}']::uuid[]),('ze2','zv1','visit',false,array['${kx.id}']::uuid[],'{}')`);
+const photoQ = (id, entry, crews)=>`insert into photos(id,venue_id,entry_id,path,private,crew_ids) values ('${id}','zv1',${entry ? "'" + entry + "'" : 'null'},'z/${id}.jpg',false,${crews})`;
+const crewArr = `array['${kx.id}']::uuid[]`, none = `'{}'::uuid[]`;
+try{ await as(K2, photoQ('zp1', 'ze1', crewArr)); ok('someone tagged adds a photo to the visit they were tagged on'); }catch(e){ bad('tagged photo refused: ' + e.message); }
+await expectErr("a photo on a crewmate's visit you weren't tagged on", K2, photoQ('zp2', 'ze2', crewArr));
+await expectErr("a photo on a stranger's visit", K3, photoQ('zp3', 'ze1', none));
+try{ await as(K3, photoQ('zp4', null, none)); ok('a loose photo (no visit) is still fine'); }catch(e){ bad('loose photo refused: ' + e.message); }
+try{ await as(K2, photoQ('zp5', 'ze1', none)); }catch(e){ bad('tagged photo, no crew: ' + e.message); }
+(await count(K1, `select * from photos where id='zp5'`))===1 ? ok("the visit's owner sees a tagged friend's photo on it, even one shared with no crew") : bad("owner can't see a tagged photo");
+(await count(K3, `select * from photos where id in ('zp1','zp5')`))===0 ? ok('…and an outsider sees neither') : bad('outsider sees tagged photos');
+await expectErr("moving your photo onto a visit you're not on", K2, `update photos set entry_id='ze2' where id='zp1'`);
+const logQ = cost=>`insert into ai_tag_log(photo_id,model,tokens_in,tokens_out,cost_usd,ok) values ('zp1','m',1100,30,${cost},true)`;
+try{ await as(K1, logQ(0.0013)); ok('a normal AI tag log row is accepted'); }catch(e){ bad('normal AI log row refused: ' + e.message); }
+await expectErr('a negative AI cost (to get round the monthly cap)', K1, logQ(-5));
+await expectErr('a huge AI cost (to stop tagging for everyone)', K1, logQ(1000));
 await db.exec('reset role');
 console.log(process.exitCode ? '\nSOME CHECKS FAILED' : '\nall checks passed');
 

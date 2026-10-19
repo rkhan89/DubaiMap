@@ -14,7 +14,7 @@ const scenarios = (await import(pathToFileURL(path.resolve('scenarios.mjs')).hre
 
 const browser = await puppeteer.launch({
   executablePath: process.env.EXE || 'C:/Program Files/Google/Chrome/Application/chrome.exe',
-  headless: 'new', args: ['--no-first-run','--hide-scrollbars','--disable-extensions'],
+  headless: 'new', args: ['--no-first-run','--hide-scrollbars','--disable-extensions', ...(process.env.CI ? ['--no-sandbox'] : [])],
 });
 const page = await browser.newPage();
 const width = +W, height = width < 380 ? 780 : 844;
@@ -60,9 +60,13 @@ const h = {
   async click(sel){ await page.evaluate(s=>{ const e=document.querySelector(s); if (!e) throw new Error('no '+s); e.click(); }, sel); await sleep(450); },
   async js(fn, ...args){ return page.evaluate(fn, ...args); },
 };
+// a step that printed FAIL, a thrown error or a page error makes the run fail (exit code 1), so CI can tell
+const log0 = console.log.bind(console);
+console.log = (...a)=>{ if (/^(FAIL|ERROR)\b/.test(String(a[0] ?? ''))) process.exitCode = 1; log0(...a); };
 try{
   const fn = scenarios[scenario]; if (!fn) throw new Error('unknown scenario '+scenario);
   await fn(h);
 }catch(e){ console.log('ERROR', e.message); }
 if (errors.length) console.log('PAGE ERRORS:\n'+[...new Set(errors)].join('\n'));
+if (errors.some(e=>e.startsWith('pageerror'))) process.exitCode = 1;
 await browser.close();

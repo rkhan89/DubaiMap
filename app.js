@@ -1,5 +1,5 @@
 // App shell: map (Me / Crew modes, stamps, peek card), list feed, filters, profile, nav.
-import { APP } from './config.js';
+import { APP, ENV } from './config.js';
 import * as S from './store.js';
 import * as M from './model.js';
 import * as MAP from './map.js';
@@ -449,6 +449,9 @@ async function boot(){
   setInterval(tickShow, 1000);
   document.addEventListener('visibilitychange', ()=>{ if (!document.hidden) tickShow(); });
   applyBrand();
+  // a preview build (staging) says so, and whether it's on real data, so it's never mistaken for the live app
+  if (ENV === 'preview'){ const r = document.createElement('div'); r.className = 'env-ribbon'; r.setAttribute('role', 'status');
+    r.textContent = APP.stagingSupabase ? 'Preview build · test data' : 'Preview build · real data'; document.body.appendChild(r); }
   await S.init();
   S.onChange(what=>{ if (what==='quota') toast('Storage is full on this phone. Export a backup and remove some photos.'); if (what==='sync-error') toast('One change couldn’t be saved to your account, so it was undone.'); scheduleRebuild(); paintProfileButtons(); });
   MAP.initMap({

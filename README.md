@@ -70,11 +70,26 @@ The production address lives in `APP.siteUrl` (`config.js`); the `og:` tags in `
 must use it, and `tests/branding.test.mjs` fails if they drift.
 
 ## Tests
-- `node --test tests/shows.test.mjs tests/branding.test.mjs` runs the unit tests (light-show schedule, branding files and links).
+- `node --test tests/*.test.mjs` runs the unit tests.
 - `tests/e2e/` has the scripted click-throughs used for every release (headless Chrome via
   puppeteer-core): `cd tests/e2e && npm install`, then e.g. `node shot.mjs tour 390 light`
   or `BASE=https://dubai-bites-pi.vercel.app/ node shot.mjs e2e 360 dark`. Screenshots land in
-  `tests/e2e/shots/` (ignored by git).
+  `tests/e2e/shots/` (ignored by git). A step that prints FAIL, or a page error, makes the run exit with 1.
+- `cd tests/e2e && node sqltest.mjs` checks every migration's rules in an in-memory Postgres (PGlite).
+- `cd tests/e2e && node ci.mjs` starts the dev server and runs the browser suites CI runs.
+- CI (`.github/workflows/ci.yml`) runs all three on every push and pull request.
+
+## Releasing (staging, then live)
+1. Push to `map-art` (or any branch). Vercel builds it as a preview: that's staging. It shows a "Preview build"
+   label, and says whether it's on real data or test data.
+2. Wait for CI to go green and try the preview on a phone.
+3. Then make it live: `git push origin map-art:main`. Vercel deploys `main` to production. A bad deploy can be
+   rolled back to the previous one from Vercel's Deployments page.
+
+Previews use the real Supabase project until a staging one is set up. To give staging its own data: create a
+second Supabase project, run every migration in `supabase/migrations` there, put its URL and publishable key in
+`APP.stagingSupabase` (config.js), and set `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` for Vercel's Preview
+environment. Google sign-in on previews also needs the preview address added to that project's redirect URLs.
 
 ## Accounts and sync (Supabase)
 Project: `crvadsjnqnxlkqzpywva` (URL and publishable key in `config.js`; the publishable key is

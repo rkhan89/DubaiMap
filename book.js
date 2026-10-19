@@ -460,7 +460,7 @@ function viewer(ids, index){
       const pr=el.querySelector('#vPriv'); if (pr) pr.onclick=()=>{
         const e=p.entryId&&S.entry(p.entryId);
         if (p.private && e && e.private) return toast('This photo’s log is private. Share the log from its place page first.');
-        if (p.private){ const to=(e&&e.crewIds&&e.crewIds.length)?e.crewIds.slice():(S.myCrew()?[S.myCrew().id]:[]); S.updatePhoto(p.id,{private:false, crewIds:to}); toast(whoText(to)); }
+        if (p.private){ const mine=S.myCrews().map(c=>c.id), on=(e&&e.crewIds||[]).filter(id=>mine.includes(id)); const to=on.length?on:(S.myCrew()?[S.myCrew().id]:[]); /* only crews you're in: a tagged friend's visit may be shared with others */ S.updatePhoto(p.id,{private:false, crewIds:to}); toast(whoText(to)); }
         else { S.updatePhoto(p.id,{private:true, crewIds:[]}); toast('Only you can see this photo'); }
         paint();
       };

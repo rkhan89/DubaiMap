@@ -8,7 +8,7 @@
 //               while offline or on a flaky connection, and go out in order when they can
 //   subscribe() any change in your crew triggers a (debounced) pull
 // Privacy is enforced by the database (row level security, supabase/migrations), not here.
-import { APP } from './config.js';
+import { SUPABASE } from './config.js';
 
 // pinned to an exact version: a new release can't change what runs here without a deploy
 const SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/+esm';
@@ -16,11 +16,11 @@ let sb = null, loading = null;
 // ?local runs the app without accounts (tests, previews); it lasts the browser session, so redirects keep it
 try{ if (new URLSearchParams(location.search).has('local')) sessionStorage.setItem('koko-local', '1'); }catch(_){}
 const localMode = () => { try{ return new URLSearchParams(location.search).has('local') || sessionStorage.getItem('koko-local')==='1'; }catch(_){ return false; } };
-export const enabled = () => !!(APP.supabase && APP.supabase.url && APP.supabase.key) && !localMode();
+export const enabled = () => !!(SUPABASE && SUPABASE.url && SUPABASE.key) && !localMode();
 export async function client(){
   if (sb || !enabled()) return sb;
   if (!loading) loading = import(SDK).then(m=>{
-    sb = m.createClient(APP.supabase.url, APP.supabase.key, {
+    sb = m.createClient(SUPABASE.url, SUPABASE.key, {
       auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, flowType:'pkce', storageKey:'koko-auth' },
     });
     return sb;

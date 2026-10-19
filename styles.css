@@ -1433,3 +1433,5 @@ button,.btn,.icon-btn,.cat-chip,.person-chip,.switch{-webkit-user-select:none;us
 
 /* the screen being swiped back casts a shadow on what it reveals */
 .screen.swiping{box-shadow:-10px 0 30px rgba(var(--shade),.18);}
+/* a preview build (staging) labels itself; never on the live app */
+.env-ribbon{position:fixed;left:50%;top:calc(var(--safe-t, env(safe-area-inset-top, 0px)) + 4px);transform:translateX(-50%);z-index:200;padding:3px 10px;border-radius:999px;background:var(--rust);color:#fff;font-family:var(--f-mono);font-size:11px;font-weight:700;letter-spacing:.02em;pointer-events:none;box-shadow:var(--shadow-sm);}
