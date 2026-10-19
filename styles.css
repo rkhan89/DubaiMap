@@ -1435,3 +1435,12 @@ button,.btn,.icon-btn,.cat-chip,.person-chip,.switch{-webkit-user-select:none;us
 .screen.swiping{box-shadow:-10px 0 30px rgba(var(--shade),.18);}
 /* a preview build (staging) labels itself; never on the live app */
 .env-ribbon{position:fixed;left:50%;top:calc(var(--safe-t, env(safe-area-inset-top, 0px)) + 4px);transform:translateX(-50%);z-index:200;padding:3px 10px;border-radius:999px;background:var(--rust);color:#fff;font-family:var(--f-mono);font-size:11px;font-weight:700;letter-spacing:.02em;pointer-events:none;box-shadow:var(--shadow-sm);}
+/* accessibility: text on the darker cards and faded labels kept at 4.5:1 or better */
+.cs-tabs{display:contents;}
+.already .hl{color:var(--rust-ink);}
+.already .hand{color:var(--ink-2);}
+.critter-card.unknown b{color:#76654f;}
+/* keyboard focus: one visible ring everywhere (taps don't show it; :focus-visible is keyboard and switch access) */
+:focus-visible{outline:2px solid var(--gold-deep, #7e5700);outline-offset:2px;}
+.input:focus-visible,.search input:focus-visible,.ksearch-bar input:focus-visible,.handle-input input:focus-visible,.caption-box input:focus-visible{outline:none;}
+.search:focus-within,.handle-input:focus-within,.caption-box:focus-within{box-shadow:inset 0 0 0 2px var(--gold-deep, #7e5700);}

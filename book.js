@@ -74,7 +74,7 @@ function shelf(){
       const have = S.caughtIds();
       const chip = (id, label, ic, n)=>`<button class="person-chip shelf-chip${pick===id?' on':''}" data-pick="${esc(id)}" aria-pressed="${pick===id}">${icon(ic)}${esc(label)}${n!=null?` <em>${n}</em>`:''}</button>`;
       const chosen = pick !== 'all' && S.book(pick);
-      dyn.innerHTML = `<div class="chip-scroll shelf-chips mt12" role="tablist" aria-label="Your books">
+      dyn.innerHTML = `<div class="chip-scroll shelf-chips mt12" role="group" aria-label="Show pages from">
           ${chip('all', 'All', 'auto_stories')}
           ${chip(personal.id, 'Personal', 'menu_book', pagesOf(personal).length)}
           ${crewBook ? chip(crewBook.id, 'Crew', 'groups', pagesOf(crewBook).length) : `<button class="person-chip shelf-chip" id="shNoCrew">${icon('group_add')}Start a crew</button>`}

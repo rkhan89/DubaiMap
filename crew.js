@@ -112,7 +112,7 @@ function switcherHTML(){
   const cs=S.myCrews(), active=S.myCrew();
   if (cs.length<2 && !active) return '';
   const room = cs.length < APP.crewsPerPerson;
-  return `<div class="crew-switch mt12" role="tablist" aria-label="Your crews">${cs.map(c=>`<button class="chip${active&&c.id===active.id?' on':''}" role="tab" aria-selected="${active&&c.id===active.id}" data-crew="${c.id}">${icon('groups')}${esc(c.name)}</button>`).join('')}${room?`<button class="chip" id="csAdd">${icon('add')}New or join</button>`:''}</div>`;
+  return `<div class="crew-switch mt12"><div class="cs-tabs" role="tablist" aria-label="Your crews">${cs.map(c=>`<button class="chip${active&&c.id===active.id?' on':''}" role="tab" aria-selected="${active&&c.id===active.id}" data-crew="${c.id}">${icon('groups')}${esc(c.name)}</button>`).join('')}</div>${room?`<button class="chip" id="csAdd">${icon('add')}New or join</button>`:''}</div>`;
 }
 function bindSwitcher(el, paint){
   el.querySelectorAll('[data-crew]').forEach(b=>b.onclick=()=>{ S.setActiveCrew(b.dataset.crew); go.refresh(); paint(); });

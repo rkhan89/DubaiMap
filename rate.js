@@ -15,7 +15,7 @@ const name = u => u.id===S.me()?.id ? 'You' : (u.name || '@'+u.handle);
 // small stars for a rating (half stars too)
 export function miniStars(r){
   let s=''; for (let i=1;i<=5;i++) s += `<i class="${r>=i?'on':(r>=i-.5?'half':'')}"></i>`;
-  return `<span class="mini-stars" aria-label="${R.fmt(r)} stars">${s}</span>`;
+  return `<span class="mini-stars" role="img" aria-label="${R.fmt(r)} stars">${s}</span>`;
 }
 // one person on a visit: avatar plus their stars, or "Add yours" for you if you haven't rated
 function personHTML(p, e, opts){

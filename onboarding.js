@@ -30,7 +30,7 @@ function welcome(){
     </div>
     <div class="or-rule mt20">${icon('restaurant')}</div>
     <p class="center muted mt12" style="font-size:15px">By continuing, you agree to our <button class="link" data-legal="terms">Terms</button> and <button class="link" data-legal="privacy">Privacy policy</button>. Your location is only used when you tap check in.</p>
-    ${!S.cloud?`<p class="center small mt16" style="color:var(--outline)">Preview: accounts stay on this phone for now</p>`:''}
+    ${!S.cloud?`<p class="center small mt16" style="color:var(--ink-3)">Preview: accounts stay on this phone for now</p>`:''}
   </div>`;
   $('#screens').prepend(root);   // always underneath the step screens
   root.querySelectorAll('[data-legal]').forEach(b=>b.onclick=()=>go.legal(b.dataset.legal));

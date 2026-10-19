@@ -5,6 +5,7 @@
   "description": "Scripted click-throughs and screenshots for Koko (headless Chrome).",
   "dependencies": {
     "@electric-sql/pglite": "0.3.16",
+    "axe-core": "4.13.0",
     "puppeteer-core": "25.12.0"
   }
 }
