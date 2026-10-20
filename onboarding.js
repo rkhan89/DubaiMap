@@ -119,7 +119,7 @@ function cityIntro(root){
 
 /* ---------- email + code (frame 2) ---------- */
 function emailStep(){
-  openScreen(el=>{
+  openScreen(el=>{ el.classList.add('cover');
     el.innerHTML = topbar({title:'Sign in', profile:false}) + `<div class="screen-body">
       <h1 class="h-xl mt16">What's your email?</h1>
       <p class="muted mt8" style="font-size:16px">We'll send a 6-digit code to open your scrapbook. No passwords.</p>
@@ -141,7 +141,7 @@ function emailStep(){
   });
 }
 function codeStep(email){
-  openScreen(el=>{
+  openScreen(el=>{ el.classList.add('cover');
     let pending = null;
     el.innerHTML = topbar({title:'Check your email', profile:false}) + `<div class="screen-body">
       <h1 class="h-xl mt16">Check your email</h1>
@@ -192,7 +192,7 @@ function codeStep(email){
 function handleStep(opts){
   opts=opts||{};
   const me=S.me();
-  openScreen(el=>{
+  openScreen(el=>{ el.classList.add('cover');
     el.innerHTML = topbar({title: opts.edit?'Name & handle':'Your handle', profile:false}) + `<div class="screen-body">
       ${opts.edit?'':setupProgress(1)}
       <h1 class="h-xl mt24">Pick your handle <span class="ms" style="color:var(--gold);font-size:30px">edit</span></h1>
@@ -254,7 +254,7 @@ function avatarStep(opts){
   const av = {...DEFAULT_AVATAR, ...(me.avatar&&me.avatar.pixel||{})};
   let pin = colorOf(me.id);
   const pid = 100 + (parseInt((me.id||'').replace(/\D/g,'').slice(0,3)||'804',10)%900);
-  openScreen(el=>{
+  openScreen(el=>{ el.classList.add('cover');
     const paint=()=>{
       const robe = av.outfit==='kandura' || av.outfit==='abaya';
       el.innerHTML = topbar({title:'Your avatar', profile:false}) + `<div class="screen-body">
@@ -300,7 +300,7 @@ go.editAvatar = ()=>avatarStep({edit:true});
 
 /* ---------- 5. who sees what (you choose on every save) ---------- */
 function shareStep(){
-  openScreen(el=>{
+  openScreen(el=>{ el.classList.add('cover');
     el.innerHTML = topbar({title:'Crew sharing', center:true, profile:false}) + `<div class="screen-body center">
       ${setupProgress(3)}
       <h1 class="h-xl mt12">You decide who sees each place</h1>
@@ -318,7 +318,7 @@ function shareStep(){
 
 /* ---------- 5. what you'll collect: pages, critters, stickers ---------- */
 function collectStep(){
-  openScreen(el=>{
+  openScreen(el=>{ el.classList.add('cover');
     const shown = critterArt(CRITTERS[0].id, 64, { silhouette:true });   // one shape, no name: a taste, not a clue
     el.innerHTML = topbar({title:'Your scrapbook', center:true, profile:false}) + `<div class="screen-body center">
       ${setupProgress(4)}
@@ -347,7 +347,7 @@ go.finishOnboarding = ()=>{ if (S.legacyPlaces().length) importStep(true); else 
 function importStep(fromOnboarding){
   const list=S.legacyPlaces();
   const sel=new Set(list.map(p=>p.id));
-  openScreen(el=>{
+  openScreen(el=>{ el.classList.add('cover');
     const paint=()=>{
       const n=sel.size;
       el.innerHTML = topbar({title:'Import', center:true, profile:false}) + `<div class="screen-body center">

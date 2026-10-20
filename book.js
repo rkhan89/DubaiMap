@@ -50,7 +50,7 @@ const GRID = 12;          // pages in the grid at first, and each "Show more"
 function shelf(){
   openScreen(el=>{
     let pick = 'all', shown = GRID;
-    el.innerHTML = topbar({title:'Scrapbooks', back:true, actions:`<button class="icon-btn" id="shNew" aria-label="Log a visit">${icon('add_a_photo')}</button>`}) + `<div class="screen-body">
+    el.innerHTML = topbar({title:'Shelf', eyebrow:'Your scrapbooks', back:false, actions:`<button class="icon-btn" id="shNew" aria-label="Log a visit">${icon('add_a_photo')}</button>`}) + `<div class="screen-body">
         <div class="shelf-search mt8" id="shSearchHost"></div>
         <div class="sr-out shelf-results mt12" id="shResults" hidden></div>
         <div id="shDyn"></div>
@@ -101,7 +101,7 @@ function shelf(){
     };
     paint(); el._repaint=paint;
     const off=S.onChange(()=>{ if (el.isConnected) paint(); else off(); });
-  });
+  }, { tab:'shelf', instant:true });
 }
 // how many of the street critters you've found (landmark ones are a bonus)
 const shownN = have=>CRITTERS.filter(c=>have.has(c.id)).length;
@@ -429,7 +429,7 @@ function bookFilters(b, current, apply){
 function viewer(ids, index){
   ids=ids.filter(id=>S.photo(id)); if (!ids.length) return;
   let i=Math.max(0, Math.min(index||0, ids.length-1));
-  openScreen(el=>{
+  openScreen(el=>{ el.classList.add('cover');
     const paint=()=>{
       const p=S.photo(ids[i]); if (!p){ back(); return; }
       const me=S.me(), mine=p.userId===me.id, v=S.venue(p.venueId), u=S.user(p.userId);

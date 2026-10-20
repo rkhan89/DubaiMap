@@ -48,7 +48,7 @@ async function resolve(input){
 
 /* ---------- "Add from link or text" ---------- */
 export function addFromLink(prefill, shared, inboxId){
-  openScreen(el=>{
+  openScreen(el=>{ el.classList.add('cover');
     let busy = false;
     const paint = (status)=>{
       el.innerHTML = topbar({ title:'Add from a link', eyebrow:'Share to '+APP.name }) + `<div class="screen-body">

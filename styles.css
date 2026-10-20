@@ -1444,3 +1444,12 @@ button,.btn,.icon-btn,.cat-chip,.person-chip,.switch{-webkit-user-select:none;us
 :focus-visible{outline:2px solid var(--gold-deep, #7e5700);outline-offset:2px;}
 .input:focus-visible,.search input:focus-visible,.ksearch-bar input:focus-visible,.handle-input input:focus-visible,.caption-box input:focus-visible{outline:none;}
 .search:focus-within,.handle-input:focus-within,.caption-box:focus-within{box-shadow:inset 0 0 0 2px var(--gold-deep, #7e5700);}
+
+/* =========================================================
+   TABS: the tab bar stays on every page (tab roots and pages pushed on them),
+   as on iPhone; only full-screen flows (.cover: sign-in, setup, photo viewer) hide it
+   ========================================================= */
+.bottomnav{z-index:55;}
+.screen:not(.cover){bottom:var(--nav-h,0px);}
+.screen:not(.cover) .screen-body{padding-bottom:32px;}
+body:has(#screens .screen.cover) .bottomnav{visibility:hidden;}

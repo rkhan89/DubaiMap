@@ -18,9 +18,9 @@ export function brandName(){ return esc(APP.name); }
    ========================================================= */
 const stack = [];
 const nextFrame = fn=> document.documentElement.classList.contains('still') ? fn() : requestAnimationFrame(fn);
-let ignorePop = 0;
+let ignorePop = 0, afterPop = null;
 window.addEventListener('popstate', ()=>{
-  if (ignorePop){ ignorePop--; return; }
+  if (ignorePop){ ignorePop--; if (!ignorePop && afterPop){ const f=afterPop; afterPop=null; f(); } return; }
   const top = stack.pop();
   if (top) top.close(true);
 });
@@ -30,27 +30,42 @@ function pushLayer(layer){
 }
 // close the top layer programmatically (keeps history in step)
 export function back(){ if (stack.length) history.back(); }
-export function closeAll(){ const n=stack.length; if (!n) return; stack.splice(0).reverse().forEach(l=>l.close(true)); ignorePop++; history.go(-n); }
+export function closeAll(then, instant){ popTo(0, then, instant); }
+// close everything above the first k layers; then() runs once history has caught up.
+// instant: no slide-out (switching tabs, as on iPhone, is a cut, not a transition)
+export function popTo(k, then, instant){
+  const n=stack.length-k;
+  if (n<=0){ if (then) then(); return; }
+  stack.splice(k).reverse().forEach(l=>l.close(true, instant));
+  ignorePop++; afterPop=then||null; history.go(-n);
+}
 export function topLayer(){ return stack[stack.length-1]||null; }
+export function rootLayer(){ return stack[0]||null; }
 
 const screensRoot = ()=> $('#screens');
 // Full-screen page. render(el) fills it; returns the element.
 export function openScreen(render, opts){
   opts=opts||{};
   const el=document.createElement('section');
-  el.className='screen'+(opts.cls?' '+opts.cls:'');
+  // tab: a tab's own page (Crew, Shelf): no back button, the tab bar stays.
+  // cover: a full-screen flow (sign-in, setup, photo viewer) that hides the tab bar.
+  // Everything else is a page pushed on top, with a back button and the tab bar still showing.
+  el.className='screen'+(opts.cls?' '+opts.cls:'')+(opts.tab?' tab-root':'')+(opts.cover?' cover':'');
+  if (opts.tab) el.dataset.tab=opts.tab;
   el.setAttribute('role','dialog');
   screensRoot().appendChild(el);
-  const layer = { el, kind:'screen', close:(fromPop)=>{
+  const layer = { el, kind:'screen', tab:opts.tab||null, close:(fromPop, instant)=>{
     if (opts.onClose) opts.onClose();
-    el.classList.remove('in'); el.classList.add('out');
-    setTimeout(()=>el.remove(), 260);
+    if (opts.tab) setTimeout(()=>window.dispatchEvent(new Event('koko:tabclosed')), 0);
+    if (instant){ el.remove(); }
+    else { el.classList.remove('in'); el.classList.add('out'); setTimeout(()=>el.remove(), 260); }
     if (!fromPop){ const i=stack.indexOf(layer); if (i>-1){ stack.splice(i,1); ignorePop++; history.back(); } }
   }};
   el._layer = layer;
   render(el, layer);
   edgeSwipe(el);
-  nextFrame(()=>el.classList.add('in'));
+  if (opts.instant){ el.style.transition='none'; el.classList.add('in'); el.offsetWidth; el.style.transition=''; }
+  else nextFrame(()=>el.classList.add('in'));
   if (opts.replace && stack.length && stack[stack.length-1].kind==='screen'){
     // swap the current screen for this one (onboarding steps) without growing history
     const prev = stack.pop(); prev.el.remove();
@@ -107,10 +122,10 @@ export function openSheet(render, opts){
   el.innerHTML=`<div class="sheet-handle"></div><div class="sheet-inner"></div>`;
   const root = opts.root || document.body;
   root.append(scrim, el);
-  const layer = { el, kind:'sheet', close:(fromPop)=>{
+  const layer = { el, kind:'sheet', close:(fromPop, instant)=>{
     if (opts.onClose) opts.onClose();
     el.classList.remove('in'); scrim.classList.remove('in');
-    setTimeout(()=>{ el.remove(); scrim.remove(); }, 280);
+    setTimeout(()=>{ el.remove(); scrim.remove(); }, instant ? 0 : 280);
     if (!fromPop){ const i=stack.indexOf(layer); if (i>-1){ stack.splice(i,1); ignorePop++; history.back(); } }
   }};
   el._layer = layer;

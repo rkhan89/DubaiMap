@@ -23,7 +23,7 @@ function crewSetup(opts){
   const full = !made && S.myCrews().length >= APP.crewsPerPerson;
   let joinCode = opts.code || state.pendingJoin || '';
   let err = null;
-  openScreen(el=>{
+  openScreen(el=>{ el.classList.add('cover');
     const paint=()=>{
       const me=S.me();
       const preview = { name: name.trim() || 'My Crew', code: made?.code || ((name.toUpperCase().replace(/[^A-Z]/g,'').slice(0,5)||'CREW')+'··') };
@@ -129,7 +129,7 @@ function crewScreen(){
       if (!crew || members.length<2) return paintSolo(crew);
       const owner=crew.ownerId===me.id;
       const est=new Date(crew.createdAt).getFullYear();
-      el.innerHTML = topbar({title:S.myCrews().length>1?'Your Crews':'Your Crew', eyebrow:'Food journal'}) + `<div class="screen-body">
+      el.innerHTML = topbar({title:S.myCrews().length>1?'Your Crews':'Your Crew', eyebrow:'Food journal', back:false}) + `<div class="screen-body">
         ${switcherHTML()}
         <div class="passport mt16"><span class="tape"></span>
           <div class="row" style="align-items:flex-start">
@@ -180,7 +180,7 @@ function crewScreen(){
     };
     const paintSolo=(crew)=>{
       const me=S.me();
-      el.innerHTML = topbar({title:'Your Crew', eyebrow:'', center:true, profile:false, actions:`<span class="tag soft" style="width:48px;height:48px;border-radius:50%;justify-content:center;padding:0;font-size:13px">1/${APP.crewMax}</span>`}).replace('<span class="tb-eyebrow"></span>','<span class="eyebrow" style="color:var(--rust)">Food journal</span>') + `<div class="screen-body">
+      el.innerHTML = topbar({title:'Your Crew', eyebrow:'Food journal', back:false, profile:false, actions:`<span class="tag soft" style="width:48px;height:48px;border-radius:50%;justify-content:center;padding:0;font-size:13px">1/${APP.crewMax}</span>`}).replace('<span class="tb-eyebrow"></span>','<span class="eyebrow" style="color:var(--rust)">Food journal</span>') + `<div class="screen-body">
         ${switcherHTML()}
         <div class="solo-art mt24">
           <div class="solo-card"><div class="inner">${avatarHTML(me,86)}<b>You</b></div>
@@ -215,7 +215,7 @@ function crewScreen(){
     };
     paint();
     el._repaint = paint;
-  });
+  }, { tab:'crew', instant:true });
 }
 go.crew = crewScreen;
 
@@ -245,7 +245,7 @@ function memberMenu(u, owner, after){
 /* ---------- invite link landing (?join=CODE) ---------- */
 go.inviteLanding = async (code)=>{
   const crew = await S.findCrewByCode(code);
-  openScreen(el=>{
+  openScreen(el=>{ el.classList.add('cover');
     const members = crew ? crew.members : [];
     const count = crew ? (crew.count ?? members.length) : 0;
     el.innerHTML = topbar({title:'Crew invitation', center:true}) + `<div class="screen-body">

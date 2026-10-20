@@ -5,7 +5,7 @@ import * as M from './model.js';
 import * as MAP from './map.js';
 import { CATEGORIES, MEALS, catById, iconSvg, esc, fmtRating, ago, agoLong, plural } from './data.js';
 import { avatarHTML, avatarStack, spriteSvg, DEFAULT_AVATAR } from './avatar.js';
-import { $, $$, icon, toast, openSheet, back, closeAll, stampHTML, catChip, seg, bindSeg, toggleHTML, bindToggle, ratingPill, catPickerHTML, bindCatPicker, haptic } from './ui.js';
+import { $, $$, icon, toast, openSheet, back, closeAll, popTo, rootLayer, topLayer, stampHTML, catChip, seg, bindSeg, toggleHTML, bindToggle, ratingPill, catPickerHTML, bindCatPicker, haptic } from './ui.js';
 import { go, state } from './go.js';
 import { applyTheme, onTheme, themePref, setThemePref } from './theme.js';
 import { showState, now } from './shows.js';
@@ -396,9 +396,11 @@ function feedCardHTML(sum){
 /* =========================================================
    NAV
    ========================================================= */
+// the tab bar shows which tab you're in, on every page but full-screen flows
+function navOn(t){ $$('#nav [data-tab]').forEach(b=>{ const on=b.dataset.tab===t; b.classList.toggle('on', on); if (on) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); }); }
 function switchView(v){
   state.view=v;
-  $$('#nav [data-tab]').forEach(b=>b.classList.toggle('on', b.dataset.tab===v));
+  navOn(v);
   $('#mapView').classList.toggle('active', v==='map');
   $('#listView').classList.toggle('active', v==='list');
   $('#listView').classList.toggle('list-view', true);
@@ -406,14 +408,34 @@ function switchView(v){
   hidePeek();
 }
 go.switchView = switchView;
+// Tabs work as on iPhone: switching is instant and starts from that tab's own page;
+// tapping the tab you're already in goes back to its top. Crew and Shelf are pages of
+// their own (tab roots); Map and List are the views underneath everything.
+const tabRoot = { crew:go.crew, shelf:go.shelf };
+function toTab(t){
+  const root=rootLayer();
+  if (root && root.tab===t){
+    if (topLayer()===root) root.el.scrollTo({top:0, behavior:'smooth'}); else popTo(1, null, true);
+    return;
+  }
+  closeAll(()=>{
+    if (tabRoot[t]) tabRoot[t](); else if (state.view!==t) switchView(t);
+    navOn(t);
+  }, true);
+}
+// pages stop at the top of the tab bar (styles.css reads --nav-h)
+const navEl=$('#nav'), setNavH=()=>document.documentElement.style.setProperty('--nav-h', navEl.offsetHeight+'px');
+setNavH(); if (window.ResizeObserver) new ResizeObserver(setNavH).observe(navEl); else addEventListener('resize', setNavH);
+go.crew = ()=>toTab('crew');
+go.shelf = ()=>toTab('shelf');
+go.tab = toTab;
+// a tab's page closed some other way (Android back): the bar follows
+window.addEventListener('koko:tabclosed', ()=>{ const r=rootLayer(); navOn(r && r.tab || state.view); });
 $('#nav').addEventListener('click', e=>{
   const b=e.target.closest('button'); if (!b) return;
   haptic(b.id==='navLog' ? 'tap' : 'tick');
   if (b.id==='navLog') return openPlus();
-  const t=b.dataset.tab;
-  if (t==='map'||t==='list') switchView(t);
-  if (t==='crew') go.crew();
-  if (t==='shelf') go.shelf();
+  if (b.dataset.tab) toTab(b.dataset.tab);
 });
 
 /* the + menu: check in (there now or after), or add a place you saw somewhere */
