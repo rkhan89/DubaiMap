@@ -1,6 +1,7 @@
 // The "taped in" moment: after a visit is saved, its page drops onto the cover of the book it
 // went to (the crew's book if it's shared there, your own if it's Just me) and is taped down.
-// About a second; a tap skips it; with reduced motion it's a plain fade. Then a toast that
+// As it lands a rubber stamp slams onto it (VISITED, or CHECKED IN) with a thud and a heavy tap. About a second
+// and a half; a tap skips it; with reduced motion it's a plain fade and the stamp just appears. Then a toast that
 // opens the page, then any sticker it unlocked.
 import { APP } from './config.js';
 import * as S from './store.js';
@@ -9,6 +10,8 @@ import { pageId } from './pages.js';
 import { catById, iconSvg, esc, fmtDate, CATEGORIES } from './data.js';
 import { icon, toast } from './ui.js';
 import { go } from './go.js';
+import { slam } from './feel.js';
+import { inkMarkHTML } from './paper.js';
 
 export function tapeIn(entry, done){
   const home = S.homeBookFor(entry), b = home.book;
@@ -38,6 +41,7 @@ export function tapeIn(entry, done){
   };
   wrap.addEventListener('click', finish);
   requestAnimationFrame(()=>wrap.classList.add('in'));
-  setTimeout(finish, reduce ? 900 : 1150);
+  setTimeout(()=>{ if (!over) slam(wrap.querySelector('.ti-page'), inkMarkHTML(entry.checkin ? 'Checked in' : 'Visited', entry.date, entry.id)); }, reduce ? 150 : 650);
+  setTimeout(finish, reduce ? 1100 : 1600);
 }
 go.tapeIn = tapeIn;

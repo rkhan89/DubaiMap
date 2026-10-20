@@ -90,20 +90,18 @@ export default async function searchE2E(h){
     if (!sug.length) throw new Error('no suggestions');
     await close();
   });
-  await step('the Shelf: the same bar at the top, then the book chips, then the photo grid; no magnifier', async ()=>{
+  await step('the Shelf: the same bar at the top, then the books (Everything first, with its latest pages); no magnifier', async ()=>{
     await h.js(async ()=>{ const { go } = await import('/go.js'); go.shelf(); }); await h.sleep(900);
-    const r = await h.js(()=>{ const s = document.querySelector('.screen.in:last-of-type'); const bar = s.querySelector('#shSearchHost .ksearch-bar'), chips = s.querySelector('.shelf-chips'), grid = s.querySelector('.spreads');
-      return { bar:!!bar, mag:!!s.querySelector('#shSearch'), order: bar && chips && grid ? bar.getBoundingClientRect().top < chips.getBoundingClientRect().top && chips.getBoundingClientRect().top < grid.getBoundingClientRect().top : false,
-        chips:[...s.querySelectorAll('.shelf-chip')].map(c=>c.innerText.replace(/\s+/g,' ').trim()), buttons:!!s.querySelector('#shAlbum') && !!s.querySelector('#shImport') }; });
+    const r = await h.js(()=>{ const s = document.querySelector('.screen.in:last-of-type'); const bar = s.querySelector('#shSearchHost .ksearch-bar'), books = s.querySelector('.shelf-top'), strip = s.querySelector('.shelf-strip');
+      return { bar:!!bar, mag:!!s.querySelector('#shSearch'), order: bar && books && strip ? bar.getBoundingClientRect().top < books.getBoundingClientRect().top && books.getBoundingClientRect().top < strip.getBoundingClientRect().top : false,
+        books:[...s.querySelectorAll('.shelf-book b')].map(c=>c.innerText.trim()), critters:!!s.querySelector('#shCritters'), buttons:!!s.querySelector('#shAlbum') && !!s.querySelector('#shImport') }; });
     await h.shot('sr-shelf');
-    if (!r.bar || r.mag || !r.order || !r.buttons || !r.chips.some(c=>/Personal/.test(c)) || !r.chips.some(c=>/Critters/.test(c))) throw new Error(JSON.stringify(r));
+    if (!r.bar || r.mag || !r.order || !r.buttons || r.books[0] !== 'Everything' || !r.critters) throw new Error(JSON.stringify(r));
   });
-  await step('the Personal chip filters the grid; Critters opens its own screen', async ()=>{
-    const n0 = await h.js(()=>document.querySelectorAll('.screen.in:last-of-type .spreads [data-spread]').length);
-    await h.js(()=>[...document.querySelectorAll('.screen.in:last-of-type .shelf-chip')].find(c=>/Personal/.test(c.innerText)).click()); await h.sleep(400);
-    const books = await h.js(()=>[...new Set([...document.querySelectorAll('.screen.in:last-of-type .spreads [data-spread]')].map(x=>x.dataset.inbook))]);
+  await step('the latest pages are Everything’s; Critters opens its own screen', async ()=>{
+    const books = await h.js(()=>[...new Set([...document.querySelectorAll('.screen.in:last-of-type .shelf-strip [data-spread]')].map(x=>x.dataset.inbook))]);
     const personal = await h.js(async ()=>{ const S=await import('/store.js'); return S.books().find(b=>b.kind==='personal').id; });
-    if (!n0 || books.length !== 1 || books[0] !== personal) throw new Error(JSON.stringify({ n0, books }));
+    if (books.length !== 1 || books[0] !== personal) throw new Error(JSON.stringify({ books }));
     await h.js(()=>document.querySelector('#shCritters').click()); await h.sleep(800);
     if (!/Critters/.test(await h.js(()=>document.querySelector('.screen.in:last-of-type')?.innerText || ''))) throw new Error('critters');
     await h.js(()=>history.back()); await h.sleep(600);

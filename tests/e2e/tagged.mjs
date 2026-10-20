@@ -50,7 +50,8 @@ export default async function tagged(h){
   });
   await step('the scrapbook page you were tagged on: Edit yours and Log a new visit', async ()=>{
     await h.js(async ()=>{ const {go}=await import('/go.js'); const S=await import('/store.js'); const b=S.books().find(b=>b.kind==='tagged'); go.bookPage(b.id, b.id+'|demo-tg1'); }); await h.sleep(1500);
-    const r = await h.js(()=>{ const pg=document.querySelector('.page.flash') || document.querySelector('[data-page-id$="|demo-tg1"]'); return pg && pg.querySelector('.pg-actions')?.innerText || ''; });
+    await h.sleep(1200);
+    const r = await h.js(()=>{ const pg=document.querySelector('.kb-page.open') || document.querySelector('.page.flash') || document.querySelector('[data-page-id$="|demo-tg1"]'); return pg && (pg.querySelector('.kb-foot') || pg.querySelector('.pg-actions'))?.innerText || ''; });
     await h.shot('tg-page');
     if (!/Edit yours/.test(r) || !/Log a new visit/.test(r)) throw new Error(r);
     await close();

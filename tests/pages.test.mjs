@@ -3,7 +3,7 @@
 // and crew challenges. (The server rules are checked in tests/e2e/sqltest.mjs.)
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { belongs, bookPages, legacyPageRows, onThisDay, withText, crewChallenges, recapData, pageId } from '../pages.js';
+import { belongs, bookPages, legacyPageRows, onThisDay, withText, crewChallenges, recapData, pageId, kindCounts, bookStats, yearAgo } from '../pages.js';
 
 const ME='me', KABIR='kabir', MAYA='maya', OMAR='omar';
 const crewA = { id:'A', memberIds:[ME, KABIR, MAYA] }, crewB = { id:'B', memberIds:[ME, OMAR] };
@@ -27,9 +27,34 @@ test('shared with two crews: a page in both crew books', ()=>{
   const e = V('e1', { crewIds:['A','B'] }), w = world([e]);
   assert.equal(belongs(bookA, e, w) && belongs(bookB, e, w), true);
 });
-test('a crewmate’s visit that tagged you: in the crew book and your Tagged book, not your personal one', ()=>{
+test('a crewmate’s visit that tagged you: in Everything, your Tagged book and the crew book', ()=>{
   const e = V('e1', { userId:KABIR, crewIds:['A'], taggedIds:[ME] }), w = world([e]);
-  assert.deepEqual([personal, tagged, bookA, bookB].map(b=>belongs(b, e, w)), [false, true, true, false]);
+  assert.deepEqual([personal, tagged, bookA, bookB].map(b=>belongs(b, e, w)), [true, true, true, false]);
+});
+test('Everything: your visits, ones you were tagged in or added photos to; not crew visits you weren’t part of', ()=>{
+  const mine = V('e1'), taggedIn = V('e2', { userId:KABIR, crewIds:['A'], taggedIds:[ME] }), photoOn = V('e3', { userId:MAYA, crewIds:['A'] }), notMine = V('e4', { userId:MAYA, crewIds:['A'] });
+  const w = world([mine, taggedIn, photoOn, notMine], { photos:[{ id:'p1', userId:ME, entryId:'e3' }, { id:'p2', userId:MAYA, entryId:'e4' }] });
+  assert.deepEqual(bookPages(personal, w).map(p=>p.entry.id).sort(), ['e1','e2','e3']);
+  assert.deepEqual(bookPages(tagged, w).map(p=>p.entry.id), ['e2']);
+});
+test('a kind book is Everything for one kind of place; kinds are listed most pages first', ()=>{
+  const es = [V('e1', { venueId:'v1' }), V('e2', { venueId:'v1', date:'2026-10-05' }), V('e3', { venueId:'v2' }), V('e4', { userId:MAYA, venueId:'v3', crewIds:['A'] })], w = world(es);
+  const karak = { id:'kind:karak', kind:'kind', cat:'karak', ownerId:ME };
+  assert.deepEqual(bookPages(karak, w).map(p=>p.entry.id), ['e2','e1']);
+  assert.deepEqual(kindCounts(ME, w), [{ cat:'karak', pages:2 }, { cat:'dessert', pages:1 }]);
+  assert.deepEqual(bookStats(bookPages(karak, w)), { pages:2, latest:'2026-10-05' });
+});
+test('a page looks the same in every book: settings saved in one book show in the others', ()=>{
+  const e = V('e1', { crewIds:['A'] });
+  const w = world([e], { pages:{ [pageId('cbA','e1')]:{ id:pageId('cbA','e1'), bookId:'cbA', entryId:'e1', layout:'hero', note:'hi', updatedAt:5 } } });
+  assert.equal(bookPages(personal, w)[0].cfg.layout, 'hero');
+  assert.equal(bookPages(bookA, w)[0].cfg.note, 'hi');
+});
+test('a year ago today: your own or tagged visits only', ()=>{
+  const es = [V('e1', { date:'2025-10-20' }), V('e2', { userId:MAYA, crewIds:['A'], date:'2024-10-20' }), V('e3', { userId:KABIR, taggedIds:[ME], date:'2024-10-20' })];
+  assert.equal(yearAgo('2026-10-20', world(es)).id, 'e1');
+  assert.equal(yearAgo('2026-10-20', world(es.slice(1))).id, 'e3');
+  assert.equal(yearAgo('2026-10-21', world(es)), null);
 });
 test('after someone leaves a crew, their visits leave its book', ()=>{
   const e = V('e1', { userId:MAYA, crewIds:['A'] });

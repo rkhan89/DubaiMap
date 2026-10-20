@@ -18,6 +18,7 @@ import { themePref, setThemePref } from './theme.js';
 const themeSub = p => ({ light:'Always light', dark:'Always dark', system:'Follows your phone', dynamic:'Light by day, dark from sunset in '+APP.city }[p] || '');
 import { prefs, setPref } from './prefs.js';
 import { go } from './go.js';
+import { soundsOn, setSounds, moments } from './feel.js';
 
 /* =========================================================
    PROFILE
@@ -113,6 +114,9 @@ function settingsScreen(){
           ${row('directions_car','Cars on the roads','Little traffic for life and colour', toggleHTML('sCars', p.cars,'Cars on the roads'))}
           ${row('celebration','Burj Khalifa light shows','7 to 11 pm, every 15 minutes', toggleHTML('sShows', p.shows,'Burj Khalifa light shows'))}
         </div>
+        <div class="eyebrow mt24">Scrapbook</div><div class="stack mt8">
+          ${row('volume_up','Sounds','Paper flips, the stamp, stickers and tape', toggleHTML('sSounds', soundsOn(),'Scrapbook sounds'))}
+        </div>
         <div class="eyebrow mt24">Privacy</div><div class="stack mt8">
           ${row('share','Who sees your places','You choose every time you save: just you, or any of your crews. Change a place later from its page.', '')}
         </div>
@@ -144,6 +148,7 @@ function settingsScreen(){
       el.querySelectorAll('[data-pin]').forEach(b=>b.onclick=()=>{ S.updateMe({ pinColor:b.dataset.pin }); el.querySelectorAll('[data-pin]').forEach(x=>{ const on=x===b; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); }); go.refresh(); toast('Your pins are '+b.getAttribute('aria-label').toLowerCase()+' now'); });
       bindToggle(el.querySelector('#sCars'), on=>{ setPref('cars', on); MAP.setCars(on); });
       bindToggle(el.querySelector('#sShows'), on=>{ setPref('shows', on); go.tickShow && go.tickShow(); });
+      bindToggle(el.querySelector('#sSounds'), on=>{ setSounds(on); if (on) setTimeout(()=>moments.pageTurn(), 300); });
       bindToggle(el.querySelector('#sNotify'), async on=>{ const ok = await go.setNotify(on); if (on && !ok) paint(); });
       const d = el.querySelector('#sDemo'); if (d) bindToggle(d, async on=>{ await S.setDemo(on); toast(on?'Sample crew added':'Sample crew removed'); go.refresh(); paint(); });
       el.querySelector('#sImport').addEventListener('change', async e=>{

@@ -75,7 +75,7 @@ export default async function spacing(h){
   await state('book', ()=>go(async ()=>{ const S=await import('/store.js'), {go}=await import('/go.js'); go.book(S.books().find(b=>b.kind==='personal').id); }));
   await state('book-filters', ()=>go(()=>document.querySelector('.screen.in:last-of-type #bkFilter').click()));
   await close();
-  await state('page-editor', ()=>go(async ()=>{ const S=await import('/store.js'), {go}=await import('/go.js'); go.book(S.books().find(b=>b.kind==='personal').id); await new Promise(r=>setTimeout(r,1200)); document.querySelector('.screen.in:last-of-type [data-editpage]').click(); }));
+  await state('page-editor', ()=>go(async ()=>{ const S=await import('/store.js'), {go}=await import('/go.js'); go.book(S.books().find(b=>b.kind==='personal').id); await new Promise(r=>setTimeout(r,1200)); (document.querySelector('.screen.in:last-of-type #kbWand:not([hidden])') || document.querySelector('.screen.in:last-of-type [data-editpage]')).click(); }));
   await close();
   await state('cover', ()=>go(async ()=>{ const S=await import('/store.js'), {go}=await import('/go.js'); go.cover(S.books().find(b=>b.kind==='personal').id); }));
   await close();

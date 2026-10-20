@@ -50,15 +50,15 @@ export default async function scrap(h){
     const ov = await h.js(()=>document.querySelector('.tapein')?.innerText||'');
     if (!/Taped into/.test(ov)) throw new Error('no taped-in moment');
     await h.shot('sc-tapein');
-    await h.sleep(1300);
+    await h.sleep(1700);
     if (await h.js(()=>!!document.querySelector('.tapein'))) throw new Error('overlay stuck');
     const t = await h.js(()=>document.querySelector('#toast').innerText);
     if (!/Taped into .*Vol/.test(t)) throw new Error('toast: '+t);
     // the toast offers the page, so the strip doesn't say it again
     if (!(await h.js(()=>document.querySelector('#memStrip').hidden))) throw new Error('strip shown next to the toast');
     if (await h.js(()=>!!document.querySelector('#points, .points-toast'))) throw new Error('points bar still in the page');
-    await h.js(()=>[...document.querySelectorAll('#toast .toast-btn')].find(b=>/Open page/.test(b.textContent)).click()); await h.sleep(1200);
-    const r = await h.js(()=>{ const f=document.querySelector('.page.flash'); if (!f) return null; const b=f.getBoundingClientRect(); return { text:f.innerText, top:b.top, plain:f.classList.contains('layout-plain'), stamp:!!f.querySelector('.postage') }; });
+    await h.js(()=>[...document.querySelectorAll('#toast .toast-btn')].find(b=>/Open page/.test(b.textContent)).click()); await h.sleep(2400);
+    const r = await h.js(()=>{ const f=document.querySelector('.kb-page.open'); if (!f) return null; const b=f.getBoundingClientRect(); return { text:f.innerText, top:b.top, plain:f.classList.contains('layout-plain'), stamp:!!f.querySelector('.postage') }; });
     if (!r) throw new Error('page not opened');
     if (!/Knot Bakehouse/.test(r.text) || !/Cardamom knot/.test(r.text) || !r.plain || !r.stamp) throw new Error('page: '+JSON.stringify(r));
     await h.shot('sc-page-plain');
@@ -71,7 +71,8 @@ export default async function scrap(h){
     await h.shot('sc-latest');
     await h.js(()=>document.querySelector('#memStrip [data-ms="page"]').click()); await h.sleep(1200);
     if (!(await h.js(()=>document.querySelector('#memStrip').hidden))) throw new Error('tap did not hide it');
-    if (!(await h.js(()=>!!document.querySelector('.page.flash')))) throw new Error('page not opened');
+    await h.sleep(1200);
+    if (!(await h.js(()=>/Knot Bakehouse/.test(document.querySelector('.kb-page.open')?.innerText||'')))) throw new Error('page not opened');
     await close();
     if (!(await h.js(()=>document.querySelector('#memStrip').hidden))) throw new Error('came back after closing the book');
   });
@@ -94,8 +95,8 @@ export default async function scrap(h){
     if (e.private || !e.crewIds.length) throw new Error(JSON.stringify(e));
     await settle();
   });
-  await step('the book is a feed: pages load as you scroll, no next-page buttons', async ()=>{
-    await h.js(async ()=>{ const {go}=await import('/go.js'); const S=await import('/store.js'); go.book(S.books().find(b=>b.kind==='personal').id); }); await h.sleep(1400);
+  await step('the book as a List is a feed: pages load as you scroll, no next-page buttons', async ()=>{
+    await h.js(async ()=>{ const {go}=await import('/go.js'); const S=await import('/store.js'); go.book(S.books().find(b=>b.kind==='personal').id, { view:'list' }); }); await h.sleep(1400);
     const n0 = await h.js(()=>document.querySelectorAll('.feed .page').length);
     if (await h.js(()=>!!document.querySelector('.page-nav, [data-page]'))) throw new Error('old page buttons still there');
     await h.shot('sc-feed');

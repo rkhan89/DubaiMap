@@ -1,7 +1,10 @@
-// Scrapbooks: shelf, cover customiser, the open book (a feed of pages, by date or by place),
-// page editor, book filters, photo viewer. Every visit is a page (pages.js); photos are added
-// while logging the visit, so "add photos" anywhere opens the log flow with them picked.
+// Scrapbooks: the shelf, cover customiser, the open book (turned page by page, or as a list: by date or by place),
+// page editor, book filters, photo viewer. Every visit is a page (pages.js, drawn on paper by paper.js); photos are
+// added while logging the visit, so "add photos" anywhere opens the log flow with them picked.
 import { BADGES, badgeStatus, stickerHTML } from './badges.js';
+import { postageHTML, rateScope, placeRatingFor, venueOfPage, peopleOf, coverHTML as paperCover, coverLook, PAPERS } from './paper.js';
+import { mountBook, pagerHTML, preloadBook } from './bookview.js';
+import { moments } from './feel.js';
 import { APP } from './config.js';
 import * as S from './store.js';
 import * as M from './model.js';
@@ -17,11 +20,6 @@ import { CRITTERS } from './critters.js';
 import { mountSearchBar } from './searchui.js';
 import { readPhotoMeta, groupPhotos, suggestPlace } from './photometa.js';
 
-// whose ratings a book shows: a crew's book, that crew's; your own books, everyone you can see
-function rateScope(b){ const c = b.kind==='crew' && S.myCrews().find(x=>x.id===b.crewId); return c ? { kind:'crew', crew:c, label:'Crew' } : { kind:'friends', label:'Friends' }; }
-// the place's overall rating in this book's terms
-function placeRatingFor(b, venueId){ const w = S.pagesWorld(), sc = rateScope(b); return { ...RT.placeRating(w.entries.filter(e=>e.venueId===venueId), sc, w), label:sc.label }; }
-
 const TINTS = ['#e5a93c','#8B5A2B','#486636','#3b2717','#f2cfb4','#fdae7e'];
 const TEXTURES = [['leather','Leather','layers'],['cloth','Cloth Loom','grid_4x4'],['paperback','Paperback','menu_book']];
 const ROMAN = n=>{ const m=[[1000,'M'],[900,'CM'],[500,'D'],[400,'CD'],[100,'C'],[90,'XC'],[50,'L'],[40,'XL'],[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']]; let s=''; for (const [v,r] of m) while(n>=v){ s+=r; n-=v; } return s; };
@@ -36,20 +34,18 @@ function bookPhotos(b, f){ return pagesOf(b, f).flatMap(p=>p.photos); }
 // pages as plain records, for the filter sheet's counts and choices
 function pageRecs(b, f){ return pagesOf(b, f).map(p=>({ id:p.id, date:p.date, venueId:p.entry?p.entry.venueId:p.venueId, entryId:p.entry?p.entry.id:null, userId:p.entry?p.entry.userId:S.me().id, private:p.entry?!!p.entry.private:true })); }
 function filterCount(f){ return f ? ['months','cats','venues','members','tagged'].reduce((n,k)=>n+((f[k]||[]).length?1:0),0) + (f.privacy&&f.privacy!=='all'?1:0) : 0; }
-const venueOfPage = pg => S.venue(pg.entry ? pg.entry.venueId : pg.venueId);
-// who was there: whoever logged it and everyone tagged
-const peopleOf = pg => pg.entry ? [...new Set([pg.entry.userId, ...(pg.entry.taggedIds||[])])].map(S.user).filter(Boolean) : [S.me()];
 
 /* =========================================================
    SHELF
    ========================================================= */
-// The search bar at the top (the same one as the Map's, searchui.js), then the books as chips that filter the photo
-// grid of your latest pages (All, Personal, Crew, Tagged, your albums; Critters opens its own screen), then New Album
-// and Import Roll. While you search, the results take the grid's place.
-const GRID = 12;          // pages in the grid at first, and each "Show more"
+// The search bar at the top (the same one as the Map's, searchui.js; it searches every book), then the shelf:
+// Everything (the biggest) with Tagged beside it and a strip of your latest pages under it, a book per kind of place
+// you've logged (most pages first, six shown, See all for the rest), a book per crew, your albums, then New Album and
+// Import Roll. On the date a visit of yours happened a year (or more) ago, its page waits at the top. Every book is
+// one tap away. While you search, the results take the shelf's place.
+const KINDS_SHOWN = 6, STRIP = 10;
 function shelf(){
   openScreen(el=>{
-    let pick = 'all', shown = GRID;
     el.innerHTML = topbar({title:'Shelf', eyebrow:'Your scrapbooks', back:false, actions:`<button class="icon-btn" id="shNew" aria-label="Log a visit">${icon('add_a_photo')}</button>`}) + `<div class="screen-body">
         <div class="shelf-search mt8" id="shSearchHost"></div>
         <div class="sr-out shelf-results mt16" id="shResults" hidden></div>
@@ -58,50 +54,77 @@ function shelf(){
     const results = el.querySelector('#shResults'), dyn = el.querySelector('#shDyn');
     mountSearchBar(el.querySelector('#shSearchHost'), 'shelf', { out:results, onActive:on=>{ results.hidden = !on; dyn.hidden = on; } });
     el.querySelector('#shNew').onclick=()=>addPhotos({});
+    preloadBook();
     const paint=()=>{
-      const crew=S.myCrew(), books=S.books();
-      const personal=books.find(b=>b.kind==='personal'), crewBook=books.find(b=>b.kind==='crew'), taggedBook=books.find(b=>b.kind==='tagged'), albums=books.filter(b=>b.kind==='album');
-      const shelfBooks = [personal, crewBook, taggedBook, ...albums].filter(Boolean);
-      if (pick !== 'all' && !shelfBooks.some(b=>b.id===pick)) pick = 'all';
-      // the grid: the newest pages of the chosen book, or of your three books together (a visit in two shows once)
-      const grid = [];
-      if (pick === 'all'){
-        const seen = new Set();
-        [personal, crewBook, taggedBook].filter(Boolean).flatMap(b=>pagesOf(b).map(p=>[p, b]))
-          .sort((x,y)=>(y[0].date||'').localeCompare(x[0].date||'') || (y[0].createdAt||0)-(x[0].createdAt||0))
-          .forEach(([p, b])=>{ const k = p.entry ? p.entry.id : p.id; if (!seen.has(k)){ seen.add(k); grid.push([p, b]); } });
-      } else { const b = S.book(pick); pagesOf(b).forEach(p=>grid.push([p, b])); }
+      const sh = S.shelf(); if (!sh) return;
+      const w = S.pagesWorld(), me = S.me();
+      const everything = sh.everything, evPages = pagesOf(everything);
+      const kinds = P.kindCounts(me.id, w).filter(k=>catById(k.cat));
       const have = S.caughtIds();
-      const chip = (id, label, ic, n)=>`<button class="person-chip shelf-chip${pick===id?' on':''}" data-pick="${esc(id)}" aria-pressed="${pick===id}">${icon(ic)}${esc(label)}${n!=null?` <em>${n}</em>`:''}</button>`;
-      const chosen = pick !== 'all' && S.book(pick);
-      dyn.innerHTML = `<div class="chip-scroll shelf-chips mt16" role="group" aria-label="Show pages from">
-          ${chip('all', 'All', 'auto_stories')}
-          ${chip(personal.id, 'Personal', 'menu_book', pagesOf(personal).length)}
-          ${crewBook ? chip(crewBook.id, 'Crew', 'groups', pagesOf(crewBook).length) : `<button class="person-chip shelf-chip" id="shNoCrew">${icon('group_add')}Start a crew</button>`}
-          ${taggedBook ? chip(taggedBook.id, 'Tagged', 'sell', pagesOf(taggedBook).length) : ''}
-          ${albums.map(a=>chip(a.id, a.title, 'collections_bookmark', pagesOf(a).length)).join('')}
-          <button class="person-chip shelf-chip" id="shCritters">${icon('pets')}Critters <em>${shownN(have)}/${CRITTERS.length}</em></button>
+      const ago = P.yearAgo(todayISO(), w);
+      const latest = evPages.slice(0, STRIP);
+      dyn.innerHTML = `
+        ${ago ? yearAgoHTML(ago, everything) : ''}
+        <h2 class="shelf-h mt16">${icon('auto_stories')}Your books</h2>
+        <div class="shelf-top mt8">
+          ${bookCardHTML(everything, evPages, 'Everything', true)}
+          ${sh.tagged ? bookCardHTML(sh.tagged, pagesOf(sh.tagged), 'Tagged') : `<div class="shelf-book ghost"><span class="sb-ghost">${icon('sell')}</span><b>Tagged</b><span class="sb-meta">When a friend tags you, the page lands here</span></div>`}
         </div>
-        <div class="row between mt24"><span class="row h-md" style="gap:var(--sp-2)">${icon('photo_library')}${chosen ? esc(chosen.title) : 'Latest pages'}</span>
-          ${chosen ? `<button class="link small" data-book="${esc(chosen.id)}">Open book${icon('chevron_right')}</button>` : ''}</div>
-        ${grid.length ? `<div class="spreads mt16">${grid.slice(0, shown).map(([p,b],i)=>spreadHTML(p,b,i)).join('')}</div>
-          ${grid.length > shown ? `<button class="btn btn-soft btn-block mt16" id="shMore">Show more</button>` : ''}`
-        : `<div class="card-soft mt16 center" style="padding:var(--sp-5) var(--sp-3)"><div style="width:120px;margin:0 auto">${polaroidHTML({caption:'your first page', rot:-3})}</div><h3 class="h-md mt16">${pick==='all' ? 'Every visit becomes a page' : 'No pages here yet'}</h3><p class="muted mt8">Log a place you've been and it's taped in here, photos or not.</p><button class="btn btn-gold btn-block mt16" id="shFirst">${icon('add_location_alt')}Log a visit</button></div>`}
+        ${latest.length ? `<div class="row between mt16"><span class="eyebrow">Latest pages</span><button class="link small" data-book="${esc(everything.id)}">Open${icon('chevron_right')}</button></div>
+          <div class="chip-scroll shelf-strip mt8">${latest.map((p,i)=>spreadHTML(p, everything, i)).join('')}</div>`
+        : `<div class="card-soft mt16 center" style="padding:var(--sp-4) var(--sp-3)"><div style="width:120px;margin:0 auto">${polaroidHTML({caption:'your first page', rot:-3})}</div><h3 class="h-md mt16">Every visit becomes a page</h3><p class="muted mt8">Log a place you've been and it's taped in here, photos or not.</p><button class="btn btn-gold btn-block mt16" id="shFirst">${icon('add_location_alt')}Log a visit</button></div>`}
+        ${kinds.length ? `<div class="row between mt24"><h2 class="shelf-h">${icon('category')}By kind</h2>${kinds.length > KINDS_SHOWN ? `<button class="link small" id="shAllKinds">See all ${kinds.length}${icon('chevron_right')}</button>` : ''}</div>
+          <div class="spine-row mt8">${kinds.slice(0, KINDS_SHOWN).map(k=>spineHTML(S.kindBook(k.cat), k.pages, w)).join('')}</div>` : ''}
+        <h2 class="shelf-h mt24">${icon('groups')}Crews</h2>
+        ${sh.crews.length ? `<div class="spine-row mt8">${sh.crews.map(b=>spineHTML(b, pagesOf(b).length, w, pagesOf(b))).join('')}</div>`
+          : `<button class="shelf-book ghost wide mt8" id="shNoCrew"><span class="sb-ghost">${icon('group_add')}</span><b>Start a crew</b><span class="sb-meta">Your crew's shared visits become a book of their own</span></button>`}
+        ${sh.albums.length ? `<h2 class="shelf-h mt24">${icon('collections_bookmark')}Albums</h2><div class="spine-row mt8">${sh.albums.map(b=>spineHTML(b, pagesOf(b).length, w, pagesOf(b))).join('')}</div>` : ''}
         <div class="btn-grid mt24 shelf-actions"><button class="btn btn-gold" id="shAlbum">${icon('library_add')}New Album</button><button class="btn btn-white" id="shImport">${icon('upload_file')}Import Roll</button></div>
+        <button class="shelf-critters mt16" id="shCritters">${icon('pets')}<span class="grow">Critters you've found</span><em>${shownN(have)}/${CRITTERS.length}</em>${icon('chevron_right')}</button>
         <p class="row mono muted mt16" style="font-size:12px;gap:var(--sp-2);justify-content:center">${icon('verified_user')}Just me visits never appear in shared books</p>`;
-      dyn.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>{ pick = b.dataset.pick; shown = GRID; paint(); });
       dyn.querySelectorAll('[data-book]').forEach(b=>b.onclick=()=>openBook(b.dataset.book));
       dyn.querySelectorAll('[data-spread]').forEach(x=>x.onclick=()=>openBook(x.dataset.inbook, { pageId:x.dataset.spread }));
-      const more=dyn.querySelector('#shMore'); if (more) more.onclick=()=>{ shown += GRID; paint(); };
       dyn.querySelector('#shAlbum').onclick=()=>bookFilters(null, {}, f=>newAlbum(f));
       dyn.querySelector('#shImport').onclick=()=>addPhotos({});
       const first=dyn.querySelector('#shFirst'); if (first) first.onclick=()=>go.log();
       const nc=dyn.querySelector('#shNoCrew'); if (nc) nc.onclick=()=>go.crew();
+      const all=dyn.querySelector('#shAllKinds'); if (all) all.onclick=()=>allKinds(kinds, w);
       dyn.querySelector('#shCritters').onclick=()=>go.critters();
     };
     paint(); el._repaint=paint;
     const off=S.onChange(()=>{ if (el.isConnected) paint(); else off(); });
   }, { tab:'shelf', instant:true });
+}
+// a book on the shelf: its cover, its name, how many pages and the date of the newest
+const shortDate = d => d ? fmtDate(d, { day:'numeric', month:'short' }) : '';
+function bookCardHTML(b, pages, label, big){
+  const st = P.bookStats(pages);
+  return `<button class="shelf-book${big?' big':''}" data-book="${esc(b.id)}" aria-label="${esc(label)}: ${plural(st.pages,'page')}${st.latest?`, newest ${esc(shortDate(st.latest))}`:''}">
+    <span class="sb-cover"><span class="sb-cover-in">${coverHTML(b, st.pages)}</span></span>
+    <b>${esc(label)}</b><span class="sb-meta">${plural(st.pages,'page')}${st.latest?` • ${esc(shortDate(st.latest))}`:''}</span></button>`;
+}
+// a spine: the book's colour and texture, its kind's icon, its name down the spine, page count and newest date
+function spineHTML(b, n, w, pages){
+  const look = coverLook(b), st = P.bookStats(pages || pagesOf(b)), c = catById(look.pin) || CATEGORIES[0];
+  if (b.kind==='crew'){ const crew = S.myCrews().find(x=>x.id===b.crewId); if (crew && (!b.title || b.title===`${crew.name} Scrapbook`)) look.title = crew.name; }
+  const light = ['#f2cfb4','#fdae7e','#e5a93c'].includes(look.tint);
+  return `<button class="spine ${esc(b.texture||'cloth')}${light?' light':''}" data-book="${esc(b.id)}" style="--tint:${esc(look.tint)}" aria-label="${esc(look.title)}: ${plural(n,'page')}${st.latest?`, newest ${esc(shortDate(st.latest))}`:''}">
+    <span class="sp-ico">${iconSvg(c.id, light ? '#3b2717' : '#fff')}</span><span class="sp-title">${esc(look.title)}</span>
+    <span class="sp-n">${n}<i>${n===1?'page':'pages'}</i></span>${st.latest ? `<span class="sp-d">${esc(shortDate(st.latest))}</span>` : ''}</button>`;
+}
+// "A year ago today": the page waits at the top of the shelf
+function yearAgoHTML(e, everything){
+  const v = S.venue(e.venueId), ph = S.photos({ entryId:e.id })[0], years = +todayISO().slice(0,4) - +e.date.slice(0,4);
+  return `<button class="year-ago mt16" data-spread="${esc(P.pageId(everything.id, e.id))}" data-inbook="${esc(everything.id)}">
+    <span class="ya-img">${ph ? `<img src="${esc(S.photoURL(ph))}" alt="" loading="lazy">` : postageHTML(v ? M.primaryCat(v) : 'coffee', e.date, 54)}</span>
+    <span class="grow"><span class="eyebrow">${years === 1 ? 'A year ago today' : `${years} years ago today`}</span><b class="trunc">${esc(v?.name || 'A day out')}</b><span class="hand">${esc(fmtDate(e.date, { day:'numeric', month:'long', year:'numeric' }))}</span></span>${icon('chevron_right')}</button>`;
+}
+function allKinds(kinds, w){
+  openSheet(body=>{
+    body.innerHTML = `<div class="sheet-head"><div class="grow"><h2 class="h-md">Books by kind</h2><span class="hand">${plural(kinds.length, 'kind')} of place you've logged</span></div></div>
+      <div class="spine-row wrap mt8">${kinds.map(k=>spineHTML(S.kindBook(k.cat), k.pages, w)).join('')}</div>`;
+    body.querySelectorAll('[data-book]').forEach(b=>b.onclick=()=>{ back(); setTimeout(()=>openBook(b.dataset.book), 260); });
+  });
 }
 // how many of the street critters you've found (landmark ones are a bonus)
 const shownN = have=>CRITTERS.filter(c=>have.has(c.id)).length;
@@ -113,15 +136,8 @@ function spreadHTML(pg, b, i){
     <span class="sp-img${ph?'':' sp-stamp'}">${ph?`<img src="${esc(S.photoURL(ph))}" alt="" loading="lazy">`:postageHTML(cat, pg.date, 64)}<span class="pol-badge light sp-badge" title="${esc(v?.name||'')}, ${esc(zoneLabel(v?.zone))}">${esc(v?.name||zoneLabel(v?.zone))}</span></span>
     <h4 class="trunc">${esc((ph&&ph.caption)||v?.name||'Memory')}</h4>
     ${e&&e.notes?`<span class="hand trunc">"${esc(e.notes)}"</span>`:`<span class="hand">${esc(e && e.userId!==me.id ? (S.user(e.userId)?.name||'') : 'you')}</span>`}
-    <span class="sp-foot"><span>${fmtDate(pg.date,{day:'numeric',month:'short'})} • ${esc(b.kind==='crew'?'Crew Book':b.kind==='tagged'?'Tagged':'My Book')}</span>${e&&e.rating?`<span class="mono" style="color:var(--green);font-weight:700">★${e.rating}</span>`:''}</span>
+    <span class="sp-foot"><span>${fmtDate(pg.date,{day:'numeric',month:'short'})}</span>${e&&e.rating?`<span class="mono" style="color:var(--green);font-weight:700">★${e.rating}</span>`:''}</span>
   </button>`;
-}
-// a postage stamp with the place's kind on it and a postmark with the date
-function postageHTML(cat, date, size){
-  const c = catById(cat) || CATEGORIES[0];
-  const d = date ? new Date(date+'T00:00:00') : null;
-  const mark = d && !isNaN(d) ? d.toLocaleDateString('en-GB',{day:'2-digit', month:'short'}).toUpperCase() : 'DXB';
-  return `<span class="postage" style="--s:${size||96}px;--c:${c.color}"><span class="pg-face">${iconSvg(c.id, c.color)}<b>${esc(c.label)}</b></span><span class="pg-mark">${esc(mark)}<i>DXB</i></span></span>`;
 }
 function describeFilter(f){
   f=f||{}; const bits=[];
@@ -144,24 +160,8 @@ go.shelf = shelf;
 /* =========================================================
    COVER CUSTOMISER
    ========================================================= */
-function coverHTML(b, count){
-  const cover=b.coverPhotoId && S.photo(b.coverPhotoId);
-  const light=['#f2cfb4','#fdae7e','#e5a93c'].includes(b.tint);
-  const ps=bookPhotos(b); const zc={}; ps.forEach(p=>{ const z=S.venue(p.venueId)?.zone; if (z) zc[z]=(zc[z]||0)+1; });
-  const zs=Object.keys(zc).sort((a,c)=>zc[c]-zc[a]).slice(0,2);
-  const z0=MAP.zoneById(zs[0]||'deira');
-  const me=S.me(), crew=S.myCrew();
-  const by = b.byline || (b.kind==='crew'&&crew ? `${crew.name} • shared journal` : `Picked by @${me.handle}${crew?` • ${crew.name}`:''}`);
-  return `<div class="cover ${b.texture}" style="background-color:${b.tint};${light?'color:var(--ink)':''}">
-    ${cover?`<span class="cv-photo" style="background-image:url('${S.photoURL(cover)}')"></span>`:''}
-    <span class="cv-ed">${icon('local_cafe')}DXB ${b.kind==='crew'?'CREW':'SOUK'} ED.</span>
-    <span class="cv-count">${count}</span>
-    <h2 class="cv-title">${esc(b.title)}</h2><span class="cv-rule"></span>
-    <span class="cv-by">${esc(by)}</span>
-    <span class="cv-pin">${iconSvg(b.pin||'coffee','#7e5700')}<em>PIN</em></span>
-    <span class="cv-geo">${esc(zs.map(zoneLabel).join(' • ').toUpperCase()||APP.city.toUpperCase())}<br>${z0?`${z0.lat.toFixed(4)}° N, ${z0.lng.toFixed(4)}° E`:''}</span>
-  </div>`;
-}
+// the closed book (paper.js draws it; the book view uses the same one as its hard cover)
+function coverHTML(b, count){ return paperCover(b, count, bookPhotos(b)); }
 /* ---------- page editor (optional extras): layout, photo order, stickers, a note ---------- */
 function pageEditor(b, pg, after){
   const cfg = { layout:'scrapbook', ...(pg.cfg||{}) };
@@ -197,7 +197,8 @@ function pageEditor(b, pg, after){
 
 function coverScreen(bookId){
   const b0=S.book(bookId); if (!b0) return;
-  const d={title:b0.title, byline:b0.byline||'', texture:b0.texture, tint:b0.tint, pin:b0.pin};
+  const look=coverLook(b0);
+  const d={title:look.title, byline:b0.byline||'', texture:b0.texture, tint:look.tint, pin:look.pin, paper:b0.paper||'plain'};
   openScreen(el=>{
     const paint=()=>{
       const b={...b0, ...d};
@@ -207,6 +208,8 @@ function coverScreen(bookId){
         <div class="card-peach mt16" style="padding:var(--sp-3) var(--sp-3) var(--sp-3)"><button id="cvTap" style="display:block;width:100%">${coverHTML(b, count)}</button><p class="center hand mt16">☝ Tap book cover to open spread 📖</p></div>
         <div class="panel mt16"><div class="panel-head">${icon('texture')}<h3>Material Texture</h3><span class="eyebrow" style="color:var(--rust)">${esc(TEXTURES.find(t=>t[0]===d.texture)[1])}</span></div>
           <div class="tex-grid">${TEXTURES.map(([v,l,ic])=>`<button class="tex${d.texture===v?' on':''}" data-tex="${v}"><span class="t-ico">${icon(ic)}</span>${l}</button>`).join('')}</div></div>
+        <div class="panel mt16"><div class="panel-head">${icon('description')}<h3>Paper</h3><span class="eyebrow" style="color:var(--rust)">${esc(PAPERS.find(x=>x[0]===d.paper)[1])}</span></div>
+          <div class="tex-grid paper-grid">${PAPERS.map(([v,l])=>`<button class="tex${d.paper===v?' on':''}" data-paper="${v}" aria-pressed="${d.paper===v}"><span class="t-ico paper-swatch paper-${v}"></span>${l}</button>`).join('')}</div></div>
         <div class="panel mt16"><div class="panel-head">${icon('palette')}<h3>Cover Tint Palette</h3></div>
           <div class="row" style="justify-content:space-between">${TINTS.map(c=>`<button class="sw${d.tint===c?' on':''}" data-tint="${c}" style="background:${c};flex:0 1 50px;height:auto;aspect-ratio:1;min-width:var(--tap)" aria-label="Tint"></button>`).join('')}</div></div>
         <div class="panel mt16"><div class="panel-head"><span class="ms">title</span><h3>Title &amp; Spine Tagline</h3></div>
@@ -221,6 +224,7 @@ function coverScreen(bookId){
       el.querySelectorAll('[data-tex]').forEach(x=>x.onclick=()=>keep(()=>{ d.texture=x.dataset.tex; paint(); }));
       el.querySelectorAll('[data-tint]').forEach(x=>x.onclick=()=>keep(()=>{ d.tint=x.dataset.tint; paint(); }));
       el.querySelectorAll('[data-pin]').forEach(x=>x.onclick=()=>keep(()=>{ d.pin=x.dataset.pin; paint(); }));
+      el.querySelectorAll('[data-paper]').forEach(x=>x.onclick=()=>keep(()=>{ d.paper=x.dataset.paper; paint(); }));
       el.querySelector('#cvT').onchange=e=>keep(()=>{ d.title=e.target.value.trim()||b0.title; paint(); });
       el.querySelector('#cvB').onchange=e=>keep(()=>{ d.byline=e.target.value.trim(); paint(); });
       const saveIt=()=>{ S.saveBook(bookId, d); };
@@ -276,10 +280,33 @@ function pageHTML(b, pg){
 // the photos on a page, for the viewer
 const photoIdsOf = (pgs, id) => (pgs.find(p=>p.photos.some(x=>x.id===id)) || { photos:[] }).photos.map(p=>p.id);
 
+/* ---------- the book screen's header: back, title, search, cover, share; then Book or List, by date or by place,
+   and the filter ---------- */
+const VIEW_KEY = 'koko-book-view';
+const viewPref = ()=>{ try{ return localStorage.getItem(VIEW_KEY)==='list' ? 'list' : 'book'; }catch(_){ return 'book'; } };
+const EYEBROW = { crew:'Crew scrapbook', tagged:'Tagged scrapbook', kind:'Kind book', album:'Album', personal:'Everything' };
+function bookHead(b, view, mode, nf){
+  return topbar({ title:coverLook(b).title || b.title, eyebrow:EYEBROW[b.kind] || 'Scrapbook', profile:false,
+    actions:`<button class="icon-btn" id="bkSearch" aria-label="Search scrapbooks">${icon('search')}</button><button class="icon-btn" id="bkCover" aria-label="Customise cover">${icon('palette')}</button><button class="icon-btn" id="bkShare" aria-label="Share">${icon('share')}</button>` }) +
+    `<div class="kb-controls" role="toolbar" aria-label="How to show the pages">
+      <div class="seg seg-view" data-seg="bview" role="group" aria-label="View">${[['book','Book','menu_book'],['list','List','view_agenda']].map(([v,l,ic])=>`<button type="button" data-v="${v}" class="${v===view?'on':''}" aria-pressed="${v===view}">${icon(ic)}${l}</button>`).join('')}</div>
+      <div class="seg seg-icons" data-seg="bmode" role="group" aria-label="Order">${[['date','By date','calendar_month'],['place','By place','location_on']].map(([v,l,ic])=>`<button type="button" data-v="${v}" class="${v===mode?'on':''}" aria-pressed="${v===mode}" aria-label="${l}" title="${l}">${icon(ic)}</button>`).join('')}</div>
+      <button class="sq-btn${nf?' filtered':''}" id="bkFilter" aria-label="Filter pages">${icon('tune')}</button>
+    </div>`;
+}
+// Book (turned page by page, the default) or List (the feed), remembered on this phone
 function openBook(bookId, opts){
+  opts = opts || {};
+  return (opts.view || viewPref()) === 'list' ? openFeed(bookId, opts) : openPages(bookId, opts);
+}
+function switchView(bookId, view, st){
+  try{ localStorage.setItem(VIEW_KEY, view); }catch(_){}
+  (view==='list' ? openFeed : openPages)(bookId, { ...st, replace:true });
+}
+function openFeed(bookId, opts){
   opts=opts||{};
   const b=S.book(bookId); if (!b) return;
-  let mode='date', filter={}, shown=BATCH, pgs=[], chapters=[], io=null;
+  let mode=opts.mode||'date', filter=opts.filter||{}, shown=BATCH, pgs=[], chapters=[], io=null;
   openScreen(el=>{
     const emptyHTML = nf => b.kind==='crew'
       ? `<div class="card-soft mt16 center" style="padding:var(--sp-5) var(--sp-3)"><div style="width:110px;margin:0 auto">${postageHTML('karak', todayISO(), 110)}</div>
@@ -326,19 +353,17 @@ function openBook(bookId, opts){
       if (opts.pageId){ const i = pgs.findIndex(p=>p.id===opts.pageId); if (i>=0){ mode='date'; shown = Math.max(shown, i+2); } }
       shown = Math.min(Math.max(shown, BATCH), total() || BATCH);
       const nf=filterCount(filter);
-      const head = topbar({title:b.title, eyebrow: b.kind==='crew' ? 'Crew scrapbook' : b.kind==='tagged' ? 'Tagged scrapbook' : 'Scrapbook', actions:`<button class="icon-btn" id="bkSearch" aria-label="Search scrapbooks">${icon('search')}</button><button class="icon-btn" id="bkAddTop" aria-label="Log a visit">${icon('add_a_photo')}</button><button class="icon-btn" id="bkCover" aria-label="Customise cover">${icon('palette')}</button><button class="icon-btn" id="bkShare" aria-label="Share">${icon('share')}</button>`}) +
-        `<div class="screen-body"><div class="row mt8" style="gap:var(--sp-2)"><div class="grow">${seg('bmode',[['date','By Date','calendar_month'],['place','By Place','location_on']],mode)}</div><button class="sq-btn${nf?' filtered':''}" id="bkFilter" aria-label="Filter pages" style="width:48px;height:48px">${icon('tune')}</button></div>`;
+      const head = bookHead(b, 'list', mode, nf) + `<div class="screen-body">`;
       let body='';
       if (b.kind!=='crew' && pgs.some(p=>p.entry && p.entry.private)) body += `<div class="privacy-banner mt16">${icon('shield_lock')}<span><b>Just me pages are only visible to you.</b> They never appear in a crew’s book.</span></div>`;
       body += pgs.length ? `<div class="feed">${slice(0, shown)}${shown<total()?`<div class="feed-more" id="bkMore"><span class="skeleton"></span>Taping in more pages…</div>`:`<p class="book-end hand">${mode==='date'?`The first page • ${plural(pgs.length,'page')}`:`${plural(chapters.length,'place')}`}</p>`}</div>` : emptyHTML(nf);
       el.innerHTML = head + body + `</div>`;
       bindSeg(el,'bmode',v=>{ mode=v; shown=BATCH; opts.pageId=null; paint(); el.scrollTop=0; });
+      bindSeg(el,'bview',v=>{ if (v==='book') switchView(b.id, 'book', { mode, filter }); });
       el.querySelector('#bkFilter').onclick=()=>bookFilters(b, filter, f=>{ filter=f; shown=BATCH; paint(); });
       el.querySelector('#bkCover').onclick=()=>coverScreen(b.id);
       el.querySelector('#bkShare').onclick=()=>share({title:b.title, text:`${b.title} — ${plural(pgs.length,'page')} on ${APP.name}`, url:location.origin});
-      const addHere=()=>addPhotos({ bookId:b.id });
       const add=el.querySelector('#bkAdd'); if (add) add.onclick=()=>go.log(b.kind==='crew'?{ who:[b.crewId] }:{});
-      el.querySelector('#bkAddTop').onclick=addHere;
       io && io.disconnect();
       const s=el.querySelector('#bkMore');
       if (s && 'IntersectionObserver' in window){ io = new IntersectionObserver(es=>{ if (es.some(x=>x.isIntersecting)) more(); }, { root:el, rootMargin:'600px 0px' }); io.observe(s); }
@@ -362,7 +387,82 @@ function openBook(bookId, opts){
     el.innerHTML = topbar({title:b.title, eyebrow:'Scrapbook'}) + `<div class="screen-body"><div class="page mt16"><div class="skeleton" style="height:22px;width:60%"></div><div class="skeleton mt24" style="height:220px;border-radius:14px"></div><p class="row mono mt16" style="font-size:11px;gap:var(--sp-2);justify-content:center;color:var(--green)">● Taping in your pages…</p></div></div>`;
     const first=bookPhotos(b).slice(0,3).map(p=>new Promise(r=>{ const i=new Image(); i.onload=i.onerror=r; i.src=S.photoURL(p); }));
     Promise.race([Promise.all(first), new Promise(r=>setTimeout(r,700))]).then(()=>{ if (el.isConnected) paint(); });
-  });
+  }, { replace:!!opts.replace, instant:!!opts.replace });
+}
+
+/* =========================================================
+   THE BOOK, PAGE BY PAGE: the cover swings open, then one visit per page in date order (oldest first, as a book
+   reads), or place by place. The pager under the book turns pages, says where you are and jumps to the newest.
+   The wand dresses up the page you're on.
+   ========================================================= */
+// the order of the pages: by date, oldest first; by place, each place's visits together (the place you've been
+// most recently last), in date order
+function bookOrder(pgs, mode){
+  const asc = pgs.slice().sort((a,c)=>(a.date||'').localeCompare(c.date||'') || (a.createdAt||0)-(c.createdAt||0));
+  if (mode !== 'place') return asc;
+  const by = new Map(); asc.forEach(p=>{ const k = p.entry ? p.entry.venueId : p.venueId; if (!by.has(k)) by.set(k, []); by.get(k).push(p); });
+  return [...by.values()].sort((a,c)=>(a[a.length-1].date||'').localeCompare(c[c.length-1].date||'')).flat();
+}
+function openPages(bookId, opts){
+  opts = opts || {};
+  const b = S.book(bookId); if (!b) return;
+  let mode = opts.mode || 'date', filter = opts.filter || {}, view = null, pgs = [];
+  openScreen(el=>{
+    el.classList.add('book-screen');
+    const paint = (startAt)=>{
+      view && view.destroy();
+      pgs = bookOrder(pagesOf(b, filter), mode);
+      const nf = filterCount(filter);
+      el.innerHTML = bookHead(b, 'book', mode, nf) + `<div class="kb-stage" id="kbStage"></div>
+        ${pgs.length ? pagerHTML() : ''}`;
+      bindSeg(el, 'bmode', v=>{ mode = v; paint(); });
+      bindSeg(el, 'bview', v=>{ if (v==='list') switchView(b.id, 'list', { mode, filter }); });
+      el.querySelector('#bkFilter').onclick = ()=>bookFilters(b, filter, f=>{ filter = f; paint(); });
+      el.querySelector('#bkCover').onclick = ()=>coverScreen(b.id);
+      el.querySelector('#bkShare').onclick = ()=>share({ title:b.title, text:`${b.title} — ${plural(pgs.length,'page')} on ${APP.name}`, url:location.origin });
+      const stage = el.querySelector('#kbStage'), wand = el.querySelector('#kbWand') || document.createElement('button');
+      const count = el.querySelector('.kb-count'), slide = el.querySelector('[data-kb="slide"]');
+      if (slide){ slide.max = pgs.length; }
+      const onPage = (i)=>{
+        if (count) count.textContent = i < 0 ? `Cover • ${plural(pgs.length,'page')}` : i >= pgs.length ? 'The end' : `Page ${i+1} of ${pgs.length}`;
+        if (slide) slide.value = Math.max(0, Math.min(pgs.length, i+1));
+        const pg = pgs[i];
+        wand.hidden = !(pg && pg.entry);
+        el.querySelector('[data-kb="prev"]') && (el.querySelector('[data-kb="prev"]').disabled = i < 0);
+        el.querySelector('[data-kb="next"]') && (el.querySelector('[data-kb="next"]').disabled = i >= pgs.length);
+      };
+      if (!pgs.length){ stage.innerHTML = emptyBookHTML(b, nf); const add = stage.querySelector('#bkAdd'); if (add) add.onclick = ()=>go.log(b.kind==='crew'?{ who:[b.crewId] }:{}); return; }
+      view = mountBook(stage, { book:b, pages:pgs, paper:b.paper||'plain', count:pgs.length, photos:pgs.flatMap(p=>p.photos), startAt, onPage, onAction:act });
+      el.querySelector('[data-kb="prev"]').onclick = ()=>view.prev();
+      el.querySelector('[data-kb="next"]').onclick = ()=>view.next();
+      el.querySelector('[data-kb="last"]').onclick = ()=>view.turnTo(pgs.length-1);
+      slide.oninput = ()=>view.turnTo(+slide.value - 1, true);
+      wand.onclick = ()=>{ const pg = pgs[view.index]; if (pg && pg.entry) pageEditor(b, pg, ()=>paint(view.index)); };
+    };
+    // taps inside a page
+    const act = (e)=>{
+      const t = e.target;
+      const heart = t.closest('[data-heart]'); if (heart){ e.stopPropagation(); const on = S.toggleBookmark(heart.dataset.heart); heart.innerHTML = icon(on?'bookmark':'bookmark_border','',on); toast(on?'Bookmarked':'Bookmark removed'); return; }
+      const ph = t.closest('[data-photo]'); if (ph){ const ids = photoIdsOf(pgs, ph.dataset.photo); go.viewer(ids, ids.indexOf(ph.dataset.photo)); return; }
+      const rt = t.closest('[data-rate]'); if (rt){ rateSheet(rt.dataset.rate, ()=>paint(view && view.index)); return; }
+      const rs = t.closest('[data-raters]'); if (rs){ const en = S.entry(rs.dataset.raters); if (en) ratersSheet(en, rateScope(b)); return; }
+      const ap = t.closest('[data-addplace]'); if (ap){ go.log({ venueId:ap.dataset.addplace, ...(b.kind==='crew'?{ who:[b.crewId] }:{}) }); return; }
+      const vn = t.closest('[data-venue]'); if (vn){ go.place(vn.dataset.venue); return; }
+    };
+    // keys: left and right turn pages
+    const key = e=>{ if (!el.isConnected){ removeEventListener('keydown', key); return; } if (!view || e.target.closest('input,textarea')) return; if (e.key==='ArrowRight') view.next(); if (e.key==='ArrowLeft') view.prev(); };
+    addEventListener('keydown', key);
+    // repaint when something changes (a new page, a crewmate's edit), staying on the same page
+    const off = S.onChange(w=>{ if (!el.isConnected){ off(); view && view.destroy(); return; } if (['entries','photos','pages','sync','books','ratings'].includes(w)) paint(view ? view.index : undefined); });
+    const at = opts.pageId ? (()=>{ const i = bookOrder(pagesOf(b, filter), mode).findIndex(p=>p.id===opts.pageId || (p.entry && opts.pageId.endsWith('|'+p.entry.id))); return i >= 0 ? i : undefined; })() : undefined;
+    requestAnimationFrame(()=>paint(at));
+  }, { replace:!!opts.replace, instant:!!opts.replace, onClose:()=>{ view && view.destroy(); } });
+}
+function emptyBookHTML(b, nf){
+  return `<div class="card-soft center kb-empty" style="padding:var(--sp-5) var(--sp-3)"><div style="width:110px;margin:0 auto">${postageHTML(b.kind==='crew'?'karak':(b.cat||'coffee'), todayISO(), 110)}</div>
+    <h3 class="h-lg mt24">${nf?'No pages match these filters':b.kind==='tagged'?'Nobody has tagged you yet':'Every visit becomes a page'}</h3>
+    <p class="muted mt8">${nf?'Try widening the months or kinds of place.':b.kind==='tagged'?'When a crewmate tags you on a visit, its page lands here too.':'Log a place you’ve been and it’s taped in here, with or without photos.'}</p>
+    ${b.kind==='tagged'||nf?'':`<button class="btn btn-gold btn-block mt24" id="bkAdd">${icon('add_location_alt')}Log a visit</button>`}</div>`;
 }
 go.book = openBook;
 // open the book a page is in, at that page

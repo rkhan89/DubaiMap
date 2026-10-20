@@ -398,5 +398,27 @@ try{ await as(K1, logQ(0.0013)); ok('a normal AI tag log row is accepted'); }cat
 await expectErr('a negative AI cost (to get round the monthly cap)', K1, logQ(-5));
 await expectErr('a huge AI cost (to stop tagging for everyone)', K1, logQ(1000));
 await db.exec('reset role');
+// ---- the scrapbook shelf (0017): kind books, paper, sounds; Everything holds visits you were tagged on ----
+const sql17 = fs.readFileSync(new URL('../../supabase/migrations/0017_scrapbook_shelf.sql', import.meta.url),'utf8');
+try{ await db.exec(sql17); await db.exec(sql17); ok('scrapbook shelf migration runs (twice)'); } catch(e){ bad('0017: ' + e.message); }
+try{ await as(K2, `insert into books(id,owner_id,kind,book_key,title,paper) values ('kb-k2','${K2}','kind','kind:coffee','Coffee','kraft')`); ok('a kind book with its key and paper'); }catch(e){ bad('kind book refused: ' + e.message); }
+await expectErr('a second book for the same kind', K2, `insert into books(id,owner_id,kind,book_key) values ('kb-k2b','${K2}','kind','kind:coffee')`);
+await expectErr('a kind book without a kind key', K2, `insert into books(id,owner_id,kind,book_key) values ('kb-k2c','${K2}','kind','everything')`);
+await expectErr('a paper that does not exist', K2, `update books set paper='velvet' where id='kb-k2' returning id`);
+await as(K2, `insert into books(id,owner_id,kind,title) values ('pb-k2','${K2}','personal','Everything')`);
+await as(K3, `insert into books(id,owner_id,kind,title) values ('pb-k3','${K3}','personal','Everything')`);
+(await as(K2, `select public.page_fits('pb-k2','ze1') as f`)).rows[0].f===true ? ok('a visit you were tagged on is a page in your Everything') : bad('tagged visit not in Everything');
+(await as(K2, `select public.page_fits('pb-k2','ze2') as f`)).rows[0].f===false ? ok("…a crew visit you weren't part of is not") : bad('crew visit in Everything');
+(await as(K3, `select public.page_fits('pb-k3','ze1') as f`)).rows[0].f===false ? ok('…and nobody else can put it in theirs') : bad('outsider Everything');
+try{ await as(K2, `insert into book_pages(id,book_id,entry_id,layout) values ('pb-k2|ze1','pb-k2','ze1','hero')`); ok('dress up a tagged page in Everything'); }catch(e){ bad('Everything page refused: ' + e.message); }
+try{ await as(K2, `update profiles set sounds_enabled=true where id=auth.uid()`); ok('sounds on, per person'); }catch(e){ bad('sounds_enabled: ' + e.message); }
+// untagged, but with a photo of yours on it: still yours, so the page stays
+await as(K1, `update entries set tagged_ids='{}' where id='ze1'`);
+await db.exec('reset role');
+(await db.query(`select count(*)::int n from book_pages where id='pb-k2|ze1'`)).rows[0].n===1 ? ok('untagged with your photo on it: the page stays in Everything') : bad('page left Everything though K2 has a photo on it');
+await db.exec(`delete from photos where entry_id='ze1' and user_id='${K2}'`);
+await as(K1, `update entries set tagged_ids=array['${K2}']::uuid[] where id='ze1'`); await as(K1, `update entries set tagged_ids='{}' where id='ze1'`);
+await db.exec('reset role');
+(await db.query(`select count(*)::int n from book_pages where id='pb-k2|ze1'`)).rows[0].n===0 ? ok('untagged with nothing of yours on it: the page leaves Everything') : bad('page stayed in Everything');
 console.log(process.exitCode ? '\nSOME CHECKS FAILED' : '\nall checks passed');
 

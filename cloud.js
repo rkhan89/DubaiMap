@@ -56,9 +56,9 @@ const ms = iso => iso ? Date.parse(iso) : Date.now();
 const uuids = a => (a||[]).filter(id=>/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id));
 export const MAP = {
   profiles: {
-    to: u => ({ id:u.id, handle:u.handle||null, name:u.name||'', tagline:u.tagline||'', avatar:u.avatar||{}, share_default:u.shareDefault||'crew', onboarded:!!u.onboarded, ...(u.pinColor ? { pin_color:u.pinColor } : {}), ...(u.favouriteCritterId ? { favourite_critter_id:u.favouriteCritterId } : {}) }),
-    from: r => ({ id:r.id, handle:r.handle||'', name:r.name||'', tagline:r.tagline||'', avatar:r.avatar||{}, shareDefault:r.share_default, onboarded:r.onboarded, pinColor:r.pin_color||null, favouriteCritterId:r.favourite_critter_id||null, createdAt:ms(r.created_at) }),
-    fields: { handle:'handle', name:'name', tagline:'tagline', avatar:'avatar', shareDefault:'share_default', onboarded:'onboarded', pinColor:'pin_color', favouriteCritterId:'favourite_critter_id' },
+    to: u => ({ id:u.id, handle:u.handle||null, name:u.name||'', tagline:u.tagline||'', avatar:u.avatar||{}, share_default:u.shareDefault||'crew', onboarded:!!u.onboarded, ...(u.pinColor ? { pin_color:u.pinColor } : {}), ...(u.favouriteCritterId ? { favourite_critter_id:u.favouriteCritterId } : {}), ...(typeof u.soundsEnabled === 'boolean' ? { sounds_enabled:u.soundsEnabled } : {}) }),
+    from: r => ({ id:r.id, handle:r.handle||'', name:r.name||'', tagline:r.tagline||'', avatar:r.avatar||{}, shareDefault:r.share_default, onboarded:r.onboarded, pinColor:r.pin_color||null, favouriteCritterId:r.favourite_critter_id||null, soundsEnabled:typeof r.sounds_enabled === 'boolean' ? r.sounds_enabled : null, createdAt:ms(r.created_at) }),
+    fields: { handle:'handle', name:'name', tagline:'tagline', avatar:'avatar', shareDefault:'share_default', onboarded:'onboarded', pinColor:'pin_color', favouriteCritterId:'favourite_critter_id', soundsEnabled:'sounds_enabled' },
   },
   crews: {
     from: r => ({ id:r.id, name:r.name, tagline:r.tagline||'', code:r.code, ownerId:r.owner_id, memberIds:[], createdAt:ms(r.created_at) }),
@@ -86,9 +86,10 @@ export const MAP = {
     fields: { caption:'caption', private:'private', crewIds:'crew_ids', date:'date' },
   },
   books: {
-    to: b => ({ id:b.id, owner_id:b.ownerId, crew_id:b.crewId||null, kind:b.kind, title:b.title||'', byline:b.byline||'', texture:b.texture||null, tint:b.tint||null, pin:b.pin||null, cover_photo_id:b.coverPhotoId||null, filter:b.filter||{}, pages:b.pages||{} }),
-    from: r => ({ id:r.id, ownerId:r.owner_id, crewId:r.crew_id, kind:r.kind, title:r.title, byline:r.byline, texture:r.texture, tint:r.tint, pin:r.pin, coverPhotoId:r.cover_photo_id, filter:r.filter||{}, pages:r.pages||{} }),
-    fields: { title:'title', byline:'byline', texture:'texture', tint:'tint', pin:'pin', coverPhotoId:'cover_photo_id', filter:'filter', pages:'pages' },
+    // (book_key and paper from 0017_scrapbook_shelf.sql; sent only when set, so an older server still takes the rest)
+    to: b => ({ id:b.id, owner_id:b.ownerId, crew_id:b.crewId||null, kind:b.kind, title:b.title||'', byline:b.byline||'', texture:b.texture||null, tint:b.tint||null, pin:b.pin||null, cover_photo_id:b.coverPhotoId||null, filter:b.filter||{}, pages:b.pages||{}, ...(b.bookKey ? { book_key:b.bookKey } : {}), ...(b.paper && b.paper!=='plain' ? { paper:b.paper } : {}) }),
+    from: r => ({ id:r.id, ownerId:r.owner_id, crewId:r.crew_id, kind:r.kind, title:r.title, byline:r.byline, texture:r.texture, tint:r.tint, pin:r.pin, coverPhotoId:r.cover_photo_id, filter:r.filter||{}, pages:r.pages||{}, bookKey:r.book_key||null, paper:r.paper||'plain', ...(r.kind==='kind' && r.book_key ? { cat:String(r.book_key).slice(5) } : {}) }),
+    fields: { title:'title', byline:'byline', texture:'texture', tint:'tint', pin:'pin', coverPhotoId:'cover_photo_id', filter:'filter', pages:'pages', paper:'paper' },
   },
   // how a scrapbook page is dressed up (the page itself is the visit)
   book_pages: {
@@ -221,8 +222,16 @@ async function send(c, o){
     o.k==='rmfile' ? await c.storage.from('photos').remove([o.path]) :
     o.k==='upload' ? await (async()=>{ const blob = getBlob && await getBlob(o.id); if (!blob) return { error:null }; return c.storage.from('photos').upload(o.path, blob, { contentType:'image/jpeg', upsert:true }); })() :
     { error:null };
-  // a server without 0013_search.sql yet doesn't know dish_tags: send the visit without it rather than lose it
-  if (res && res.error && o.row && 'dish_tags' in o.row && /dish_tags/.test(String(res.error.message||'') + String(res.error.details||''))){ const { dish_tags, ...row } = o.row; return send(c, { ...o, row }); }
+  // a server without a newer migration yet doesn't know a column (0013: dish_tags; 0017: paper, book_key,
+  // sounds_enabled): send the record without it rather than lose it
+  const said = res && res.error ? String(res.error.message||'') + String(res.error.details||'') : '';
+  const col = said && ['dish_tags','paper','book_key','sounds_enabled'].find(k=>((o.row && k in o.row) || (o.patch && k in o.patch)) && said.includes(k));
+  if (col){
+    const strip = x => { if (!x) return x; const y = { ...x }; delete y[col]; return y; };
+    const next = { ...o, row:strip(o.row), patch:strip(o.patch) };
+    if (next.k==='upd' && !Object.keys(next.patch||{}).length) return;
+    return send(c, next);
+  }
   if (res && res.error) throw res.error;
 }
 export async function flush(){

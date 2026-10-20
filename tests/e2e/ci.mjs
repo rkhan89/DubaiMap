@@ -7,7 +7,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url)), ROOT = path.resolve(HERE, '..', '..');
-const SCENARIOS = (process.env.SCENARIOS || 'e2e search checkin tagged crews scrap taps landmarks theme a11y spacing@360 spacing@390 spacing@430').split(/\s+/).filter(Boolean);
+const SCENARIOS = (process.env.SCENARIOS || 'e2e search checkin tagged crews scrap taps landmarks theme a11y scrapbook spacing@360 spacing@390 spacing@430').split(/\s+/).filter(Boolean);
 const sleep = ms=>new Promise(r=>setTimeout(r, ms));
 
 const server = spawn(process.execPath, ['dev/server.mjs', '--port', '5174', '--dev-no-auth'], { cwd:ROOT, stdio:['ignore', 'ignore', 'inherit'] });

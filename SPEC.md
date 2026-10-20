@@ -584,9 +584,7 @@ neighbourhoods, ~7,400 objects); only the drawing changed.
   ("ice cream with Rabia" = ice cream + Rabia).
 - Search doubles as add: a link, or a name with no match, puts "Add this place" first, which opens the add-from-link flow
   with it (resolve, confirm, crew map first, Undo). The + button is unchanged.
-- The Shelf: the bar, then the books as chips (All, Personal, Crew, Tagged, albums; Critters opens its own screen) that
-  filter the photo grid of latest pages below (12 at a time, Show more; Open book for a chosen one), then New Album and
-  Import Roll.
+- The Shelf: the bar, then the bookshelf (see Scrapbook v2), then New Album and Import Roll.
 - Import Roll groups photos into visits by the day and place they were taken (photometa.js reads the EXIF date and GPS
   before the photo is shrunk; a group is one day, within 500 m) and suggests the nearest place on your map within 200 m.
   You use it or pick another; each group goes through Check in with its photos and date, then "Next" for the rest.
@@ -609,3 +607,43 @@ Points, levels, the leaderboard and every counter toward a reward are gone (migr
 Welcome (the app's pixel city around Downtown, Satwa and Old Dubai, drifting slowly while crew pins, a
 pixel face in its owner's colour, drop onto real places one after another and lift away again; still with
 every pin placed under reduced motion) → sign in (email code or Google) → five setup steps, each with the same "Step n of 5" chip and bars: 1 handle → 2 avatar and pin colour → 3 who sees each place (crews, Just me, tagging shares with a crew you're both in) → 4 three things you'll collect (pages, critters, stickers; no points) → 5 crew setup. In crew setup a crew is made only when you tap Invite or Copy or type a name; "Continue to Scrapbook" with the untouched default carries on solo. Arriving from an invite link, the welcome screen shows the crew's name, its size and who started it (pixel avatar) above the sign-in buttons, read signed out through `crew_invite_preview` (migration 0015: a full 10-character code only; name, count, owner name and pixel avatar, nothing else). When onboarding ends the map flies to your first stamp if you have one. The first-run guide then walks through pinning a first place and the map: Me/Crew (pin colours and faces), filters, the bell (tags to rate, On this day), crew invites, the Shelf, and finding critters (check in at a place, or I'm here now on the Critters page).
+
+## Scrapbook v2: the shelf, the book, the feel (phase 1)
+
+Design references: `design/stitch/` (README maps each Stitch screen to this section; where they differ, this wins).
+
+**The shelf.** Scrapbooks opens on a shelf. Everything (biggest) and Tagged side by side, with a strip of Everything's
+latest pages under them; then By kind (a book per kind of place you've logged, most pages first, six shown, See all);
+Crews (one book per crew you're in); Albums; New Album and Import Roll; Critters; the Just me note. On the date one of
+your visits (logged or tagged) happened a year or more ago, "A year ago today" waits at the top. Each book shows its
+cover or spine, its page count and the date of its newest page. Search at the top searches every book.
+- Everything, Tagged and the kind books are saved queries (pages.js), not copies: Everything = visits you logged, added
+  photos to or were tagged in, Just me ones included, never a crew visit you weren't part of; Tagged = the ones someone
+  else tagged you in; a kind book = Everything for one kind (a venue's categories). The personal book is Everything.
+- A kind book's cover is automatic (its stamp colour and icon) until you restyle it in the cover editor; that saves a
+  `books` row (kind `kind`, `book_key` `kind:coffee`). Every cover also picks its paper: plain, dotted, grid or kraft.
+- How a page is dressed up (layout, photo order, note) follows the visit: a book's own settings, else the newest saved
+  for that visit in any book you can see.
+
+**The book.** Opening a book shows its hard cover, which swings open from the spine (about half a second) onto page 1.
+One visit per page, in date order (oldest first, as a book reads); By place keeps each place's visits together. The old
+feed is behind a List toggle (Book / List remembered on the phone); By date / By place and the filter work in both.
+Pages turn with a curl that follows the finger (StPageFlip 2.0.7 from jsdelivr, pinned); the pager under the book
+turns pages, says "Page 3 of 30" (read out), has a slider and a jump to the newest page; arrow keys turn too. With
+reduced motion, or if the library can't load, pages cross-fade. Only pages near the open one are filled in.
+
+**The page** (paper.js) is drawn on a fixed 360 x 600 canvas and scaled to fit, so it looks the same on every phone:
+off-white paper with grain and a shadow at the spine (or the book's paper), the red ribbon, the date and area with
+coordinates in mono, the postage stamp with its postmark, the place, kind and chips, then the photos as polaroids tilted
+-4 to +4 degrees by photo id (Scrapbook, Grid or Hero; extra photos as +N). With no photos the stamp is the hero over a
+postcard of the pixel map around the pin (about 30% of the page). The rating is an ink rubber stamp ("★ 4"), a check-in
+leaves a CHECKED IN mark, the crew and their ratings sit at the foot, the visit's words in handwriting (Caveat), the page
+note on a torn strip, the page number in the corner. Every tilt is seeded from an id.
+
+**The feel** (feel.js). Opening a book: leather creak, light tap. Turning a page: one of three paper flips, a light
+tick. Logging a visit or checking in: as the page is taped in, a VISITED / CHECKED IN stamp slams on with a thud and a
+heavy tap. A photo added in the last week develops from washed-out to full colour over 1.5 s the first time it's on a
+page on that phone. Sounds (sounds/, made by tools/make-sounds.mjs, so they're ours) load the first time a book opens;
+Settings → Scrapbook → Sounds, off by default on the web and on by default in the Android app (`profiles.sounds_enabled`,
+migration 0017; unset = the device default). Haptics: Capacitor Haptics in the Android app, else the app's usual tick
+(haptics.js). Reduced motion: cross-fades, and stamps simply appear.

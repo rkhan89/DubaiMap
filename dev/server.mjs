@@ -13,7 +13,7 @@ const args = process.argv.slice(2);
 const PORT = +(args[args.indexOf('--port')+1] || 0) || 5174;
 if (args.includes('--dev-no-auth')) process.env.SHARE_DEV_NO_AUTH = '1';
 const TYPES = { '.html':'text/html; charset=utf-8', '.js':'text/javascript', '.mjs':'text/javascript', '.css':'text/css', '.json':'application/json',
-  '.webmanifest':'application/manifest+json', '.svg':'image/svg+xml', '.png':'image/png', '.jpg':'image/jpeg', '.ico':'image/x-icon', '.txt':'text/plain' };
+  '.webmanifest':'application/manifest+json', '.svg':'image/svg+xml', '.png':'image/png', '.jpg':'image/jpeg', '.ico':'image/x-icon', '.txt':'text/plain', '.wav':'audio/wav', '.webp':'image/webp' };
 const rewrites = { '/share':'/index.html', '/terms':'/terms.html', '/privacy':'/privacy.html', '/data':'/data.html' };
 // production's security headers (http on localhost, so no upgrade-insecure-requests)
 const SEC = args.includes('--headers') ? Object.fromEntries(JSON.parse(fs.readFileSync(path.join(ROOT,'vercel.json'),'utf8')).headers

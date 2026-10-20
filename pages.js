@@ -3,8 +3,10 @@
 // never be seen by anyone who can't see its visit, and there's nothing to backfill or duplicate.
 //
 // Which book a visit belongs in (the same rules as public.page_fits on the server):
-//   personal  your own visits
-//   tagged    visits someone tagged you on
+//   personal  Everything: visits you logged, added photos to or were tagged in (Just me ones included;
+//             never a crew visit you weren't part of)
+//   kind      Everything for one kind of place (book.cat), e.g. your Coffee book
+//   tagged    visits someone else tagged you on
 //   crew      visits shared with that crew, by someone still in it
 //   album     any visit you can see (an album is a filter)
 //
@@ -15,9 +17,20 @@ import { placeRating } from './ratings.js';
 export const pageId = (bookId, entryId) => bookId + '|' + entryId;
 const visit = e => e && e.kind === 'visit';
 
+// the visits someone has photos on (worked out once per world)
+const photoEntries = new WeakMap();
+function hasPhotosBy(w, userId, entryId){
+  let m = photoEntries.get(w); if (!m){ m = new Map(); photoEntries.set(w, m); }
+  let set = m.get(userId);
+  if (!set){ set = new Set((w.photos||[]).filter(p=>p.userId===userId && p.entryId).map(p=>p.entryId)); m.set(userId, set); }
+  return set.has(entryId);
+}
+// is this visit one of yours: logged, tagged in, or with your photos on it
+export const inEverything = (e, ownerId, w) => visit(e) && (e.userId === ownerId || (e.taggedIds||[]).includes(ownerId) || hasPhotosBy(w, ownerId, e.id));
 export function belongs(book, e, w){
   if (!book || !visit(e)) return false;
-  if (book.kind === 'personal') return e.userId === book.ownerId;
+  if (book.kind === 'personal') return inEverything(e, book.ownerId, w);
+  if (book.kind === 'kind') return inEverything(e, book.ownerId, w) && (((w.venue && w.venue(e.venueId)) || {}).categories||[]).includes(book.cat);
   if (book.kind === 'tagged') return e.userId !== book.ownerId && (e.taggedIds||[]).includes(book.ownerId);
   if (book.kind === 'crew'){
     if (e.private) return false;
@@ -31,11 +44,18 @@ export function belongs(book, e, w){
 const byNewest = (a, b) => (b.date||'').localeCompare(a.date||'') || (b.createdAt||0) - (a.createdAt||0);
 
 // the pages of a book, newest first: { id, entry, photos, cfg, loose }
+// how a page is dressed up follows the visit, not the book: this book's own settings, else the newest anyone
+// you can see saved for the visit in another book
+function settingsIndex(w){
+  const by = new Map();
+  Object.values(w.pages||{}).forEach(r=>{ if (!r || !r.entryId) return; const o = by.get(r.entryId); if (!o || (r.updatedAt||0) > (o.updatedAt||0)) by.set(r.entryId, r); });
+  return by;
+}
 export function bookPages(book, w, filter){
-  const photosOf = new Map();
+  const photosOf = new Map(), newest = settingsIndex(w);
   (w.photos||[]).forEach(p=>{ if (p.entryId){ if (!photosOf.has(p.entryId)) photosOf.set(p.entryId, []); photosOf.get(p.entryId).push(p); } });
   let out = (w.entries||[]).filter(e=>belongs(book, e, w)).map(e=>{
-    const id = pageId(book.id, e.id), cfg = (w.pages||{})[id] || null;
+    const id = pageId(book.id, e.id), cfg = (w.pages||{})[id] || newest.get(e.id) || null;
     let ps = (photosOf.get(e.id)||[]).slice().sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
     const order = cfg && cfg.order || [];
     if (order.length) ps.sort((a,b)=>{ const x=order.indexOf(a.id), y=order.indexOf(b.id); return (x<0?99:x)-(y<0?99:y); });
@@ -174,4 +194,24 @@ export function recapData(scope, month, w){
   const people = scope.crew ? scope.crew.memberIds.filter(id=>inM.some(e=>e.userId===id || (e.taggedIds||[]).includes(id)))
                             : [...new Set(inM.flatMap(e=>[e.userId, ...(e.taggedIds||[])]))].filter(id=>id!==w.meId);
   return { visits:inM.length, places:per.size, newPlaces:[...per.keys()].filter(v=>!before.has(v)).length, top, photos:picked, people, entries:inM };
+}
+
+/* ---------- the shelf ----------
+   Kind books: one per kind of place you've logged in Everything, most pages first. Each book's page count and the
+   date of its latest page. */
+export function kindCounts(ownerId, w){
+  const n = new Map();
+  (w.entries||[]).forEach(e=>{ if (!inEverything(e, ownerId, w)) return; (((w.venue && w.venue(e.venueId)) || {}).categories||[]).forEach(c=>n.set(c, (n.get(c)||0) + 1)); });
+  return [...n.entries()].sort((a,b)=>b[1]-a[1] || a[0].localeCompare(b[0])).map(([cat, pages])=>({ cat, pages }));
+}
+export function bookStats(pages){
+  let latest = '';
+  pages.forEach(p=>{ if ((p.date||'') > latest) latest = p.date; });
+  return { pages:pages.length, latest:latest || null };
+}
+/* "A year ago today": a visit you logged or were tagged in, on this date a year (or more) earlier */
+export function yearAgo(today, w){
+  const md = today.slice(4);
+  return (w.entries||[]).filter(e=>visit(e) && e.date && e.date < today && e.date.slice(4) === md && (e.userId===w.meId || (e.taggedIds||[]).includes(w.meId)))
+    .sort((a,b)=>(b.date||'').localeCompare(a.date||''))[0] || null;
 }

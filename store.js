@@ -606,7 +606,26 @@ export function books(){
   Object.values(db.books).forEach(b=>{ if (b.kind==='personal' && b.title==='Dubai Bites • Vol. 1') b.title=APP.name+' • Vol. 1'; });
   return Object.values(db.books).filter(b=> b.ownerId===m.id && b.kind!=='crew' || (b.kind==='crew' && crew && b.crewId===crew.id));
 }
-export function book(id){ books(); return db.books[id]||null; }
+export function book(id){
+  books();
+  if (String(id).startsWith('kind:')) return kindBook(String(id).slice(5));
+  return db.books[id]||null;
+}
+/* ---------- the shelf ----------
+   Everything (your personal book), Tagged, a book per kind of place you've logged, a book per crew you're in, and
+   your albums. A kind book is drawn in its stamp colour until you restyle it; restyling saves a row for it. */
+export function kindBook(cat){
+  const m = me(); if (!m) return null;
+  const saved = Object.values(db.books).find(b=>b.ownerId===m.id && b.kind==='kind' && b.bookKey==='kind:'+cat);
+  return { id:'kind:'+cat, ownerId:m.id, kind:'kind', cat, bookKey:'kind:'+cat, title:'', byline:'', texture:'cloth', tint:null, pin:cat,
+           coverPhotoId:null, filter:{}, pages:{}, paper:'plain', auto:!saved, ...(saved ? { ...saved, id:'kind:'+cat, rowId:saved.id, auto:false } : {}) };
+}
+export function shelf(){
+  const m = me(); if (!m) return null;
+  const bs = books();
+  const crews = myCrews().map(c=>Object.values(db.books).find(b=>b.kind==='crew' && b.crewId===c.id)).filter(Boolean);
+  return { everything:bs.find(b=>b.kind==='personal'), tagged:bs.find(b=>b.kind==='tagged') || null, crews, albums:bs.filter(b=>b.kind==='album') };
+}
 
 /* ---------- pages: every visit is a page; only how it's dressed up is stored ---------- */
 // can I see this at all (through any of my crews, not just the one I'm looking at)?
@@ -699,7 +718,16 @@ export function homeBookFor(e){
   const target = crewId ? Object.values(db.books).find(b=>b.kind==='crew' && b.crewId===crewId) : null;
   return { book: target || personal, crew: crewId ? db.crews[crewId] : null, others: Math.max(0, crewIds.length - 1) };
 }
-export function saveBook(id, patch){ const b=db.books[id]; if (!b) return; Object.assign(b, patch); save('books'); push('books', { id, patch, crewId:b.crewId }, 'upd'); return b; }
+export function saveBook(id, patch){
+  // a kind book's first restyle saves it
+  if (String(id).startsWith('kind:')){
+    const k = kindBook(String(id).slice(5)); if (!k) return;
+    if (k.rowId){ const b = db.books[k.rowId]; Object.assign(b, patch); save('books'); push('books', { id:b.id, patch }, 'upd'); return kindBook(k.cat); }
+    const row = { id:uid(), ownerId:me().id, kind:'kind', bookKey:k.bookKey, cat:k.cat, title:k.title, byline:'', texture:k.texture, tint:k.tint, pin:k.pin, coverPhotoId:null, filter:{}, pages:{}, paper:'plain', ...patch };
+    db.books[row.id] = row; save('books'); push('books', row); return kindBook(k.cat);
+  }
+  const b=db.books[id]; if (!b) return; Object.assign(b, patch); save('books'); push('books', { id, patch, crewId:b.crewId }, 'upd'); return b;
+}
 export function addAlbum(data){ const m=me(); const id=uid(); db.books[id]={ id, ownerId:m.id, kind:'album', texture:'paperback', tint:'#e5a93c', pin:'dessert', coverPhotoId:null, filter:{}, pages:{}, ...data }; save('books'); push('books', db.books[id]); return db.books[id]; }
 export function deleteBook(id){ const b=db.books[id]; if (b && b.kind==='album' && b.ownerId===me()?.id){ delete db.books[id]; save('books'); push('books', b, 'del'); } }
 
