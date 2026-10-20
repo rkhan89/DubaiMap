@@ -25,6 +25,7 @@ Plain HTML/CSS/JS (ES modules), no build step. Live: https://dubai-bites-pi.verc
 | `book.js` | Photobook: shelf, cover, open book, filters, viewer, add photos (frames 15-22). |
 | `paper.js`, `bookview.js` | A visit as a page on paper (a fixed 360x600 canvas, scaled to fit); the book turned page by page (StPageFlip), its cover and pager. |
 | `decorate.js`, `stickers.js`, `deco.js` | Decorate mode (the sticker tray, placing, tape, undo), the sticker catalogue and unlocks, and drawing a page's sticker layer. |
+| `sharesheet.js`, `export.js`, `page.html`, `page-view.js` | The share sheet; story cards, postcards and page pictures; the read-only page behind a page link (/p/<token>). |
 | `feel.js`, `sounds/` | The scrapbook's sounds, haptics, stamps and photos that develop; the sounds are made by `tools/make-sounds.mjs`. |
 | `ui.js`, `avatar.js`, `data.js` | Shared components, pixel avatars, categories + helpers. |
 | `demo.js`, `demo/` | Optional sample crew for preview mode, with the 30 places they've been (toggle in Settings). |
@@ -33,7 +34,7 @@ Plain HTML/CSS/JS (ES modules), no build step. Live: https://dubai-bites-pi.verc
 | `synth.js` | Development only: `?synthetic=500` adds test places in memory. |
 | `shows.js` | Burj Khalifa light-show schedule and clock (`?now=` to test); tests in `tests/` (`node --test tests/shows.test.mjs`). |
 | `stats.js`, `badges.js` | Counts from your visible logs, and stickers (milestones: earned or not). |
-| `profile.js`, `social.js`, `recap.js` | Profile and Settings, crew challenges and goals (done or not done), the monthly recap. |
+| `profile.js`, `social.js` | Profile and Settings, crew challenges and goals (done or not done). The monthly recap is now the crew's monthly spread (book.js, paper.js). |
 | `critters.js`, `catch.js`, `critterui.js`, `locate.js` | Critters: the content, the catching rule, the screens, and the location (asked only on a check-in). Spots: `config.js` (`CRITTER_SPOTS`). |
 | `events.js`, `notify.js` | Crew plans, check-ins, share links; reminders. |
 | `sw.js`, `manifest.webmanifest` | Installable app, offline copy, notification taps. |

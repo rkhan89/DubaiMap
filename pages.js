@@ -215,3 +215,27 @@ export function yearAgo(today, w){
   return (w.entries||[]).filter(e=>visit(e) && e.date && e.date < today && e.date.slice(4) === md && (e.userId===w.meId || (e.taggedIds||[]).includes(w.meId)))
     .sort((a,b)=>(b.date||'').localeCompare(a.date||''))[0] || null;
 }
+
+/* ---------- the monthly spread ----------
+   One per crew per month (id "<crew id>|2026-10"), built from the crew's shared visits that month only, so a Just me
+   visit can never reach it. Left page: the month, the pins, how many places, new places and districts. Right page: up
+   to six photos, each member's top-rated photo of the month first, then photos from the places with the most ratings.
+   It drops (locks) at 00:00 in Dubai on the 1st, which is 20:00 UTC on the month's last day. */
+export const spreadId = (crewId, month) => crewId + '|' + month;
+export const monthEnd = month => { const [y, m] = month.split('-').map(Number); return Date.UTC(y, m, 1) - 4*3600e3; };
+export const spreadDropped = (month, now) => (now == null ? Date.now() : now) >= monthEnd(month);
+export function crewMonths(crew, w){ return [...new Set(crewVisits(crew, w).map(e=>(e.date||'').slice(0,7)).filter(Boolean))].sort(); }
+export function spreadData(crew, month, w){
+  const all = crewVisits(crew, w), inM = all.filter(e=>(e.date||'').slice(0,7)===month).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  const before = new Set(all.filter(e=>(e.date||'') < month+'-01').map(e=>e.venueId));
+  const venueOf = id => (w.venue && w.venue(id)) || {};
+  const places = [...new Set(inM.map(e=>e.venueId))];
+  const raters = id => inM.filter(e=>e.venueId===id).reduce((n, e)=>n + (e.rating ? 1 : 0) + ((w.ratingsOf && w.ratingsOf(e.id)) || []).length, 0);
+  const shots = (w.photos||[]).filter(p=>!p.private && inM.some(e=>e.id===p.entryId)).map(p=>{ const e = inM.find(x=>x.id===p.entryId); return { p, rating:e.rating||0, raters:raters(e.venueId) }; });
+  const best = new Map();
+  shots.forEach(s=>{ const b = best.get(s.p.userId); if (!b || s.rating > b.rating || (s.rating===b.rating && (s.p.createdAt||0) > (b.p.createdAt||0))) best.set(s.p.userId, s); });
+  const first = [...best.values()].sort((a,b)=>b.rating-a.rating || (b.p.createdAt||0)-(a.p.createdAt||0));
+  const rest = shots.filter(s=>!first.includes(s)).sort((a,b)=>b.raters-a.raters || b.rating-a.rating || (b.p.createdAt||0)-(a.p.createdAt||0));
+  return { id:spreadId(crew.id, month), crewId:crew.id, month, visits:inM.length, places:places.length, newPlaces:places.filter(v=>!before.has(v)).length,
+    districts:new Set(places.map(v=>venueOf(v).zone).filter(Boolean)).size, venueIds:places, photos:[...first, ...rest].slice(0, 6).map(s=>s.p), entries:inM };
+}

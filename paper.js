@@ -11,7 +11,7 @@ import * as S from './store.js';
 import * as M from './model.js';
 import * as MAP from './map.js';
 import * as RT from './ratings.js';
-import { CATEGORIES, MEALS, catById, iconSvg, esc, fmtDay, fmtRating, tilt } from './data.js';
+import { CATEGORIES, MEALS, catById, iconSvg, esc, fmtDay, fmtRating, tilt, plural } from './data.js';
 import { avatarStack } from './avatar.js';
 import { icon } from './ui.js';
 import { ratersRowHTML } from './rate.js';
@@ -115,11 +115,60 @@ export function pageHTML(pg, ctx){
   </article>`;
 }
 
+/* ---------- a crew's monthly spread: two pages ----------
+   Left: the month stamped big, a crop of the map with every place the crew stamped that month, and how many places,
+   new places and districts. Right: up to six polaroids. Decorated like any page ("<spread id>:L" and ":R"). */
+export function spreadPageHTML(sp, side, ctx){
+  const me = S.me(), crew = S.myCrews().find(c=>c.id===sp.crewId), d = new Date(sp.month+'-01T00:00:00');
+  const title = d.toLocaleDateString('en-GB', { month:'long', year:'numeric' }).toUpperCase();
+  const deco = decoLayerHTML(S.decorationsOn('spread', sp.id+':'+side), { meId:me.id });
+  if (side === 'L'){
+    return `<article class="kb-page kb-spread spread-l paper-${esc(ctx.paper||'plain')}" data-page-id="${esc('spread|'+sp.id+'|L')}" data-spread="${esc(sp.id)}" aria-label="${esc(crew?.name||'Crew')} drop, ${esc(title)}, left page">
+      <span class="kb-ribbon" aria-hidden="true"></span>
+      <header class="kb-head"><span class="kb-date">${esc(crew?.name || 'Crew')} • crew drop</span><span class="kb-geo">${sp.dropped ? 'DROPPED' : 'OPEN UNTIL THE 1ST'} • ${esc(APP.city.toUpperCase())}</span></header>
+      <span class="kb-month-stamp" style="--r:${tilt('m'+sp.id, 6).toFixed(1)}deg">${esc(title)}</span>
+      <span class="kb-pc-map kb-spread-map"><canvas class="kb-map" data-map-venues="${esc(sp.venueIds.join(','))}" aria-label="Map of the places your crew stamped in ${esc(title.toLowerCase())}"></canvas><span class="kb-pins"></span></span>
+      <dl class="kb-counts">
+        <div><dt>Places</dt><dd>${sp.places}</dd></div><div><dt>New to the crew</dt><dd>${sp.newPlaces}</dd></div><div><dt>Districts</dt><dd>${sp.districts}</dd></div>
+      </dl>
+      <span class="kb-num">${esc(title.toLowerCase().replace(/^\w/, c=>c.toUpperCase()))}</span>
+      <div class="kb-deco" aria-hidden="true">${deco}</div>
+    </article>`;
+  }
+  const photos = sp.photos.slice(0, 6);
+  return `<article class="kb-page kb-spread spread-r paper-${esc(ctx.paper||'plain')}" data-page-id="${esc('spread|'+sp.id+'|R')}" data-spread="${esc(sp.id)}" aria-label="${esc(crew?.name||'Crew')} drop, ${esc(title)}, photos">
+    <header class="kb-head kb-head-r"><span class="kb-date">The month in photos</span><span class="kb-geo">${plural(sp.visits, 'visit')} • ${plural(sp.places, 'place')}</span></header>
+    <div class="kb-spread-photos n${photos.length}">${photos.length ? photos.map(p=>{ const v = S.venue(p.venueId), u = S.user(p.userId);
+      return `<figure class="polaroid kb-sp-pol" data-photo="${esc(p.id)}" style="--r:${tilt(p.id, 8).toFixed(2)}deg"><span class="tape"></span><span class="pol-img"><img src="${esc(S.photoURL(p))}" alt="${esc(p.caption||v?.name||'')}" loading="lazy"></span>
+        <figcaption><span class="cap">${esc(v?.name||'')}</span><span class="who">${esc(u ? (u.name||'').split(' ')[0] || '@'+u.handle : '')}</span></figcaption></figure>`; }).join('')
+      : `<p class="kb-notes">No photos this month, just the stamps.</p>${sp.venueIds.slice(0, 4).map(id=>{ const v = S.venue(id); return v ? `<span class="kb-sp-stamp">${postageHTML(M.primaryCat(v), sp.month+'-01', 70)}<b>${esc(v.name)}</b></span>` : ''; }).join('')}`}</div>
+    <span class="kb-num">Crew diary</span>
+    <div class="kb-deco" aria-hidden="true">${deco}</div>
+  </article>`;
+}
+// fit every pin of a month on the map crop: the closest zoom where they all show
+function hydrateSpreadMap(cv){
+  const vs = cv.dataset.mapVenues.split(',').map(id=>S.venue(id)).filter(Boolean);
+  const pins = cv.parentElement.querySelector('.kb-pins');
+  if (!vs.length) return;
+  const ws = vs.map(v=>MAP.placeWorld(v)), c = { x:ws.reduce((s,p)=>s+p.x,0)/ws.length, y:ws.reduce((s,p)=>s+p.y,0)/ws.length };
+  MAP.whenReady(()=>requestAnimationFrame(()=>{
+    if (!cv.isConnected) return;
+    const W = cv.clientWidth, H = cv.clientHeight;
+    const zoom = [9, 7, 5.5, 4.5, 3.5, 2.8, 2.2, 1.7, 1.3, 1].find(z=>ws.every(p=>{ const q = MAP.snapshotPoint(cv, c, z, p); return q.x > 14 && q.x < W-14 && q.y > 14 && q.y < H-14; })) || 1;
+    let tries = 0;
+    const draw = ()=>{ if (!cv.isConnected) return; if (!MAP.drawSnapshot(cv, c, zoom) && ++tries < 40) return setTimeout(draw, 150); };
+    draw();
+    pins.innerHTML = ws.map((p, i)=>{ const q = MAP.snapshotPoint(cv, c, zoom, p); return `<i style="left:${q.x.toFixed(1)}px;top:${q.y.toFixed(1)}px">${i+1}</i>`; }).join('');
+  }));
+}
+
 /* ---------- the map postcard on a page with no photos ----------
    A crop of the pixel map around the pin. Drawn when the page is about to show (it's a live canvas that sharpens as
    the map's pieces arrive), then kept as a picture so turning pages doesn't redraw it. */
 const mapPics = new Map();
 export function hydrateMaps(root){
+  root.querySelectorAll('canvas.kb-map[data-map-venues]:not([data-drawn])').forEach(cv=>{ cv.dataset.drawn = '1'; hydrateSpreadMap(cv); });
   root.querySelectorAll('canvas.kb-map[data-map-venue]:not([data-drawn])').forEach(cv=>{
     const v = S.venue(cv.dataset.mapVenue); if (!v) return;
     cv.dataset.drawn = '1';

@@ -114,6 +114,10 @@ export const MAP = {
     from: r => ({ id:r.id, pageType:r.page_type, pageId:r.page_id, bookId:r.book_id, userId:r.user_id, stickerId:r.sticker_id, kind:r.kind, x:+r.x, y:+r.y,
       x2:r.x2==null?null:+r.x2, y2:r.y2==null?null:+r.y2, rotation:+r.rotation||0, scale:+r.scale||1, flip:!!r.flip, z:r.z||0, tapeStyle:r.tape_style, createdAt:ms(r.created_at), updatedAt:ms(r.updated_at) }),
   },
+  // a crew's month (0019_drops_and_sharing.sql): made and dropped by the server, read by the crew
+  monthly_spreads: {
+    from: r => ({ id:r.id, crewId:r.crew_id, month:r.month, status:r.status, stats:r.stats||{}, photoIds:r.photo_ids||[], droppedAt:r.dropped_at?ms(r.dropped_at):null }),
+  },
   // stickers someone has unlocked (milestones, critters, districts)
   user_stickers: {
     to: u => ({ user_id:u.userId, sticker_id:u.stickerId, unlocked_at:ts(u.unlockedAt) }),
@@ -157,7 +161,9 @@ export async function pull(){
   // stickers and tape on pages you can see, and your unlocks (missing until migration 0018 runs)
   const decoRows = await c.from('page_decorations').select('*').then(r=>r.data||[], ()=>[]);
   const unlockRows = await c.from('user_stickers').select('*').then(r=>r.data||[], ()=>[]);
-  return { decorations:by(decoRows,'page_decorations'), unlocks:by(unlockRows,'user_stickers'), catches:by(catchRows,'critter_catches'), ratings:by(ratingRows,'visit_ratings'), pages:by(pageRows,'book_pages'), inbox:by(inboxRows,'share_inbox'), users:by(profiles,'profiles'), crews:crewMap, venues:by(venues,'venues'), entries:ents,
+  // your crews' monthly spreads (missing until migration 0019 runs)
+  const spreadRows = await c.from('monthly_spreads').select('*').then(r=>r.data||[], ()=>[]);
+  return { spreads:by(spreadRows,'monthly_spreads'), decorations:by(decoRows,'page_decorations'), unlocks:by(unlockRows,'user_stickers'), catches:by(catchRows,'critter_catches'), ratings:by(ratingRows,'visit_ratings'), pages:by(pageRows,'book_pages'), inbox:by(inboxRows,'share_inbox'), users:by(profiles,'profiles'), crews:crewMap, venues:by(venues,'venues'), entries:ents,
            photos:by(photos,'photos'), books:by(books,'books'), events:by(events,'events') };
 }
 
@@ -177,6 +183,35 @@ export async function rpc(name, args){
   const { data, error } = await c.rpc(name, args||{});
   if (error) throw error;
   return data;
+}
+/* ---------- read-only page links (0019_drops_and_sharing.sql) ----------
+   The page's picture goes to the private shared-pages bucket as <your id>/<token>.png; the link row says what it's of
+   and until when. Anyone with a live link can read that one picture (the bucket's rule checks the link each time). */
+export async function shareLinksFor(targetType, targetId){
+  const c = await client(); if (!c) throw new Error('offline');
+  const { data, error } = await c.from('share_links').select('*').eq('target_type', targetType).eq('target_id', targetId).is('revoked_at', null).order('created_at', { ascending:false });
+  if (error) throw error;
+  return data || [];
+}
+export async function makeShareLink({ token, ownerId, targetType, targetId, blob }){
+  const c = await client(); if (!c) throw new Error('offline');
+  const path = `${ownerId}/${token}.png`;
+  const up = await c.storage.from('shared-pages').upload(path, blob, { contentType:'image/png', upsert:true });
+  if (up.error) throw up.error;
+  const { data, error } = await c.from('share_links').insert({ token, owner_user_id:ownerId, target_type:targetType, target_id:targetId, image_path:path }).select().single();
+  if (error){ await c.storage.from('shared-pages').remove([path]).catch(()=>{}); throw error; }
+  return data;
+}
+export async function renewShareLink(id){
+  const c = await client(); if (!c) throw new Error('offline');
+  const { data, error } = await c.from('share_links').update({ expires_at:new Date(Date.now() + 30*864e5).toISOString() }).eq('id', id).select().single();
+  if (error) throw error; return data;
+}
+export async function revokeShareLink(link){
+  const c = await client(); if (!c) throw new Error('offline');
+  const { error } = await c.from('share_links').update({ revoked_at:new Date().toISOString() }).eq('id', link.id);
+  if (error) throw error;
+  if (link.image_path) await c.storage.from('shared-pages').remove([link.image_path]).catch(()=>{});
 }
 // delete my account: photo files first (the storage API removes the stored files), then everything else
 export async function deleteMyFiles(userId){

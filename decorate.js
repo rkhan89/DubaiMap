@@ -10,38 +10,40 @@
 import * as S from './store.js';
 import { esc, plural, tilt, uid, fmtDay } from './data.js';
 import { icon, openScreen, openSheet, back, toast, seg, bindSeg } from './ui.js';
-import { pageHTML, PAGE_W, PAGE_H, hydrateMaps } from './paper.js';
+import { pageHTML, spreadPageHTML, PAGE_W, PAGE_H, hydrateMaps } from './paper.js';
 import { decoLayerHTML, decoHTML, clamp01, SCALE_MIN, SCALE_MAX } from './deco.js';
 import { trayItems, unlockedNow, stickerArt, TAPES, tapeRollHTML, myDistricts } from './stickers.js';
 import { moments, reduceMotion } from './feel.js';
 
 const UNDO_MAX = 20, LONG_MS = 480, MOVE_PX = 6;
 const TABS = [['starter','Starter'],['milestones','Milestones'],['critters','Critters'],['districts','Districts'],['layout','Layout']];
+const SPREAD_TABS = TABS.filter(t=>t[0]!=='layout');
 
-// o: { book, pg (the page, from pages.js), n (its page number), after() }
+// o: { book, pg (the page, from pages.js: a visit's page, or one side of a monthly spread), n (its page number), after() }
 export function decorate(o){
-  const b = o.book, pg = o.pg, e = pg.entry, me = S.me();
-  if (!e || !me) return;
-  const pageType = 'visit', pageId = e.id;
+  const b = o.book, pg = o.pg, e = pg.entry, sp = pg.spread, me = S.me();
+  if ((!e && !sp) || !me) return;
+  if (sp && sp.dropped){ toast('This month has dropped: its pages are kept as they are'); return; }
+  const pageType = sp ? 'spread' : 'visit', pageId = sp ? sp.id+':'+pg.side : e.id;
   const all = S.decorationsOn(pageType, pageId);
   let mine = all.filter(d=>d.userId===me.id).map(d=>({ ...d }));
   const others = all.filter(d=>d.userId!==me.id);
   const cfg = { layout:'scrapbook', ...(pg.cfg||{}) }; let order = pg.photos.map(p=>p.id), cfgDirty = false;
   let tab = 'starter', tape = null, mineOnly = false, undo = [], redo = [], saveT = null, unlocked = unlockedNow();
-  const shared = !e.private && (b.kind === 'crew' || (e.crewIds||[]).length > 0);
+  const shared = sp ? true : !e.private && (b.kind === 'crew' || (e.crewIds||[]).length > 0);
   let saveNow = ()=>{};
 
   openScreen(el=>{
     el.innerHTML = `<header class="dc-top">
         <button class="icon-btn" id="dcUndo" aria-label="Undo">${icon('undo')}</button>
         <button class="icon-btn" id="dcRedo" aria-label="Redo">${icon('redo')}</button>
-        <div class="dc-title"><b>Decorating</b><span class="hand">${esc(S.venue(e.venueId)?.name || '')} • p. ${o.n||''}</span></div>
+        <div class="dc-title"><b>Decorating</b><span class="hand">${sp ? 'Your crew’s month' : esc(S.venue(e.venueId)?.name || '')} • p. ${o.n||''}</span></div>
         <button class="btn btn-ghost btn-sm" id="dcReset">Reset</button>
         <button class="btn btn-gold btn-sm" id="dcDone">${icon('check')}Done</button>
       </header>
       <div class="dc-stage" id="dcStage"><div class="dc-page" id="dcPage"><div class="kb-scale" id="dcScale"></div></div></div>
       <section class="dc-tray" aria-label="Stickers">
-        <div class="dc-tabs" role="tablist">${TABS.map(([v,l])=>`<button role="tab" data-tab="${v}" aria-selected="${v===tab}" class="${v===tab?'on':''}">${l}</button>`).join('')}</div>
+        <div class="dc-tabs" role="tablist">${(sp ? SPREAD_TABS : TABS).map(([v,l])=>`<button role="tab" data-tab="${v}" aria-selected="${v===tab}" class="${v===tab?'on':''}">${l}</button>`).join('')}</div>
         <div class="dc-tray-body" id="dcBody"></div>
       </section>`;
     const stage = el.querySelector('#dcStage'), pageBox = el.querySelector('#dcPage'), scaleBox = el.querySelector('#dcScale'), body = el.querySelector('#dcBody');
@@ -50,7 +52,7 @@ export function decorate(o){
     const fit = ()=>{ const w = stage.clientWidth - 24, h = stage.clientHeight - 16; scale = Math.max(0.3, Math.min(w/PAGE_W, h/PAGE_H)); pageBox.style.setProperty('--kb-s', scale); pageBox.style.width = Math.floor(PAGE_W*scale)+'px'; pageBox.style.height = Math.floor(PAGE_H*scale)+'px'; };
     const paintPage = ()=>{
       const p = { ...pg, cfg:{ ...cfg }, photos:order.map(id=>pg.photos.find(x=>x.id===id)).filter(Boolean) };
-      scaleBox.innerHTML = pageHTML(p, { book:b, n:o.n||1, paper:b.paper||'plain' });
+      scaleBox.innerHTML = sp ? spreadPageHTML(sp, pg.side, { paper:b.paper||'plain' }) : pageHTML(p, { book:b, n:o.n||1, paper:b.paper||'plain' });
       layer = scaleBox.querySelector('.kb-deco'); layer.removeAttribute('aria-hidden'); paintLayer();
       hydrateMaps(scaleBox);
     };
@@ -61,7 +63,7 @@ export function decorate(o){
     const snap = ()=>JSON.stringify(mine);
     const change = (fn)=>{ undo.push(snap()); if (undo.length > UNDO_MAX) undo.shift(); redo = []; fn(); paintLayer(); autosave(); };
     const autosave = ()=>{ clearTimeout(saveT); saveT = setTimeout(save, 1200); };
-    const save = ()=>{ clearTimeout(saveT); S.saveMyDecorations(pageType, pageId, b.id, mine); if (cfgDirty){ S.savePage(b.id, e.id, { layout:cfg.layout, order, stickers:[], note:(cfg.note||'').trim() }); cfgDirty = false; } };
+    const save = ()=>{ clearTimeout(saveT); S.saveMyDecorations(pageType, pageId, b.id, mine); if (cfgDirty && e){ S.savePage(b.id, e.id, { layout:cfg.layout, order, stickers:[], note:(cfg.note||'').trim() }); cfgDirty = false; } };
     saveNow = save;
     el.querySelector('#dcUndo').onclick = ()=>{ if (!undo.length) return; redo.push(snap()); mine = JSON.parse(undo.pop()); paintLayer(); autosave(); };
     el.querySelector('#dcRedo').onclick = ()=>{ if (!redo.length) return; undo.push(snap()); mine = JSON.parse(redo.pop()); paintLayer(); autosave(); };

@@ -34,7 +34,7 @@ http.createServer(async (req, res)=>{
       const out = await handler(request);
       res.writeHead(out.status, { ...SEC, ...Object.fromEntries(out.headers) }); return res.end(Buffer.from(await out.arrayBuffer()));
     }
-    let p = rewrites[url.pathname] || decodeURIComponent(url.pathname);
+    let p = rewrites[url.pathname] || (url.pathname.startsWith('/p/') ? '/page.html' : decodeURIComponent(url.pathname));
     if (p.endsWith('/')) p += 'index.html';
     const file = path.join(ROOT, p);
     if (!file.startsWith(ROOT) || !fs.existsSync(file) || fs.statSync(file).isDirectory()){ res.writeHead(404); return res.end('Not found'); }

@@ -673,3 +673,33 @@ above a sticker tray (about 40% of the screen). The automatic layout never moves
 - Everyone in a crew can decorate a crew-shared page; others' stickers are locked (a long-press says who placed them)
   and "Mine only" hides them. The first time you decorate a page your crew sees, it says they'll see your stickers and
   that they're included in anything shared from the page.
+
+## Scrapbook v2: crew layers, the monthly drop, sharing (phase 3)
+
+**Crew layers.** Everyone in a crew decorates any crew-shared page; each person moves only their own stickers; others'
+are locked (long-press says who), "Mine only" hides them. Leaving a crew removes your stickers from its pages and
+spreads (a trigger on `crew_members`).
+
+**The monthly spread** (`monthly_spreads`, migration 0019; pages.js `spreadData`). One per crew per month, id
+`<crew id>|2026-10`, made when the crew's first shared visit of the month is logged, built only from crew-shared visits
+(a Just me visit or photo can never reach it). In the crew book (by date) its two pages follow the month's last visit.
+Left: the month stamped big, the map with every place stamped that month (numbered pins), places / new to the crew /
+districts. Right: up to six polaroids, each member's top-rated photo first, then photos from the places with the most
+ratings. Members decorate it while the month is open (page ids `<spread id>:L` / `:R`).
+**The drop**: at 00:00 Asia/Dubai on the 1st (20:00 UTC on the last day) the month locks. `drop_due_spreads()` keeps its
+numbers and photos; pg_cron runs it daily at 20:00 UTC (the app and the server's rules treat a past month as dropped
+even if the job hasn't run). The bell then says "Your October page dropped"; opening it turns onto the spread (paper
+flip, then the stamp; medium then heavy) and the share card slides up. This replaces the old recap card: "Your month"
+on the profile opens the newest spread.
+
+**Sharing.** The share icon on a page, spread or book opens one sheet (sharesheet.js). Everything is made from the
+page's own markup (export.js, modern-screenshot 4.6.7), stickers included, people by first name only.
+- Story card: 1080 x 1920 PNG, the page (or both pages of a spread) on the book's paper, the wordmark, "We were here".
+- Postcard: 1200 x 1500 PNG, one photo in a polaroid frame with the district stamp, the date and the place.
+- Page link (`share_links`): a read-only page at /p/<token> for anyone with the link, no sign-in: the page's picture
+  (uploaded by the phone to the private `shared-pages` bucket) plus the place, date, first names and pixel avatars
+  (`shared_page()`). 30 days unless renewed; Turn off link revokes it and deletes the picture. A Just me page can only
+  be shared by its owner; a crew page by someone in a crew it's shared with; both are re-checked every time the link
+  opens, so un-sharing the visit or leaving the crew turns the link off (and the picture with it).
+- The page-flip video is phase 4. Icons (a web font) are left out of pictures.
+- The CSP's connect-src allows Google Fonts so pictures keep the app's fonts.

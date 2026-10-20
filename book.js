@@ -6,6 +6,7 @@ import { postageHTML, rateScope, placeRatingFor, venueOfPage, peopleOf, coverHTM
 import { mountBook, pagerHTML, preloadBook } from './bookview.js';
 import { moments } from './feel.js';
 import { decorate } from './decorate.js';
+import { shareSheet } from './sharesheet.js';
 import { decoLayerHTML } from './deco.js';
 import { APP } from './config.js';
 import * as S from './store.js';
@@ -330,7 +331,7 @@ function openFeed(bookId, opts){
       bindSeg(el,'bview',v=>{ if (v==='book') switchView(b.id, 'book', { mode, filter }); });
       el.querySelector('#bkFilter').onclick=()=>bookFilters(b, filter, f=>{ filter=f; shown=BATCH; paint(); });
       el.querySelector('#bkCover').onclick=()=>coverScreen(b.id);
-      el.querySelector('#bkShare').onclick=()=>share({title:b.title, text:`${b.title} — ${plural(pgs.length,'page')} on ${APP.name}`, url:location.origin});
+      el.querySelector('#bkShare').onclick=()=>shareSheet({ book:b, html:coverHTML(b, pgs.length) });
       const add=el.querySelector('#bkAdd'); if (add) add.onclick=()=>go.log(b.kind==='crew'?{ who:[b.crewId] }:{});
       io && io.disconnect();
       const s=el.querySelector('#bkMore');
@@ -365,9 +366,16 @@ function openFeed(bookId, opts){
    ========================================================= */
 // the order of the pages: by date, oldest first; by place, each place's visits together (the place you've been
 // most recently last), in date order
-function bookOrder(pgs, mode){
+// (a crew book by date: each month's spread, left and right page, after the month's last visit)
+function bookOrder(pgs, mode, spreads){
   const asc = pgs.slice().sort((a,c)=>(a.date||'').localeCompare(c.date||'') || (a.createdAt||0)-(c.createdAt||0));
-  if (mode !== 'place') return asc;
+  if (mode !== 'place'){
+    if (!spreads || !spreads.length) return asc;
+    const out = [], byMonth = new Map(spreads.map(sp=>[sp.month, sp]));
+    asc.forEach((p, i)=>{ out.push(p); const m = (p.date||'').slice(0,7), next = asc[i+1];
+      if (byMonth.has(m) && (!next || (next.date||'').slice(0,7) !== m)){ const sp = byMonth.get(m); ['L','R'].forEach(side=>out.push({ id:'spread|'+sp.id+'|'+side, spread:sp, side, date:p.date, photos:[] })); } });
+    return out;
+  }
   const by = new Map(); asc.forEach(p=>{ const k = p.entry ? p.entry.venueId : p.venueId; if (!by.has(k)) by.set(k, []); by.get(k).push(p); });
   return [...by.values()].sort((a,c)=>(a[a.length-1].date||'').localeCompare(c[c.length-1].date||'')).flat();
 }
@@ -379,7 +387,7 @@ function openPages(bookId, opts){
     el.classList.add('book-screen');
     const paint = (startAt)=>{
       view && view.destroy();
-      pgs = bookOrder(pagesOf(b, filter), mode);
+      pgs = bookOrder(pagesOf(b, filter), mode, b.kind==='crew' && !filterCount(filter) ? S.spreadsOf(S.myCrews().find(c=>c.id===b.crewId)) : null);
       const nf = filterCount(filter);
       el.innerHTML = bookHead(b, 'book', mode, nf) + `<div class="kb-stage" id="kbStage"></div>
         ${pgs.length ? pagerHTML() : ''}`;
@@ -387,7 +395,7 @@ function openPages(bookId, opts){
       bindSeg(el, 'bview', v=>{ if (v==='list') switchView(b.id, 'list', { mode, filter }); });
       el.querySelector('#bkFilter').onclick = ()=>bookFilters(b, filter, f=>{ filter = f; paint(); });
       el.querySelector('#bkCover').onclick = ()=>coverScreen(b.id);
-      el.querySelector('#bkShare').onclick = ()=>share({ title:b.title, text:`${b.title} — ${plural(pgs.length,'page')} on ${APP.name}`, url:location.origin });
+      el.querySelector('#bkShare').onclick = ()=>{ const pg = view && pgs[view.index]; shareSheet(pg && pg.spread ? { book:b, spread:pg.spread, side:pg.side } : pg && pg.entry ? { book:b, pg, n:view.index+1 } : { book:b, html:coverHTML(b, pgs.length) }); };
       const stage = el.querySelector('#kbStage'), wand = el.querySelector('#kbWand') || document.createElement('button');
       const count = el.querySelector('.kb-count'), slide = el.querySelector('[data-kb="slide"]');
       if (slide){ slide.max = pgs.length; }
@@ -395,7 +403,7 @@ function openPages(bookId, opts){
         if (count) count.textContent = i < 0 ? `Cover • ${plural(pgs.length,'page')}` : i >= pgs.length ? 'The end' : `Page ${i+1} of ${pgs.length}`;
         if (slide) slide.value = Math.max(0, Math.min(pgs.length, i+1));
         const pg = pgs[i];
-        wand.hidden = !(pg && pg.entry);
+        wand.hidden = !(pg && (pg.entry || (pg.spread && !pg.spread.dropped)));
         el.querySelector('[data-kb="prev"]') && (el.querySelector('[data-kb="prev"]').disabled = i < 0);
         el.querySelector('[data-kb="next"]') && (el.querySelector('[data-kb="next"]').disabled = i >= pgs.length);
       };
@@ -405,13 +413,13 @@ function openPages(bookId, opts){
       el.querySelector('[data-kb="next"]').onclick = ()=>view.next();
       el.querySelector('[data-kb="last"]').onclick = ()=>view.turnTo(pgs.length-1);
       slide.oninput = ()=>view.turnTo(+slide.value - 1, true);
-      wand.onclick = ()=>{ const pg = pgs[view.index]; if (pg && pg.entry) decorate({ book:b, pg, n:view.index+1, after:()=>paint(view.index) }); };
+      wand.onclick = ()=>{ const pg = pgs[view.index]; if (pg && (pg.entry || pg.spread)) decorate({ book:b, pg, n:view.index+1, after:()=>paint(view.index) }); };
     };
     // taps inside a page
     const act = (e)=>{
       const t = e.target;
       const heart = t.closest('[data-heart]'); if (heart){ e.stopPropagation(); const on = S.toggleBookmark(heart.dataset.heart); heart.innerHTML = icon(on?'bookmark':'bookmark_border','',on); toast(on?'Bookmarked':'Bookmark removed'); return; }
-      const ph = t.closest('[data-photo]'); if (ph){ const ids = photoIdsOf(pgs, ph.dataset.photo); go.viewer(ids, ids.indexOf(ph.dataset.photo)); return; }
+      const ph = t.closest('[data-photo]'); if (ph){ const spEl = ph.closest('[data-spread]'), sp = spEl && pgs.find(p=>p.spread && p.spread.id===spEl.dataset.spread); const ids = sp ? sp.spread.photos.map(p=>p.id) : photoIdsOf(pgs, ph.dataset.photo); go.viewer(ids, ids.indexOf(ph.dataset.photo)); return; }
       const rt = t.closest('[data-rate]'); if (rt){ rateSheet(rt.dataset.rate, ()=>paint(view && view.index)); return; }
       const rs = t.closest('[data-raters]'); if (rs){ const en = S.entry(rs.dataset.raters); if (en) ratersSheet(en, rateScope(b)); return; }
       const ap = t.closest('[data-addplace]'); if (ap){ go.log({ venueId:ap.dataset.addplace, ...(b.kind==='crew'?{ who:[b.crewId] }:{}) }); return; }
@@ -422,10 +430,32 @@ function openPages(bookId, opts){
     addEventListener('keydown', key);
     // repaint when something changes (a new page, a crewmate's edit), staying on the same page
     const off = S.onChange(w=>{ if (!el.isConnected){ off(); view && view.destroy(); return; } if (['entries','photos','pages','sync','books','ratings'].includes(w)) paint(view ? view.index : undefined); });
-    const at = opts.pageId ? (()=>{ const i = bookOrder(pagesOf(b, filter), mode).findIndex(p=>p.id===opts.pageId || (p.entry && opts.pageId.endsWith('|'+p.entry.id))); return i >= 0 ? i : undefined; })() : undefined;
-    requestAnimationFrame(()=>paint(at));
+    const at = opts.pageId ? (()=>{ const i = bookOrder(pagesOf(b, filter), mode, b.kind==='crew' ? S.spreadsOf(S.myCrews().find(c=>c.id===b.crewId)) : null).findIndex(p=>p.id===opts.pageId || (p.entry && opts.pageId.endsWith('|'+p.entry.id))); return i >= 0 ? i : undefined; })() : undefined;
+    // the monthly drop: open on the page before the spread, turn onto it, then the share card slides up
+    requestAnimationFrame(()=>{
+      if (!opts.dropSpread) return paint(at);
+      const order = bookOrder(pagesOf(b, filter), mode, S.spreadsOf(S.myCrews().find(c=>c.id===b.crewId)));
+      const k = order.findIndex(p=>p.spread && p.spread.id===opts.dropSpread && p.side==='L');
+      paint(k > 0 ? k - 1 : undefined);
+      if (k < 0) return;
+      setTimeout(()=>{ if (!el.isConnected || !view) return; view.turnTo(k); moments.drop();
+        setTimeout(()=>{ if (el.isConnected) shareSheet({ book:b, spread:pgs[k].spread, side:'L' }); }, 1500); }, 1400);
+    });
   }, { replace:!!opts.replace, instant:!!opts.replace, onClose:()=>{ view && view.destroy(); } });
 }
+// open a crew's dropped month from the bell: the spread, then its share card
+go.openDrop = (spreadId)=>{
+  const crewId = String(spreadId).split('|')[0];
+  const book = S.shelf()?.crews.find(x=>x.crewId===crewId); if (!book) return;
+  openPages(book.id, { dropSpread:spreadId });
+};
+// the monthly recap is the crew's spread now: the newest one of the crew you're looking at (no crew: Everything)
+go.recap = ()=>{
+  const crew = S.myCrew(), book = crew && S.shelf()?.crews.find(x=>x.crewId===crew.id);
+  const sp = crew && S.spreadsOf(crew).slice(-1)[0];
+  if (book && sp) return openPages(book.id, { pageId:'spread|'+sp.id+'|L' });
+  const sh = S.shelf(); if (sh) openBook(sh.everything.id);
+};
 function emptyBookHTML(b, nf){
   return `<div class="card-soft center kb-empty" style="padding:var(--sp-5) var(--sp-3)"><div style="width:110px;margin:0 auto">${postageHTML(b.kind==='crew'?'karak':(b.cat||'coffee'), todayISO(), 110)}</div>
     <h3 class="h-lg mt24">${nf?'No pages match these filters':b.kind==='tagged'?'Nobody has tagged you yet':'Every visit becomes a page'}</h3>

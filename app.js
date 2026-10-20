@@ -16,7 +16,6 @@ import './book.js';
 import { primeBadges } from './badges.js';
 import './profile.js';
 import './social.js';
-import './recap.js';
 import './share.js';
 import { prefs, setPref } from './prefs.js';
 import { takeSharedPlace, openSharedPlace, eventSheet } from './events.js';
@@ -133,6 +132,7 @@ $('#mapMode').addEventListener('click', e=>{
 /* ---------- bell: recent crew activity (nothing about it lives on the map) ---------- */
 const SEEN_KEY='bites-activity-seen';
 const seenAt = ()=>{ try{ return +localStorage.getItem(SEEN_KEY)||0; }catch(_){ return 0; } };
+const fmtMonthName = month => new Date(month+'-01T00:00:00').toLocaleDateString('en-GB', { month:'long' });
 function crewActivity(){
   const me=S.me(); if (!me) return [];
   const logs = M.activity(40).filter(a=>a.u.id!==me.id).map(a=>({...a, at:a.e.createdAt}));
@@ -142,7 +142,9 @@ function crewActivity(){
   const tagged = new Set(tags.map(a=>a.e.id));
   // a memory from this day in an earlier month or year (yours, or a visit you were tagged on)
   const m = onThisDay(true), otd = m ? [{ otd:m, u:me, v:m.venue, at:new Date(new Date().toDateString()).getTime() }] : [];
-  return [...otd, ...[...plans, ...tags, ...logs.filter(a=>!tagged.has(a.e.id))].sort((a,b)=>b.at-a.at).slice(0,20)];
+  // a crew's month dropped (the last 30 days): 'Your October page dropped'
+  const drops = S.myCrews().flatMap(c=>S.spreadsOf(c).filter(sp=>sp.dropped && sp.visits && Date.now() - sp.droppedAt < 30*864e5).map(sp=>({ drop:sp, crew:c, u:me, v:{}, at:sp.droppedAt })));
+  return [...otd, ...drops.sort((x,y)=>y.at-x.at), ...[...plans, ...tags, ...logs.filter(a=>!tagged.has(a.e.id))].sort((a,b)=>b.at-a.at).slice(0,20)];
 }
 function paintBell(){
   const acts=crewActivity(), fresh=acts.filter(a=>a.at>seenAt()).length;
@@ -157,6 +159,8 @@ function openActivity(){
     body.innerHTML = `<div class="sheet-head"><div class="grow"><h2 class="h-md">Crew activity</h2><span class="hand">${crew?esc(crew.name):'Your crew'}, newest first</span></div></div>
       ${acts.length ? `<div class="act-list">${acts.map(a=>{
         const z=MAP.zoneById(a.v.zone);
+        if (a.drop){ return `<button class="act-row drop${a.at>since?' new':''}" data-drop="${esc(a.drop.id)}"><span class="act-ico">${icon('auto_stories')}</span>
+          <span class="grow"><span class="act-text"><b>Your ${esc(fmtMonthName(a.drop.month))} page dropped</b></span><span class="act-sub">${esc(a.crew.name)} • ${a.drop.places} places • tap to open the spread</span></span>${icon('chevron_right')}</button>`; }
         if (a.otd){ return `<button class="act-row otd${a.at>since?' new':''}" data-otd="1"><span class="act-ico">${icon('history')}</span>
           <span class="grow"><span class="act-text"><b>${esc(a.otd.when)}</b> ${esc(a.otd.text)}</span><span class="act-sub">On this day • tap to open the page</span></span>${icon('auto_stories')}</button>`; }
         if (a.ev){ const d=new Date(a.ev.when); return `<button class="act-row${a.at>since?' new':''}" data-event="${a.ev.id}">${avatarHTML(a.u,40)}
@@ -169,6 +173,7 @@ function openActivity(){
         : `<div class="empty">${icon('notifications_none')}<p class="muted">${crew?'When your crew logs or saves a place, it shows up here.':'Start a crew and their new places will show up here.'}</p></div>`}`;
     body.querySelectorAll('[data-rate-tag]').forEach(r=>r.addEventListener('click', ev=>{ ev.stopImmediatePropagation(); back(); setTimeout(()=>go.rate(r.dataset.rateTag, ()=>paintBell()), 60); }));
     body.querySelectorAll('[data-venue]').forEach(r=>r.addEventListener('click', ()=>{ back(); setTimeout(()=>go.showOnMap(r.dataset.venue), 60); }));
+    body.querySelectorAll('[data-drop]').forEach(r=>r.addEventListener('click', ()=>{ back(); setTimeout(()=>go.openDrop(r.dataset.drop), 120); }));
     body.querySelectorAll('[data-otd]').forEach(r=>r.addEventListener('click', ()=>{ const m=acts.find(a=>a.otd)?.otd; back(); if (m) setTimeout(()=>openMemory(m), 60); }));
     body.querySelectorAll('[data-event]').forEach(r=>r.addEventListener('click', ()=>{ back(); setTimeout(()=>eventSheet(r.dataset.event), 60); }));
   });

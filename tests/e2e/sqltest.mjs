@@ -450,5 +450,58 @@ try{ await as(K2, `insert into page_decorations(id,page_type,page_id,user_id,kin
 try{ await as(K2, `insert into user_stickers(user_id,sticker_id) values ('${K2}','district:satwa')`); ok('an unlock is recorded'); }catch(e){ bad('unlock: ' + e.message); }
 (await count(K1, `select * from user_stickers`))===0 ? ok("…and nobody else reads your unlocks") : bad('unlocks readable');
 await db.exec('reset role');
+// ---- the monthly drop and page links (0019): Just me never reaches a spread, a link or a picture ----
+await db.exec('reset role');
+const sql19 = fs.readFileSync(new URL('../../supabase/migrations/0019_drops_and_sharing.sql', import.meta.url),'utf8');
+try{ await db.exec(sql19); await db.exec(sql19); ok('drops and sharing migration runs (twice)'); } catch(e){ bad('0019: ' + e.message); }
+await db.exec(`grant all on all tables in schema public to authenticated; grant usage on schema public, storage to anon; grant select on all tables in schema public to anon; grant select on storage.objects to anon; grant all on storage.objects to authenticated;`);
+const thisMonth = (await db.query(`select to_char(now() at time zone 'Asia/Dubai', 'YYYY-MM') m`)).rows[0].m;
+await as(K1, `insert into entries(id,venue_id,kind,private,crew_ids,date,rating) values
+  ('sp1','zv1','visit',false,array['${kx.id}']::uuid[],'2026-08-10',4),
+  ('sp2','zv1','visit',true,'{}','2026-08-11',5),
+  ('sp3','zv1','visit',false,array['${kx.id}']::uuid[],'${thisMonth}-01',3)`);
+await as(K1, `insert into photos(id,venue_id,entry_id,path,private,crew_ids) values ('spp1','zv1','sp1','x/spp1.jpg',false,array['${kx.id}']::uuid[]),('spp2','zv1','sp2','x/spp2.jpg',true,'{}')`);
+const aug = kx.id + '|2026-08', now1 = kx.id + '|' + thisMonth;
+(await count(K2, `select * from monthly_spreads where id in ('${aug}','${now1}')`))===2 ? ok("the crew's first shared visit of a month makes its spread") : bad('spreads not made');
+(await count(K3, `select * from monthly_spreads`))===0 ? ok('…and nobody outside the crew sees the crew’s spreads') : bad('outsider sees spreads');
+await db.exec('reset role');
+await db.query(`select public.drop_due_spreads()`);
+const sp = (await db.query(`select status, stats, photo_ids from monthly_spreads where id=$1`, [aug])).rows[0];
+sp.status==='dropped' && sp.stats.visits===1 && JSON.stringify(sp.photo_ids)==='["spp1"]' ? ok('a past month drops with only crew-shared visits and photos (the Just me visit and photo are left out)') : bad('drop: ' + JSON.stringify(sp));
+(await db.query(`select status from monthly_spreads where id=$1`, [now1])).rows[0].status==='open' ? ok('this month stays open') : bad('this month dropped early');
+const sdeco = (id, u, page)=>`insert into page_decorations(id,page_type,page_id,user_id,sticker_id,kind,x,y) values ('${id}','spread','${page}','${u}','starter:karak','sticker',0.5,0.5)`;
+try{ await as(K2, sdeco('sdk2-0000001', K2, now1 + ':R')); ok('crew members decorate the open spread'); }catch(e){ bad('open spread refused: ' + e.message); }
+await expectErr('decorating a dropped spread', K2, sdeco('sdk2-0000002', K2, aug + ':L'));
+await expectErr("decorating another crew's spread", K3, sdeco('sdk3-0000001', K3, now1 + ':L'));
+// page links
+const link = (u, tok, type, id, path)=>`insert into share_links(token,owner_user_id,target_type,target_id,image_path) values ('${tok}','${u}','${type}','${id}',${path ? "'" + path + "'" : 'null'})`;
+const T1 = 'tok1aaaaaaaaaaaaaaaaaaaaaaaa', T2 = 'tok2bbbbbbbbbbbbbbbbbbbbbbbb', T3 = 'tok3cccccccccccccccccccccccc';
+try{ await as(K1, link(K1, T1, 'page', 'sp2', `${K1}/${T1}.png`)); ok('you can share your own Just me page'); }catch(e){ bad('own private page: ' + e.message); }
+await expectErr("sharing a crewmate's Just me page", K2, link(K2, 'tokxxxxxxxxxxxxxxxxxxxxxxxxx', 'page', 'sp2', null));
+try{ await as(K2, link(K2, T2, 'page', 'sp1', `${K2}/${T2}.png`)); ok('a crewmate can share a crew page'); }catch(e){ bad('crew page link: ' + e.message); }
+await expectErr('sharing a page from outside the crew', K3, link(K3, 'tokyyyyyyyyyyyyyyyyyyyyyyyy', 'page', 'sp1', null));
+await expectErr('a link longer than 30 days', K1, `insert into share_links(token,owner_user_id,target_type,target_id,expires_at) values ('tokzzzzzzzzzzzzzzzzzzzzzzzz','${K1}','page','sp1',now() + interval '90 days')`);
+try{ await as(K2, link(K2, T3, 'spread', aug, null)); ok('a crew member can share the spread'); }catch(e){ bad('spread link: ' + e.message); }
+await expectErr("sharing another crew's spread", K3, link(K3, 'tokwwwwwwwwwwwwwwwwwwwwwwww', 'spread', aug, null));
+const page2 = (await asAnon(`select public.shared_page('${T2}') as p`)).rows[0].p;
+page2 && page2.title==='Review Cafe' && page2.people.every(p=>Object.keys(p).sort().join()==='avatar,name') ? ok('someone with the link sees the place, first names and avatars only, without signing in') : bad('shared page: ' + JSON.stringify(page2));
+await db.exec(`reset role; insert into storage.objects(bucket_id,name) values ('shared-pages','${K2}/${T2}.png'),('shared-pages','${K1}/${T1}.png')`);
+(await asAnon(`select name from storage.objects where bucket_id='shared-pages' and name='${K2}/${T2}.png'`)).rows.length===1 ? ok("…the link's picture can be read") : bad('picture not readable with a live link');
+await as(K1, `update entries set private=true, crew_ids='{}' where id='sp1'`);
+(await asAnon(`select public.shared_page('${T2}') as p`)).rows[0].p===null ? ok('the visit goes Just me: the crewmate’s link stops working at once') : bad('link to a now-private visit still works');
+(await asAnon(`select name from storage.objects where name='${K2}/${T2}.png'`)).rows.length===0 ? ok('…and its picture can no longer be read') : bad('picture readable after the visit went private');
+await as(K1, `update share_links set revoked_at=now() where token='${T1}'`);
+(await asAnon(`select public.shared_page('${T1}') as p`)).rows[0].p===null ? ok('a turned-off link shows nothing') : bad('revoked link works');
+(await asAnon(`select name from storage.objects where name='${K1}/${T1}.png'`)).rows.length===0 ? ok('…nor its picture') : bad('revoked picture readable');
+await db.exec(`reset role; update share_links set expires_at=now() - interval '1 minute', revoked_at=null where token='${T1}'`);
+(await asAnon(`select public.shared_page('${T1}') as p`)).rows[0].p===null ? ok('an expired link shows nothing') : bad('expired link works');
+(await asAnon(`select public.shared_page('${T3}') as p`)).rows[0].p?.type==='spread' ? ok('a spread link works for the crew’s month') : bad('spread link');
+(await asAnon(`select * from share_links`)).rows.length===0 ? ok('nobody reads the links table without signing in') : bad('share_links readable by anon');
+// leaving the crew takes your stickers off its pages
+await as(K1, `update entries set private=false, crew_ids=array['${kx.id}']::uuid[] where id='sp3'`);
+await as(K2, `insert into page_decorations(id,page_type,page_id,user_id,sticker_id,kind,x,y) values ('lvk2-0000001','visit','sp3','${K2}','starter:coffee','sticker',0.3,0.3)`);
+await db.exec(`reset role; delete from crew_members where crew_id='${kx.id}' and user_id='${K2}'`);
+(await db.query(`select count(*)::int n from page_decorations where user_id='${K2}' and (page_id='sp3' or page_type='spread')`)).rows[0].n===0 ? ok('leaving a crew removes your stickers from its pages and spreads') : bad('stickers stayed after leaving');
+await db.exec('reset role');
 console.log(process.exitCode ? '\nSOME CHECKS FAILED' : '\nall checks passed');
 

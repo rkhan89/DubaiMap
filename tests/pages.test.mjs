@@ -3,7 +3,7 @@
 // and crew challenges. (The server rules are checked in tests/e2e/sqltest.mjs.)
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { belongs, bookPages, legacyPageRows, onThisDay, withText, crewChallenges, recapData, pageId, kindCounts, bookStats, yearAgo } from '../pages.js';
+import { belongs, bookPages, legacyPageRows, onThisDay, withText, crewChallenges, recapData, pageId, kindCounts, bookStats, yearAgo, spreadData, monthEnd, spreadDropped } from '../pages.js';
 
 const ME='me', KABIR='kabir', MAYA='maya', OMAR='omar';
 const crewA = { id:'A', memberIds:[ME, KABIR, MAYA] }, crewB = { id:'B', memberIds:[ME, OMAR] };
@@ -154,4 +154,20 @@ test('recap for a crew: its shared visits; for you: yours and tagged', ()=>{
   const crew = recapData({ crew:crewA }, '2026-10', world(es)), me = recapData({}, '2026-10', world(es));
   assert.equal(crew.visits, 1);
   assert.equal(me.visits, 2); assert.deepEqual(me.people, [OMAR]);
+});
+
+test('a monthly spread: only the crew’s shared visits that month; a Just me visit or photo never reaches it', ()=>{
+  const es = [V('e1', { crewIds:['A'], date:'2026-10-03', rating:4 }), V('e2', { private:true, date:'2026-10-04', rating:5 }), V('e3', { userId:MAYA, crewIds:['A'], venueId:'v2', date:'2026-10-09', rating:5 }), V('e4', { crewIds:['A'], date:'2026-09-30' })];
+  const photos = [{ id:'p1', userId:ME, entryId:'e1', createdAt:1 }, { id:'p2', userId:ME, entryId:'e2', createdAt:2, private:true }, { id:'p3', userId:MAYA, entryId:'e3', createdAt:3 }];
+  const s = spreadData(crewA, '2026-10', world(es, { photos }));
+  assert.equal(s.id, 'A|2026-10');
+  assert.deepEqual(s.entries.map(e=>e.id), ['e1','e3']);
+  assert.deepEqual([s.places, s.newPlaces, s.districts], [2, 1, 2]);
+  assert.deepEqual(s.photos.map(p=>p.id), ['p3','p1']);
+});
+test('a spread drops at 00:00 in Dubai on the 1st (20:00 UTC on the last day)', ()=>{
+  assert.equal(monthEnd('2026-10'), Date.UTC(2026, 9, 31, 20));
+  assert.equal(spreadDropped('2026-10', Date.UTC(2026, 9, 31, 19, 59)), false);
+  assert.equal(spreadDropped('2026-10', Date.UTC(2026, 9, 31, 20, 0)), true);
+  assert.equal(monthEnd('2026-12'), Date.UTC(2026, 11, 31, 20));
 });

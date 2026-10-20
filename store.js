@@ -22,6 +22,7 @@ import { APP } from './config.js';
 import { uid, todayISO } from './data.js';
 import * as C from './cloud.js';
 import { legacyPageRows, pageId } from './pages.js';
+import * as P from './pages.js';
 
 export const cloud = C.enabled();          // accounts on the server (false = this device only)
 const isLocal = id => typeof id==='string' && id.startsWith('demo-');   // the sample crew never syncs
@@ -128,6 +129,7 @@ export async function pullNow(){
   db.pages   = { ...Object.fromEntries(Object.entries(db.pages||{}).filter(([k])=>isLocal(k.split('|')[0]) || /^(crewbook-demo|loose)/.test(k))), ...(fresh.pages||{}) };
   db.decorations = { ...Object.fromEntries(Object.entries(db.decorations||{}).filter(([,d])=>isLocal(d.pageId) || isLocal(d.userId))), ...(fresh.decorations||{}) }; decoIdx = null;
   db.unlocks = { ...(db.unlocks||{}), ...(fresh.unlocks||{}) };
+  db.spreads = { ...(fresh.spreads||{}) };
   // no profile row yet (an account made before the database was set up): make it from this phone's copy
   if (!db.users[db.meId] && meRec){ db.users[db.meId] = meRec; C.queue({ k:'put', t:'profiles', id:meRec.id, row:C.MAP.profiles.to(meRec) }); }
   if (db.users[db.meId] && meRec) db.users[db.meId].email = meRec.email;
@@ -722,6 +724,23 @@ export function saveMyDecorations(pageType, pageId, bookId, list){
     db.decorations[d.id] = rec; if (!local) push('page_decorations', rec);
   });
   decoIdx = null; save('decorations');
+}
+/* ---------- a crew's monthly spreads ----------
+   Worked out from the crew's shared visits (pages.js); once the server has dropped a month, its kept numbers and
+   photos are used. A month counts as dropped from 00:00 in Dubai on the 1st even before the server's job has run. */
+export function spreadsOf(crew){
+  if (!crew) return [];
+  const w = pagesWorld();
+  return P.crewMonths(crew, w).map(month=>{
+    const live = P.spreadData(crew, month, w), row = (db.spreads||{})[live.id];
+    const dropped = (row && row.status==='dropped') || P.spreadDropped(month);
+    if (row && row.status==='dropped' && row.photoIds && row.photoIds.length){
+      const kept = row.photoIds.map(id=>db.photos[id]).filter(Boolean);
+      if (kept.length) live.photos = kept;
+    }
+    if (row && row.status==='dropped' && row.stats && row.stats.places != null) Object.assign(live, { places:row.stats.places, newPlaces:row.stats.newPlaces, districts:row.stats.districts });
+    return { ...live, dropped, droppedAt: row && row.droppedAt || (dropped ? P.monthEnd(month) : null) };
+  });
 }
 // stickers unlocked: milestones, critters and districts as they're earned (recorded once, with the date)
 export function unlockedStickers(){ const m = me(); return new Set(Object.values(db.unlocks||{}).filter(u=>u.userId===m?.id).map(u=>u.stickerId)); }

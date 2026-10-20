@@ -7,7 +7,7 @@
 // filled in, so a long book stays light.
 import { esc, plural } from './data.js';
 import { icon } from './ui.js';
-import { PAGE_W, PAGE_H, pageHTML, coverHTML, hydrateMaps } from './paper.js';
+import { PAGE_W, PAGE_H, pageHTML, spreadPageHTML, coverHTML, hydrateMaps } from './paper.js';
 import { moments, reduceMotion, developIn } from './feel.js';
 
 // pinned to an exact version: a new release can't change what runs here without a deploy
@@ -44,7 +44,8 @@ export function mountBook(stage, o){
   const fill = (i)=>{   // i: index into pages
     const el = pageLeaves[i]; if (!el || el.dataset.filled) return;
     el.dataset.filled = '1';
-    el.innerHTML = `<div class="kb-scale">${pageHTML(pages[i], { book:o.book, n:i+1, total, paper:o.paper })}</div>`;
+    const p = pages[i];
+    el.innerHTML = `<div class="kb-scale">${p.spread ? spreadPageHTML(p.spread, p.side, { paper:o.paper }) : pageHTML(p, { book:o.book, n:i+1, total, paper:o.paper })}</div>`;
   };
   // the open page now; its neighbours (and their map postcards) when the phone is idle, so a turn never waits
   const idle = window.requestIdleCallback ? fn=>requestIdleCallback(fn, { timeout:400 }) : fn=>setTimeout(fn, 60);
