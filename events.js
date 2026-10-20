@@ -105,17 +105,17 @@ export function eventSheet(id, after){
       body.innerHTML = `<div class="event-ticket paper"><span class="tape"></span>
           <span class="eyebrow">${host.id===me.id?'You planned':`${esc(host.name||host.handle)} planned`}</span>
           <h2 class="h-lg mt4">${esc(v?v.name:'A place')}</h2>
-          <div class="row muted mt4" style="gap:6px">${icon('schedule')}${esc(whenText(ev.when))}</div>
-          <div class="row muted mt4" style="gap:6px">${icon('location_on')}${esc(z?z.label:APP.city)}</div>
-          ${ev.note?`<p class="mt12">“${esc(ev.note)}”</p>`:''}
+          <div class="row muted mt4" style="gap:var(--sp-2)">${icon('schedule')}${esc(whenText(ev.when))}</div>
+          <div class="row muted mt4" style="gap:var(--sp-2)">${icon('location_on')}${esc(z?z.label:APP.city)}</div>
+          ${ev.note?`<p class="mt16">“${esc(ev.note)}”</p>`:''}
         </div>
         <div class="row between mt16"><span class="eyebrow">Going (${ppl.length})</span>${maybe.length?`<span class="mono muted small">${maybe.length} maybe</span>`:''}</div>
-        <div class="row mt8" style="flex-wrap:wrap;gap:10px">${ppl.map(u=>`<span class="row" style="gap:6px">${avatarHTML(u,30)}<span class="small">${u.id===me.id?'You':esc(u.name||u.handle)}</span></span>`).join('') || '<span class="muted small">Nobody yet</span>'}</div>
-        <div class="eyebrow mt20">Are you in?</div>
+        <div class="row mt8" style="flex-wrap:wrap;gap:var(--sp-2)">${ppl.map(u=>`<span class="row" style="gap:var(--sp-2)">${avatarHTML(u,30)}<span class="small">${u.id===me.id?'You':esc(u.name||u.handle)}</span></span>`).join('') || '<span class="muted small">Nobody yet</span>'}</div>
+        <div class="eyebrow mt24">Are you in?</div>
         ${seg('rsvp', [['going','Going','check_circle'],['maybe','Maybe','help'],['no','Can’t','cancel']], mine).replace('class="seg"','class="seg mt8"')}
         <div class="btn-grid mt16"><button class="btn btn-soft" id="evCal">${icon('calendar_add_on')}Calendar</button><button class="btn btn-soft" id="evShare">${icon('ios_share')}Share</button></div>
-        <button class="btn btn-soft btn-block mt12" id="evPlace">${icon('storefront')}See the place</button>
-        ${host.id===me.id?`<button class="btn btn-danger btn-block mt12" id="evCancel">${icon('event_busy')}Cancel this plan</button>`:''}`;
+        <button class="btn btn-soft btn-block mt16" id="evPlace">${icon('storefront')}See the place</button>
+        ${host.id===me.id?`<button class="btn btn-danger btn-block mt16" id="evCancel">${icon('event_busy')}Cancel this plan</button>`:''}`;
       bindSeg(body, 'rsvp', s=>{ S.rsvp(id, s); toast(s==='going'?'See you there!':s==='maybe'?'Marked as maybe':'Maybe next time'); go.refresh(); go.scheduleReminders && go.scheduleReminders(); paint(); after && after(); });
       body.querySelector('#evCal').onclick = ()=>{
         const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([icsFor(ev, v)], {type:'text/calendar'})); a.download = 'crew-bite.ics';
@@ -143,7 +143,7 @@ export function eventRowHTML(ev){
 // crew screen: upcoming bites
 go.eventsCard = ()=>{
   const evs = S.events({upcoming:true});
-  return `<div class="card mt12"><div class="row between"><span class="h-sm">${icon('event')} Upcoming bites</span><button class="btn btn-ghost btn-sm" id="evNew">${icon('add')}Plan one</button></div>
+  return `<div class="card mt16"><div class="row between"><span class="h-sm">${icon('event')} Upcoming bites</span><button class="btn btn-ghost btn-sm" id="evNew">${icon('add')}Plan one</button></div>
     ${evs.length ? `<div class="stack mt8">${evs.slice(0,4).map(eventRowHTML).join('')}</div>` : '<p class="muted small mt8">Nothing planned. Pick a place and a time, and the crew gets the invite.</p>'}</div>`;
 };
 go.bindEventsCard = (el, repaint)=>{

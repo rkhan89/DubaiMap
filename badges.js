@@ -99,7 +99,7 @@ function showBadge(b, by){
   wrap.innerHTML = `<div class="unlock-card paper">${stickerHTML(b, 132)}
     <h2 class="h-lg mt16">${esc(b.name)}</h2><p class="muted mt8">${esc(b.desc)}</p>
     <p class="mono small mt8">${b.done ? (by && by.venue ? `Earned at ${esc(by.venue.name)}, ${esc(fmtDate(by.date))}` : 'Earned') : 'Not earned yet'}</p>
-    <button class="btn btn-soft btn-block mt20">Close</button></div>`;
+    <button class="btn btn-soft btn-block mt24">Close</button></div>`;
   document.body.appendChild(wrap);
   requestAnimationFrame(()=>wrap.classList.add('in'));
   const close = ()=>{ wrap.classList.remove('in'); setTimeout(()=>wrap.remove(), 250); };
@@ -149,7 +149,7 @@ function celebrate(b, done){
   wrap.innerHTML = `<div class="unlock-card paper"><span class="eyebrow" style="color:var(--rust)">New sticker</span>
     <div class="peel">${bits}${stickerHTML(b, 140, {cls:'pop'})}</div>
     <h2 class="h-lg mt8">${esc(b.name)}</h2><p class="muted mt8">${esc(b.desc)}</p>
-    <div class="btn-grid mt20"><button class="btn btn-soft" data-x="book">See stickers</button><button class="btn btn-gold" data-x="ok">Nice!</button></div></div>`;
+    <div class="btn-grid mt24"><button class="btn btn-soft" data-x="book">See stickers</button><button class="btn btn-gold" data-x="ok">Nice!</button></div></div>`;
   document.body.appendChild(wrap);
   requestAnimationFrame(()=>wrap.classList.add('in'));
   const close = (then)=>{ wrap.classList.remove('in'); setTimeout(()=>{ wrap.remove(); then && then(); }, 250); };

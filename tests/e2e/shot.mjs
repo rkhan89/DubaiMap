@@ -17,7 +17,7 @@ const browser = await puppeteer.launch({
   headless: 'new', args: ['--no-first-run','--hide-scrollbars','--disable-extensions', ...(process.env.CI ? ['--no-sandbox'] : [])],
 });
 const page = await browser.newPage();
-const width = +W, height = width < 380 ? 780 : 844;
+const width = +W, height = width < 380 ? 780 : width >= 420 ? 932 : 844;
 await page.setViewport({ width, height, deviceScaleFactor: Number(process.env.DPR || 2), isMobile: true, hasTouch: true });
 await page.emulateMediaFeatures([{ name:'prefers-color-scheme', value: THEME==='dark'?'dark':'light' }]);
 const errors = [];

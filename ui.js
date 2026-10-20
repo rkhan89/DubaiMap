@@ -342,7 +342,7 @@ export function askWho({ title, action, sel }, done){
   openSheet((body, layer)=>{
     const paint = ()=>{
       body.innerHTML = `<div class="sheet-head"><div class="grow"><span class="eyebrow">Who's this for?</span><h2 class="h-md">${esc(title||'Who can see it?')}</h2></div></div>
-        <div class="mt12">${whoHTML(cur)}</div>
+        <div class="mt16">${whoHTML(cur)}</div>
         <div class="sheet-foot"><button class="btn btn-gold btn-block" id="awGo">${esc(action||'Done')}</button></div>`;
       bindWho(body, ()=>cur, v=>{ cur=v; paint(); });
       body.querySelector('#awGo').onclick = ()=>{ if (cur===null) return toast('Choose who it’s for'); layer.close(); done(cur); };

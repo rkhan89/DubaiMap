@@ -52,13 +52,13 @@ export function addFromLink(prefill, shared, inboxId){
     let busy = false;
     const paint = (status)=>{
       el.innerHTML = topbar({ title:'Add from a link', eyebrow:'Share to '+APP.name }) + `<div class="screen-body">
-        <h1 class="h-lg mt12">Seen somewhere good?</h1>
+        <h1 class="h-lg mt16">Seen somewhere good?</h1>
         <p class="muted mt8">Paste a Google Maps link, a TikTok link or caption, or just type the place's name. You'll check it before anything is added.</p>
-        ${!inboxId && S.inbox().length ? `<button class="inbox-chip mt12" id="shInbox">${icon('inbox')}<span>${S.inbox().length} waiting in your Inbox</span>${icon('chevron_right')}</button>` : ''}
-        <label class="eyebrow mt20" for="shIn" style="display:block">Link, caption or name</label>
+        ${!inboxId && S.inbox().length ? `<button class="inbox-chip mt16" id="shInbox">${icon('inbox')}<span>${S.inbox().length} waiting in your Inbox</span>${icon('chevron_right')}</button>` : ''}
+        <label class="eyebrow mt24" for="shIn" style="display:block">Link, caption or name</label>
         <textarea class="input mt8 share-in" id="shIn" maxlength="2000" placeholder="https://maps.app.goo.gl/…  or  Ravi Restaurant">${esc(prefill||'')}</textarea>
-        <div class="btn-grid mt12"><button class="btn btn-soft" id="shPaste">${icon('content_paste')}Paste</button><button class="btn btn-gold" id="shGo">${icon('travel_explore')}Find it</button></div>
-        <div id="shStatus" class="mt20">${status||''}</div>
+        <div class="btn-grid mt16"><button class="btn btn-soft" id="shPaste">${icon('content_paste')}Paste</button><button class="btn btn-gold" id="shGo">${icon('travel_explore')}Find it</button></div>
+        <div id="shStatus" class="mt24">${status||''}</div>
         <div class="share-sources mt24"><span class="eyebrow">Works with</span>
           <div class="chip-wrap mt8"><span class="tag soft">${icon('map')}Google Maps</span><span class="tag soft">${icon('edit_note')}Place names</span><span class="tag soft">${icon('music_note')}TikTok captions</span></div>
           <p class="muted small mt8">Instagram doesn't let apps read posts: paste the caption or the name instead.</p>
@@ -156,7 +156,7 @@ function iphoneShortcut(){
   const target = base + '/share#text=';
   openScreen(el=>{
     el.innerHTML = topbar({ title:'Share from iPhone', eyebrow:'Share to '+APP.name }) + `<div class="screen-body">
-      <div class="note mt12">${icon('science')}<span><b>Not tested on an iPhone yet.</b> If a step doesn't match what you see, tell us from Settings → Send feedback.</span></div>
+      <div class="note mt16">${icon('science')}<span><b>Not tested on an iPhone yet.</b> If a step doesn't match what you see, tell us from Settings → Send feedback.</span></div>
       <p class="mt16">iPhones don't let web apps join the Share menu, but a free Shortcut can. Set it up once (about 2 minutes) and “${esc(APP.name)}” appears when you tap Share in Google Maps, TikTok or Safari.</p>
       <ol class="ios-steps mt16">
         <li>Open the <b>Shortcuts</b> app and tap <b>+</b> to make a new shortcut.</li>
@@ -166,9 +166,9 @@ function iphoneShortcut(){
         <li>Add the action <b>Open URLs</b>.</li>
         <li>Name it <b>${esc(APP.name)}</b> and pick an icon. Done.</li>
       </ol>
-      <label class="eyebrow mt20" style="display:block">The address for step 4</label>
+      <label class="eyebrow mt24" style="display:block">The address for step 4</label>
       <div class="link-box mt8"><span class="mono">${esc(target)}</span><button class="btn btn-white btn-sm" id="iosCopy">${icon('content_copy')}Copy</button></div>
-      <p class="muted small mt12">The shared link or caption goes after the <b>#</b>, so it stays on your phone and never reaches our servers' logs.</p>
+      <p class="muted small mt16">The shared link or caption goes after the <b>#</b>, so it stays on your phone and never reaches our servers' logs.</p>
       <div class="card-soft mt16"><b>Then:</b> in Google Maps or TikTok, tap <b>Share</b> → <b>${esc(APP.name)}</b>. It opens in Safari, so sign in to ${esc(APP.name)} in Safari once; the share waits for you if you're not signed in yet.</div>
     </div>`;
     el.querySelector('#iosCopy').onclick = async ()=>{
@@ -209,10 +209,10 @@ function candidates(list, query, src, ctx, found){
   const named = (found||[]).map(n=>n.area ? `${n.name} (${n.area})` : n.name);
   openSheet(body=>{
     body.innerHTML = `<div class="sheet-head"><div class="grow"><span class="eyebrow">${esc(srcLabel(src))}</span><h2 class="h-md">Which one is it?</h2></div></div>
-      ${named.length ? `<p class="muted mt4 mb12">The caption mentions ${esc(named.length===1 ? named[0] : named.slice(0,-1).join(', ')+' and '+named[named.length-1])}.</p>` : ''}
+      ${named.length ? `<p class="muted mt4 mb16">The caption mentions ${esc(named.length===1 ? named[0] : named.slice(0,-1).join(', ')+' and '+named[named.length-1])}.</p>` : ''}
       <div class="stack">${list.slice(0,3).map((p,i)=>{ const z=MAP.zoneById(zoneFor(p.lat,p.lng)); const cat=catById(p.category);
         return `<button class="search-result" data-i="${i}"><span class="sr-ico">${cat?iconSvg(cat.id, cat.color):icon('storefront')}</span><span class="grow"><b class="trunc" style="display:block">${esc(p.name)}</b><span class="muted small">${esc(z?z.label:(p.address||APP.city))}</span></span>${icon('chevron_right')}</button>`; }).join('')}</div>
-      <button class="btn btn-ghost btn-block mt12" id="cdNone">None of these</button>
+      <button class="btn btn-ghost btn-block mt16" id="cdNone">None of these</button>
       ${laterHTML(ctx)}
       <p class="g-attr mt8">Results from <b>Google Maps</b></p>`;
     body.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{ back(); setTimeout(()=>confirmPlace(list[+b.dataset.i], src, ctx), 60); });
@@ -230,10 +230,10 @@ function needsPlace(res, src, ctx){
     const named = (res.found||[]).map(n=>n.area ? `${n.name} (${n.area})` : n.name);
     body.innerHTML = `<div class="sheet-head"><div class="grow"><span class="eyebrow">${esc(srcLabel(src))}</span><h2 class="h-md">Which place is it?</h2></div></div>
       ${res.message ? `<div class="note">${icon(res.state==='offline'?'wifi_off':res.state==='unsupported'?'link_off':'help')}<span>${esc(res.message)}</span></div>`
-        : named.length ? `<p class="muted mb12">The caption mentions ${esc(named.join(' and '))}. Search to find it on the map, or add it yourself.</p>` : ''}
+        : named.length ? `<p class="muted mb16">The caption mentions ${esc(named.join(' and '))}. Search to find it on the map, or add it yourself.</p>` : ''}
       ${local.length ? `<div class="eyebrow mt16">Already on your map</div><div class="stack mt8">${local.map(v=>{ const z=MAP.zoneById(v.zone), cat=catById((v.categories||[])[0]); return `<button class="search-result" data-v="${v.id}"><span class="sr-ico">${cat?iconSvg(cat.id,cat.color):icon('storefront')}</span><span class="grow"><b class="trunc" style="display:block">${esc(v.name)}</b><span class="muted small">${esc(z?z.label:'')}</span></span>${icon('chevron_right')}</button>`; }).join('')}</div>` : ''}
       <label class="search mt16">${icon('search')}<input id="npQ" value="${esc(q)}" placeholder="Place name" autocomplete="off"></label>
-      <div class="btn-grid mt12"><button class="btn btn-soft" id="npSelf">${icon('edit_location_alt')}Add it myself</button><button class="btn btn-gold" id="npGo">${icon('search')}Search</button></div>
+      <div class="btn-grid mt16"><button class="btn btn-soft" id="npSelf">${icon('edit_location_alt')}Add it myself</button><button class="btn btn-gold" id="npGo">${icon('search')}Search</button></div>
       ${res.state==='offline' ? '' : laterHTML(ctx)}`;
     bindLater(body, src, ctx);
     const inp = body.querySelector('#npQ');
@@ -275,17 +275,17 @@ function confirmPlace(place, src, ctx){
     const paint = ()=>{
       const z = MAP.zoneById(d.zone);
       body.innerHTML = `
-        <div class="row" style="flex-wrap:wrap;gap:6px 12px;justify-content:space-between"><span class="tag soft trunc" style="max-width:100%">${icon(s.ic)}${esc(srcLabel(src))}</span>${place.placeId?`<span class="g-attr">Place details from <b>Google Maps</b></span>`:''}</div>
-        ${existing ? `<div class="note mt12">${icon('groups')}<span><b>${esc(existing.name)}</b> is already on the crew map. Add it to your list?</span></div>` : ''}
-        <div class="mt12">${editName
+        <div class="row" style="flex-wrap:wrap;gap:var(--sp-2) var(--sp-3);justify-content:space-between"><span class="tag soft trunc" style="max-width:100%">${icon(s.ic)}${esc(srcLabel(src))}</span>${place.placeId?`<span class="g-attr">Place details from <b>Google Maps</b></span>`:''}</div>
+        ${existing ? `<div class="note mt16">${icon('groups')}<span><b>${esc(existing.name)}</b> is already on the crew map. Add it to your list?</span></div>` : ''}
+        <div class="mt16">${editName
           ? `<label class="eyebrow" for="cfN">Place</label><input class="input mt8" id="cfN" maxlength="80" value="${esc(d.name)}" placeholder="Place name">`
           : `<h2 class="h-lg">${esc(d.name)}</h2>`}</div>
-        <div class="eyebrow mt20">Who's this for?</div>
+        <div class="eyebrow mt24">Who's this for?</div>
         <div class="mt8" id="cfWho">${whoHTML(d.who)}</div>
-        <div class="row between mt20"><span class="eyebrow">Meal</span><span class="hand">Optional</span></div>
+        <div class="row between mt24"><span class="eyebrow">Meal</span><span class="hand">Optional</span></div>
         <div class="chip-wrap mt8" id="cfM">${MEALS.map(m=>`<button type="button" class="person-chip meal-chip${d.meals.includes(m.id)?' on':''}" data-meal="${m.id}" aria-pressed="${d.meals.includes(m.id)}">${icon(m.icon)}${m.label}</button>`).join('')}</div>
         ${existing ? '' : `
-        <div class="field mt20"><label class="eyebrow" for="cfZ">Area</label><select class="input" id="cfZ">${MAP.ZONES.slice().sort((a,b)=>a.label.localeCompare(b.label)).map(x=>`<option value="${x.id}"${x.id===d.zone?' selected':''}>${esc(x.label)}</option>`).join('')}</select></div>
+        <div class="field mt24"><label class="eyebrow" for="cfZ">Area</label><select class="input" id="cfZ">${MAP.ZONES.slice().sort((a,b)=>a.label.localeCompare(b.label)).map(x=>`<option value="${x.id}"${x.id===d.zone?' selected':''}>${esc(x.label)}</option>`).join('')}</select></div>
         <div class="eyebrow mt16">Kind of place</div>
         <div class="chip-wrap mt8" id="cfC">${catPickerHTML(d.cats, {open:body.dataset.catsOpen==='1'})}</div>`}
         <div class="sheet-foot">

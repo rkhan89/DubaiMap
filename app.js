@@ -120,7 +120,7 @@ function pickCrew(){
   openSheet(body=>{
     const active=S.myCrew();
     body.innerHTML = `<div class="sheet-head"><div class="grow"><span class="eyebrow">Crew map</span><h2 class="h-md">Show which crew?</h2></div></div>
-      <div class="stack mt12">${S.myCrews().map(c=>`<button class="search-result${c.id===active.id?' on':''}" data-crew="${c.id}"><span class="sr-ico">${icon('groups','',c.id===active.id)}</span><span class="grow"><b class="trunc" style="display:block">${esc(c.name)}</b><span class="muted small">${plural(c.memberIds.length,'member')}</span></span>${c.id===active.id?icon('check'):''}</button>`).join('')}</div>`;
+      <div class="stack mt16">${S.myCrews().map(c=>`<button class="search-result${c.id===active.id?' on':''}" data-crew="${c.id}"><span class="sr-ico">${icon('groups','',c.id===active.id)}</span><span class="grow"><b class="trunc" style="display:block">${esc(c.name)}</b><span class="muted small">${plural(c.memberIds.length,'member')}</span></span>${c.id===active.id?icon('check'):''}</button>`).join('')}</div>`;
     body.querySelectorAll('[data-crew]').forEach(b=>b.onclick=()=>{ S.setActiveCrew(b.dataset.crew); scope().members=null; saveScope(); back(); rebuild(); toast('Showing '+S.myCrew().name); });
   });
 }
@@ -260,7 +260,7 @@ function openArea(zoneId){
   openSheet(body=>{
     body.innerHTML = `<div class="sheet-head"><div class="grow"><span class="eyebrow">${scope().mode==='me'?'Your':'Crew'} places in</span><h2 class="h-lg">${esc(z.label)}</h2><span class="hand">${plural(lit.length,'spot')} stamped${unlit.length?`, ${unlit.length} undiscovered`:''}</span></div></div>
       <div class="stack">${lit.map(venueRowHTML).join('') || '<div class="empty"><span class="hand">Nobody’s been here yet</span></div>'}</div>
-      ${unlit.length?`<div class="eyebrow mt24">Undiscovered nearby</div><div class="stack mt12">${unlit.slice(0,30).map(venueRowHTML).join('')}</div>`:''}
+      ${unlit.length?`<div class="eyebrow mt24">Undiscovered nearby</div><div class="stack mt16">${unlit.slice(0,30).map(venueRowHTML).join('')}</div>`:''}
       <div class="sheet-foot btn-grid"><button class="btn btn-soft" id="aShow">${icon('map')}Show on map</button><button class="btn btn-gold" id="aAdd">${icon('add')}Log here</button></div>`;
     body.querySelectorAll('[data-venue]').forEach(r=>r.addEventListener('click', ()=>{ back(); setTimeout(()=>go.place(r.dataset.venue), 60); }));
     body.querySelector('#aShow').onclick=()=>{ back(); switchView('map'); const pts=lit.map(s=>MAP.placeWorld(s.v)); pts.length?MAP.fitPoints(pts,true):MAP.flyToWorld(MAP.placeWorld({id:'z',zone:zoneId})); };
@@ -288,17 +288,17 @@ function openFilters(){
       ${members.length>1?`<div class="row between mt24"><span class="eyebrow">2. Members</span><span class="hand">${draft.mode==='crew'?`${members.length-1} friends in ${esc(APP.city)}`:'Applies in Crew view'}</span></div>
       <div class="chip-scroll mt8" data-f="members"><button class="person-chip${!draft.members?' on':''}" data-m="all">${icon('done_all')}All <em>${M.mapModel({...draft, mode:'crew', members:null}).filter(s=>s.state!=='unlit').length}</em></button>${members.map(u=>`<button class="person-chip${draft.members&&draft.members.has(u.id)?' on':''}" data-m="${u.id}">${avatarHTML(u,30)}${esc(u.id===S.me().id?'You':u.name||u.handle)}</button>`).join('')}</div>`:''}
       <div class="eyebrow mt24">${members.length>1?3:2}. Categories</div>
-      <div class="chip-wrap mt12" data-f="cats" id="fCats">${(()=>{ const on=CATEGORIES.map(c=>c.id).filter(id=>!draft.cats||draft.cats.has(id)); return catPickerHTML(on, {open:body.dataset.catsOpen==='1', keep:CATEGORIES.map(c=>c.id).filter(id=>!on.includes(id))}); })()}</div>
+      <div class="chip-wrap mt16" data-f="cats" id="fCats">${(()=>{ const on=CATEGORIES.map(c=>c.id).filter(id=>!draft.cats||draft.cats.has(id)); return catPickerHTML(on, {open:body.dataset.catsOpen==='1', keep:CATEGORIES.map(c=>c.id).filter(id=>!on.includes(id))}); })()}</div>
       <div class="row between mt24"><span class="eyebrow">${members.length>1?4:3}. Meal</span><span class="hand">${draft.meals?'Tagged visits only':'Any time of day'}</span></div>
-      <div class="chip-wrap mt12" data-f="meals">${MEALS.map(m=>`<button class="person-chip meal-chip${draft.meals&&draft.meals.has(m.id)?' on':''}" data-meal="${m.id}">${icon(m.icon)}${m.label}</button>`).join('')}</div>
+      <div class="chip-wrap mt16" data-f="meals">${MEALS.map(m=>`<button class="person-chip meal-chip${draft.meals&&draft.meals.has(m.id)?' on':''}" data-meal="${m.id}">${icon(m.icon)}${m.label}</button>`).join('')}</div>
       <div class="eyebrow mt24">${members.length>1?5:4}. Visit status</div>
-      <div class="btn-grid mt12" data-f="status">
+      <div class="btn-grid mt16" data-f="status">
         <button class="radio-card${draft.status.been?' on':''}" data-s="been"><span class="rc-head">${icon('verified')}Been here<span class="grow"></span>${draft.status.been?icon('check_box','',true):icon('check_box_outline_blank')}</span><p style="margin-left:0">★★★★☆ <span class="hand">Rated</span></p></button>
         <button class="radio-card${draft.status.want?' on':''}" data-s="want"><span class="rc-head">${icon('bookmark')}Want to try<span class="grow"></span>${draft.status.want?icon('check_box','',true):icon('check_box_outline_blank')}</span><p style="margin-left:0"><span class="tag">To try ribbon</span></p></button>
       </div>
       <div class="eyebrow mt24">${members.length>1?6:5}. Privacy scope</div>
-      <div class="opt-grid mt12" style="grid-template-columns:1fr 1fr 1fr" data-f="privacy">
-        ${[['shared','Shared only','public'],['private','Private only','lock'],['all','All places','layers']].map(([v,l,ic])=>`<button class="opt-card${draft.privacy===v?' on':''}" data-p="${v}" style="flex-direction:column;justify-content:center;gap:6px;padding:12px 6px;font-family:var(--f-mono);font-size:12px;text-align:center">${icon(ic)}${l}</button>`).join('')}
+      <div class="opt-grid mt16" style="grid-template-columns:1fr 1fr 1fr" data-f="privacy">
+        ${[['shared','Shared only','public'],['private','Private only','lock'],['all','All places','layers']].map(([v,l,ic])=>`<button class="opt-card${draft.privacy===v?' on':''}" data-p="${v}" style="flex-direction:column;justify-content:center;gap:var(--sp-2);padding:var(--sp-3) var(--sp-2);font-family:var(--f-mono);font-size:12px;text-align:center">${icon(ic)}${l}</button>`).join('')}
       </div>
       <div class="person-row mt24" style="box-shadow:none;background:var(--sc-low)">${icon('format_color_fill')}<span class="pr-main"><span class="pr-name">Colour explored areas</span><span class="pr-sub">Areas with ${draft.mode==='me'?'your':'crew'} places glow gold</span></span>${toggleHTML('fZones', prefs().zones, 'Colour explored areas')}</div>
       <div class="sheet-foot"><button class="btn btn-gold btn-block" data-f="apply">${icon('check_circle')}Apply filters (${plural(n,'place')})</button></div>`;
@@ -349,10 +349,10 @@ function renderList(){
   el.innerHTML = `<div class="list-inner">
     <div class="search-row"><label class="search">${icon('search')}<input id="lq" type="search" placeholder="Search ${items.length} spots…" value="${esc(listQuery)}" aria-label="Search"></label>
       <button class="sq-btn${isFiltered()?' filtered':''}" id="lFilter" aria-label="Filters">${icon('tune')}</button></div>
-    <div class="seg mt12" id="lMode"><button data-v="me" class="${sc.mode==='me'?'on':''}">Me <em>${meCount}</em></button><button data-v="crew" class="${sc.mode==='crew'?'on':''}">Crew <em>${crewCount}</em></button></div>
-    <div class="chip-scroll mt12" id="lCats">
-      <button class="person-chip${!listCat?' on':''}" data-c="" style="padding-left:16px">All <em>${modelCache.filter(s=>s.state!=='unlit').length}</em></button>
-      ${cats.map(c=>`<button class="person-chip${listCat===c?' on':''}" data-c="${c}" style="padding-left:8px"><span style="width:26px;height:26px;display:flex">${iconSvg(c, catById(c).color)}</span>${esc(catById(c).label)} <em>${byCat[c]}</em></button>`).join('')}
+    <div class="seg mt16" id="lMode"><button data-v="me" class="${sc.mode==='me'?'on':''}">Me <em>${meCount}</em></button><button data-v="crew" class="${sc.mode==='crew'?'on':''}">Crew <em>${crewCount}</em></button></div>
+    <div class="chip-scroll mt16" id="lCats">
+      <button class="person-chip${!listCat?' on':''}" data-c="" style="padding-left:var(--sp-3)">All <em>${modelCache.filter(s=>s.state!=='unlit').length}</em></button>
+      ${cats.map(c=>`<button class="person-chip${listCat===c?' on':''}" data-c="${c}" style="padding-left:var(--sp-2)"><span style="width:26px;height:26px;display:flex">${iconSvg(c, catById(c).color)}</span>${esc(catById(c).label)} <em>${byCat[c]}</em></button>`).join('')}
     </div>
     <div class="feed-head"><span class="hand">${sc.mode==='crew' && crew ? `${esc(crew.name)} shared feed` : 'Your scrapbook'}</span>
       <select class="sort-sel" id="lSort" aria-label="Sort">${[['recent','Recent visits'],['rating','Top rated'],['visits','Most visited'],['name','A–Z']].map(([v,l])=>`<option value="${v}"${listSort===v?' selected':''}>${l}</option>`).join('')}</select></div>
@@ -384,8 +384,8 @@ function feedCardHTML(sum){
   return `<button class="feed-card${priv?' private':''}" data-venue="${v.id}">
     <span class="fc-thumb">${ph?`<img src="${esc(S.photoURL(ph))}" alt="" loading="lazy">`:iconSvg(cat.id, cat.color)}${priv?`<span class="fc-lock">${icon('lock','',true)}</span>`:(sum.rating?ratingPill(sum.rating):'')}</span>
     <span class="fc-main">
-      <span class="fc-cat">${iconSvg(cat.id, cat.color)}${esc(cat.label)}${priv?` <span class="tag soft" style="margin-left:4px">${icon('lock')}Private</span>`:''}</span>
-      <span class="fc-name trunc" style="display:block;padding-right:18px">${esc(v.name)}</span>
+      <span class="fc-cat">${iconSvg(cat.id, cat.color)}${esc(cat.label)}${priv?` <span class="tag soft" style="margin-left:var(--sp-1)">${icon('lock')}Private</span>`:''}</span>
+      <span class="fc-name trunc" style="display:block;padding-right:var(--sp-3)">${esc(v.name)}</span>
       <span class="fc-loc">${icon('location_on')}${esc(z?z.label:APP.city)}</span>
       ${quote}
     </span>

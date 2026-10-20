@@ -41,7 +41,7 @@ function profileScreen(userId){
       el.innerHTML = topbar({title: mine ? 'Your profile' : (u.name||u.handle), eyebrow: mine ? 'Scrapbook passport' : 'Crew friend', profile:false,
         actions: mine ? `<button class="icon-btn" id="prSettings" aria-label="Settings">${icon('settings')}</button>` : ''}) + `<div class="screen-body">
         <div class="passport mt16 profile-hero"><span class="tape"></span>
-          <div class="row" style="gap:16px;align-items:center">${avatarHTML(u, 84)}
+          <div class="row" style="gap:var(--sp-3);align-items:center">${avatarHTML(u, 84)}
             <div class="grow" style="min-width:0"><h1 class="h-lg trunc">${esc(u.name||'@'+u.handle)}</h1>
               <div class="mono muted small">@${esc(u.handle)}${crew && crew.memberIds.includes(userId) ? ` • ${esc(crew.name)}` : ''}</div>
               ${u.tagline ? `<div class="hand mt4">${esc(u.tagline)}</div>` : ''}</div>
@@ -56,17 +56,17 @@ function profileScreen(userId){
           <div class="stat"><b>${all.photos}</b><span>photos</span></div>
         </div>
         <button class="card mt16 block-btn" id="prStickers"><div class="row between"><span class="h-sm">Stickers</span><span class="mono muted small">${icon('chevron_right')}</span></div>
-          <div class="sticker-strip mt12">${badges.slice(0,6).map(b=>stickerHTML(b, 52)).join('')}</div></button>
-        ${mine ? `<button class="card mt12 block-btn" id="prGoals"><div class="row between"><span class="h-sm">${challenges.length ? 'Crew challenges' : esc(fmtMonth(thisMonth()))+' goals'}</span><span class="mono muted small">${icon('chevron_right')}</span></div>
-          <div class="goal-mini mt12">${(challenges.length ? challenges : goals).map(g=>`<div class="gm${g.done?' done':''}"><span class="goal-tick${g.done?' done':''}">${icon(g.done?'check':'radio_button_unchecked','',g.done)}</span><small>${esc(g.short||g.name)}</small></div>`).join('')}</div></button>
-        <button class="card mt12 block-btn row" id="prRecap">${icon('auto_awesome')}<span class="grow"><b>Your ${fmtMonth(thisMonth()).split(' ')[0]} spread</b><span class="muted small" style="display:block">Your month as a scrapbook spread, ready to share</span></span>${icon('chevron_right')}</button>` : ''}
-        ${topCats.length ? `<div class="card mt12"><span class="h-sm">Favourite kinds</span>
-          <div class="cat-bars mt12">${topCats.map(([c,n])=>{ const k=catById(c); return `<div class="cb"><span class="cb-ico">${iconSvg(c, k.color)}</span><span class="cb-name">${esc(k.label)}</span><span class="cb-bar"><i style="width:${Math.round(n/maxCat*100)}%;background:${k.color}"></i></span><b>${n}</b></div>`; }).join('')}</div>
-          ${favArea ? `<p class="muted small mt12">${icon('location_on')} Most at home in <b>${esc(MAP.zoneById(favArea[0])?.label||'')}</b> (${plural(favArea[1],'visit')})</p>` : ''}</div>` : ''}
+          <div class="sticker-strip mt16">${badges.slice(0,6).map(b=>stickerHTML(b, 52)).join('')}</div></button>
+        ${mine ? `<button class="card mt16 block-btn" id="prGoals"><div class="row between"><span class="h-sm">${challenges.length ? 'Crew challenges' : esc(fmtMonth(thisMonth()))+' goals'}</span><span class="mono muted small">${icon('chevron_right')}</span></div>
+          <div class="goal-mini mt16">${(challenges.length ? challenges : goals).map(g=>`<div class="gm${g.done?' done':''}"><span class="goal-tick${g.done?' done':''}">${icon(g.done?'check':'radio_button_unchecked','',g.done)}</span><small>${esc(g.short||g.name)}</small></div>`).join('')}</div></button>
+        <button class="card mt16 block-btn row" id="prRecap">${icon('auto_awesome')}<span class="grow"><b>Your ${fmtMonth(thisMonth()).split(' ')[0]} spread</b><span class="muted small" style="display:block">Your month as a scrapbook spread, ready to share</span></span>${icon('chevron_right')}</button>` : ''}
+        ${topCats.length ? `<div class="card mt16"><span class="h-sm">Favourite kinds</span>
+          <div class="cat-bars mt16">${topCats.map(([c,n])=>{ const k=catById(c); return `<div class="cb"><span class="cb-ico">${iconSvg(c, k.color)}</span><span class="cb-name">${esc(k.label)}</span><span class="cb-bar"><i style="width:${Math.round(n/maxCat*100)}%;background:${k.color}"></i></span><b>${n}</b></div>`; }).join('')}</div>
+          ${favArea ? `<p class="muted small mt16">${icon('location_on')} Most at home in <b>${esc(MAP.zoneById(favArea[0])?.label||'')}</b> (${plural(favArea[1],'visit')})</p>` : ''}</div>` : ''}
         ${recent.length ? `<div class="row between mt24"><span class="h-md">Recent stamps</span></div>
-          <div class="stack mt12">${recent.map(e=>{ const v=S.venue(e.venueId), z=v&&MAP.zoneById(v.zone); return v ? `<button class="person-row" data-venue="${v.id}"><span class="pr-main"><span class="pr-name trunc">${esc(v.name)}</span><span class="pr-sub">${esc(z?z.label:'')} • ${fmtDate(e.date)}${e.private?' • only you':''}</span></span>${e.rating?ratingPill(e.rating):''}</button>` : ''; }).join('')}</div>`
+          <div class="stack mt16">${recent.map(e=>{ const v=S.venue(e.venueId), z=v&&MAP.zoneById(v.zone); return v ? `<button class="person-row" data-venue="${v.id}"><span class="pr-main"><span class="pr-name trunc">${esc(v.name)}</span><span class="pr-sub">${esc(z?z.label:'')} • ${fmtDate(e.date)}${e.private?' • only you':''}</span></span>${e.rating?ratingPill(e.rating):''}</button>` : ''; }).join('')}</div>`
           : `<div class="empty">${icon('restaurant')}<p class="muted">${mine?'Log your first place with the + button and it shows up here.':'Nothing shared yet.'}</p></div>`}
-        ${mine ? '' : '<p class="center muted small mt20">Only what they share with the crew shows here.</p>'}
+        ${mine ? '' : '<p class="center muted small mt24">Only what they share with the crew shows here.</p>'}
       </div>`;
       const on = (id, fn)=>{ const b=el.querySelector('#'+id); if (b) b.onclick=fn; };
       on('prSettings', ()=>settingsScreen());
@@ -178,9 +178,9 @@ go.settings = settingsScreen;
 /* ---------- support Koko (only shown once a Stripe or PayPal link is set in config.js) ---------- */
 function supportCardHTML(){
   const s = APP.support || {}; if (!s.stripe && !s.paypal) return '';
-  return `<div class="support-card mt16"><div class="row" style="gap:12px;align-items:flex-start"><span class="support-cup">${icon('local_cafe','',true)}</span>
+  return `<div class="support-card mt16"><div class="row" style="gap:var(--sp-3);align-items:flex-start"><span class="support-cup">${icon('local_cafe','',true)}</span>
     <div class="grow"><b class="h-sm">${esc(APP.name)} is free. Buy me a karak?</b><p class="muted small mt4">No ads, and your data's never for sale. If ${esc(APP.name)}'s found you a good spot, chip in for the next one.</p></div></div>
-    <div class="${s.stripe&&s.paypal?'btn-grid':'stack'} mt12">${s.stripe?`<a class="btn btn-gold" href="${esc(s.stripe)}" target="_blank" rel="noopener" data-support="stripe">${icon('credit_card')}Card or Apple Pay</a>`:''}${s.paypal?`<a class="btn btn-soft" href="${esc(s.paypal)}" target="_blank" rel="noopener" data-support="paypal">${icon('account_balance_wallet')}PayPal</a>`:''}</div>
+    <div class="${s.stripe&&s.paypal?'btn-grid':'stack'} mt16">${s.stripe?`<a class="btn btn-gold" href="${esc(s.stripe)}" target="_blank" rel="noopener" data-support="stripe">${icon('credit_card')}Card or Apple Pay</a>`:''}${s.paypal?`<a class="btn btn-soft" href="${esc(s.paypal)}" target="_blank" rel="noopener" data-support="paypal">${icon('account_balance_wallet')}PayPal</a>`:''}</div>
     <p class="muted small mt8">A gift, not a purchase: it doesn't unlock anything. Payments are handled by Stripe or PayPal.</p></div>`;
 }
 function bindSupport(el){ el.querySelectorAll('[data-support]').forEach(a=>a.addEventListener('click', ()=>toast('Thank you! That keeps the karak flowing.'))); }
@@ -236,7 +236,7 @@ function deleteAccountSheet(){
   openSheet(body=>{
     body.innerHTML = `<h2 class="h-md">Delete your account?</h2>
       <p class="muted mt8">This removes your profile, every place you've logged or saved, your photos and your plans, from ${esc(APP.name)} and from this phone. It can't be undone.</p>
-      <ul class="muted small mt8" style="padding-left:18px;display:flex;flex-direction:column;gap:4px">
+      <ul class="muted small mt8" style="padding-left:var(--sp-3);display:flex;flex-direction:column;gap:var(--sp-1)">
         <li>Crews you own pass to the next member. Places friends have logged stay on their maps.</li>
         <li>Want a copy first? Settings → Export backup.</li>
       </ul>

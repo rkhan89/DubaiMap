@@ -69,16 +69,16 @@ export function rateSheet(entryId, after){
       body.innerHTML = `<div class="sheet-head"><div class="grow"><span class="eyebrow">${esc(who)} tagged you</span><h2 class="h-md">${esc(v?.name||'This visit')}</h2>
           <span class="hand">${e.date ? esc(fmtDate(e.date, { day:'numeric', month:'short', year:'numeric' })) + ' • ' : ''}${had ? 'your part of the visit' : 'add your rating and photos to it'}</span></div></div>
         ${e.notes || e.rating || theirs ? `<div class="tagged-by mt8">${logger ? avatarHTML(logger, 28) : ''}<span class="grow small"><b>${esc(who)}</b>${e.rating ? ` • ★ ${R.fmt(e.rating)}` : ''}${theirs ? ` • ${theirs} photo${theirs===1?'':'s'}` : ''}${e.notes ? `<q>${esc(e.notes)}</q>` : ''}</span></div>` : ''}
-        <span class="eyebrow mt20" style="display:block">Your rating</span>
+        <span class="eyebrow mt24" style="display:block">Your rating</span>
         <div class="star-input big mt8" id="rsStars"></div>
         <textarea class="input mt16" id="rsNote" maxlength="400" placeholder="What did you think? (optional)">${esc(note)}</textarea>
-        <div class="row between mt20"><span class="eyebrow">Your photos</span><span class="muted small">${n} of ${APP.photosPerLog}</span></div>
+        <div class="row between mt24"><span class="eyebrow">Your photos</span><span class="muted small">${n} of ${APP.photosPerLog}</span></div>
         <div class="reel mt8">
           ${have.map(p=>`<div style="position:relative"><button class="rm" data-rmold="${esc(p.id)}" aria-label="Remove photo">${icon('close')}</button>${polaroidHTML({ src:S.photoURL(p), id:p.id, tape:false, rot:0 })}</div>`).join('')}
           ${added.map((p,i)=>`<div style="position:relative"><button class="rm" data-rmnew="${i}" aria-label="Remove photo">${icon('close')}</button>${polaroidHTML({ src:p.url, id:'n'+i, tape:false, rot:0 })}</div>`).join('')}
           ${room > 0 ? `<label class="add-photo">${icon('photo_camera')}<span>Take photo</span><input type="file" accept="image/*" capture="environment" id="rsCam" aria-label="Take a photo"></label><label class="add-photo">${icon('photo_library')}<span>Add photos</span><input type="file" accept="image/*" multiple id="rsPh" aria-label="Add photos from your library"></label>` : ''}
         </div>
-        <p class="muted small mt12">${icon('groups')} They go on ${esc(who)}’s visit, seen by the people on it and the crews you share.</p>
+        <p class="muted small mt16">${icon('groups')} They go on ${esc(who)}’s visit, seen by the people on it and the crews you share.</p>
         <div class="sheet-foot"><button class="btn btn-gold btn-block" id="rsSave">${icon('check')}${had ? 'Save' : 'Add to ' + esc(who) + '’s visit'}</button>
           ${mine ? `<button class="btn btn-ghost btn-block mt8" id="rsDel">Remove my rating</button>` : ''}
           <button class="btn btn-ghost btn-block mt8" id="rsNew">${icon('add_location_alt')}Log a new visit of your own instead</button></div>`;

@@ -68,16 +68,16 @@ export function openLandmark(id){
   openSheet(body=>{
     body.innerHTML = `<div class="lm-card">
       ${hero ? `<div class="lm-hero"><img src="${esc(hero)}" alt="" width="${HERO_W*2}" height="${HERO_H*2}"></div>` : `<div class="lm-art"><img src="map-art/${esc(lm.sprite)}.png" alt="" width="${w*k}" height="${h*k}"></div>`}
-      <h2 class="h-lg mt12">${esc(name)}</h2>
+      <h2 class="h-lg mt16">${esc(name)}</h2>
       <p class="lm-area">${esc(area)}</p>
       <div class="lm-chips">${chip ? `<span class="tag soft lm-show">${icon('water_drop')}<span class="lm-chip-t">${esc(chip)}</span></span>` : ''}<span class="tag soft lm-dist" hidden></span></div>
       ${fact ? `<div class="lm-fact"><span class="eyebrow">Did you know</span><p class="mt4">${esc(fact)}</p>
         ${card && !f && card.verify ? `<p class="fact-check mt8">${icon('fact_check')}Fact being checked</p>` : ''}</div>` : ''}
       ${bonus ? `<details class="lm-more"><summary>More</summary><p class="mt4">${esc(bonus)}</p>${source ? `<p class="lm-source mt8"><a href="${esc(source)}" target="_blank" rel="noopener">Source</a></p>` : ''}</details>`
         : (source && !f ? `<p class="lm-source mt8"><a href="${esc(source)}" target="_blank" rel="noopener">Source</a></p>` : '')}
-      ${factsOnly ? '<p class="muted small mt12">A private residence, not open to visitors.</p>' : `<div class="lm-critter-slot"></div>
-      <div class="btn-grid mt20"><button class="btn btn-gold" id="lmPin">${icon('add_location_alt')}Add a pin here</button><button class="btn btn-soft" id="lmDir">${icon('directions')}Directions</button></div>`}
-      ${v ? `<button class="btn btn-soft btn-block mt12" id="lmPlace">${icon('storefront')}Open ${esc(v.name)}</button>` : ''}
+      ${factsOnly ? '<p class="muted small mt16">A private residence, not open to visitors.</p>' : `<div class="lm-critter-slot"></div>
+      <div class="btn-grid mt24"><button class="btn btn-gold" id="lmPin">${icon('add_location_alt')}Add a pin here</button><button class="btn btn-soft" id="lmDir">${icon('directions')}Directions</button></div>`}
+      ${v ? `<button class="btn btn-soft btn-block mt16" id="lmPlace">${icon('storefront')}Open ${esc(v.name)}</button>` : ''}
     </div>`;
     // the hero at 2x if the sheet has room, else 1x (whole pixels only)
     const hi = body.querySelector('.lm-hero img'); if (hi){ const k2 = body.querySelector('.lm-hero').clientWidth >= HERO_W*2 ? 2 : 1; hi.width = HERO_W*k2; hi.height = HERO_H*k2; }
@@ -111,16 +111,16 @@ go.landmark = openLandmark;
 /* ---------- the landmark's critter (BEHAVIOUR.md) ---------- */
 const chip = theme=>{ const t = THEMES[theme] || THEMES.Fun; return `<span class="theme-chip" style="--c:${t.color};--ci:${t.ink}">${esc(theme)}</span>`; };
 // found already: a small chip, the sprite at 2x and its name, that opens its Shelf entry
-function foundChip(c){ return `<button class="lm-crit-chip mt12" data-open-critter="${esc(c.id)}"><img class="critter-art" src="critters/${esc(c.id)}.png" width="64" height="64" alt=""><b>${esc(c.name)}</b>${icon('chevron_right')}</button>`; }
+function foundChip(c){ return `<button class="lm-crit-chip mt16" data-open-critter="${esc(c.id)}"><img class="critter-art" src="critters/${esc(c.id)}.png" width="64" height="64" alt=""><b>${esc(c.name)}</b>${icon('chevron_right')}</button>`; }
 // "Something is here": no sprite, no silhouette. Look closer reveals it (1x, 2x, 3x, 90 ms each) and saves the find
 function critterRow(slot, c, lm, pos){
-  slot.innerHTML = `<div class="lm-something mt12"><span>Something is here</span><button class="btn btn-soft btn-sm" id="lmLook">Look closer</button></div>`;
+  slot.innerHTML = `<div class="lm-something mt16"><span>Something is here</span><button class="btn btn-soft btn-sm" id="lmLook">Look closer</button></div>`;
   slot.querySelector('#lmLook').onclick = ()=>{
     // save first (one find per person per critter; lat, lng and accuracy kept for spotting spoofing later)
     S.recordCatch(c.id, { lat:pos.lat, lng:pos.lng, accuracy:pos.accuracy, spot:lm.name, landmarkId:c.landmarkId });
     console.info('landmark critter found', c.id, { lat:pos.lat, lng:pos.lng, accuracy:pos.accuracy });
     const fact = c.bonusFact || c.fact;
-    slot.innerHTML = `<div class="lm-reveal mt12"><img class="critter-art" src="critters/${esc(c.id)}.png" width="32" height="32" alt="">
+    slot.innerHTML = `<div class="lm-reveal mt16"><img class="critter-art" src="critters/${esc(c.id)}.png" width="32" height="32" alt="">
       <div class="lm-reveal-text" hidden><b class="h-md">${esc(c.name)}</b><div class="mt4">${chip(c.theme)}</div><p class="mt8">${esc(fact)}</p>
       <button class="lm-shelf-link mt8" data-open-critter="${esc(c.id)}">Meet again on your Shelf${icon('chevron_right')}</button></div></div>`;
     const img = slot.querySelector('img'), text = slot.querySelector('.lm-reveal-text');

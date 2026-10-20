@@ -70,12 +70,12 @@ function paintStep(){
     ? `<span class="tape"></span><div class="tour-art">${icon('add_location_alt','',true)}</div>
        <h2 class="h-lg">Your map looks empty</h2>
        <p class="muted mt8">Let's fix that. Pin a place you've been to recently. It takes about a minute, and you'll see how everything works on the way.</p>
-       <button class="btn btn-gold btn-block mt20" data-t="start">${icon('push_pin')}Pin my first place</button>
+       <button class="btn btn-gold btn-block mt24" data-t="start">${icon('push_pin')}Pin my first place</button>
        <div class="start-alt mt8">${startAlt('t')}</div>
        <button class="btn btn-ghost btn-block mt8" data-t="skip">Skip the tour</button>`
     : `<div class="row between"><span class="tour-step">${k} / ${n}</span><button class="tour-skip" data-t="skip">Skip tour</button></div>
        <b class="tour-title">${s.title}</b><p class="tour-body">${s.body}</p>
-       ${s.next ? `<div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn btn-gold btn-sm" data-t="next">${s.last?'Done':'Next'} ${icon(s.last?'check':'arrow_forward')}</button></div>` : ''}`;
+       ${s.next ? `<div class="row" style="justify-content:flex-end;margin-top:var(--sp-2)"><button class="btn btn-gold btn-sm" data-t="next">${s.last?'Done':'Next'} ${icon(s.last?'check':'arrow_forward')}</button></div>` : ''}`;
 }
 function frame(){
   raf = requestAnimationFrame(frame);
@@ -145,7 +145,7 @@ export function paintEmptyMap(count){
   if (!el){
     el = document.createElement('div'); el.id = 'emptyMap'; el.className = 'empty-map paper map-ui';
     el.innerHTML = `<span class="tape"></span><b>Your map looks empty</b><span class="muted small">Pin a place you've been to recently and it lands here as a stamp.</span>
-      <div class="row mt12" style="gap:8px"><button class="btn btn-gold btn-sm" data-e="pin">${icon('push_pin')}Pin a place</button><button class="btn btn-soft btn-sm" data-e="tour">${icon('tour')}Show me around</button></div>
+      <div class="row mt16" style="gap:var(--sp-2)"><button class="btn btn-gold btn-sm" data-e="pin">${icon('push_pin')}Pin a place</button><button class="btn btn-soft btn-sm" data-e="tour">${icon('tour')}Show me around</button></div>
       <div class="start-alt mt8">${startAlt('e')}</div>`;
     el.addEventListener('click', e=>{ const x=e.target.closest('[data-e]')?.dataset.e; if (x==='pin') go.log({}); if (x==='tour') startTour({fromStart:true}); if (x==='photos' || x==='link') startFrom(x); });
     $('#mapWrap').appendChild(el);

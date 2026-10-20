@@ -68,19 +68,19 @@ function placeScreen(venueId){
       el.innerHTML = topbar({title:'', center:true, actions:`<button class="icon-btn" id="pMore" aria-label="More">${icon('more_vert')}</button>`}) + `
       <div class="snap"><canvas id="pSnap"></canvas><span class="snap-pin">${icon('storefront')}${esc(v.name)}</span></div>
       <div class="place-body">
-        <div class="sheet-handle" style="margin:0 auto 12px"></div>
-        <div class="row" style="flex-wrap:wrap;gap:8px"><span class="tag">${iconSvg(cat.id,'#5e4000').replace('<svg','<svg width="14" height="14"')}${esc(cat.label)}</span>${sum.visitCount?`<span class="tag green">${icon('check_circle')}Visited ${sum.visitCount}x</span>`:''}${sum.state==='unlit'?'<span class="tag soft">Undiscovered</span>':''}${sum.meals.map(m=>`<span class="tag soft">${icon(mealById(m).icon)}${mealById(m).label}</span>`).join('')}</div>
+        <div class="sheet-handle" style="margin:0 auto var(--sp-3)"></div>
+        <div class="row" style="flex-wrap:wrap;gap:var(--sp-2)"><span class="tag">${iconSvg(cat.id,'#5e4000').replace('<svg','<svg width="14" height="14"')}${esc(cat.label)}</span>${sum.visitCount?`<span class="tag green">${icon('check_circle')}Visited ${sum.visitCount}x</span>`:''}${sum.state==='unlit'?'<span class="tag soft">Undiscovered</span>':''}${sum.meals.map(m=>`<span class="tag soft">${icon(mealById(m).icon)}${mealById(m).label}</span>`).join('')}</div>
         <h1 class="h-xl mt8">${esc(v.name)}</h1>
-        <div class="row muted mt4" style="gap:6px">${icon('storefront')}${esc([z?z.label:APP.city, v.address].filter(Boolean).join(' • '))}</div>
-        ${mine.length?`<div class="share-card mt20${minePrivate?' private':''}"><span class="sc-ico">${icon(minePrivate?'lock':'lock_open')}</span>
+        <div class="row muted mt4" style="gap:var(--sp-2)">${icon('storefront')}${esc([z?z.label:APP.city, v.address].filter(Boolean).join(' • '))}</div>
+        ${mine.length?`<div class="share-card mt24${minePrivate?' private':''}"><span class="sc-ico">${icon(minePrivate?'lock':'lock_open')}</span>
           <div class="grow"><b class="h-sm">${minePrivate?'Only you can see your log':esc(whoText(mineWho).replace(/.$/,''))}</b>
           <div class="muted small">${minePrivate?'Your notes & rating stay in your own scrapbook.':'They can see your notes, rating and photos here.'}</div></div>
           <button class="btn btn-soft btn-sm" id="pShare">Change</button></div>`:''}
-        <div class="row between mt24"><span class="row h-md" style="gap:8px">Who’s been <span class="tag soft">${plural(visits.length,'visit')}</span></span>${overallHTML({ rating:sum.rating, raters:sum.raters }, sum.ratingScope==='crew'?'Crew':'Your')}</div>
-        <div class="stack mt12">${visits.map(e=>{
+        <div class="row between mt24"><span class="row h-md" style="gap:var(--sp-2)">Who’s been <span class="tag soft">${plural(visits.length,'visit')}</span></span>${overallHTML({ rating:sum.rating, raters:sum.raters }, sum.ratingScope==='crew'?'Crew':'Your')}</div>
+        <div class="stack mt16">${visits.map(e=>{
           const u=S.user(e.userId), isMe=u.id===me.id;
           return `<div class="review" ${isMe?`data-edit="${e.id}" style="cursor:pointer"`:''}>
-            <div class="review-head">${avatarHTML(u,44)}<div class="grow"><div class="rv-name">${isMe?'You':esc(u.name||u.handle)}<span>@${esc(u.handle)}</span>${e.private?` <span class="tag dark" style="margin-left:6px">${icon('lock')}Only me</span>`:''}</div><div class="rv-when">${whenText(e)}</div></div>${e.rating?ratingPill(e.rating):''}${isMe?icon('edit','','').replace('class="ms"','class="ms" style="color:var(--outline);font-size:18px"'):''}</div>
+            <div class="review-head">${avatarHTML(u,44)}<div class="grow"><div class="rv-name">${isMe?'You':esc(u.name||u.handle)}<span>@${esc(u.handle)}</span>${e.private?` <span class="tag dark" style="margin-left:var(--sp-2)">${icon('lock')}Only me</span>`:''}</div><div class="rv-when">${whenText(e)}</div></div>${e.rating?ratingPill(e.rating):''}${isMe?icon('edit','','').replace('class="ms"','class="ms" style="color:var(--outline);font-size:18px"'):''}</div>
             ${e.notes?`<q>${esc(e.notes)}</q>`:''}
             ${withHTML(e, me)}
             ${taggedRatingsHTML(e, me)}
@@ -89,13 +89,13 @@ function placeScreen(venueId){
         ${wanters.length?`<div class="card-soft row mt16">${icon('bookmark')}<div class="grow"><b>Wants to try</b><div class="muted small">${plural(wanters.length,'crew friend')}${(()=>{ const L={google_maps:'from Google Maps',tiktok:'from TikTok',instagram:'from Instagram',text:'from a name'}; const ls=[...new Set(sum.wants.map(e=>L[e.sourceType]).filter(Boolean))]; return ls.length?' ('+ls.join(', ')+')':''; })()} saved this spot</div></div>${avatarStack(wanters,34,3)}</div>`:''}
 ${S.events({venueId:v.id, upcoming:true}).length?`<div class="card mt16"><span class="h-sm">${icon('event')} Crew plans here</span><div class="stack mt8">${S.events({venueId:v.id, upcoming:true}).map(eventRowHTML).join('')}</div></div>`:''}
         <div class="btn-grid mt16"><button class="btn btn-soft" id="pCheck">${icon('where_to_vote')}Check in</button><button class="btn btn-soft" id="pPlan">${icon('event')}Plan a bite</button></div>
-        ${taggedOn ? `<button class="btn btn-gold btn-block mt12" id="pAdd">${icon('add_a_photo')}${S.myRatingOn(taggedOn.id) || S.photos({entryId:taggedOn.id}).some(p=>p.userId===me.id) ? 'Edit your part of the visit' : 'Add your rating & photos'}</button>
+        ${taggedOn ? `<button class="btn btn-gold btn-block mt16" id="pAdd">${icon('add_a_photo')}${S.myRatingOn(taggedOn.id) || S.photos({entryId:taggedOn.id}).some(p=>p.userId===me.id) ? 'Edit your part of the visit' : 'Add your rating & photos'}</button>
         <p class="muted small center mt4">${esc(taggedBy ? (taggedBy.name||'@'+taggedBy.handle) : 'A friend')} tagged you on this visit</p>` : ''}
-        <button class="btn ${taggedOn?'btn-ghost':'btn-soft'} btn-block mt12" id="pLog">${icon(taggedOn?'add_location_alt':'add_a_photo')}${mine.some(e=>e.kind==='visit')?'Log another visit':taggedOn?'Log a new visit of your own':'Log your visit'}</button>
-        ${photos.length?`<div class="row between mt24"><span class="row h-md" style="gap:8px">${icon('photo_camera')}Photos</span><span class="muted small">${photos.length}</span></div>
+        <button class="btn ${taggedOn?'btn-ghost':'btn-soft'} btn-block mt16" id="pLog">${icon(taggedOn?'add_location_alt':'add_a_photo')}${mine.some(e=>e.kind==='visit')?'Log another visit':taggedOn?'Log a new visit of your own':'Log your visit'}</button>
+        ${photos.length?`<div class="row between mt24"><span class="row h-md" style="gap:var(--sp-2)">${icon('photo_camera')}Photos</span><span class="muted small">${photos.length}</span></div>
         <div class="strip">${photos.map(p=>polaroidHTML({src:S.photoURL(p), caption:p.caption, id:p.id, badge:p.private?`<span class="pol-badge tr">${icon('lock')}Only me</span>`:''})).join('')}</div>`:''}
         <button class="btn btn-gold btn-block mt16" id="pSend">${icon('send')}Send to crew</button>
-        <div class="btn-grid mt12"><a class="btn btn-soft" href="${mapsURL(v)}" target="_blank" rel="noopener">${icon('directions')}Directions</a><button class="btn btn-soft" id="pMap">${icon('map')}Show on map</button></div>
+        <div class="btn-grid mt16"><a class="btn btn-soft" href="${mapsURL(v)}" target="_blank" rel="noopener">${icon('directions')}Directions</a><button class="btn btn-soft" id="pMap">${icon('map')}Show on map</button></div>
         ${!mine.some(e=>e.kind==='want') && !mine.some(e=>e.kind==='visit')?`<button class="btn btn-ghost btn-block mt8" id="pWant">${icon('bookmark_add')}Save to try later</button>`:''}
       </div>`;
       MAP.whenReady(()=>requestAnimationFrame(()=>{ const c=el.querySelector('#pSnap'); if (c) MAP.drawSnapshot(c, MAP.placeWorld(v), 6); }));
@@ -167,11 +167,11 @@ function venueForm(initial, onSave, title){
         ${initial.fromGoogle?`<p class="g-attr" style="text-align:left">Place details from <b>Google Maps</b>: check them and pick what kind of place it is.</p>`:''}
         <div class="field mt8"><label class="eyebrow" for="vfN">Name</label><input class="input" id="vfN" maxlength="60" value="${esc(d.name)}" placeholder="e.g. Sunset Karak Corner"></div>
         <div class="field mt16"><label class="eyebrow" for="vfZ">Area</label><select class="input" id="vfZ">${MAP.ZONES.slice().sort((a,b)=>a.label.localeCompare(b.label)).map(x=>`<option value="${x.id}"${x.id===d.zone?' selected':''}>${esc(x.label)}</option>`).join('')}</select></div>
-        <div class="row mt12" style="gap:8px"><span class="grow small ${typeof d.lat==='number'?'':'muted'}" style="${typeof d.lat==='number'?'color:var(--green);font-weight:700':''}">${typeof d.lat==='number'?'📍 Exact spot pinned':`Somewhere in ${esc(z?z.label:APP.city)}`}</span>
+        <div class="row mt16" style="gap:var(--sp-2)"><span class="grow small ${typeof d.lat==='number'?'':'muted'}" style="${typeof d.lat==='number'?'color:var(--green);font-weight:700':''}">${typeof d.lat==='number'?'📍 Exact spot pinned':`Somewhere in ${esc(z?z.label:APP.city)}`}</span>
           <button class="btn btn-white btn-sm" id="vfPick">${icon('pin_drop')}Pick on map</button><button class="btn btn-white btn-sm" id="vfLoc" aria-label="Use my location">${icon('my_location')}</button></div>
-        <div class="eyebrow mt20">Categories</div>
+        <div class="eyebrow mt24">Categories</div>
         <div class="chip-wrap mt8" id="vfC">${catPickerHTML(d.categories, {open:body.dataset.catsOpen==='1'})}</div>
-        ${askMeal?`<div class="row between mt20"><span class="eyebrow">Meal</span><span class="hand">Optional</span></div>
+        ${askMeal?`<div class="row between mt24"><span class="eyebrow">Meal</span><span class="hand">Optional</span></div>
         <div class="chip-wrap mt8" id="vfM">${MEALS.map(m=>`<button type="button" class="person-chip meal-chip${d.meals.includes(m.id)?' on':''}" data-meal="${m.id}" aria-pressed="${d.meals.includes(m.id)}">${icon(m.icon)}${m.label}</button>`).join('')}</div>`:''}
         <div class="sheet-foot"><button class="btn btn-gold btn-block" id="vfS">${askMeal ? `Next step${icon('arrow_forward')}` : `${icon('check')}Save place`}</button></div>`;
       const n=body.querySelector('#vfN'); n.oninput=()=>{ d.name=n.value; };
@@ -250,7 +250,7 @@ function logFlow(opts){
     const paint=()=>{
       const crew=S.myCrew();
       const header = topbar({title: editing?'Edit visit':'Check in', center:true, actions:`<button class="icon-btn" id="lMore" aria-label="More">${icon('more_vert')}</button>`});
-      const stepRow = `<div class="row between mt8"><span class="row" style="gap:6px"><i style="width:14px;height:14px;border-radius:50%;background:${venue?'var(--gold-deep)':'var(--gold)'};display:inline-block"></i><i style="width:46px;height:8px;border-radius:4px;background:var(--gold);display:inline-block"></i><i style="width:14px;height:14px;border-radius:50%;background:${venue?'var(--gold)':'var(--sc-highest)'};display:inline-block"></i></span><span class="hand">${venue?'Step 2: details and memories':'Step 1: find the place'}</span></div>`;
+      const stepRow = `<div class="row between mt8"><span class="row" style="gap:var(--sp-2)"><i style="width:14px;height:14px;border-radius:50%;background:${venue?'var(--gold-deep)':'var(--gold)'};display:inline-block"></i><i style="width:46px;height:8px;border-radius:4px;background:var(--gold);display:inline-block"></i><i style="width:14px;height:14px;border-radius:50%;background:${venue?'var(--gold)':'var(--sc-highest)'};display:inline-block"></i></span><span class="hand">${venue?'Step 2: details and memories':'Step 1: find the place'}</span></div>`;
       if (!venue){
         const results = S.searchVenues(query, 10);
         el.innerHTML = header + `<div class="screen-body">${stepRow}
@@ -283,40 +283,40 @@ function logFlow(opts){
       // tagging a crewmate shares the visit with a crew you're both in
       const tagCrews = d.kind==='visit' ? S.crewsForTags([...d.tags, ...S.mentionIds(d.notes)], d.who||[], editing ? editing.taggedIds : []) : [];
       el.innerHTML = header + `<div class="screen-body">${stepRow}
-        <label class="search mt16">${icon('search')}<input value="${esc(venue.name)}" readonly aria-label="Place">${editing?'':`<button id="lChange" aria-label="Change place" class="icon-btn" style="width:34px;height:34px">${icon('check_circle')}</button>`}</label>
-        ${others.length?`<div class="already mt12"><b>${esc(venue.name)} is already on the crew map!</b>
+        <label class="search mt16">${icon('search')}<input value="${esc(venue.name)}" readonly aria-label="Place">${editing?'':`<button id="lChange" aria-label="Change place" class="icon-btn">${icon('check_circle')}</button>`}</label>
+        ${others.length?`<div class="already mt16"><b>${esc(venue.name)} is already on the crew map!</b>
           <p class="muted mt4">${tagged ? `<span class="hl">${esc(S.user(tagged.userId)?.name||'A friend')}</span> tagged you on their visit. Add your rating and photos to it, or log a new visit of your own below.` : `Your visit goes on the same pin as ${others.slice(0,2).map(u=>`<span class="hl">${esc(u.name||u.handle)}</span>`).join(' and ')}${others.length>2?` +${others.length-2}`:''}'s.`}</p>
-          ${tagged ? `<button type="button" class="btn btn-gold btn-block mt12" id="lJoin">${icon('add_a_photo')}Add to their visit</button>` : ''}
+          ${tagged ? `<button type="button" class="btn btn-gold btn-block mt16" id="lJoin">${icon('add_a_photo')}Add to their visit</button>` : ''}
           <div class="row mt8">${avatarStack(others,30,3)}<span class="hand">Visited ${lastOther?whenText(lastOther).toLowerCase().replace(/ •.*/,''):''}</span></div></div>`:''}
         <div class="card mt16" style="border-radius:var(--r-xl)">
           <div class="seg"><button data-k="visit" class="${d.kind==='visit'?'on':''}">Been here</button><button data-k="want" class="${d.kind==='want'?'on':''}">Want to try</button></div>
-          ${d.kind==='visit'?`<div class="row between mt20" style="align-items:flex-end;flex-wrap:wrap;gap:12px"><div><span class="eyebrow">Rating</span><div class="star-input mt8" id="lStars"></div></div>
+          ${d.kind==='visit'?`<div class="row between mt24" style="align-items:flex-end;flex-wrap:wrap;gap:var(--sp-3)"><div><span class="eyebrow">Rating</span><div class="star-input mt8" id="lStars"></div></div>
             <div><span class="eyebrow">Date</span><label class="date-pill mt8">${icon('calendar_month')}<span id="lDateTxt">${d.date===todayISO()?'Today, ':''}${fmtDate(d.date,{day:'numeric',month:'short'})}</span><input type="date" id="lDate" value="${d.date}" max="${todayISO()}"></label></div></div>
-            ${!editing && d.date===todayISO() ? (checkedIn() ? `<p class="tag green mt12">${icon('where_to_vote')}Checked in: you’re here</p>`
-              : here ? `<p class="muted small mt12">You’re ${distText(placeDistance(venue, here))} away, so this saves as a visit, not a check-in.</p>`
-              : `<button type="button" class="btn btn-soft mt12" id="lVerify"${locating?' disabled':''}>${icon('my_location')}${locating?'Finding you…':'I’m here now'}</button>`) : ''}`:''}
-          <div class="row between mt20"><span class="eyebrow">Meal</span><span class="hand">Optional</span></div>
+            ${!editing && d.date===todayISO() ? (checkedIn() ? `<p class="tag green mt16">${icon('where_to_vote')}Checked in: you’re here</p>`
+              : here ? `<p class="muted small mt16">You’re ${distText(placeDistance(venue, here))} away, so this saves as a visit, not a check-in.</p>`
+              : `<button type="button" class="btn btn-soft mt16" id="lVerify"${locating?' disabled':''}>${icon('my_location')}${locating?'Finding you…':'I’m here now'}</button>`) : ''}`:''}
+          <div class="row between mt24"><span class="eyebrow">Meal</span><span class="hand">Optional</span></div>
           <div class="chip-wrap mt8" id="lMeals">${MEALS.map(m=>`<button type="button" class="person-chip meal-chip${d.meals.includes(m.id)?' on':''}" data-meal="${m.id}" aria-pressed="${d.meals.includes(m.id)}">${icon(m.icon)}${m.label}</button>`).join('')}</div>
           ${d.kind==='visit' ? dishHTML() : ''}
-          <div class="field-label mt20"><span class="eyebrow">${d.kind==='visit'?'Notes':'Why you want to go'}</span><span class="hand">Optional</span></div>
+          <div class="field-label mt24"><span class="eyebrow">${d.kind==='visit'?'Notes':'Why you want to go'}</span><span class="hand">Optional</span></div>
           <textarea class="input mt8" id="lNotes" maxlength="400" placeholder="${d.kind==='visit'?'Tasting notes, hidden gems, dish recommendations…':'Who recommended it, what to order…'}">${esc(d.notes)}</textarea>
-          <div class="row between mt20"><span class="eyebrow">Photos</span><span class="muted small">${allPhotos} of ${APP.photosPerLog}</span></div>
+          <div class="row between mt24"><span class="eyebrow">Photos</span><span class="muted small">${allPhotos} of ${APP.photosPerLog}</span></div>
           ${aiTagsOn() ? '<p class="muted small mt4 ai-note">Photos are read by AI to make them searchable.</p>' : ''}
-          <div class="reel mt12">
+          <div class="reel mt16">
             ${existingPhotos.map(p=>polaroidHTML({src:S.photoURL(p), caption:p.caption, id:p.id, tape:false, rot:0})).join('')}
             ${newPhotos.map((p,i)=>`<div style="position:relative"><button class="rm" data-rm="${i}" aria-label="Remove photo">${icon('close')}</button>${polaroidHTML({src:p.url, id:'n'+i, tape:false, rot:0, sub:`<input data-cap="${i}" value="${esc(p.caption)}" placeholder="caption" maxlength="40">`})}</div>`).join('')}
             ${allPhotos<APP.photosPerLog && used<APP.photoLimit?`<label class="add-photo">${icon('photo_camera')}<span>Take photo</span><input type="file" accept="image/*" capture="environment" id="lCam" aria-label="Take a photo"></label><label class="add-photo">${icon('photo_library')}<span>Add photos</span><input type="file" accept="image/*" multiple id="lPh" aria-label="Add photos from your library"></label>`:''}
           </div>
           <div class="capacity mt16"><span class="cap-ico">${icon('photo_library')}</span><div class="grow"><div class="row between mono" style="font-size:12px;font-weight:700"><span>Scrapbook Roll Capacity</span><span style="color:var(--rust)">${used} / ${APP.photoLimit}</span></div><div class="cap-bar mt8"><i style="width:${Math.min(100,used/APP.photoLimit*100)}%"></i></div></div></div>
-          ${used>=APP.photoLimit?`<div class="alert warn mt12">${icon('photo_library')}<div><b>Photo roll is full</b>Delete a photo from your book to add more.</div></div>`:''}
-          <div class="eyebrow mt20">Who's this for?</div>
+          ${used>=APP.photoLimit?`<div class="alert warn mt16">${icon('photo_library')}<div><b>Photo roll is full</b>Delete a photo from your book to add more.</div></div>`:''}
+          <div class="eyebrow mt24">Who's this for?</div>
           <div class="mt8" id="lWho">${whoHTML(d.who)}</div>
-          ${S.crewmates().length && d.kind==='visit' ? `<div class="row between mt20"><span class="eyebrow">Who were you with?</span>${d.tags.length?`<span class="tag soft">${d.tags.length} tagged</span>`:''}</div>
+          ${S.crewmates().length && d.kind==='visit' ? `<div class="row between mt24"><span class="eyebrow">Who were you with?</span>${d.tags.length?`<span class="tag soft">${d.tags.length} tagged</span>`:''}</div>
           <p class="muted small mt4">They'll see it in their Tagged scrapbook, and it goes in the crew book you share. Or type @name in your notes.</p>
           <div class="chip-scroll mt8" id="lTags">${S.crewmates().map(u=>`<button type="button" class="person-chip${d.tags.includes(u.id)?' on':''}" data-tag="${u.id}" aria-pressed="${d.tags.includes(u.id)}">${avatarHTML(u,30)}@${esc(u.handle)}${d.tags.includes(u.id)?icon('check_circle'):''}</button>`).join('')}</div>${tagCrews.length?`<p class="tag-note mt8">${icon('groups')}<span>Tagging shares this visit with <b>${esc(tagCrews.map(c=>c.name).join(' and '))}</b></span></p>`:''}` : ''}
         </div>
-        <button class="btn btn-gold btn-block mt20" id="lSave" style="min-height:62px;font-size:21px">${icon('bookmark_add')}${editing?'Save changes':'Save to Scrapbook'}</button>
-        ${editing?`<button class="btn btn-danger btn-block mt12" id="lDel">${icon('delete')}Delete this log</button>`:''}
+        <button class="btn btn-gold btn-block mt24" id="lSave" style="min-height:62px;font-size:21px">${icon('bookmark_add')}${editing?'Save changes':'Save to Scrapbook'}</button>
+        ${editing?`<button class="btn btn-danger btn-block mt16" id="lDel">${icon('delete')}Delete this log</button>`:''}
       </div>`;
       // wiring
       const ch=el.querySelector('#lChange'); if (ch) ch.onclick=()=>{ venue=null; paint(); };
@@ -357,7 +357,7 @@ function logFlow(opts){
     const googleHTML = ()=>{
       if (!query.trim() || g.off) return '';
       const list = g.list.filter(p=>!S.venueByPlaceId(p.placeId));
-      if (!list.length) return g.loading ? `<p class="muted small mt12 row" style="gap:6px">${icon('travel_explore')}Searching Google Maps…</p>` : '';
+      if (!list.length) return g.loading ? `<p class="muted small mt16 row" style="gap:var(--sp-2)">${icon('travel_explore')}Searching Google Maps…</p>` : '';
       return `<div class="eyebrow mt16">On Google Maps</div>${list.map(p=>`<button class="search-result" data-g="${esc(p.placeId)}"><span class="sr-ico">${icon('location_on')}</span><span class="grow"><b class="trunc" style="display:block">${esc(p.name)}</b><span class="muted small trunc" style="display:block">${esc(p.detail)}</span></span>${icon('chevron_right')}</button>`).join('')}<p class="g-attr mt4">Results from <b>Google Maps</b></p>`;
     };
     // repaint without losing the cursor in the search box
@@ -397,7 +397,7 @@ function logFlow(opts){
       const photoTags = [...new Set(existingPhotos.flatMap(p=>p.aiTags||[]))];
       const own = S.myDishTags(), seen = new Set(d.dish);
       const sug = [...photoTags.map(t=>({ t, photo:true })), ...[...own, ...DISH_SEED].map(t=>({ t }))].filter(x=>!seen.has(x.t) && (seen.add(x.t), true)).slice(0, 10);
-      return `<div class="row between mt20"><span class="eyebrow">What did you have?</span><span class="hand">Optional</span></div>
+      return `<div class="row between mt24"><span class="eyebrow">What did you have?</span><span class="hand">Optional</span></div>
         ${d.dish.length ? `<div class="chip-wrap mt8" id="lDishOn">${d.dish.map(t=>`<button type="button" class="person-chip on" data-dish-rm="${esc(t)}" aria-label="Remove ${esc(t)}">${esc(t)}${icon('close')}</button>`).join('')}</div>` : ''}
         <div class="chip-wrap mt8" id="lDishSug">${sug.map(x=>`<button type="button" class="person-chip" data-dish-add="${esc(x.t)}">${x.photo ? icon('photo_camera') : icon('add')}${esc(x.t)}</button>`).join('')}</div>
         <input class="input mt8" id="lDish" maxlength="30" placeholder="Add a dish and press Enter" autocomplete="off" enterkeyhint="done">`;

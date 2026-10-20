@@ -52,12 +52,12 @@ function goalsScreen(){
           ${tick(c.done)}
           <div class="grow" style="min-width:0"><b>${esc(c.name)}</b><div class="mono small muted">${c.done?'Done':'Not done yet'}</div>
             ${c.hint && !c.done ? `<div class="hand small">${esc(c.hint)}</div>` : ''}
-            ${c.who.length ? `<div class="row mt8" style="gap:6px">${avatarStack(c.who.map(S.user).filter(Boolean), 26, 5)}<span class="muted small">chipped in</span></div>` : ''}</div>
+            ${c.who.length ? `<div class="row mt8" style="gap:var(--sp-2)">${avatarStack(c.who.map(S.user).filter(Boolean), 26, 5)}<span class="muted small">chipped in</span></div>` : ''}</div>
         </div>`).join('')}</div>
-        <p class="center muted small mt12">Everyone in ${esc(crew.name)} sees the same challenges. Visits shared with the crew count.</p>`
+        <p class="center muted small mt16">Everyone in ${esc(crew.name)} sees the same challenges. Visits shared with the crew count.</p>`
         : `<div class="empty mt16">${icon('groups')}<h3 class="h-md">Challenges are for crews</h3><p class="muted">Start or join a crew and you'll get three challenges to do together each month.</p><button class="btn btn-gold" id="gcCrew">${icon('group_add')}Start a crew</button></div>`}
         <div class="row between mt32"><span class="h-md">Just me</span></div>
-        <div class="stack mt12">${list.map(g=>`<div class="goal-card${g.done?' done':''}">
+        <div class="stack mt16">${list.map(g=>`<div class="goal-card${g.done?' done':''}">
           ${tick(g.done)}
           <div class="grow"><b>${esc(g.name)}</b><div class="mono small muted">${g.done?'Done':'Not done yet'}</div>
             ${g.id==='wishlist' && !g.done && wants.length ? `<div class="chip-wrap mt8">${wants.map(v=>`<button class="tag soft" data-venue="${v.id}">${esc(v.name)}</button>`).join('')}</div>` : ''}</div>

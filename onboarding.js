@@ -28,8 +28,8 @@ function welcome(){
       <button class="btn btn-google btn-block" id="wGoogle"><svg width="22" height="22" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 38.2 44 33 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>Continue with Google</button>
       <button class="btn btn-gold btn-block" id="wEmail">${icon('mail')}Continue with Email</button>
     </div>
-    <div class="or-rule mt20">${icon('restaurant')}</div>
-    <p class="center muted mt12" style="font-size:15px">By continuing, you agree to our <button class="link" data-legal="terms">Terms</button> and <button class="link" data-legal="privacy">Privacy policy</button>. Your location is only used when you tap check in.</p>
+    <div class="or-rule mt24">${icon('restaurant')}</div>
+    <p class="center muted mt16" style="font-size:15px">By continuing, you agree to our <button class="link" data-legal="terms">Terms</button> and <button class="link" data-legal="privacy">Privacy policy</button>. Your location is only used when you tap check in.</p>
     ${!S.cloud?`<p class="center small mt16" style="color:var(--ink-3)">Preview: accounts stay on this phone for now</p>`:''}
   </div>`;
   $('#screens').prepend(root);   // always underneath the step screens
@@ -146,13 +146,13 @@ function codeStep(email){
     el.innerHTML = topbar({title:'Check your email', profile:false}) + `<div class="screen-body">
       <h1 class="h-xl mt16">Check your email</h1>
       <p class="muted mt8" style="font-size:16px">We sent a 6-digit code to <span class="tag soft" style="font-size:14px;font-family:var(--f-body);text-transform:none;letter-spacing:0">${esc(email)}</span>. Enter it below.</p>
-      <div class="card-peach mt24" style="padding:16px">
+      <div class="card-peach mt24" style="padding:var(--sp-3)">
         <div class="code-box" style="padding:0;background:none"><span class="clip"></span>${Array.from({length:6},(_,i)=>`<input inputmode="numeric" maxlength="1" aria-label="Digit ${i+1}" data-i="${i}">`).join('')}</div>
-        <div class="row between mt16"><span class="row muted" style="gap:8px">${icon('schedule')}Resend code in <span class="tag soft" id="cT">0:40</span></span><button class="mono" id="cResend" style="color:var(--outline-v);font-weight:700;letter-spacing:.08em" disabled>Send again</button></div>
+        <div class="row between mt16"><span class="row muted" style="gap:var(--sp-2)">${icon('schedule')}Resend code in <span class="tag soft" id="cT">0:40</span></span><button class="mono" id="cResend" style="color:var(--outline-v);font-weight:700;letter-spacing:.08em" disabled>Send again</button></div>
       </div>
       <div id="cPending"></div>
       <div id="cErr" class="alert mt16" hidden>${icon('priority_high')}<div><b>Wrong code entered</b>Double-check your inbox or spam folder, or tap resend above.</div></div>
-      ${!S.cloud?`<div class="note mt16">${icon('science')}<span><b>Preview mode:</b> no email is actually sent yet. Enter any 6 digits.</span></div>`:`<p class="muted small mt12">No email? Check spam, or wait a minute and tap Send again. You can also tap the link in the email.</p>`}
+      ${!S.cloud?`<div class="note mt16">${icon('science')}<span><b>Preview mode:</b> no email is actually sent yet. Enter any 6 digits.</span></div>`:`<p class="muted small mt16">No email? Check spam, or wait a minute and tap Send again. You can also tap the link in the email.</p>`}
       <button class="btn btn-gold btn-block mt24" id="vfyGo">Continue ${icon('arrow_forward')}</button>
       <p class="center mt16"><span class="hand">Having trouble?</span> <button class="hand link" data-act="back" style="font-size:19px">Change email address</button></p>
     </div>`;
@@ -199,19 +199,19 @@ function handleStep(opts){
       <p class="muted mt8" style="font-size:16px">This is how your food crew will tag you on visits and photos across ${esc(APP.city)}.</p>
       <div class="field-label mt24"><span class="eyebrow">Handle</span><span class="hand">letters, numbers &amp; underscores</span></div>
       <div class="handle-input mt8" id="hBox"><b>@</b><input id="hIn" maxlength="20" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(me.handle||'')}" placeholder="you"><span class="ok">${icon('check')}</span></div>
-      <div class="mt12" id="hMsg"></div>
+      <div class="mt16" id="hMsg"></div>
       <div class="rules mt8"><span id="rLen">3+ characters</span><span id="rUniq">unique</span></div>
-      <div class="field mt20"><label class="eyebrow" for="nIn">Display name <span style="text-transform:none;font-weight:400">(optional)</span></label><input class="input" id="nIn" maxlength="30" value="${esc(me.name||'')}" placeholder="What friends call you"></div>
+      <div class="field mt24"><label class="eyebrow" for="nIn">Display name <span style="text-transform:none;font-weight:400">(optional)</span></label><input class="input" id="nIn" maxlength="30" value="${esc(me.name||'')}" placeholder="What friends call you"></div>
       <div class="preview-card mt32"><span class="tape-label">live preview</span>
         <div class="row between"><span class="row h-sm">How your crew sees you</span></div>
-        <div class="activity-sample mt12">
+        <div class="activity-sample mt16">
           <div class="row"><span class="stamp st-visited"><span class="st-paper"><span class="st-ico">${iconSvg('coffee','#7e5700')}</span></span></span><div class="grow"><b id="pvH">@you</b><div>logged a spot at <b>Trio Cafe</b></div></div><span class="mono muted" style="font-size:12px">Just now</span></div>
           <div class="as-inner"><img src="demo/d08.jpg" alt="" style="width:56px;height:56px;border-radius:8px;object-fit:cover"><div><b>Iced Spanish Latte &amp; Brioche</b><div class="hand">"The cardamom note was crazy good"</div></div></div>
         </div>
-        <p class="muted small mt12">Your crews see this on visits you share.</p>
+        <p class="muted small mt16">Your crews see this on visits you share.</p>
       </div>
       <button class="btn btn-gold btn-block mt32" id="hGo" disabled>${opts.edit?'Save':'Next: Choose Avatar'} ${icon(opts.edit?'check':'arrow_forward')}</button>
-      <p class="center hand mt12">You can change your handle later in your profile.</p>
+      <p class="center hand mt16">You can change your handle later in your profile.</p>
     </div>`;
     const inp=el.querySelector('#hIn'), box=el.querySelector('#hBox'), msg=el.querySelector('#hMsg'), btn=el.querySelector('#hGo');
     const check=()=>{
@@ -223,8 +223,8 @@ function handleStep(opts){
       el.querySelector('#rUniq').className = !lenOk ? '' : (st==='taken'?'bad':'ok');
       box.classList.toggle('valid', st==='ok');
       msg.innerHTML = !h ? '' : st==='ok' ? `<span class="ok-pill">${icon('check_circle')}@${esc(h)} is available</span>` :
-        st==='taken' ? `<span class="tag red" style="font-size:12px;padding:6px 12px">@${esc(h)} is taken</span>` :
-        st==='short' ? `<span class="tag rust" style="font-size:12px;padding:6px 12px">too short</span>` : `<span class="tag red" style="font-size:12px;padding:6px 12px">letters, numbers &amp; _ only</span>`;
+        st==='taken' ? `<span class="tag red" style="font-size:12px;padding:var(--sp-2) var(--sp-3)">@${esc(h)} is taken</span>` :
+        st==='short' ? `<span class="tag rust" style="font-size:12px;padding:var(--sp-2) var(--sp-3)">too short</span>` : `<span class="tag red" style="font-size:12px;padding:var(--sp-2) var(--sp-3)">letters, numbers &amp; _ only</span>`;
       btn.disabled = st!=='ok';
     };
     let askT=null, asked='';
@@ -233,7 +233,7 @@ function handleStep(opts){
       if (!S.cloud || S.handleStatus(h)!=='ok' || h===(me.handle||'')) return;
       btn.disabled=true;
       askT=setTimeout(async()=>{ asked=h; const free=await S.handleAvailable(h); if (inp.value!==asked) return;
-        if (!free){ box.classList.remove('valid'); el.querySelector('#rUniq').className='bad'; msg.innerHTML=`<span class="tag red" style="font-size:12px;padding:6px 12px">@${esc(h)} is taken</span>`; btn.disabled=true; }
+        if (!free){ box.classList.remove('valid'); el.querySelector('#rUniq').className='bad'; msg.innerHTML=`<span class="tag red" style="font-size:12px;padding:var(--sp-2) var(--sp-3)">@${esc(h)} is taken</span>`; btn.disabled=true; }
         else btn.disabled=false; }, 350);
     };
     inp.addEventListener('input', ()=>{ check(); askServer(); }); check(); askServer();
@@ -259,28 +259,28 @@ function avatarStep(opts){
       const robe = av.outfit==='kandura' || av.outfit==='abaya';
       el.innerHTML = topbar({title:'Your avatar', profile:false}) + `<div class="screen-body">
         ${opts.edit?'':setupProgress(2)}
-        <div class="row mt20" style="align-items:flex-start"><h1 class="h-xl grow">Style your pixel avatar</h1></div>
+        <div class="row mt24" style="align-items:flex-start"><h1 class="h-xl grow">Style your pixel avatar</h1></div>
         <p class="muted mt8" style="font-size:16px">Visible only to your crew on the map and scrapbook pages.</p>
-        <div class="avatar-stage mt20"><span class="tape rose" style="left:40px"></span><span class="tape" style="right:40px;left:auto"></span>
+        <div class="avatar-stage mt24"><span class="tape rose" style="left:40px"></span><span class="tape" style="right:40px;left:auto"></span>
           <div class="avatar-ring">${spriteSvg(av, 11)}</div>
         </div>
         <div class="row between mt24"><h3 class="h-md">Skin tone</h3></div>
         <div class="swatches mt8" data-k="skin">${SKINS.map((c,i)=>`<button class="sw${av.skin===i?' on':''}" style="background:${c}" data-v="${i}" aria-label="Skin ${i+1}"></button>`).join('')}</div>
         <div class="row between mt24"><h3 class="h-md">Hair and headwear</h3><span class="eyebrow">Style</span></div>
         <div class="pills mt8" data-k="hair">${HAIRS.map(([v,l])=>`<button class="pill-opt${av.hair===v?' on':''}" data-v="${v}">${av.hair===v?icon('check'):''}${l}</button>`).join('')}</div>
-        <div class="row between mt20"><h3 class="h-md">Hair colour</h3></div>
+        <div class="row between mt24"><h3 class="h-md">Hair colour</h3></div>
         <div class="swatches round mt8" data-k="hairColor">${HAIR_COLORS.map(c=>`<button class="sw${av.hairColor===c?' on':''}" style="background:${c}" data-v="${c}" aria-label="Hair colour"></button>`).join('')}</div>
         <div class="row between mt24"><h3 class="h-md">Outfits</h3><span class="eyebrow">Attire</span></div>
         <div class="opt-grid mt8" data-k="outfit">${OUTFITS.map(([v,l])=>`<button class="opt-card${av.outfit===v?' on':''}" data-v="${v}">${icon(v==='dress'?'checkroom':v==='abaya'?'woman':'apparel')}${l}<span class="radio"></span></button>`).join('')}</div>
         ${robe?'':`<div class="row between mt24"><h3 class="h-sm" style="font-family:var(--f-body)">Top colour</h3></div>
         <div class="swatches round mt8" data-k="top">${TOPS.map(c=>`<button class="sw${av.top===c?' on':''}" style="background:${c}" data-v="${c}" aria-label="Top colour"></button>`).join('')}</div>`}
-        <div class="card-peach mt24 row"><span style="background:var(--card);border-radius:12px;padding:6px;box-shadow:var(--shadow-sm)">${spriteSvg(av,3)}</span><div class="grow"><b class="h-sm">On the map</b><div class="muted small">How your pins look to your crew</div></div>${icon('push_pin')}</div>
+        <div class="card-peach mt24 row"><span style="background:var(--card);border-radius:12px;padding:var(--sp-2);box-shadow:var(--shadow-sm)">${spriteSvg(av,3)}</span><div class="grow"><b class="h-sm">On the map</b><div class="muted small">How your pins look to your crew</div></div>${icon('push_pin')}</div>
         <div class="row between mt24"><h3 class="h-md">Pin colour</h3></div>
         <p class="muted small mt4">Your crew sees your pins in this colour, with your face on them up close.</p>
         <div class="pin-swatches mt8">${PIN_COLORS.map(p=>`<button class="pin-sw${pin===p.c?' on':''}" data-pin="${p.c}" style="--c:${p.c}" aria-label="${p.n}" aria-pressed="${pin===p.c}"></button>`).join('')}</div>
         <div class="note mt16">${icon('shield_lock')}<span>Your avatar and pin colour are visible to your crew.</span></div>
         <button class="btn btn-gold btn-block mt24" id="aGo">${opts.edit?'Save avatar':'Next: Crew Sharing'} ${icon(opts.edit?'check':'arrow_forward')}</button>
-        <p class="center hand mt12">You can re-dress your pocket avatar anytime</p>
+        <p class="center hand mt16">You can re-dress your pocket avatar anytime</p>
       </div>`;
       el.querySelectorAll('[data-k] [data-v]').forEach(b=>b.addEventListener('click', ()=>{
         const k=b.closest('[data-k]').dataset.k; av[k] = k==='skin' ? parseInt(b.dataset.v,10) : b.dataset.v;
@@ -303,12 +303,12 @@ function shareStep(){
   openScreen(el=>{ el.classList.add('cover');
     el.innerHTML = topbar({title:'Crew sharing', center:true, profile:false}) + `<div class="screen-body center">
       ${setupProgress(3)}
-      <h1 class="h-xl mt12">You decide who sees each place</h1>
+      <h1 class="h-xl mt16">You decide who sees each place</h1>
       <p class="muted mt8" style="font-size:16px">Nothing is shared unless you choose.</p>
       <div class="card mt24" style="text-align:left">
-        <div class="row" style="gap:12px;align-items:flex-start">${icon('groups')}<span><b>Up to ${APP.crewsPerPerson} crews</b>, with up to ${APP.crewMax} people in each.</span></div>
-        <div class="row mt12" style="gap:12px;align-items:flex-start">${icon('lock')}<span>Each time you save a place, choose <b>Just me</b> or the crews that can see it.</span></div>
-        <div class="row mt12" style="gap:12px;align-items:flex-start">${icon('sell')}<span><b>Tag who you were with.</b> It shares the visit with a crew you're both in, and they can add their own rating.</span></div>
+        <div class="row" style="gap:var(--sp-3);align-items:flex-start">${icon('groups')}<span><b>Up to ${APP.crewsPerPerson} crews</b>, with up to ${APP.crewMax} people in each.</span></div>
+        <div class="row mt16" style="gap:var(--sp-3);align-items:flex-start">${icon('lock')}<span>Each time you save a place, choose <b>Just me</b> or the crews that can see it.</span></div>
+        <div class="row mt16" style="gap:var(--sp-3);align-items:flex-start">${icon('sell')}<span><b>Tag who you were with.</b> It shares the visit with a crew you're both in, and they can add their own rating.</span></div>
       </div>
       <button class="btn btn-gold btn-block mt24" id="sGo">Next ${icon('arrow_forward')}</button>
     </div>`;
@@ -322,9 +322,9 @@ function collectStep(){
     const shown = critterArt(CRITTERS[0].id, 64, { silhouette:true });   // one shape, no name: a taste, not a clue
     el.innerHTML = topbar({title:'Your scrapbook', center:true, profile:false}) + `<div class="screen-body center">
       ${setupProgress(4)}
-      <h1 class="h-xl mt12">Three things you'll collect</h1>
+      <h1 class="h-xl mt16">Three things you'll collect</h1>
       <p class="muted mt8" style="font-size:16px">No points, no scores. Just memories.</p>
-      <div class="collect-list mt20" style="text-align:left">
+      <div class="collect-list mt24" style="text-align:left">
         <div class="collect-row"><span class="cl-art">${icon('auto_stories')}</span><span><b>Every visit becomes a page</b><span class="muted small">Log a place and it's taped into your scrapbook, and your crew's if you share it. Photos are optional.</span></span></div>
         <div class="collect-row"><span class="cl-art critters">${shown}</span><span><b>Critters to find</b><span class="muted small">${CRITTERS.length} pixel animals live at real places around Dubai. Check in where one lives to catch it. There are no clues on the map: just get out and explore.</span></span></div>
         <div class="collect-row"><span class="cl-art">${icon('verified')}</span><span><b>Stickers for milestones</b><span class="muted small">Your first new place, your first coffee, ten visits. Earned or not, nothing to compete for.</span></span></div>
@@ -352,20 +352,20 @@ function importStep(fromOnboarding){
       const n=sel.size;
       el.innerHTML = topbar({title:'Import', center:true, profile:false}) + `<div class="screen-body center">
         <span class="tag soft mt8">AUTO-SYNC • THIS PHONE</span>
-        <div style="margin:14px auto 0;width:52px;height:52px;border-radius:50%;background:var(--sc-high);display:flex;align-items:center;justify-content:center">${icon('photo_library')}</div>
-        <h1 class="h-xl mt12">Found ${plural(list.length,'place')} on this phone</h1>
+        <div style="margin:var(--sp-3) auto 0;width:52px;height:52px;border-radius:50%;background:var(--sc-high);display:flex;align-items:center;justify-content:center">${icon('photo_library')}</div>
+        <h1 class="h-xl mt16">Found ${plural(list.length,'place')} on this phone</h1>
         <p class="muted mt8" style="font-size:16px">Add them to your scrapbook?</p>
-        <div class="stack mt20" style="text-align:left">${list.map(p=>{
+        <div class="stack mt24" style="text-align:left">${list.map(p=>{
           const cat=catById((p.categories||[])[0])||CATEGORIES[0], z=zoneById(p.zone);
           return `<button class="import-row${sel.has(p.id)?' on':''}" data-id="${esc(p.id)}"><span class="cb">${icon('check')}</span>
             <span class="ir-thumb">${p.photo?`<img src="${p.photo}" alt="">`:iconSvg(cat.id,cat.color)}</span>
             <span class="grow"><b class="h-sm trunc" style="display:block">${esc(p.name||'Untitled')}</b><span class="muted">${esc(z?z.label:APP.city)} • ${p.photo?'<span style="color:var(--rust)">1 photo</span>':(p.status==='want'?'Want to try':'Visit')}</span></span>
             <span class="tag ${cat.id==='karak'||cat.id==='matcha'?'green':''}">${esc(cat.label)}</span></button>`;
         }).join('')}</div>
-        <div class="card-peach mt20" style="text-align:left"><span class="eyebrow" style="color:var(--rust)">${icon('verified')} Ready to import</span>
+        <div class="card-peach mt24" style="text-align:left"><span class="eyebrow" style="color:var(--rust)">${icon('verified')} Ready to import</span>
           <div class="h-md mt8">${n} places added, ${list.length-n} skipped</div></div>
         <button class="btn btn-gold btn-block mt24" id="iGo" ${n?'':'disabled'}>${icon('library_add_check')}Import ${n}</button>
-        <button class="btn btn-white btn-block mt12" id="iSkip">${icon('close')}Skip for now</button>
+        <button class="btn btn-white btn-block mt16" id="iSkip">${icon('close')}Skip for now</button>
         <p class="center hand mt16">Don't worry, you can easily delete or retag items later!</p>
       </div>`;
       el.querySelectorAll('.import-row').forEach(r=>r.onclick=()=>{ sel.has(r.dataset.id)?sel.delete(r.dataset.id):sel.add(r.dataset.id); const st=el.scrollTop; paint(); el.scrollTop=st; });

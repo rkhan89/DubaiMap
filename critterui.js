@@ -34,7 +34,7 @@ function factHTML(cr){
 function landmarkSection(have, fav){
   const shown = LANDMARK_CRITTERS.filter(c=>have.has(c.id) || SHOW_LOCKED_LANDMARK_CRITTERS);
   if (!shown.length) return '';
-  return `<h2 class="h-md mt24">Landmark critters</h2><div class="critter-grid mt12">${shown.map(c=>have.has(c.id)
+  return `<h2 class="h-md mt24">Landmark critters</h2><div class="critter-grid mt16">${shown.map(c=>have.has(c.id)
     ? `<button class="critter-card caught" data-critter="${c.id}">${fav===c.id?`<span class="fav-tag">${icon('favorite','',true)}Favourite</span>`:''}<span class="cc-art">${critterArt(c.id, 96)}</span><b>${esc(c.name)}</b>${themeChip(c.theme)}</button>`
     : `<div class="critter-card unknown" aria-label="Not found yet"><span class="cc-art"><img class="critter-art" src="${esc(lockedImg(c.id))}" width="96" height="96" alt=""></span><b>? ? ?</b><span class="theme-chip blank">&nbsp;</span></div>`).join('')}</div>`;
 }
@@ -49,7 +49,7 @@ function collection(userId){
       el.innerHTML = topbar({ title: mine ? 'Critters' : (u?.name||u?.handle||'Their')+'’s critters', eyebrow:'' }) + `<div class="screen-body">
         <div class="row between mt8"><p class="hand grow">Critters live at real places around Dubai. Check in where they are to find them.</p>
           <span class="tag soft found-count">${CRITTERS.filter(c=>have.has(c.id)).length} of ${CRITTERS.length} found</span></div>
-        <div class="chip-scroll mt12" role="tablist">${['All', ...Object.keys(THEMES)].map(t=>`<button class="person-chip${theme===t?' on':''}" data-theme="${t}" role="tab" aria-selected="${theme===t}">${esc(t)}</button>`).join('')}</div>
+        <div class="chip-scroll mt16" role="tablist">${['All', ...Object.keys(THEMES)].map(t=>`<button class="person-chip${theme===t?' on':''}" data-theme="${t}" role="tab" aria-selected="${theme===t}">${esc(t)}</button>`).join('')}</div>
         <div class="critter-grid mt16">${list.map(c=>{ const got = have.has(c.id);
           return got
             ? `<button class="critter-card caught" data-critter="${c.id}">${fav===c.id?`<span class="fav-tag">${icon('favorite','',true)}Favourite</span>`:''}<span class="cc-art">${critterArt(c.id, 96)}</span><b>${esc(c.name)}</b>${themeChip(c.theme)}</button>`
@@ -80,7 +80,7 @@ function detail(id, userId){
       el.innerHTML = topbar({ title:'' }) + `<div class="screen-body">
         <div class="critter-hero mt8"><span class="tape"></span>${critterArt(id, 192)}</div>
         <div class="center mt16"><h1 class="h-lg critter-name">${esc(cr.name)}</h1><div class="mt8">${themeChip(cr.theme)}</div></div>
-        <div class="field-log mt20">
+        <div class="field-log mt24">
           <div class="fl-row">${icon('location_on')}<span><span class="eyebrow">Caught at</span><b>${esc(whereText(c))}</b></span></div>
           <div class="fl-row">${icon('calendar_month')}<span><span class="eyebrow">On</span><b>${esc(fmtDate(iso(c.caughtAt)))}</b></span></div>
         </div>
@@ -149,7 +149,7 @@ function favouritePicker(){
       const fav = S.favouriteOf(me.id);
       body.innerHTML = `<div class="sheet-head"><div class="grow"><h2 class="h-md">Your favourite critter</h2><p class="muted small">It sits by your face on your pins and your profile. Your crew sees it.</p></div></div>
         ${have.length ? `<div class="critter-grid picker mt8">${have.map(c=>`<button class="critter-card caught${fav===c.id?' picked':''}" data-pick="${c.id}" aria-pressed="${fav===c.id}"><span class="cc-art">${critterArt(c.id, 64)}</span><b>${esc(c.name)}</b></button>`).join('')}</div>`
-          : `<p class="muted mt12">Catch a critter first: check in where they live.</p>`}
+          : `<p class="muted mt16">Catch a critter first: check in where they live.</p>`}
         <button class="btn btn-soft btn-block mt16" data-pick="">${icon('block')}No favourite</button>`;
       body.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>{ S.setFavourite(b.dataset.pick || null); go.refresh(); back(); toast(b.dataset.pick ? `${critterById(b.dataset.pick).name} is your favourite` : 'No favourite'); });
     };

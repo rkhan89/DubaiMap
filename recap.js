@@ -150,9 +150,9 @@ function recapScreen(month, which){
       const crew = S.myCrew(), scope = mode==='crew' && crew ? { crew } : {};
       el.innerHTML = topbar({title:'Your month', eyebrow:'Scrapbook spread'}) + `<div class="screen-body">
         ${crew ? seg('rcwho', [['me','Just me','person'],['crew',crew.name,'groups']], mode).replace('class="seg"','class="seg mt16"') : ''}
-        <div class="month-row mt12">${months.slice(0,12).map(m=>`<button class="month-chip${m===month?' on':''}" data-m="${m}">${esc(fmtMonth(m))}</button>`).join('')}</div>
-        <div class="recap-frame paper mt12"><canvas id="rcCanvas" aria-label="Scrapbook spread for ${esc(fmtMonth(month))}"></canvas></div>
-        <p class="center muted small mt12" id="rcNote"></p>
+        <div class="month-row mt16">${months.slice(0,12).map(m=>`<button class="month-chip${m===month?' on':''}" data-m="${m}">${esc(fmtMonth(m))}</button>`).join('')}</div>
+        <div class="recap-frame paper mt16"><canvas id="rcCanvas" aria-label="Scrapbook spread for ${esc(fmtMonth(month))}"></canvas></div>
+        <p class="center muted small mt16" id="rcNote"></p>
         <div class="btn-grid mt16"><button class="btn btn-soft" id="rcSave">${icon('download')}Save image</button><button class="btn btn-gold" id="rcShare">${icon('ios_share')}Share</button></div>
       </div>`;
       bindSeg(el, 'rcwho', v=>{ mode = v; paint(); });
