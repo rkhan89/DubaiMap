@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_stack" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&amp;family=Nunito+Sans:wght@700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600&amp;family=Space+Mono:wght@400;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "on-secondary": "#ffffff", "primary-container": "#e5a93c", "on-primary-container": "#5e4000", "on-secondary-fixed-variant": "#6c3a13", "on-surface": "#291709", "error": "#ba1a1a", "inverse-on-surface": "#ffede3", "tertiary-fixed": "#c9edb0", "tertiary-container": "#9cbe85", "secondary": "#895029", "on-surface-variant": "#504535", "background": "#fff8f5", "on-tertiary-fixed-variant": "#314e21", "tertiary-fixed-dim": "#aed196", "primary-fixed": "#ffdead", "secondary-fixed-dim": "#ffb688", "secondary-container": "#feb383", "error-container": "#ffdad6", "on-tertiary": "#ffffff", "surface-container-high": "#ffe3d0", "surface-variant": "#ffdcc4", "on-primary-fixed-variant": "#604100", "surface-dim": "#f6d3bc", "primary-fixed-dim": "#fabc4d", "secondary-fixed": "#ffdbc7", "surface-bright": "#fff8f5", "outline": "#827563", "on-error": "#ffffff", "on-secondary-container": "#78431c", "surface-container-highest": "#ffdcc4", "on-background": "#291709", "primary": "#7e5700", "inverse-surface": "#412c1c", "on-tertiary-fixed": "#082100", "on-error-container": "#93000a", "tertiary": "#486636", "surface-container": "#ffeadd", "surface-container-lowest": "#ffffff", "surface-tint": "#7e5700", "surface-container-low": "#fff1e9", "surface": "#fff8f5", "on-tertiary-container": "#304d20", "outline-variant": "d4c4b0", "inverse-primary": "#fabc4d", "on-primary": "#ffffff", "on-secondary-fixed": "#311300", "on-primary-fixed": "#281900" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "margin": "1.25rem", "space-xl": "2rem", "space-lg": "1.5rem", "space-md": "1rem", "space-xs": "0.25rem", "gutter": "1rem", "space-sm": "0.5rem" }, "fontFamily": { "headline-xl-mobile": ["Nunito Sans"], "headline-lg": ["Nunito Sans"], "label-lg": ["Plus Jakarta Sans"], "body-sm": ["Plus Jakarta Sans"], "headline-xl": ["Nunito Sans"], "headline-md": ["Nunito Sans"], "body-md": ["Plus Jakarta Sans"], "headline-sm": ["Nunito Sans"], "label-sm": ["Space Mono"], "caption": ["Caveat"], "body-lg": ["Plus Jakarta Sans"], "label-md": ["Space Mono"] }, "fontSize": { "headline-xl-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "800" }], "headline-lg": ["26px", { "lineHeight": "34px", "fontWeight": "700" }], "label-lg": ["14px", { "lineHeight": "18px", "fontWeight": "600" }], "body-sm": ["13px", { "lineHeight": "18px", "fontWeight": "400" }], "headline-xl": ["34px", { "lineHeight": "42px", "fontWeight": "800" }], "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "700" }], "body-md": ["14px", { "lineHeight": "21px", "fontWeight": "400" }], "headline-sm": ["18px", { "lineHeight": "24px", "fontWeight": "700" }], "label-sm": ["10px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "400" }], "caption": ["18px", { "lineHeight": "22px", "fontWeight": "600" }], "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "500" }], "label-md": ["11px", { "lineHeight": "16px", "letterSpacing": "0.06em", "fontWeight": "700" }] } } } }</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface text-on-surface font-body-md text-body-md flex flex-col min-h-screen selection:bg-secondary-container relative"><div class="fixed top-0 bottom-0 left-0 w-2.5 bg-secondary z-50 pointer-events-none shadow-[2px_0_6px_rgba(41,23,9,0.18)]"></div><div class="fixed top-0 bottom-0 left-3 w-px border-l border-dashed border-outline-variant/60 z-50 pointer-events-none"></div><header class="fixed top-0 w-full z-40 bg-surface/90 backdrop-blur-xl pt-safe shadow-[0_1px_8px_rgba(41,23,9,0.06)]"><div class="h-16 pl-6 pr-4 flex items-center justify-between relative"><div class="flex items-center gap-space-xs"><button aria-label="Close scrapbook" class="w-11 h-11 flex items-center justify-center rounded-lg text-on-surface-variant hover:text-on-surface active:translate-y-0.5 transition-all" onclick="history.back()"><span class="material-symbols-outlined text-[22px]">arrow_back</span></button><div class="flex flex-col"><span class="font-caption text-caption text-secondary -mb-1">Koko Scrapbook</span><h1 class="font-headline-sm text-headline-sm text-on-surface tracking-tight leading-none">Journal Page Reader</h1></div></div><div class="flex items-center gap-space-xs"><div class="absolute -top-1 right-28 w-4 h-12 bg-primary rounded-b-sm shadow-[0_2px_4px_rgba(0,0,0,0.15)] flex items-end justify-center pb-1 pointer-events-none"><div class="w-2 h-2 bg-surface rotate-45 transform translate-y-1.5"></div></div><button aria-label="Bookmark entry" class="w-11 h-11 flex items-center justify-center rounded-lg text-on-surface-variant hover:text-primary active:translate-y-0.5 transition-all"><span class="material-symbols-outlined text-[20px]">bookmark</span></button><button aria-label="Scrapbook actions" class="w-11 h-11 flex items-center justify-center rounded-lg text-on-surface-variant hover:text-on-surface active:translate-y-0.5 transition-all"><span class="material-symbols-outlined text-[20px]">more_vert</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center ml-space-xs"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex flex-col relative w-full pt-16 bg-surface min-h-screen pl-4"><div class="flex flex-col w-full relative pb-12 pr-4 pl-1">
+<!-- Silk Red Ribbon Bookmark Hanging from Top -->
+<div class="absolute -top-16 left-12 z-30 pointer-events-none flex flex-col items-center">
+<div class="w-5 h-28 bg-[#C53030] shadow-[1px_3px_6px_rgba(41,23,9,0.35)] relative flex items-end justify-center">
+<!-- Ribbon Texture & Fold Highlight -->
+<div class="absolute inset-0 bg-gradient-to-r from-black/15 via-transparent to-black/20 pointer-events-none"></div>
+<div class="w-full h-3 border-b-2 border-dashed border-[#F5EFE6]/30 mb-2"></div>
+<!-- Inverted V Ribbon Cutout -->
+<div class="absolute -bottom-2.5 left-0 w-0 h-0 border-l-[10px] border-l-[#C53030] border-r-[10px] border-r-[#C53030] border-b-[10px] border-b-transparent"></div>
+</div>
+</div>
+<!-- Scrapbook Spread Header Plate -->
+<div class="pt-3 pb-2 px-3 flex flex-col gap-1.5 relative">
+<div class="flex items-center justify-between text-on-surface-variant font-label-md text-label-md tracking-wider">
+<span class="tracking-widest text-[#6c3a13]">SATURDAY, 12 OCT 2024</span>
+<span class="bg-surface-container-high px-2 py-0.5 rounded shadow-sm text-secondary font-bold">PAGE 48</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant/80 tracking-wide">
+        25.2285° N, 55.2878° E • AL SATWA
+      </span>
+<span class="font-caption text-caption text-primary rotate-[-2deg] tracking-normal">
+        midnight cravings
+      </span>
+</div>
+<!-- Hand-drawn Style Section Divider Rule -->
+<div class="w-full h-0.5 bg-[#d4c4b0]/70 mt-1 rounded-full"></div>
+</div>
+<!-- Authenticated Postmark & Category Stamp Cluster -->
+<div class="relative px-3 py-2 flex items-center justify-between">
+<!-- Postmark Cancel Stamp (Faded Sepia Ink) -->
+<div class="relative flex items-center gap-1.5 opacity-85 select-none rotate-[-3deg]">
+<svg class="w-20 h-20 text-[#6c3a13]" fill="none" stroke="currentColor" viewbox="0 0 100 100">
+<!-- Outer Circle -->
+<circle cx="50" cy="50" r="45" stroke-dasharray="3 2" stroke-width="2"></circle>
+<!-- Inner Ring -->
+<circle cx="50" cy="50" r="33" stroke-width="1.5"></circle>
+<!-- Stamp Text Path Arc -->
+<path d="M 23 50 A 27 27 0 0 1 77 50" fill="none" id="postArcTop"></path>
+<path d="M 77 50 A 27 27 0 0 1 23 50" fill="none" id="postArcBottom"></path>
+<text fill="currentColor" font-family="Space Mono" font-size="7" font-weight="700" letter-spacing="1.5">
+<textpath href="#postArcTop" startoffset="50%" text-anchor="middle">DXB SOUK POST</textpath>
+</text>
+<text fill="currentColor" font-family="Space Mono" font-size="6.5" font-weight="700" letter-spacing="1">
+<textpath href="#postArcBottom" startoffset="50%" text-anchor="middle">AL SATWA</textpath>
+</text>
+<!-- Center Date -->
+<text fill="currentColor" font-family="Space Mono" font-size="8" font-weight="700" text-anchor="middle" x="50" y="47">12 OCT</text>
+<text fill="currentColor" font-family="Space Mono" font-size="6" font-weight="400" text-anchor="middle" x="50" y="58">2024</text>
+</svg>
+<!-- Wavy Postal Cancellation Lines -->
+<svg class="w-14 h-12 text-[#6c3a13]/80 -ml-2" fill="none" stroke="currentColor" stroke-width="1.5" viewbox="0 0 60 50">
+<path d="M0 12 Q 15 6, 30 12 T 60 12"></path>
+<path d="M0 24 Q 15 18, 30 24 T 60 24"></path>
+<path d="M0 36 Q 15 30, 30 36 T 60 36"></path>
+</svg>
+</div>
+<!-- Scalloped Postal Stamp Badge (Karak Tea) -->
+<div class="relative rotate-[2.5deg] self-start mt-1">
+<div class="relative bg-[#feb383] px-3.5 py-2 rounded-sm shadow-[0_2px_5px_rgba(74,51,25,0.18)] flex flex-col items-center justify-center">
+<!-- Scalloped Perforation Border Simulation -->
+<div class="absolute -top-1.5 inset-x-1 flex justify-between pointer-events-none">
+<div class="w-1.5 h-1.5 bg-surface rounded-full"></div>
+<div class="w-1.5 h-1.5 bg-surface rounded-full"></div>
+<div class="w-1.5 h-1.5 bg-surface rounded-full"></div>
+<div class="w-1.5 h-1.5 bg-surface rounded-full"></div>
+<div class="w-1.5 h-1.5 bg-surface rounded-full"></div>
+</div>
+<div class="absolute -bottom-1.5 inset-x-1 flex justify-between pointer-events-none">
+<div class="w-1.5 h-1.5 bg-surface rounded-full"></div>
+<div class="w-1.5 h-1.5 bg-surface rounded-full"></div>
+<div class="w-1.5 h-1.5 bg-surface rounded-full"></div>
+<div class="w-1.5 h-1.5 bg-surface rounded-full"></div>
+<div class="w-1.5 h-1.5 bg-surface rounded-full"></div>
+</div>
+<div class="absolute -left-1.5 inset-y-1 flex flex-col justify-between pointer-events-none">
+<div class="w-1.5 h-1.5 bg-surface rounded-full"></div>
+<div class="w-1.5 h-1.5 bg-surface rounded-full"></div>
+<div class="w-1.5 h-1.5 bg-surface rounded-full"></div>
+</div>
+<div class="absolute -right-1.5 inset-y-1 flex flex-col justify-between pointer-events-none">
+<div class="w-1.5 h-1.5 bg-surface rounded-full"></div>
+<div class="w-1.5 h-1.5 bg-surface rounded-full"></div>
+<div class="w-1.5 h-1.5 bg-surface rounded-full"></div>
+</div>
+<span class="font-label-sm text-label-sm text-[#78431c] tracking-tighter">DUBAI TASTE POST</span>
+<span class="font-label-md text-label-md text-[#311300] font-bold tracking-widest mt-0.5">KARAK TEA</span>
+<span class="font-label-sm text-label-sm text-[#78431c]">AED 2.50</span>
+</div>
+</div>
+</div>
+<!-- Primary Scrapbook Body: Polaroid #1 (Steaming Karak) -->
+<div class="px-3 mt-1 relative z-10 flex flex-col items-center">
+<!-- Polaroid Frame Container (-2.5deg tilt) -->
+<div class="relative rotate-[-2.5deg] bg-surface-container-lowest p-2.5 pb-3 rounded-sm shadow-[0_6px_16px_rgba(41,23,9,0.14),0_1px_3px_rgba(41,23,9,0.08)] max-w-[325px] w-full">
+<!-- Mint Pastel Washi Tape Strip -->
+<div class="absolute -top-3 left-1/2 -translate-x-1/2 w-24 h-6 bg-[#c9edb0]/70 shadow-sm rotate-[1.5deg] pointer-events-none backdrop-blur-none flex items-center justify-center">
+<div class="w-full h-px bg-[#314e21]/15"></div>
+</div>
+<!-- Photo Inset Container -->
+<div class="w-full h-56 bg-surface-container overflow-hidden rounded-xs relative">
+<img class="w-full h-full object-cover" data-alt="Close up photograph of a transparent cut glass filled with steaming golden saffron karak tea with cardamom bubbles on a dark rustic wooden street table outside an authentic cafeteria in Al Satwa Dubai at night. Warm ambient street sodium light, cinematic food documentary photography, rich warm cream and amber tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAijUVBLZa9sU5SXBGdNPeHYxJl_rFV12t9T-ChXQSHk-QNFkxT1gfoaBbEiKgTAlmYbRnv7kpOY3PjNzg0pkPLGe0nBh_zMCuOTbRBB106UWr1KLROOGTfblO2UErlxCaeE_ZaFCGh9fZ9IhB9q4CHPKbcIHlC7vAdXt6Paof0RgWkbP5nPOhNqRbFP17zU360ddNeDpbxWn59cSicwtoGLaEYdE7Ew-QINyak-JuXslMdJcIYUOURhQ"/>
+<!-- Physical photo matte finish sheen -->
+<div class="absolute inset-0 bg-surface-tint/5 pointer-events-none"></div>
+</div>
+<!-- Polaroid Bottom Shelf for Handwritten Note -->
+<div class="pt-2 px-1 flex items-center justify-between">
+<span class="font-caption text-caption text-on-surface text-lg rotate-[-1deg]">
+          First sip after midnight
+        </span>
+<div class="flex items-center gap-1 opacity-70">
+<span class="font-label-sm text-label-sm text-secondary">01:14 AM</span>
+<span class="material-symbols-outlined text-[14px] text-secondary">local_cafe</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Margin Scrapbook Journaling Note (Fountain Pen Aesthetic) -->
+<div class="px-6 my-4 relative z-10">
+<div class="relative bg-surface-container-low/75 p-3 rounded-lg shadow-[0_2px_8px_rgba(41,23,9,0.05)] rotate-[1deg]">
+<!-- Fountain Pen Nib Symbol & Handscript -->
+<div class="flex items-start gap-2">
+<span class="material-symbols-outlined text-secondary text-[20px] mt-0.5">edit_note</span>
+<p class="font-caption text-caption text-[#412c1c] text-xl leading-snug">
+          Satwa alleyway, parked right outside Ravi. Tariq brought the crew. Creamy saffron milk &amp; fresh cardamom paratha at 2 AM.
+        </p>
+</div>
+</div>
+</div>
+<!-- Secondary Scrapbook Body: Polaroid #2 (Warm Regag Bread) -->
+<div class="px-3 relative z-20 flex flex-col items-center">
+<!-- Polaroid Frame Container (+3deg tilt) -->
+<div class="relative rotate-[3deg] bg-surface-container-lowest p-2.5 pb-3 rounded-sm shadow-[0_8px_20px_rgba(41,23,9,0.15),0_2px_4px_rgba(41,23,9,0.06)] max-w-[325px] w-full">
+<!-- Blush Pink Pastel Washi Tape Strip at Corner -->
+<div class="absolute -top-3 -right-2 w-20 h-6 bg-[#ffb688]/75 shadow-sm rotate-[12deg] pointer-events-none flex items-center justify-center">
+<div class="w-full h-px bg-[#78431c]/15"></div>
+</div>
+<!-- Pixel-Art Companion Cat / Crew Mascot Overlapping Edge -->
+<div class="absolute -bottom-3 -left-3 z-30 w-8 h-8 bg-surface-container-highest p-0.5 rounded shadow-[1px_2px_4px_rgba(0,0,0,0.2)] rotate-[-6deg] flex items-center justify-center select-none" title="Koko Camp Pixel Mascot">
+<!-- Inline Pixel Mascot SVG (Cat with Chef Hat) -->
+<svg class="w-7 h-7" fill="none" viewbox="0 0 16 16">
+<!-- Ears -->
+<rect fill="#895029" height="3" width="3" x="2" y="3"></rect>
+<rect fill="#895029" height="3" width="3" x="11" y="3"></rect>
+<!-- Chef Hat -->
+<rect fill="#ffffff" height="4" width="4" x="6" y="1"></rect>
+<rect fill="#d4c4b0" height="2" width="6" x="5" y="4"></rect>
+<!-- Head Base -->
+<rect fill="#e5a93c" height="8" width="10" x="3" y="5"></rect>
+<!-- Inner Ears -->
+<rect fill="#ffb688" height="1" width="1" x="3" y="4"></rect>
+<rect fill="#ffb688" height="1" width="1" x="12" y="4"></rect>
+<!-- Eyes -->
+<rect fill="#291709" height="2" width="2" x="5" y="8"></rect>
+<rect fill="#291709" height="2" width="2" x="9" y="8"></rect>
+<!-- Nose / Whisker Dot -->
+<rect fill="#895029" height="1" width="1" x="7.5" y="10"></rect>
+<!-- Bell Collar -->
+<rect fill="#ba1a1a" height="2" width="6" x="5" y="13"></rect>
+<rect fill="#ffdead" height="1" width="1" x="7.5" y="14"></rect>
+</svg>
+</div>
+<!-- Photo Inset Container -->
+<div class="w-full h-52 bg-surface-container overflow-hidden rounded-xs relative">
+<img class="w-full h-full object-cover" data-alt="Warm ultra-thin Emirati regag crepe bread folded crisp on a large round hot iron tawa plate, brushed with golden melted butter, cracked egg, laughing cow cheese, and a swirl of spicy mahyawa sauce. High-detail authentic street market food photography in Dubai with warm rustic depth." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCcwfp3YfvsKLj-jyZUY-c7eJh5t6y2vl8p7y2rqxjnloBFYr30gtH_LkFap2sZmaSAENy4jp39EOLtUwHxB_oKeWUiQctXTIY7vFg8CqGjoWfZFo83Nvyfpdj_PFraf9gVkt6Ot094sCUFx7IFFSV5EZD75rb7wGUVVTS-ubGM94XD_GRW4vTk_vgrvUNCh0Zuy9seaA5K7I6PBRRO2QKIG8AjvhYDALO8vHn7YYxxqa5DReU_ttuKVQ"/>
+<div class="absolute inset-0 bg-surface-tint/5 pointer-events-none"></div>
+</div>
+<!-- Polaroid Bottom Shelf -->
+<div class="pt-2 px-1 flex items-center justify-between">
+<span class="font-caption text-caption text-on-surface text-lg">
+          Maya burned her tongue laughing
+        </span>
+<span class="font-label-sm text-label-sm text-secondary bg-surface-container px-1.5 py-0.5 rounded">
+          REGAG CRISP
+        </span>
+</div>
+</div>
+</div>
+<!-- Interactive Scrapbook Audio / Field Note Snippet -->
+<div class="px-4 mt-6">
+<div class="bg-surface-container-high/90 rounded-xl p-3 shadow-sm flex items-center justify-between">
+<div class="flex items-center gap-3">
+<button aria-label="Play Satwa Night Ambience" class="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-on-primary shadow-[0_2px_0_#432818] active:translate-y-0.5 transition-all" id="audio-memo-btn">
+<span class="material-symbols-outlined text-[18px]">play_arrow</span>
+</button>
+<div class="flex flex-col">
+<span class="font-headline-sm text-sm text-on-surface leading-tight">Field Recording: Street Audio</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">01:42 • Clinking glasses &amp; car horns</span>
+</div>
+</div>
+<!-- Cassette Tape Tiny Stamp -->
+<div class="bg-surface px-2 py-1 rounded border-none shadow-xs text-secondary font-label-sm text-label-sm">
+        REC #14
+      </div>
+</div>
+</div>
+<!-- Hand-Pencil Checklist / Crew Log -->
+<div class="px-4 mt-4">
+<div class="bg-surface-container-low p-3.5 rounded-lg shadow-[0_1px_4px_rgba(41,23,9,0.06)] flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface tracking-wider">CREW BILL TALLY</span>
+<span class="font-label-sm text-label-sm text-secondary">CASH ONLY</span>
+</div>
+<div class="w-full h-px bg-outline-variant/40"></div>
+<div class="flex items-center justify-between text-body-sm font-body-sm text-on-surface-variant">
+<span>4x Special Karak w/ Saffron</span>
+<span class="font-label-md text-label-md text-on-surface">AED 10.00</span>
+</div>
+<div class="flex items-center justify-between text-body-sm font-body-sm text-on-surface-variant">
+<span>2x Regag Egg &amp; Kraft Cheese</span>
+<span class="font-label-md text-label-md text-on-surface">AED 14.00</span>
+</div>
+<div class="flex items-center justify-between text-body-sm font-body-sm text-on-surface-variant">
+<span>1x Cardamom Paratha Roll</span>
+<span class="font-label-md text-label-md text-on-surface">AED 4.50</span>
+</div>
+<div class="w-full h-px border-t border-dashed border-[#d4c4b0] mt-1"></div>
+<div class="flex items-center justify-between pt-0.5">
+<span class="font-caption text-caption text-base text-primary">Tariq paid in 5-dirham coins</span>
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">AED 28.50</span>
+</div>
+</div>
+</div>
+<!-- Bottom Journal Pagination Footer -->
+<div class="mt-8 px-4 flex items-center justify-between font-label-md text-label-md text-on-surface-variant/90 tracking-wide">
+<a class="flex items-center gap-1 hover:text-primary active:translate-x-[-1px] transition-transform" href="#prev">
+<span>« PAGE 47 • AL FAHIDI</span>
+</a>
+<div class="w-1.5 h-1.5 bg-[#895029]/40 rounded-full"></div>
+<a class="flex items-center gap-1 hover:text-primary active:translate-x-[1px] transition-transform" href="#next">
+<span>PAGE 49 • JUMEIRAH »</span>
+</a>
+</div>
+</div>
+<script>
+  // Simple playful audio button toggle interaction
+  const audioBtn = document.getElementById('audio-memo-btn');
+  if (audioBtn) {
+    let isPlaying = false;
+    audioBtn.addEventListener('click', () => {
+      isPlaying = !isPlaying;
+      const icon = audioBtn.querySelector('.material-symbols-outlined');
+      if (icon) {
+        icon.textContent = isPlaying ? 'pause' : 'play_arrow';
+      }
+      audioBtn.classList.toggle('bg-tertiary', isPlaying);
+      audioBtn.classList.toggle('bg-primary', !isPlaying);
+    });
+  }
+</script></main></body></html>

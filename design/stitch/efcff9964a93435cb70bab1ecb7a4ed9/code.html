@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_stack" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&amp;family=Nunito+Sans:wght@700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600&amp;family=Space+Mono:wght@400;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "on-secondary": "#ffffff", "primary-container": "#e5a93c", "on-primary-container": "#5e4000", "on-secondary-fixed-variant": "#6c3a13", "on-surface": "#291709", "error": "#ba1a1a", "inverse-on-surface": "#ffede3", "tertiary-fixed": "#c9edb0", "tertiary-container": "#9cbe85", "secondary": "#895029", "on-surface-variant": "#504535", "background": "#fff8f5", "on-tertiary-fixed-variant": "#314e21", "tertiary-fixed-dim": "#aed196", "primary-fixed": "#ffdead", "secondary-fixed-dim": "#ffb688", "secondary-container": "#feb383", "error-container": "#ffdad6", "on-tertiary": "#ffffff", "surface-container-high": "#ffe3d0", "surface-variant": "#ffdcc4", "on-primary-fixed-variant": "#604100", "surface-dim": "#f6d3bc", "primary-fixed-dim": "#fabc4d", "secondary-fixed": "#ffdbc7", "surface-bright": "#fff8f5", "outline": "#827563", "on-error": "#ffffff", "on-secondary-container": "#78431c", "surface-container-highest": "#ffdcc4", "on-background": "#291709", "primary": "#7e5700", "inverse-surface": "#412c1c", "on-tertiary-fixed": "#082100", "on-error-container": "#93000a", "tertiary": "#486636", "surface-container": "#ffeadd", "surface-container-lowest": "#ffffff", "surface-tint": "#7e5700", "surface-container-low": "#fff1e9", "surface": "#fff8f5", "on-tertiary-container": "#304d20", "outline-variant": "d4c4b0", "inverse-primary": "#fabc4d", "on-primary": "#ffffff", "on-secondary-fixed": "#311300", "on-primary-fixed": "#281900" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "margin": "1.25rem", "space-xl": "2rem", "space-lg": "1.5rem", "space-md": "1rem", "space-xs": "0.25rem", "gutter": "1rem", "space-sm": "0.5rem" }, "fontFamily": { "headline-xl-mobile": ["Nunito Sans"], "headline-lg": ["Nunito Sans"], "label-lg": ["Plus Jakarta Sans"], "body-sm": ["Plus Jakarta Sans"], "headline-xl": ["Nunito Sans"], "headline-md": ["Nunito Sans"], "body-md": ["Plus Jakarta Sans"], "headline-sm": ["Nunito Sans"], "label-sm": ["Space Mono"], "caption": ["Caveat"], "body-lg": ["Plus Jakarta Sans"], "label-md": ["Space Mono"] }, "fontSize": { "headline-xl-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "800" }], "headline-lg": ["26px", { "lineHeight": "34px", "fontWeight": "700" }], "label-lg": ["14px", { "lineHeight": "18px", "fontWeight": "600" }], "body-sm": ["13px", { "lineHeight": "18px", "fontWeight": "400" }], "headline-xl": ["34px", { "lineHeight": "42px", "fontWeight": "800" }], "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "700" }], "body-md": ["14px", { "lineHeight": "21px", "fontWeight": "400" }], "headline-sm": ["18px", { "lineHeight": "24px", "fontWeight": "700" }], "label-sm": ["10px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "400" }], "caption": ["18px", { "lineHeight": "22px", "fontWeight": "600" }], "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "500" }], "label-md": ["11px", { "lineHeight": "16px", "letterSpacing": "0.06em", "fontWeight": "700" }] } } } }</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface text-on-surface font-body-md text-body-md flex flex-col min-h-screen selection:bg-secondary-container relative"><div class="fixed top-0 bottom-0 left-0 w-2.5 bg-secondary z-50 pointer-events-none shadow-[2px_0_6px_rgba(41,23,9,0.18)]"></div><div class="fixed top-0 bottom-0 left-3 w-px border-l border-dashed border-outline-variant/60 z-50 pointer-events-none"></div><header class="fixed top-0 w-full z-40 bg-surface/90 backdrop-blur-xl pt-safe shadow-[0_1px_8px_rgba(41,23,9,0.06)]"><div class="h-16 pl-6 pr-4 flex items-center justify-between relative"><div class="flex items-center gap-space-xs"><button aria-label="Close scrapbook" class="w-11 h-11 flex items-center justify-center rounded-lg text-on-surface-variant hover:text-on-surface active:translate-y-0.5 transition-all" onclick="history.back()"><span class="material-symbols-outlined text-[22px]">arrow_back</span></button><div class="flex flex-col"><span class="font-caption text-caption text-secondary -mb-1">Koko Scrapbook</span><h1 class="font-headline-sm text-headline-sm text-on-surface tracking-tight leading-none">Dubai Food Chapter</h1></div></div><div class="flex items-center gap-space-xs"><div class="absolute -top-1 right-28 w-4 h-12 bg-primary rounded-b-sm shadow-[0_2px_4px_rgba(0,0,0,0.15)] flex items-end justify-center pb-1 pointer-events-none"><div class="w-2 h-2 bg-surface rotate-45 transform translate-y-1.5"></div></div><button aria-label="Bookmark entry" class="w-11 h-11 flex items-center justify-center rounded-lg text-on-surface-variant hover:text-primary active:translate-y-0.5 transition-all"><span class="material-symbols-outlined text-[20px]">bookmark</span></button><button aria-label="Scrapbook actions" class="w-11 h-11 flex items-center justify-center rounded-lg text-on-surface-variant hover:text-on-surface active:translate-y-0.5 transition-all"><span class="material-symbols-outlined text-[20px]">more_vert</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center ml-space-xs"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex flex-col relative w-full pt-16 bg-surface min-h-screen pl-4"><div class="flex flex-col w-full relative pb-12 select-none overflow-x-hidden">
+<!-- Right Chapter Leather Edge Tab (CH. IV • DEIRA) -->
+<aside aria-label="Chapter Tab" class="absolute -right-1 top-2 z-30 transform rotate-1 flex items-center shadow-md">
+<div class="bg-secondary text-surface-bright px-3 py-1.5 rounded-l-md shadow-inner flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[13px] text-primary-container">bookmark_manager</span>
+<span class="font-label-md text-label-md tracking-wider">CH. IV • DEIRA</span>
+</div>
+</aside>
+<!-- Top Hero Chapter Framing & Ephemera Header -->
+<section class="relative px-margin pt-4 pb-3 flex flex-col z-10">
+<div class="flex items-start justify-between">
+<div class="flex flex-col transform -rotate-1 max-w-[240px]">
+<span class="font-label-sm text-label-sm text-secondary tracking-widest uppercase">Memory Entry #04</span>
+<h2 class="font-headline-xl-mobile text-headline-xl-mobile text-on-surface leading-tight mt-0.5">AL USTAD SPECIAL KEBAB</h2>
+<div class="flex items-center gap-2 mt-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Al Fahidi, Bur Dubai</span>
+<span class="text-secondary/40 font-label-sm text-label-sm">•</span>
+<span class="font-label-sm text-label-sm text-primary font-bold">25.2601° N, 55.2974° E</span>
+</div>
+</div>
+<!-- Postal Stamp: IRANIAN KEBAB -->
+<div class="transform rotate-3 shrink-0 relative mt-1 group cursor-pointer" onclick="this.classList.toggle('scale-105')">
+<div class="w-16 h-20 bg-tertiary-container/30 p-1 flex flex-col items-center justify-between rounded shadow-sm relative">
+<div class="w-full flex justify-between items-center px-1">
+<span class="font-label-sm text-[9px] text-on-tertiary-container font-bold">UAE</span>
+<span class="font-label-sm text-[9px] text-on-tertiary-container">25 Fils</span>
+</div>
+<div class="w-12 h-10 overflow-hidden rounded bg-surface-container-high flex items-center justify-center">
+<img class="w-full h-full object-cover" data-alt="A vintage illustrated postage stamp of sizzling skewers of Iranian kebabs with flatbread and mint, painted in earthy ochre, warm sage olive, and burnt umber in retro woodblock print style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD2zyCaSk7l-8LYFHXHaPOijklnWDQWiZVNH7gAac54lRZzDLjykJd5s29V8CCYmieIETMEoJVRVf7wGmFVW1gb5xQ1PHsWtviuldlpwH5mdPmk4CgmfpuUA82oGDwkQcrK8jW3GuBnysNjji--QWSYEXzL6xZHvzrvEM_hcYl9PGN2Oit4P_lRRSWMlKutnk9yAs-Kq4votJRG2efBHL9l3HTxznR49rgUhOg5epY4OEGZ9qLZil_1iw"/>
+</div>
+<span class="font-label-md text-[8px] text-on-tertiary-container tracking-wider uppercase">IRANIAN KEBAB</span>
+<!-- Scalloped Stamp Tooth Cutouts -->
+<div class="absolute -top-1 left-2 w-2 h-2 rounded-full bg-surface"></div>
+<div class="absolute -top-1 left-7 w-2 h-2 rounded-full bg-surface"></div>
+<div class="absolute -top-1 right-2 w-2 h-2 rounded-full bg-surface"></div>
+<div class="absolute -bottom-1 left-2 w-2 h-2 rounded-full bg-surface"></div>
+<div class="absolute -bottom-1 left-7 w-2 h-2 rounded-full bg-surface"></div>
+<div class="absolute -bottom-1 right-2 w-2 h-2 rounded-full bg-surface"></div>
+</div>
+</div>
+</div>
+<!-- Badges & Inked Postmark Row -->
+<div class="flex items-center justify-between mt-3 relative">
+<!-- Stamped Pill Badge: Visited 5 Times -->
+<div class="transform -rotate-2 bg-primary-container/20 text-on-primary-container px-3 py-1 rounded-full flex items-center gap-1.5 shadow-sm">
+<span class="material-symbols-outlined text-[15px] text-primary" style="font-variation-settings: 'FILL' 1;">local_fire_department</span>
+<span class="font-label-sm text-label-sm font-bold uppercase tracking-wide">STAMPED: VISITED 5 TIMES</span>
+</div>
+<!-- Circular Ink Postmark Cancellation Seal -->
+<div class="relative transform rotate-6 w-20 h-20 rounded-full flex items-center justify-center text-center p-1.5 pointer-events-none select-none">
+<svg class="w-full h-full text-on-surface-variant/40" viewbox="0 0 100 100">
+<circle cx="50" cy="50" fill="none" r="46" stroke="currentColor" stroke-dasharray="3,2" stroke-width="1.5"></circle>
+<circle cx="50" cy="50" fill="none" r="38" stroke="currentColor" stroke-width="1"></circle>
+<path d="M 18,50 A 32,32 0 1,1 82,50" fill="none" id="curve-postmark"></path>
+<text class="text-[7.5px] font-label-md uppercase fill-current tracking-widest">
+<textpath href="#curve-postmark" startoffset="50%" text-anchor="middle">DUBAI FOODIES GUILD</textpath>
+</text>
+<path d="M 82,50 A 32,32 0 0,1 18,50" fill="none" id="curve-postmark-btm"></path>
+<text class="text-[7px] font-label-md uppercase fill-current tracking-widest">
+<textpath href="#curve-postmark-btm" startoffset="50%" text-anchor="middle">BUR DUBAI • 1978</textpath>
+</text>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center text-on-surface-variant/60">
+<span class="font-label-md text-[8px] uppercase tracking-tighter">CERTIFIED</span>
+<span class="font-headline-sm text-[12px] leading-tight">ORIGINAL</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Collaged Polaroid Spread Layer -->
+<section class="relative px-margin my-2 flex flex-col">
+<!-- Polaroid 1: Grilled Kebabs (Tilted -3deg) -->
+<div class="relative transform -rotate-3 z-10 w-11/12 self-start transition-transform duration-200 active:rotate-0">
+<!-- Translucent Buttery Yellow Washi Tape Strip Left -->
+<div class="absolute -top-3 left-4 w-14 h-5 bg-primary-fixed-dim/70 shadow-xs z-20 transform -rotate-6"></div>
+<!-- Right Tape -->
+<div class="absolute -top-3 right-6 w-12 h-5 bg-primary-fixed-dim/70 shadow-xs z-20 transform rotate-3"></div>
+<!-- Physical Polaroid Frame -->
+<div class="bg-surface-container-lowest p-2 pb-6 shadow-md rounded-xs flex flex-col">
+<div class="w-full h-44 overflow-hidden rounded-xs bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="Close up photograph of glistening skewered yoghurt-marinated mutton kebabs and blackened charred plum tomatoes dusted with fragrant purple sumac on an authentic scratched vintage stainless steel serving platter, warm ambient evening light." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAVFNRqsTj5AOUddusl4l96YVRxvQs0Vsk99F9syY-75l3j4a47p5EZAt1-AgjPxF6CCT53FqqO5f_UXHrelCNeDoxSJ7V-aiw4xgo_AyCWQ8DHEZQB-yeO6YLBl4yq4j_Kp7p_uc20KO-JekgcKaT3TcXlPNqTxkb-M7pDlWZY7ijZsII9RdGii5mMjMFzeEPfCB7RJB8BUyszRu63eQjxJjg0rW1-1UntXw1_gVCceW6bOCGisiXqYg"/>
+</div>
+<div class="mt-2.5 px-1 flex items-center justify-between">
+<span class="font-caption text-caption text-secondary">The legendary Kebab Khas with saffron rice</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant/70">8:42 PM</span>
+</div>
+</div>
+</div>
+<!-- Polaroid 2: Photo Walls & Characters (Tilted +2.5deg, overlapping) -->
+<div class="relative transform rotate-[2.5deg] z-20 w-10/12 self-end -mt-10 transition-transform duration-200 active:rotate-0">
+<!-- Pastel Sky-Blue Washi Tape Top Center -->
+<div class="absolute -top-3 left-1/3 w-16 h-5 bg-secondary-fixed/80 shadow-xs z-30 transform -rotate-2"></div>
+<div class="bg-surface-container-lowest p-2 pb-5 shadow-lg rounded-xs flex flex-col">
+<div class="w-full h-36 overflow-hidden rounded-xs bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="Atmospheric candid snapshot inside Al Ustad restaurant showing walls densely packed with framed celebrity photos, old banknotes from around the world, and vintage memorabilia under cozy incandescent lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB3RYBQDLRNP1Q2ATOoN7v8KqpqB-23ZGP2LGBnOoGI5v06G5C3dr8jkGSQiyDfIH6b_LNTRVZQIgj3likPCFstj2k-cC_Xas20HfMOOkXWxEfWSX-DPGllYEzcAhP_FdPsjFni0v2BztSSHjegaXAnPIKjFsLuhr9HVaX6jRixBidmE6gFvnngKp3cSf4X-Ddqp4fFj-gKblc9JW82RKnqfnSC-9K7hqv4qjNcEC7qlwyvqeh7IpVutg"/>
+</div>
+<div class="mt-2 px-1 flex items-center justify-between">
+<span class="font-caption text-caption text-on-surface">Every square inch tells 40 years of stories!</span>
+<span class="material-symbols-outlined text-[16px] text-primary" style="font-variation-settings: 'FILL' 1;">favorite</span>
+</div>
+</div>
+</div>
+<!-- Polaroid 3: Small Crew Candid (Tilted -1deg) -->
+<div class="relative transform -rotate-1 z-20 w-8/12 self-center -mt-6 transition-transform duration-200 active:rotate-0">
+<!-- Peach Tape -->
+<div class="absolute -top-2 right-4 w-14 h-4 bg-secondary-container/70 shadow-xs z-30 transform rotate-4"></div>
+<div class="bg-surface-container-lowest p-1.5 pb-4 shadow-md rounded-xs flex flex-col">
+<div class="w-full h-24 overflow-hidden rounded-xs bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="Joyful candid picture of three diverse close friends laughing together around a crowded table covered with Persian flatbread, dips, and small glasses of black tea in an intimate diner." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBBJP0pfiGZ-69C4vin0zBJr7I1L2qSMMCbeym8SnRwX2ZNV_gEIXLpi7EZUER5g_zYJFsm8GHeIN0_L5W3cWwOR3J-I_GhOBnNbx0oZXRs2IYoQtuVZ4bBt4TKchR4BsYKdILIgpYpJmqEM8YHOsrizyEWKv6zQ4sev7zREAIsTmHXtNhPhy5dyghPUtgW8fobSMjyx5Slz-KrWc9SyDUNYxCnbnxfhNxHDLhZsF13vt_Zc2BiAZ4QZw"/>
+</div>
+<div class="mt-1 px-1">
+<p class="font-caption text-caption text-secondary leading-none">Tea-drunk &amp; overfed</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Tasting Notes: Cafe Receipt Paper Style -->
+<section class="px-margin my-4 relative z-20">
+<div class="transform rotate-1 bg-surface-container-low p-4 shadow-md rounded relative">
+<!-- Jagged Top Stamp Edge simulation -->
+<div class="flex items-center justify-between mb-2">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-secondary text-[16px]">receipt_long</span>
+<span class="font-label-md text-label-md text-on-surface uppercase tracking-wider">TASTING JOURNAL // FLAVOR RECORD</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">TABLE #7</span>
+</div>
+<!-- Inked Dashed Divider Line -->
+<div class="w-full h-px border-b border-dashed border-outline-variant my-2"></div>
+<!-- Handwritten Impression Notes -->
+<div class="flex flex-col gap-1.5 my-2">
+<p class="font-caption text-caption text-on-surface leading-snug">
+          "Mutton marinated in creamy yoghurt for 48 hours until melt-in-mouth tender. The raw onions dipped in mint yoghurt cut the char perfectly."
+        </p>
+<p class="font-caption text-caption text-secondary leading-snug">
+          "Note: The hot sweet mint tea poured from heights at the end is strictly mandatory. Don't rush out."
+        </p>
+</div>
+<!-- Rating Stamps Grid -->
+<div class="flex items-center justify-between mt-3 pt-2 border-t border-dashed border-outline-variant">
+<div class="flex flex-col">
+<span class="font-label-sm text-[9px] uppercase tracking-wider text-on-surface-variant">SOUQ CREDIBILITY</span>
+<span class="font-label-md text-label-md text-primary font-bold">10 / 10 LEGENDARY</span>
+</div>
+<div class="flex flex-col text-right">
+<span class="font-label-sm text-[9px] uppercase tracking-wider text-on-surface-variant">DAMAGE PER HEAD</span>
+<span class="font-label-md text-label-md text-on-surface">~45 AED</span>
+</div>
+</div>
+</div>
+</section>
+<!-- The Crew Stamp Section: Pixel Avatars & Notes -->
+<section class="px-margin my-3 relative z-10">
+<div class="bg-surface-container-lowest p-3.5 rounded shadow-sm transform -rotate-1 flex flex-col">
+<div class="flex items-center justify-between mb-2.5">
+<span class="font-caption text-caption text-secondary">The Kebab Contingent</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">OCT 14 • 3 ATTENDEES</span>
+</div>
+<!-- Stamped Crew Avatars Row -->
+<div class="grid grid-cols-3 gap-2">
+<!-- Crew Member 1: Tariq -->
+<div class="flex flex-col items-center bg-surface-container-low p-2 rounded transform -rotate-1 shadow-2xs">
+<!-- Pixel Avatar 1 -->
+<div class="w-12 h-12 bg-primary-container/20 rounded flex items-center justify-center relative overflow-hidden">
+<svg class="w-10 h-10" fill="currentColor" viewbox="0 0 16 16">
+<!-- Pixel Art Tariq -->
+<rect class="text-on-surface" height="2" width="6" x="5" y="2"></rect>
+<rect class="text-on-surface" height="2" width="8" x="4" y="4"></rect>
+<rect class="text-secondary-fixed-dim" height="5" width="6" x="5" y="6"></rect>
+<rect class="text-on-surface" height="1" width="1" x="6" y="7"></rect>
+<rect class="text-on-surface" height="1" width="1" x="9" y="7"></rect>
+<rect class="text-secondary" height="1" width="2" x="7" y="9"></rect>
+<rect class="text-tertiary" height="4" width="8" x="4" y="11"></rect>
+</svg>
+</div>
+<span class="font-label-md text-label-md text-on-surface mt-1.5">@tariq</span>
+<span class="font-caption text-[13px] text-secondary -mt-1 leading-none">ordered for all</span>
+</div>
+<!-- Crew Member 2: Maya -->
+<div class="flex flex-col items-center bg-surface-container-low p-2 rounded transform rotate-2 shadow-2xs">
+<!-- Pixel Avatar 2 -->
+<div class="w-12 h-12 bg-secondary-container/30 rounded flex items-center justify-center relative overflow-hidden">
+<svg class="w-10 h-10" fill="currentColor" viewbox="0 0 16 16">
+<!-- Pixel Art Maya -->
+<rect class="text-secondary" height="2" width="6" x="5" y="1"></rect>
+<rect class="text-secondary" height="3" width="10" x="3" y="3"></rect>
+<rect class="text-secondary-fixed" height="5" width="6" x="5" y="6"></rect>
+<rect class="text-on-surface" height="1" width="1" x="6" y="7"></rect>
+<rect class="text-on-surface" height="1" width="1" x="9" y="7"></rect>
+<rect class="text-error" height="1" width="2" x="7" y="9"></rect>
+<rect class="text-primary-container" height="4" width="8" x="4" y="11"></rect>
+</svg>
+</div>
+<span class="font-label-md text-label-md text-on-surface mt-1.5">@maya</span>
+<span class="font-caption text-[13px] text-secondary -mt-1 leading-none">took 50 photos</span>
+</div>
+<!-- Crew Member 3: You -->
+<div class="flex flex-col items-center bg-surface-container-low p-2 rounded transform -rotate-2 shadow-2xs">
+<!-- Pixel Avatar 3 -->
+<div class="w-12 h-12 bg-tertiary-container/30 rounded flex items-center justify-center relative overflow-hidden">
+<svg class="w-10 h-10" fill="currentColor" viewbox="0 0 16 16">
+<!-- Pixel Art You -->
+<rect class="text-on-surface" height="2" width="8" x="4" y="2"></rect>
+<rect class="text-primary" height="2" width="8" x="4" y="4"></rect>
+<rect class="text-primary-fixed" height="5" width="6" x="5" y="6"></rect>
+<rect class="text-on-surface" height="1" width="1" x="6" y="7"></rect>
+<rect class="text-on-surface" height="1" width="1" x="9" y="7"></rect>
+<rect class="text-on-surface" height="1" width="2" x="7" y="9"></rect>
+<rect class="text-secondary" height="4" width="10" x="3" y="11"></rect>
+</svg>
+</div>
+<span class="font-label-md text-label-md text-on-surface mt-1.5">@you</span>
+<span class="font-caption text-[13px] text-secondary -mt-1 leading-none">scrapbook editor</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Interactive Quick Note Adding Bar (Tactile Pressed Feel) -->
+<section class="px-margin my-2 relative z-10">
+<div class="bg-surface-container p-3 rounded flex items-center justify-between shadow-xs">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]">edit_note</span>
+<span class="font-caption text-caption text-on-surface">Tape an extra memo to this page?</span>
+</div>
+<button class="bg-primary text-on-primary px-3 py-1.5 rounded font-label-md text-label-md flex items-center gap-1 shadow-sm active:translate-y-0.5 transition-transform" onclick="alert('Tape placed! Add your note prompt opened.')">
+<span>+ TAPE NOTE</span>
+</button>
+</div>
+</section>
+<!-- Next Spread Bookmark Ribbon Fold Link -->
+<footer class="mt-6 px-margin relative z-10 flex flex-col items-center">
+<div class="w-full flex items-center justify-between border-t border-dashed border-outline-variant pt-3">
+<a class="flex items-center gap-1 text-on-surface-variant font-label-md text-label-md hover:text-on-surface transition-colors" href="#prev">
+<span class="material-symbols-outlined text-[14px]">arrow_back</span>
+<span>CH. III: RAVI RESTAURANT</span>
+</a>
+<a class="flex items-center gap-1.5 bg-secondary-container text-on-secondary-container px-3 py-1.5 rounded-full font-label-md text-label-md shadow-xs active:translate-y-0.5 transition-transform" href="#next">
+<span>Next place: Al Fanar Seafood »</span>
+</a>
+</div>
+<!-- Bottom Page Deckle / Stamp details -->
+<div class="mt-4 flex items-center gap-2 text-on-surface-variant/50">
+<span class="font-label-sm text-[9px] uppercase tracking-widest">• PAGE 42 • DUBAI HERITAGE SERIES •</span>
+</div>
+</footer>
+</div></main></body></html>

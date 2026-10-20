@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=390, height=844, initial-scale=1.0, user-scalable=no">
+  <title>Koko • Vol. 1 Scrapbook Page</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Nunito:wght@700;800;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    /* Design Tokens and Baseline Constraints */
+    :root {
+      --bg-page: #FAF6F0;
+      --bg-gutter: #E9DEC8;
+      --leather-trim: #4A2E1B;
+      --color-ink: #2B1A0E;
+      --color-mustard: #E6A93C;
+      --color-peach: #FFE1D0;
+      --color-coral: #E86A5A;
+      --color-stamp-red: #D33F2B;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #362215;
+      font-family: 'Nunito', -apple-system, sans-serif;
+      color: var(--color-ink);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    .font-mono-custom {
+      font-family: 'Space Mono', monospace;
+    }
+
+    .font-handwriting {
+      font-family: 'Caveat', cursive;
+    }
+
+    /* Tactile Paper Texture and Spine shadow (No gradients, subtle multi-stop flat shadows / borders) */
+    .paper-sheet {
+      background-color: #FAF5ED;
+      position: relative;
+      box-shadow: inset 16px 0 14px -8px rgba(78, 52, 34, 0.22),
+                  inset 4px 0 4px -2px rgba(43, 26, 14, 0.15),
+                  0 4px 20px rgba(0,0,0,0.35);
+    }
+
+    /* Left spine leather edge peek */
+    .book-spine-strip {
+      width: 14px;
+      background-color: #4A2E1B;
+      border-right: 2px dashed #936B46;
+      box-shadow: 2px 0 5px rgba(0,0,0,0.4);
+    }
+
+    /* Curling bottom right corner */
+    .curl-corner {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 0;
+      height: 0;
+      border-style: solid;
+      border-width: 0 0 52px 52px;
+      border-color: transparent transparent #362215 transparent;
+      z-index: 30;
+      filter: drop-shadow(-3px -3px 3px rgba(43, 26, 14, 0.28));
+    }
+    .curl-corner::after {
+      content: "";
+      position: absolute;
+      bottom: -52px;
+      right: 0;
+      width: 0;
+      height: 0;
+      border-style: solid;
+      border-width: 52px 52px 0 0;
+      border-color: #E6DBCA transparent transparent transparent;
+    }
+
+    /* Silk red bookmark ribbon */
+    .ribbon-bookmark {
+      position: absolute;
+      top: 0;
+      left: 28px;
+      width: 18px;
+      height: 48px;
+      background-color: #C92A2A;
+      box-shadow: 1px 3px 6px rgba(0,0,0,0.3);
+      z-index: 25;
+    }
+    .ribbon-bookmark::after {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      border-left: 9px solid transparent;
+      border-right: 9px solid transparent;
+      border-bottom: 9px solid #FAF5ED;
+    }
+
+    /* Washi tape strip */
+    .washi-yellow {
+      background-color: rgba(247, 219, 114, 0.88);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+      border-left: 2px dashed rgba(214, 184, 80, 0.5);
+      border-right: 2px dashed rgba(214, 184, 80, 0.5);
+    }
+
+    /* Perforated Postage Stamp */
+    .postage-stamp {
+      background-color: #FFF0E6;
+      border: 2px dashed #D66D5B;
+      box-shadow: 1px 2px 5px rgba(0,0,0,0.1);
+      position: relative;
+    }
+
+    /* Inked circular postmark */
+    .postmark-seal {
+      border: 1.5px solid #6E4935;
+      border-radius: 9999px;
+      color: #6E4935;
+      opacity: 0.88;
+    }
+
+    /* Rubber stamp ink text */
+    .rubber-stamp {
+      border: 2.5px solid #D33F2B;
+      color: #D33F2B;
+      box-shadow: inset 0 0 0 1px rgba(211, 63, 43, 0.2);
+      opacity: 0.92;
+    }
+
+    /* Torn Paper Note */
+    .torn-paper {
+      background-color: #FFFDF9;
+      box-shadow: 1px 2px 4px rgba(43, 26, 14, 0.12);
+      border-left: 1px solid #E5DBC7;
+      border-right: 1px dashed #D0C3AA;
+      clip-path: polygon(0% 0%, 100% 4%, 98% 95%, 2% 100%);
+    }
+
+    /* Pixel art crisp rendering */
+    .pixelated {
+      image-rendering: pixelated;
+      image-rendering: -moz-crisp-edges;
+      image-rendering: crisp-edges;
+    }
+  </style>
+</head>
+<body class="w-[390px] min-h-[844px] max-w-[390px] mx-auto relative flex flex-col justify-start select-none">
+
+  <!-- TOP BAR: Koko Chrome -->
+  <header class="w-full bg-[#422919] text-[#FFF8F5] px-3.5 py-2.5 flex items-center justify-between border-b-2 border-[#26150B] z-40 relative">
+    <!-- Left: Back + Book Title -->
+    <div class="flex items-center space-x-2.5">
+      <button class="w-8 h-8 rounded-lg bg-[#533420] active:bg-[#633F28] flex items-center justify-center text-[#FFF8F5] border border-[#6B442A]">
+        <svg class="w-4 h-4 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+      </button>
+      <div class="flex flex-col">
+        <span class="text-[14px] font-black tracking-wide leading-tight flex items-center gap-1.5">
+          <span>Koko</span>
+          <span class="text-[#E6A93C] text-[11px] font-mono-custom tracking-normal">• Vol. 1</span>
+        </span>
+        <span class="text-[9px] font-mono-custom text-[#D2BBA8] tracking-wider uppercase">DUBAI PRIVATE BITES</span>
+      </div>
+    </div>
+
+    <!-- Center/Right: Actions & List/Book Toggle -->
+    <div class="flex items-center space-x-1.5">
+      <!-- Search -->
+      <button class="w-7 h-7 rounded bg-[#533420] text-[#E7D6C6] flex items-center justify-center border border-[#6B442A]" title="Search">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"/>
+        </svg>
+      </button>
+
+      <!-- Add photo -->
+      <button class="w-7 h-7 rounded bg-[#533420] text-[#E7D6C6] flex items-center justify-center border border-[#6B442A]" title="Add Photo">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 4v16m8-8H4"/>
+        </svg>
+      </button>
+
+      <!-- Cover -->
+      <button class="w-7 h-7 rounded bg-[#533420] text-[#E7D6C6] flex items-center justify-center border border-[#6B442A]" title="Cover">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+        </svg>
+      </button>
+
+      <!-- Share -->
+      <button class="w-7 h-7 rounded bg-[#533420] text-[#E7D6C6] flex items-center justify-center border border-[#6B442A]" title="Share">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
+        </svg>
+      </button>
+
+      <!-- Small List/Book toggle -->
+      <div class="flex items-center bg-[#2B1A0E] rounded-md p-0.5 border border-[#633F28]">
+        <button class="px-1.5 py-0.5 rounded text-[10px] font-mono-custom text-[#D2BBA8]" title="List View">
+          List
+        </button>
+        <button class="px-1.5 py-0.5 rounded bg-[#E6A93C] text-[#2B1A0E] text-[10px] font-mono-custom font-bold" title="Book View">
+          Book
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN OPEN BOOK SPREAD WRAPPER -->
+  <main class="w-full flex-1 flex flex-row relative min-h-[774px] bg-[#2E1A0F]">
+
+    <!-- Left Book Spine Edge -->
+    <div class="book-spine-strip flex flex-col justify-between items-center py-6">
+      <div class="w-1.5 h-1.5 rounded-full bg-[#B3875E] opacity-70"></div>
+      <div class="w-1.5 h-1.5 rounded-full bg-[#B3875E] opacity-70"></div>
+      <div class="w-1.5 h-1.5 rounded-full bg-[#B3875E] opacity-70"></div>
+      <div class="w-1.5 h-1.5 rounded-full bg-[#B3875E] opacity-70"></div>
+      <div class="w-1.5 h-1.5 rounded-full bg-[#B3875E] opacity-70"></div>
+    </div>
+
+    <!-- The Scrapbook Paper Page -->
+    <section class="paper-sheet flex-1 min-h-[774px] relative px-4 pt-3.5 pb-16 overflow-hidden">
+
+      <!-- Hanging Red Ribbon (Top-Left) -->
+      <div class="ribbon-bookmark"></div>
+
+      <!-- Top Metadata Header: Date, Area & Coordinates in Monospace -->
+      <div class="ml-9 mr-1 mb-2">
+        <div class="flex items-baseline justify-between">
+          <span class="font-mono-custom text-[11px] font-bold text-[#8A5D3B] tracking-tight">
+            Sunday 18 October
+          </span>
+          <span class="text-[9px] font-mono-custom bg-[#EADBCE] text-[#5C3B24] px-1.5 py-0.5 rounded uppercase font-semibold">
+            Entry #14
+          </span>
+        </div>
+        <div class="font-mono-custom text-[9.5px] text-[#694830] tracking-tight mt-0.5 font-medium">
+          UMM SUQEIM • 25.1500° N, 55.2080° E
+        </div>
+      </div>
+
+      <div class="w-full h-[1px] bg-[#E8DCBE] mb-3 ml-1"></div>
+
+      <!-- Header Section: Place Name & Postage Stamp -->
+      <div class="flex items-start justify-between relative z-10 pl-1 pr-1">
+        <!-- Title & Category Chips -->
+        <div class="flex flex-col">
+          <h1 class="text-[34px] font-black text-[#2B1A0E] tracking-tight leading-none">
+            TRIO
+          </h1>
+          <p class="font-handwriting text-[15px] text-[#7A5034] mt-0.5 -rotate-1">
+            "neighborhood morning hideout"
+          </p>
+
+          <!-- Chips: Coffee and Breakfast -->
+          <div class="flex items-center gap-1.5 mt-2">
+            <span class="bg-[#FFE1D0] text-[#733B20] border border-[#F2BCA7] px-2.5 py-0.5 rounded-full text-[10px] font-mono-custom font-bold uppercase tracking-wider flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-[#D33F2B]"></span>
+              Coffee
+            </span>
+            <span class="bg-[#FFF0D4] text-[#855B1B] border border-[#F5D59A] px-2.5 py-0.5 rounded-full text-[10px] font-mono-custom font-bold uppercase tracking-wider">
+              Breakfast
+            </span>
+          </div>
+        </div>
+
+        <!-- Postage Stamp + Circular Postmark Cancel -->
+        <div class="relative flex items-center justify-center -mr-1">
+          <!-- Postage Stamp -->
+          <div class="postage-stamp w-[74px] h-[92px] p-1 flex flex-col items-center justify-between rotate-2">
+            <div class="w-full flex items-center justify-between text-[7px] font-mono-custom font-bold text-[#C74B38] px-0.5">
+              <span>DXB</span>
+              <span>25F</span>
+            </div>
+            
+            <!-- Graphic inside stamp: Coffee cup illustration -->
+            <div class="w-12 h-12 bg-[#F9DFD2] rounded border border-[#E9A998] flex flex-col items-center justify-center my-0.5">
+              <svg class="w-6 h-6 text-[#9E3928]" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M2 19h18v2H2v-2zm16-8V7H4v10h14v-4h2c1.1 0 2-.9 2-2v-2c0-1.1-.9-2-2-2h-2zm0 4h2v-2h-2v2zM6 9h10v6H6V9z"/>
+              </svg>
+              <span class="text-[7.5px] font-mono-custom font-bold tracking-widest text-[#9E3928] mt-0.5">COFFEE</span>
+            </div>
+
+            <span class="text-[7px] font-mono-custom text-[#7D4F38] tracking-widest uppercase">AIR MAIL</span>
+          </div>
+
+          <!-- Inked Postmark Stamp Overlay -->
+          <div class="postmark-seal absolute -left-5 -bottom-2 w-14 h-14 flex flex-col items-center justify-center text-center -rotate-12 pointer-events-none bg-[#FAF5ED]/20">
+            <span class="text-[6px] font-mono-custom uppercase tracking-wider font-bold">UMM SUQEIM</span>
+            <span class="text-[7px] font-mono-custom font-bold text-[#4A2E1B] leading-none my-0.5">18.10.24</span>
+            <span class="text-[5.5px] font-mono-custom text-[#7A5034]">DUBAI POST</span>
+            <!-- wavy lines -->
+            <div class="w-7 h-[1px] bg-[#6E4935] mt-0.5"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- POLAROID PHOTO SECTION -->
+      <div class="relative mt-4 flex justify-center items-center">
+
+        <!-- Top-center yellow washi tape fixing polaroid -->
+        <div class="washi-yellow absolute -top-2.5 z-20 w-24 h-6 rotate-2 flex items-center justify-center">
+          <span class="text-[8px] font-mono-custom text-[#8C6D1F] tracking-widest opacity-60">OCTOBER NOTES</span>
+        </div>
+
+        <!-- Tilted White Polaroid Card -->
+        <div class="relative bg-white pt-2.5 px-2.5 pb-4 rounded-sm shadow-[2px_5px_14px_rgba(43,26,14,0.18)] rotate-[-2.2deg] max-w-[285px] border border-[#EDE2D4]">
+          
+          <!-- Polaroid Photo Frame -->
+          <div class="w-[265px] h-[225px] overflow-hidden bg-[#ECE0D1] relative">
+            <img 
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuDcbAJuHSSCDSAYyNlIa-y_JcRuaiVx51VgtC8TxmLSf66rt4CpuM9FVaLvrqsGc5FxWj7a4AJADoepVZgbVTKo6VLFEYkAU79WCMpabJHLhFlb2z2vXSYsszU9ANQ7yI0v1bAJjwv8rb7X9aqLCQT_qWF-vnkj78QpOYsOzD4Ey6fx6_Y0EV42JcUprUb4xUUqThqeKR64Pc99PRjqcHqXKNguHFA6nvo4WROOI1dKic5GRoBB7UCYIw" 
+              alt="Cozy latte with latte art at Trio cafe in Umm Suqeim" 
+              class="w-full h-full object-cover"
+            />
+            <!-- Photo subtle vintage border -->
+            <div class="absolute inset-0 border border-black/10 pointer-events-none"></div>
+          </div>
+
+          <!-- Handwritten caption under photo -->
+          <div class="mt-2 text-center">
+            <p class="font-handwriting text-[17px] text-[#422919] leading-tight font-bold">
+              first sip of the Sunday batch ☕
+            </p>
+          </div>
+
+          <!-- Red ink rubber stamp reading "★ 4" slightly rotated over bottom corner of polaroid -->
+          <div class="rubber-stamp absolute -bottom-3.5 -right-3 px-2 py-0.5 rounded -rotate-[14deg] z-20 bg-[#FFF7F4]">
+            <span class="font-mono-custom text-[15px] font-black tracking-wider leading-none">
+              ★ 4
+            </span>
+          </div>
+
+          <!-- Decorative Sticker 1: Warm coffee bean/croissant sticker on photo corner -->
+          <div class="absolute -top-3.5 -left-3 w-10 h-10 rounded-full bg-[#FFF0D4] border-2 border-dashed border-[#E5A93C] flex items-center justify-center rotate-[-12deg] shadow-sm z-20">
+            <svg class="w-5 h-5 text-[#855B1B]" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14.5h-2v-2h2v2zm0-4h-2V7h2v5.5z"/>
+            </svg>
+            <span class="text-[7px] font-mono-custom font-bold text-[#8C5E1E] absolute -bottom-1 bg-[#FFF0D4] px-1 rounded border border-[#E5A93C]">DXB</span>
+          </div>
+        </div>
+
+        <!-- Decorative Sticker 2: Palm Tree & Sun loose paper seal placed near photo -->
+        <div class="absolute right-1 -top-3 w-11 h-11 rounded-full bg-[#E8F5E9] border-2 border-[#81C784] flex flex-col items-center justify-center rotate-[16deg] shadow-sm z-10">
+          <span class="text-[12px] leading-none">🌴</span>
+          <span class="text-[6.5px] font-mono-custom font-bold text-[#2E7D32] mt-0.5">COAST</span>
+        </div>
+      </div>
+
+      <!-- TORN PAPER STRIP HANDWRITTEN NOTE -->
+      <div class="relative mt-4 mx-2">
+        <div class="torn-paper px-3 py-2 rotate-[1deg] border border-[#E6DBC5]">
+          <div class="flex items-start space-x-2">
+            <span class="text-[#D33F2B] font-mono-custom text-[11px] font-bold mt-0.5">✎</span>
+            <p class="font-handwriting text-[19px] text-[#361E10] font-bold leading-snug">
+              best flat white in Umm Suqeim
+            </p>
+          </div>
+          <p class="font-handwriting text-[14px] text-[#785338] ml-4 -mt-1 leading-tight">
+            light roast, crisp outdoor bench &amp; fresh sea breeze
+          </p>
+        </div>
+      </div>
+
+      <!-- ATTENDANCE & PIXEL-AVATAR CHIPS -->
+      <div class="mt-3.5 mx-2 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <span class="font-mono-custom text-[9.5px] font-bold uppercase text-[#8A5D3B] tracking-wider">
+            Crew:
+          </span>
+
+          <!-- Chip 1: "You ★4" with Pixel Art Avatar -->
+          <div class="flex items-center space-x-1.5 bg-[#FFF2E5] border border-[#F0C9B3] px-2 py-1 rounded-md shadow-xs">
+            <div class="w-5 h-5 bg-[#5D3A20] rounded-sm flex items-center justify-center overflow-hidden border border-[#8C5D38]">
+              <!-- Pixel avatar representation -->
+              <div class="w-4 h-4 grid grid-cols-4 grid-rows-4 gap-0 pixelated">
+                <div class="bg-[#FAF5ED]"></div><div class="bg-[#E6A93C]"></div><div class="bg-[#E6A93C]"></div><div class="bg-[#FAF5ED]"></div>
+                <div class="bg-[#E6A93C]"></div><div class="bg-[#FAF5ED]"></div><div class="bg-[#FAF5ED]"></div><div class="bg-[#E6A93C]"></div>
+                <div class="bg-[#5D3A20]"></div><div class="bg-[#D33F2B]"></div><div class="bg-[#D33F2B]"></div><div class="bg-[#5D3A20]"></div>
+                <div class="bg-[#5D3A20]"></div><div class="bg-[#5D3A20]"></div><div class="bg-[#5D3A20]"></div><div class="bg-[#5D3A20]"></div>
+              </div>
+            </div>
+            <span class="text-[10.5px] font-mono-custom font-bold text-[#4A2E1B]">
+              You <span class="text-[#D33F2B]">★4</span>
+            </span>
+          </div>
+
+          <!-- Chip 2: "Rabia" with Pixel Art Avatar -->
+          <div class="flex items-center space-x-1.5 bg-[#FFF2E5] border border-[#F0C9B3] px-2 py-1 rounded-md shadow-xs">
+            <div class="w-5 h-5 bg-[#3B5441] rounded-sm flex items-center justify-center overflow-hidden border border-[#5A7B62]">
+              <!-- Pixel avatar 2 representation -->
+              <div class="w-4 h-4 grid grid-cols-4 grid-rows-4 gap-0 pixelated">
+                <div class="bg-[#E8F5E9]"></div><div class="bg-[#81C784]"></div><div class="bg-[#81C784]"></div><div class="bg-[#E8F5E9]"></div>
+                <div class="bg-[#81C784]"></div><div class="bg-[#FAF5ED]"></div><div class="bg-[#FAF5ED]"></div><div class="bg-[#81C784]"></div>
+                <div class="bg-[#2E7D32]"></div><div class="bg-[#FAF5ED]"></div><div class="bg-[#FAF5ED]"></div><div class="bg-[#2E7D32]"></div>
+                <div class="bg-[#1B5E20]"></div><div class="bg-[#1B5E20]"></div><div class="bg-[#1B5E20]"></div><div class="bg-[#1B5E20]"></div>
+              </div>
+            </div>
+            <span class="text-[10.5px] font-mono-custom font-bold text-[#4A2E1B]">
+              Rabia
+            </span>
+          </div>
+        </div>
+
+        <!-- Scrapbook Seal Indicator -->
+        <div class="font-mono-custom text-[9px] text-[#A67E60] italic">
+          vouched
+        </div>
+      </div>
+
+      <!-- BOTTOM PAGE NUMBER (p. 24 in Mono) -->
+      <div class="absolute bottom-3 right-16 z-20">
+        <span class="font-mono-custom text-[12px] font-bold text-[#8C6244] tracking-widest">
+          p. 24
+        </span>
+      </div>
+
+      <!-- Page curl triangle at the bottom right corner showing next page -->
+      <div class="curl-corner" title="Turn page to p. 25"></div>
+
+    </section>
+
+    <!-- FLOATING DECORATE WAND BUTTON (Bottom Right) -->
+    <button 
+      class="fixed bottom-6 right-6 w-13 h-13 w-[52px] h-[52px] rounded-full bg-[#E6A93C] active:bg-[#C98E2A] text-[#2B1A0E] flex items-center justify-center shadow-[0_4px_14px_rgba(0,0,0,0.35)] border-2 border-[#FFE8AA] z-50 transition-transform active:scale-95" 
+      title="Decorate Page"
+      aria-label="Decorate Page"
+    >
+      <!-- Wand SVG Icon -->
+      <svg class="w-6 h-6 stroke-[2.2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+        <path stroke-linecap="round" stroke-linejoin="round" d="M19 13v.01M16 17v.01M21 9v.01M9 3v.01M5 7v.01" />
+      </svg>
+    </button>
+
+  </main>
+
+</body>
+</html>

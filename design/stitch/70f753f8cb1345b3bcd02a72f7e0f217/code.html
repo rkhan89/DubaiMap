@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=390, height=844, initial-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Koko • Vol. 1 Scrapbook Page</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&amp;family=Nunito:wght@700;800;900&amp;family=Space+Mono:ital,wght@0,400;0,700;1,400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+    /* Design Tokens and Baseline Constraints */
+    :root {
+      --bg-page: #FAF6F0;
+      --bg-gutter: #E9DEC8;
+      --leather-trim: #4A2E1B;
+      --color-ink: #2B1A0E;
+      --color-mustard: #E6A93C;
+      --color-peach: #FFE1D0;
+      --color-coral: #E86A5A;
+      --color-stamp-red: #D33F2B;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #362215;
+      font-family: 'Nunito', -apple-system, sans-serif;
+      color: var(--color-ink);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    .font-mono-custom {
+      font-family: 'Space Mono', monospace;
+    }
+
+    .font-handwriting {
+      font-family: 'Caveat', cursive;
+    }
+
+    /* Tactile Paper Texture and Spine shadow (No gradients, subtle multi-stop flat shadows / borders) */
+    .paper-sheet {
+      background-color: #FAF5ED;
+      position: relative;
+      box-shadow: inset 16px 0 14px -8px rgba(78, 52, 34, 0.22),
+                  inset 4px 0 4px -2px rgba(43, 26, 14, 0.15),
+                  0 4px 20px rgba(0,0,0,0.35);
+    }
+
+    /* Left spine leather edge peek */
+    .book-spine-strip {
+      width: 14px;
+      background-color: #4A2E1B;
+      border-right: 2px dashed #936B46;
+      box-shadow: 2px 0 5px rgba(0,0,0,0.4);
+    }
+
+    /* Curling bottom right corner */
+    .curl-corner {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 0;
+      height: 0;
+      border-style: solid;
+      border-width: 0 0 52px 52px;
+      border-color: transparent transparent #362215 transparent;
+      z-index: 30;
+      filter: drop-shadow(-3px -3px 3px rgba(43, 26, 14, 0.28));
+    }
+    .curl-corner::after {
+      content: "";
+      position: absolute;
+      bottom: -52px;
+      right: 0;
+      width: 0;
+      height: 0;
+      border-style: solid;
+      border-width: 52px 52px 0 0;
+      border-color: #E6DBCA transparent transparent transparent;
+    }
+
+    /* Silk red bookmark ribbon */
+    .ribbon-bookmark {
+      position: absolute;
+      top: 0;
+      left: 28px;
+      width: 18px;
+      height: 48px;
+      background-color: #C92A2A;
+      box-shadow: 1px 3px 6px rgba(0,0,0,0.3);
+      z-index: 25;
+    }
+    .ribbon-bookmark::after {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      border-left: 9px solid transparent;
+      border-right: 9px solid transparent;
+      border-bottom: 9px solid #FAF5ED;
+    }
+
+    /* Washi tape strip */
+    .washi-yellow {
+      background-color: rgba(247, 219, 114, 0.88);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+      border-left: 2px dashed rgba(214, 184, 80, 0.5);
+      border-right: 2px dashed rgba(214, 184, 80, 0.5);
+    }
+
+    /* Perforated Postage Stamp */
+    .postage-stamp {
+      background-color: #FFF0E6;
+      border: 2px dashed #D66D5B;
+      box-shadow: 1px 2px 5px rgba(0,0,0,0.1);
+      position: relative;
+    }
+
+    /* Inked circular postmark */
+    .postmark-seal {
+      border: 1.5px solid #6E4935;
+      border-radius: 9999px;
+      color: #6E4935;
+      opacity: 0.88;
+    }
+
+    /* Rubber stamp ink text */
+    .rubber-stamp {
+      border: 2.5px solid #D33F2B;
+      color: #D33F2B;
+      box-shadow: inset 0 0 0 1px rgba(211, 63, 43, 0.2);
+      opacity: 0.92;
+    }
+
+    /* Torn Paper Note */
+    .torn-paper {
+      background-color: #FFFDF9;
+      box-shadow: 1px 2px 4px rgba(43, 26, 14, 0.12);
+      border-left: 1px solid #E5DBC7;
+      border-right: 1px dashed #D0C3AA;
+      clip-path: polygon(0% 0%, 100% 4%, 98% 95%, 2% 100%);
+    }
+
+    /* Pixel art crisp rendering */
+    .pixelated {
+      image-rendering: pixelated;
+      image-rendering: -moz-crisp-edges;
+      image-rendering: crisp-edges;
+    }
+  </style>
+<meta content="mobile_stack" name="shell-type"/><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="w-[390px] min-h-[844px] max-w-[390px] mx-auto relative flex flex-col justify-start select-none">
+<!-- TOP BAR: Koko Chrome -->
+<header class="w-full bg-[#422919] text-[#FFF8F5] px-3.5 py-2.5 flex items-center justify-between border-b-2 border-[#26150B] z-40 relative">
+<!-- Left: Back + Book Title -->
+<div class="flex items-center space-x-2.5">
+<button class="w-8 h-8 rounded-lg bg-[#533420] active:bg-[#633F28] flex items-center justify-center text-[#FFF8F5] border border-[#6B442A]">
+<svg class="w-4 h-4 stroke-[2.5]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<div class="flex flex-col">
+<span class="text-[14px] font-black tracking-wide leading-tight flex items-center gap-1.5">
+<span>Koko</span>
+<span class="text-[#E6A93C] text-[11px] font-mono-custom tracking-normal">• Vol. 1</span>
+</span>
+<span class="text-[9px] font-mono-custom text-[#D2BBA8] tracking-wider uppercase">DUBAI PRIVATE BITES</span>
+</div>
+</div>
+<!-- Center/Right: Actions & List/Book Toggle -->
+<div class="flex items-center space-x-1.5">
+<!-- Search -->
+<button class="w-7 h-7 rounded bg-[#533420] text-[#E7D6C6] flex items-center justify-center border border-[#6B442A]" title="Search">
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2"></path>
+</svg>
+</button>
+<!-- Add photo -->
+<button class="w-7 h-7 rounded bg-[#533420] text-[#E7D6C6] flex items-center justify-center border border-[#6B442A]" title="Add Photo">
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2"></path>
+</svg>
+</button>
+<!-- Cover -->
+<button class="w-7 h-7 rounded bg-[#533420] text-[#E7D6C6] flex items-center justify-center border border-[#6B442A]" title="Cover">
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</button>
+<!-- Share -->
+<button class="w-7 h-7 rounded bg-[#533420] text-[#E7D6C6] flex items-center justify-center border border-[#6B442A]" title="Share">
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2"></path>
+</svg>
+</button>
+<!-- Small List/Book toggle -->
+<div class="flex items-center bg-[#2B1A0E] rounded-md p-0.5 border border-[#633F28]">
+<button class="px-1.5 py-0.5 rounded text-[10px] font-mono-custom text-[#D2BBA8]" title="List View">
+          List
+        </button>
+<button class="px-1.5 py-0.5 rounded bg-[#E6A93C] text-[#2B1A0E] text-[10px] font-mono-custom font-bold" title="Book View">
+          Book
+        </button>
+</div>
+</div>
+</header>
+<!-- MAIN OPEN BOOK SPREAD WRAPPER -->
+<main class="w-full flex-1 flex flex-row relative min-h-[774px] bg-[#2E1A0F]"><div class="flex flex-col w-full relative select-none overflow-hidden pb-4">
+<!-- EDIT MODE SUB-CHROME (Warm craft tooling bar) -->
+<div class="w-full bg-secondary text-surface px-4 py-2 flex items-center justify-between shadow-md z-30">
+<!-- Undo / Redo chips -->
+<div class="flex items-center space-x-1.5">
+<button class="w-7 h-7 rounded-full bg-surface-container-low text-on-surface-variant flex items-center justify-center shadow-sm active:translate-y-0.5" title="Undo">
+<span class="material-symbols-outlined text-[16px]">undo</span>
+</button>
+<button class="w-7 h-7 rounded-full bg-surface-container-low text-on-surface-variant opacity-60 flex items-center justify-center shadow-sm" title="Redo">
+<span class="material-symbols-outlined text-[16px]">redo</span>
+</button>
+<div class="h-4 w-px bg-outline-variant/40 mx-1"></div>
+<button class="w-7 h-7 rounded-full bg-surface-container-low text-on-surface-variant flex items-center justify-center shadow-sm active:translate-y-0.5" title="Layer arrangement">
+<span class="material-symbols-outlined text-[16px]">layers</span>
+</button>
+</div>
+<!-- Center Mode Badge -->
+<div class="flex items-center space-x-1.5 bg-on-secondary-fixed/30 px-2.5 py-1 rounded-full">
+<span class="w-2 h-2 rounded-full bg-primary-container animate-pulse"></span>
+<span class="font-headline-sm text-label-sm tracking-wide text-primary-fixed uppercase">Decorating</span>
+<span class="font-label-sm text-label-sm text-secondary-fixed opacity-80">• p. 24</span>
+</div>
+<!-- Done pill button -->
+<button class="px-3.5 py-1 rounded-full bg-primary-container text-on-primary-container font-headline-sm text-label-md tracking-wider uppercase shadow-[0_2px_0_#604100] active:translate-y-0.5 active:shadow-[0_1px_0_#604100] flex items-center space-x-1">
+<span>Done</span>
+<span class="material-symbols-outlined text-[14px]">check</span>
+</button>
+</div>
+<!-- WORKSPACE CUTTING MAT / WORKBENCH -->
+<div class="w-full relative flex items-center justify-center py-2 px-3 overflow-hidden bg-inverse-surface/10">
+<!-- Mini cutting mat guide ticks on backdrop -->
+<div class="absolute inset-0 opacity-15 pointer-events-none flex justify-between px-2 py-1">
+<div class="flex flex-col justify-between font-label-sm text-[8px] text-on-surface">
+<span>+ 01</span><span>+ 02</span><span>+ 03</span><span>+ 04</span><span>+ 05</span>
+</div>
+<div class="flex flex-col justify-between font-label-sm text-[8px] text-on-surface text-right">
+<span>MM-24</span><span>GRID</span><span>KOKO</span><span>VOL-1</span><span>A-08</span>
+</div>
+</div>
+<!-- SCALED PHYSICAL SCRAPBOOK PAGE (~88% scale) -->
+<div class="w-[336px] bg-[#FAF5ED] rounded-sm relative shadow-[0_12px_28px_rgba(43,26,14,0.35)] transform transition-transform duration-200 origin-center pb-5 overflow-hidden">
+<!-- Spine Leather Shadow on Left -->
+<div class="absolute top-0 bottom-0 left-0 w-3 bg-gradient-to-r from-[#3B2212]/30 via-[#3B2212]/10 to-transparent z-10 pointer-events-none"></div>
+<!-- Red Ribbon Bookmark Top-Left -->
+<div class="absolute top-0 left-4 w-4 h-9 bg-[#C92A2A] shadow-md z-20">
+<div class="absolute bottom-0 left-0 right-0 h-2 bg-[#FAF5ED]" style="clip-path: polygon(0 100%, 50% 0, 100% 100%);"></div>
+</div>
+<!-- Page Header Meta -->
+<div class="pt-3.5 px-6 pb-2 flex justify-between items-start">
+<div class="pl-4">
+<p class="font-label-sm text-label-sm text-secondary tracking-widest uppercase">Sunday 18 October</p>
+<p class="font-label-sm text-[9px] text-outline font-bold tracking-tighter">UMM SUQEIM • 25.1500° N, 55.2080° E</p>
+</div>
+<div class="w-6 h-6 rounded-full bg-secondary-fixed flex items-center justify-center shadow-inner">
+<span class="font-label-sm text-[9px] text-secondary font-bold">24</span>
+</div>
+</div>
+<!-- Page Body Content -->
+<div class="px-5 relative">
+<!-- Title & Stamp Row -->
+<div class="flex items-center justify-between mt-1 mb-2">
+<div>
+<h2 class="font-headline-xl text-headline-lg text-on-surface tracking-tight leading-none">TRIO</h2>
+<p class="font-caption text-caption text-secondary -mt-0.5">neighborhood hideout</p>
+</div>
+<!-- Postage Stamp with Coffee Motif -->
+<div class="relative bg-surface-container-high p-1 border border-dashed border-error shadow-sm rotate-2">
+<div class="w-10 h-10 bg-surface-container-low flex flex-col items-center justify-center text-center">
+<span class="material-symbols-outlined text-secondary text-[18px]">local_cafe</span>
+<span class="font-label-sm text-[7px] text-error font-bold uppercase tracking-wider">DXB-75</span>
+</div>
+<!-- Inked Postmark Stamp overlapping -->
+<div class="absolute -bottom-2 -left-3 w-8 h-8 rounded-full border border-secondary/60 flex items-center justify-center -rotate-12 pointer-events-none">
+<span class="font-label-sm text-[6px] text-secondary font-bold uppercase">PAID</span>
+</div>
+</div>
+</div>
+<!-- Polaroid Frame Container -->
+<div class="relative mx-auto w-56 bg-surface-container-lowest p-2 pb-6 shadow-[0_3px_10px_rgba(43,26,14,0.18)] rotate-[-1.5deg]">
+<!-- Polaroid Photo Inset -->
+<div class="w-full h-36 bg-surface-container-high overflow-hidden relative">
+<img class="w-full h-full object-cover" data-alt="Cozy golden hour flat-lay of artisanal oat milk latte with foam heart art on a textured terracotta ceramic mug placed upon rustic wooden coffee shop table at Trio Cafe Dubai, warm morning light, soft nostalgic film grain aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDbUGFMQybUmQ9JNDfAupbCukYjbg_fBUlqzkG_fmzWfP7d_USMJEaRvWLTJwPdAEVuEBqp-m7NoQ2ApoKRqCoJuLayBQ_-8a95O_IFv_dBaBjeiD7RWceMr98_KhWdJdkoGiHCI63BY9Wv20ux1dKeryM3948nxGuzwiVJUJoacGtRJkkM1Bq5mh3Oc1FYbxRmPCCWaf8d30rp5vTy0KFe_RFXSxgXQ_ovftjrr-YhXmWtpdzxWO0G7A"/>
+<!-- Subtle photo exposure vignette -->
+<div class="absolute inset-0 shadow-inner pointer-events-none"></div>
+</div>
+<p class="font-caption text-caption text-on-surface-variant text-center mt-2 transform -rotate-1">Best flat white in Jumeirah ☕</p>
+<!-- ACTIVE DRAGGING WASHI TAPE (Top-Right Corner) -->
+<div class="absolute -top-3 -right-4 z-30 pointer-events-none">
+<div class="relative transform rotate-[18deg] scale-105">
+<!-- Lifted shadow simulating physical lift off page -->
+<div class="absolute inset-0 bg-[#362215]/30 blur-[3px] translate-y-2 translate-x-1"></div>
+<!-- Pastel Pink Washi Tape strip with serrated cut edges -->
+<div class="relative bg-[#FFB5B5]/90 text-[#7A3E3E] px-4 py-1.5 shadow-md flex items-center justify-center font-label-sm text-[8px] tracking-wider uppercase border-l-2 border-r-2 border-dashed border-[#F48F8F]">
+<span>TRIO • OCT</span>
+</div>
+<!-- Floating touch/cursor locator indicator -->
+<div class="absolute -bottom-2 -right-2 w-5 h-5 bg-primary-container rounded-full shadow-lg border-2 border-surface flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary-container text-[12px]">pan_tool</span>
+</div>
+</div>
+</div>
+</div>
+<!-- ACTIVE SELECTED STICKER (Coastal Palm Badge / Peel effect) -->
+<div class="absolute top-28 left-3 z-30">
+<div class="relative">
+<!-- Rotate Handle on Top -->
+<div class="absolute -top-6 left-1/2 -translate-x-1/2 flex flex-col items-center">
+<div class="w-4 h-4 rounded-full bg-primary-container text-on-primary-container shadow-md flex items-center justify-center cursor-pointer">
+<span class="material-symbols-outlined text-[10px]">sync</span>
+</div>
+<div class="w-0.5 h-2 bg-primary"></div>
+</div>
+<!-- Dashed bounding transform outline box -->
+<div class="p-1 border border-dashed border-primary relative rounded bg-primary-container/10 shadow-[0_8px_16px_rgba(43,26,14,0.3)] transform -rotate-6">
+<!-- Corner Resize Anchors -->
+<div class="absolute -top-1 -left-1 w-2 h-2 bg-primary rounded-full"></div>
+<div class="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full"></div>
+<div class="absolute -bottom-1 -left-1 w-2 h-2 bg-primary rounded-full"></div>
+<div class="absolute -bottom-1 -right-1 w-2 h-2 bg-primary rounded-full"></div>
+<!-- The physical sticker graphic (Palm badge) with thick white die-cut contour -->
+<div class="bg-surface-container-lowest p-1.5 rounded-full shadow-inner flex items-center justify-center border-2 border-surface-container-lowest">
+<div class="w-11 h-11 rounded-full bg-tertiary-fixed flex flex-col items-center justify-center text-on-tertiary-fixed shadow-sm">
+<span class="material-symbols-outlined text-[20px] text-tertiary">markdown_copy</span>
+<span class="font-label-sm text-[6px] tracking-tighter uppercase font-bold text-on-tertiary-fixed-variant">JUMEIRAH</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Placed Sticker: Karak Cup Seal (Dormant) -->
+<div class="absolute bottom-2 left-6 rotate-12 opacity-95">
+<div class="bg-surface-container-lowest p-1 rounded-full shadow-sm border border-surface-container-lowest">
+<div class="w-9 h-9 rounded-full bg-secondary-fixed flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px] text-secondary">local_drink</span>
+</div>
+</div>
+</div>
+<!-- Handwritten margin notes -->
+<div class="mt-4 pl-3">
+<p class="font-caption text-caption text-secondary leading-tight rotate-1">Quiet bench tucked in the garden courtyard. Roaster smells like caramelized dates.</p>
+</div>
+</div>
+<!-- Page Bottom Corner Curl with page number peek -->
+<div class="absolute bottom-0 right-0 w-8 h-8 bg-surface-container-high rounded-tl-xl shadow-md flex items-end justify-end p-1">
+<span class="font-label-sm text-[8px] text-outline font-bold">#24</span>
+</div>
+</div>
+</div>
+<!-- TACTILE BOTTOM DRAWER / STICKER VAULT (Occupies lower craft area) -->
+<div class="w-full bg-surface-container-lowest rounded-t-2xl shadow-[0_-8px_24px_rgba(43,26,14,0.18)] flex flex-col z-40 mt-1">
+<!-- Top Grab Handle -->
+<div class="w-full flex justify-center pt-2 pb-1.5">
+<div class="w-9 h-1 rounded-full bg-outline-variant"></div>
+</div>
+<!-- Category Tabs Navigation -->
+<div class="px-3 border-b-0">
+<div class="flex items-center space-x-4 overflow-x-auto no-scrollbar py-1">
+<button class="flex flex-col items-center shrink-0">
+<span class="font-headline-sm text-body-sm text-primary font-bold">Starter</span>
+<div class="w-5 h-1 bg-primary rounded-full mt-1"></div>
+</button>
+<button class="flex flex-col items-center shrink-0 opacity-70 active:opacity-100">
+<span class="font-headline-sm text-body-sm text-on-surface-variant font-bold">Milestones</span>
+<div class="w-5 h-1 bg-transparent mt-1"></div>
+</button>
+<button class="flex flex-col items-center shrink-0 opacity-70 active:opacity-100">
+<span class="font-headline-sm text-body-sm text-on-surface-variant font-bold">Critters</span>
+<div class="w-5 h-1 bg-transparent mt-1"></div>
+</button>
+<button class="flex flex-col items-center shrink-0 opacity-70 active:opacity-100">
+<span class="font-headline-sm text-body-sm text-on-surface-variant font-bold">Districts</span>
+<div class="w-5 h-1 bg-transparent mt-1"></div>
+</button>
+<button class="flex flex-col items-center shrink-0 opacity-70 active:opacity-100">
+<span class="font-headline-sm text-body-sm text-on-surface-variant font-bold">Mine</span>
+<div class="w-5 h-1 bg-transparent mt-1"></div>
+</button>
+<button class="flex flex-col items-center shrink-0 opacity-70 active:opacity-100">
+<span class="font-headline-sm text-body-sm text-on-surface-variant font-bold">Layout</span>
+<div class="w-5 h-1 bg-transparent mt-1"></div>
+</button>
+</div>
+</div>
+<!-- Sub-Tooling & Filters Bar -->
+<div class="px-4 py-2 bg-surface-container-low flex items-center justify-between">
+<!-- Tape Rolls tool launcher -->
+<button class="flex items-center space-x-1.5 bg-surface-container-lowest px-2.5 py-1 rounded-lg shadow-sm active:translate-y-0.5">
+<!-- 6 miniature color-stack tape rolls icon -->
+<div class="flex -space-x-1">
+<div class="w-2.5 h-3.5 rounded-sm bg-[#FFB5B5] shadow-xs"></div>
+<div class="w-2.5 h-3.5 rounded-sm bg-[#E6A93C] shadow-xs"></div>
+<div class="w-2.5 h-3.5 rounded-sm bg-[#9CBE85] shadow-xs"></div>
+<div class="w-2.5 h-3.5 rounded-sm bg-[#FEB383] shadow-xs"></div>
+<div class="w-2.5 h-3.5 rounded-sm bg-[#AED196] shadow-xs"></div>
+<div class="w-2.5 h-3.5 rounded-sm bg-[#D4C4B0] shadow-xs"></div>
+</div>
+<span class="font-label-sm text-label-sm text-secondary font-bold">Washi Tapes</span>
+</button>
+<!-- Right controls: Mine Only switch + Count pill -->
+<div class="flex items-center space-x-2.5">
+<label class="flex items-center space-x-1.5 cursor-pointer">
+<span class="font-label-sm text-[10px] text-outline font-bold uppercase">Mine Only</span>
+<div class="w-7 h-4 bg-outline-variant/60 rounded-full relative p-0.5">
+<div class="w-3 h-3 bg-surface-container-lowest rounded-full shadow-sm"></div>
+</div>
+</label>
+<div class="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant font-label-sm text-[10px] font-bold">
+          5 of 12
+        </div>
+</div>
+</div>
+<!-- Sticker Tray Grid (4 stickers per row, die-cut borders, tactile cream tiles) -->
+<div class="px-4 py-3 overflow-y-auto max-h-[175px]">
+<div class="grid grid-cols-4 gap-2.5">
+<!-- Sticker 1: Karak Tea Kettle -->
+<div class="aspect-square bg-surface-container-low rounded-xl p-2 flex flex-col items-center justify-center shadow-sm relative group active:scale-95 transition-transform cursor-pointer">
+<!-- Die-cut white border wrapping element -->
+<div class="p-1.5 bg-surface-container-lowest rounded-full shadow-[0_2px_4px_rgba(43,26,14,0.1)]">
+<span class="material-symbols-outlined text-[24px] text-secondary">pixel_fold</span>
+</div>
+<span class="font-label-sm text-[8px] text-on-surface-variant mt-1 truncate">Karak Pot</span>
+</div>
+<!-- Sticker 2: Desert Falcon / Saker -->
+<div class="aspect-square bg-surface-container-low rounded-xl p-2 flex flex-col items-center justify-center shadow-sm relative group active:scale-95 transition-transform cursor-pointer">
+<div class="p-1.5 bg-surface-container-lowest rounded-full shadow-[0_2px_4px_rgba(43,26,14,0.1)]">
+<span class="material-symbols-outlined text-[24px] text-primary">raven</span>
+</div>
+<span class="font-label-sm text-[8px] text-on-surface-variant mt-1 truncate">Falcon</span>
+</div>
+<!-- Sticker 3: Pixel Street Cat (Bur Dubai alley mascot) -->
+<div class="aspect-square bg-surface-container-low rounded-xl p-2 flex flex-col items-center justify-center shadow-sm relative group active:scale-95 transition-transform cursor-pointer">
+<div class="p-1.5 bg-surface-container-lowest rounded-full shadow-[0_2px_4px_rgba(43,26,14,0.1)]">
+<span class="material-symbols-outlined text-[24px] text-secondary">pets</span>
+</div>
+<span class="font-label-sm text-[8px] text-on-surface-variant mt-1 truncate">Alley Cat</span>
+</div>
+<!-- Sticker 4: Heritage Windtower (Barjeel) -->
+<div class="aspect-square bg-surface-container-low rounded-xl p-2 flex flex-col items-center justify-center shadow-sm relative group active:scale-95 transition-transform cursor-pointer">
+<div class="p-1.5 bg-surface-container-lowest rounded-full shadow-[0_2px_4px_rgba(43,26,14,0.1)]">
+<span class="material-symbols-outlined text-[24px] text-tertiary">apartment</span>
+</div>
+<span class="font-label-sm text-[8px] text-on-surface-variant mt-1 truncate">Barjeel</span>
+</div>
+<!-- Sticker 5: Fresh Croissant / Bakery Seal -->
+<div class="aspect-square bg-surface-container-low rounded-xl p-2 flex flex-col items-center justify-center shadow-sm relative group active:scale-95 transition-transform cursor-pointer">
+<div class="p-1.5 bg-surface-container-lowest rounded-full shadow-[0_2px_4px_rgba(43,26,14,0.1)]">
+<span class="material-symbols-outlined text-[24px] text-primary-container">bakery_dining</span>
+</div>
+<span class="font-label-sm text-[8px] text-on-surface-variant mt-1 truncate">Flaky Joy</span>
+</div>
+<!-- Sticker 6: Abra Water Taxi Badge -->
+<div class="aspect-square bg-surface-container-low rounded-xl p-2 flex flex-col items-center justify-center shadow-sm relative group active:scale-95 transition-transform cursor-pointer">
+<div class="p-1.5 bg-surface-container-lowest rounded-full shadow-[0_2px_4px_rgba(43,26,14,0.1)]">
+<span class="material-symbols-outlined text-[24px] text-secondary">sailing</span>
+</div>
+<span class="font-label-sm text-[8px] text-on-surface-variant mt-1 truncate">Creek Abra</span>
+</div>
+<!-- Sticker 7: Inked Postmark Stamp -->
+<div class="aspect-square bg-surface-container-low rounded-xl p-2 flex flex-col items-center justify-center shadow-sm relative group active:scale-95 transition-transform cursor-pointer">
+<div class="p-1.5 bg-surface-container-lowest rounded-full shadow-[0_2px_4px_rgba(43,26,14,0.1)]">
+<span class="material-symbols-outlined text-[24px] text-error">approval</span>
+</div>
+<span class="font-label-sm text-[8px] text-on-surface-variant mt-1 truncate">Oct Stamp</span>
+</div>
+<!-- Sticker 8: DXB Compass Rose -->
+<div class="aspect-square bg-surface-container-low rounded-xl p-2 flex flex-col items-center justify-center shadow-sm relative group active:scale-95 transition-transform cursor-pointer">
+<div class="p-1.5 bg-surface-container-lowest rounded-full shadow-[0_2px_4px_rgba(43,26,14,0.1)]">
+<span class="material-symbols-outlined text-[24px] text-on-surface-variant">explore</span>
+</div>
+<span class="font-label-sm text-[8px] text-on-surface-variant mt-1 truncate">Compass</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script>
+  // Lightweight tactile feedback for tap interactions
+  document.querySelectorAll('button, .cursor-pointer').forEach(element => {
+    element.addEventListener('click', () => {
+      if (window.navigator && window.navigator.vibrate) {
+        window.navigator.vibrate(8);
+      }
+    });
+  });
+</script></main>
+</body></html>

@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_blank" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&amp;family=Nunito+Sans:wght@700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600&amp;family=Space+Mono:wght@400;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "on-secondary": "#ffffff", "primary-container": "#e5a93c", "on-primary-container": "#5e4000", "on-secondary-fixed-variant": "#6c3a13", "on-surface": "#291709", "error": "#ba1a1a", "inverse-on-surface": "#ffede3", "tertiary-fixed": "#c9edb0", "tertiary-container": "#9cbe85", "secondary": "#895029", "on-surface-variant": "#504535", "background": "#fff8f5", "on-tertiary-fixed-variant": "#314e21", "tertiary-fixed-dim": "#aed196", "primary-fixed": "#ffdead", "secondary-fixed-dim": "#ffb688", "secondary-container": "#feb383", "error-container": "#ffdad6", "on-tertiary": "#ffffff", "surface-container-high": "#ffe3d0", "surface-variant": "#ffdcc4", "on-primary-fixed-variant": "#604100", "surface-dim": "#f6d3bc", "primary-fixed-dim": "#fabc4d", "secondary-fixed": "#ffdbc7", "surface-bright": "#fff8f5", "outline": "#827563", "on-error": "#ffffff", "on-secondary-container": "#78431c", "surface-container-highest": "#ffdcc4", "on-background": "#291709", "primary": "#7e5700", "inverse-surface": "#412c1c", "on-tertiary-fixed": "#082100", "on-error-container": "#93000a", "tertiary": "#486636", "surface-container": "#ffeadd", "surface-container-lowest": "#ffffff", "surface-tint": "#7e5700", "surface-container-low": "#fff1e9", "surface": "#fff8f5", "on-tertiary-container": "#304d20", "outline-variant": "d4c4b0", "inverse-primary": "#fabc4d", "on-primary": "#ffffff", "on-secondary-fixed": "#311300", "on-primary-fixed": "#281900" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "margin": "1.25rem", "space-xl": "2rem", "space-lg": "1.5rem", "space-md": "1rem", "space-xs": "0.25rem", "gutter": "1rem", "space-sm": "0.5rem" }, "fontFamily": { "headline-xl-mobile": ["Nunito Sans"], "headline-lg": ["Nunito Sans"], "label-lg": ["Plus Jakarta Sans"], "body-sm": ["Plus Jakarta Sans"], "headline-xl": ["Nunito Sans"], "headline-md": ["Nunito Sans"], "body-md": ["Plus Jakarta Sans"], "headline-sm": ["Nunito Sans"], "label-sm": ["Space Mono"], "caption": ["Caveat"], "body-lg": ["Plus Jakarta Sans"], "label-md": ["Space Mono"] }, "fontSize": { "headline-xl-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "800" }], "headline-lg": ["26px", { "lineHeight": "34px", "fontWeight": "700" }], "label-lg": ["14px", { "lineHeight": "18px", "fontWeight": "600" }], "body-sm": ["13px", { "lineHeight": "18px", "fontWeight": "400" }], "headline-xl": ["34px", { "lineHeight": "42px", "fontWeight": "800" }], "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "700" }], "body-md": ["14px", { "lineHeight": "21px", "fontWeight": "400" }], "headline-sm": ["18px", { "lineHeight": "24px", "fontWeight": "700" }], "label-sm": ["10px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "400" }], "caption": ["18px", { "lineHeight": "22px", "fontWeight": "600" }], "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "500" }], "label-md": ["11px", { "lineHeight": "16px", "letterSpacing": "0.06em", "fontWeight": "700" }] } } } }</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface text-on-surface font-body-md text-body-md pt-safe pb-safe flex flex-col min-h-screen selection:bg-secondary-container"><main class="flex flex-col relative w-full bg-surface min-h-screen"><div class="flex flex-col w-full items-center px-4 pb-12 select-none">
+<!-- Interactive Book Stage -->
+<div class="relative w-full max-w-[360px] pt-2 flex flex-col items-center">
+<!-- Under-book tactile shadow drop -->
+<div class="absolute inset-x-3 bottom-0 top-3 bg-on-secondary-fixed rounded-2xl opacity-60 filter blur-md transform translate-y-3"></div>
+<!-- MAIN LEATHER SCRAPBOOK CASING -->
+<div class="relative w-full bg-secondary text-surface rounded-2xl shadow-2xl overflow-visible transition-transform duration-300 ease-out active:scale-[0.99]" id="scrapbook-cover" style="box-shadow: 0 16px 36px -6px rgba(49, 19, 0, 0.45), 0 4px 12px rgba(49, 19, 0, 0.3);">
+<!-- Vintage Brass Metal Corners -->
+<!-- Top-Left Corner -->
+<div class="absolute -top-1 -left-1 w-9 h-9 pointer-events-none z-30">
+<svg class="w-full h-full drop-shadow" fill="none" viewbox="0 0 36 36">
+<path d="M0 0 L24 0 C16 4, 10 10, 8 18 L0 24 Z" fill="#E5A93C"></path>
+<path d="M1 1 L22 1 C14 5, 9 10, 7 17 L1 22 Z" stroke="#78431C" stroke-width="0.8"></path>
+<circle cx="6" cy="6" fill="#5E4000" r="1.5"></circle>
+</svg>
+</div>
+<!-- Top-Right Corner -->
+<div class="absolute -top-1 -right-1 w-9 h-9 pointer-events-none z-30">
+<svg class="w-full h-full drop-shadow" fill="none" viewbox="0 0 36 36">
+<path d="M36 0 L12 0 C20 4, 26 10, 28 18 L36 24 Z" fill="#E5A93C"></path>
+<path d="M35 1 L14 1 C22 5, 27 10, 29 17 L35 22 Z" stroke="#78431C" stroke-width="0.8"></path>
+<circle cx="30" cy="6" fill="#5E4000" r="1.5"></circle>
+</svg>
+</div>
+<!-- Bottom-Left Corner -->
+<div class="absolute -bottom-1 -left-1 w-9 h-9 pointer-events-none z-30">
+<svg class="w-full h-full drop-shadow" fill="none" viewbox="0 0 36 36">
+<path d="M0 36 L24 36 C16 32, 10 26, 8 18 L0 12 Z" fill="#E5A93C"></path>
+<path d="M1 35 L22 35 C14 31, 9 26, 7 19 L1 14 Z" stroke="#78431C" stroke-width="0.8"></path>
+<circle cx="6" cy="30" fill="#5E4000" r="1.5"></circle>
+</svg>
+</div>
+<!-- Bottom-Right Corner -->
+<div class="absolute -bottom-1 -right-1 w-9 h-9 pointer-events-none z-30">
+<svg class="w-full h-full drop-shadow" fill="none" viewbox="0 0 36 36">
+<path d="M36 36 L12 36 C20 32, 26 26, 28 18 L36 12 Z" fill="#E5A93C"></path>
+<path d="M35 35 L14 35 C22 31, 27 26, 29 19 L35 14 Z" stroke="#78431C" stroke-width="0.8"></path>
+<circle cx="30" cy="30" fill="#5E4000" r="1.5"></circle>
+</svg>
+</div>
+<!-- Spine Hinge Crease Left Ridge -->
+<div class="absolute left-6 top-0 bottom-0 w-2.5 bg-on-secondary-fixed opacity-40 pointer-events-none z-20" style="box-shadow: inset 1px 0 2px rgba(0,0,0,0.4), 2px 0 3px rgba(255,255,255,0.06);"></div>
+<div class="absolute left-7 top-0 bottom-0 w-px bg-surface-container-high opacity-20 pointer-events-none z-20"></div>
+<!-- Leather Flap Closure Strap with Brass Snap Button (Right Edge) -->
+<div class="absolute -right-4 top-40 w-14 h-16 bg-on-secondary-fixed-variant rounded-r-xl z-40 flex items-center justify-end pr-2 shadow-lg" style="box-shadow: 2px 4px 8px rgba(30,12,3,0.5);">
+<!-- Strap Perimeter Stitches -->
+<svg class="absolute inset-0 w-full h-full pointer-events-none" viewbox="0 0 56 64">
+<path d="M 4 4 L 46 4 A 8 8 0 0 1 52 12 L 52 52 A 8 8 0 0 1 46 60 L 4 60" fill="none" opacity="0.85" stroke="#E5A93C" stroke-dasharray="3,3" stroke-width="1.2"></path>
+</svg>
+<!-- Brass Snap Fastener -->
+<button aria-label="Toggle journal clasp" class="relative w-8 h-8 rounded-full bg-primary-container flex items-center justify-center shadow-inner cursor-pointer active:translate-y-px" id="snap-btn">
+<div class="w-6 h-6 rounded-full bg-primary-fixed-dim flex items-center justify-center shadow">
+<div class="w-2.5 h-2.5 rounded-full bg-on-primary-fixed-variant shadow-inner"></div>
+</div>
+</button>
+</div>
+<!-- Embossed Saddle Stitch Perimeter Inside Leather -->
+<div class="relative p-5 z-10">
+<svg class="absolute inset-2 w-[calc(100%-16px)] h-[calc(100%-16px)] pointer-events-none" preserveaspectratio="none" viewbox="0 0 100 100">
+<rect fill="none" height="96" opacity="0.65" rx="3.5" stroke="#FAB742" stroke-dasharray="1.8, 2.2" stroke-width="0.8" width="96" x="2" y="2"></rect>
+</svg>
+<!-- BOOK COVER FACE CONTENT -->
+<div class="pt-6 pb-4 px-3 flex flex-col items-center text-center">
+<!-- Top Sub-Header & Volume Seal -->
+<div class="w-full flex items-center justify-between pl-5 pr-2 mb-3">
+<span class="font-label-sm text-label-sm uppercase tracking-widest text-primary-fixed opacity-90 drop-shadow">DUBAI FIELD NOTES</span>
+<span class="font-label-sm text-label-sm uppercase px-2 py-0.5 rounded bg-on-secondary-fixed text-primary-fixed-dim shadow-inner">NO. 842</span>
+</div>
+<!-- Stamped Volume Ribbon Tag -->
+<div class="inline-block px-3 py-1 rounded-sm bg-on-secondary-fixed text-primary-fixed mb-5 shadow-sm transform -rotate-1">
+<p class="font-label-md text-label-md tracking-wider">VOL. 01 • DEIRA TO JUMEIRAH</p>
+</div>
+<!-- Debossed & Gold Hot-Foil Stamped Title -->
+<div class="relative my-2">
+<!-- Subtle Pressed Shadow Layer -->
+<h1 class="font-headline-xl-mobile text-headline-xl-mobile font-extrabold tracking-tight text-on-secondary-fixed absolute -top-0.5 left-0.5 opacity-90 select-none">
+              KOKO
+            </h1>
+<!-- Gold Hot-Foil Stamped Main Face -->
+<h1 class="relative font-headline-xl-mobile text-headline-xl-mobile font-extrabold tracking-tight text-primary-fixed-dim drop-shadow">
+              KOKO
+            </h1>
+</div>
+<!-- Hand-Lettered/Sub-Foil Descriptor -->
+<p class="font-caption text-caption text-secondary-fixed mt-1 tracking-wide max-w-[210px] leading-snug">
+            A Private Scrapbook of Dubai Bites &amp; Secret Places
+          </p>
+<p class="font-label-sm text-label-sm text-primary-fixed tracking-widest uppercase mt-2 mb-6 opacity-80">
+            KEPT BY THE CREW • EST. 2024
+          </p>
+<!-- PHYSICAL ENAMEL PINS TRAY -->
+<div class="w-full py-3 px-2 my-2 bg-on-secondary-fixed rounded-xl flex items-center justify-around shadow-inner relative">
+<div class="absolute -top-2 left-6 px-2 bg-secondary text-primary-fixed font-label-sm text-label-sm rounded uppercase tracking-wider">
+              Enamel Badges
+            </div>
+<!-- PIN 1: Arabian Dallah Coffee Pot -->
+<div class="relative group cursor-pointer transform hover:-translate-y-0.5 transition-transform" title="Deira Dallah Pin">
+<div class="w-12 h-14 bg-surface-container-lowest rounded-lg p-1 shadow flex flex-col items-center justify-center border-t border-b border-primary-container">
+<svg class="w-8 h-8" fill="none" viewbox="0 0 32 36">
+<path d="M16 3 L18 8 L14 8 Z" fill="#E5A93C"></path>
+<path d="M13 8 L19 8 L20 16 L12 16 Z" fill="#fabc4d" stroke="#5E4000" stroke-width="0.8"></path>
+<path d="M12 16 Q10 20 8 22 Q12 30 16 30 Q20 30 24 22 Q22 20 20 16 Z" fill="#E5A93C" stroke="#5E4000" stroke-width="0.8"></path>
+<path d="M8 20 C3 16 3 10 9 8" fill="none" stroke="#5E4000" stroke-width="1.2"></path>
+<path d="M21 16 Q26 15 27 11" fill="none" stroke="#5E4000" stroke-width="1.2"></path>
+<circle cx="16" cy="24" fill="#ba1a1a" r="1.5"></circle>
+</svg>
+<span class="font-label-sm text-label-sm text-on-surface font-bold mt-0.5">DALLAH</span>
+</div>
+<div class="w-1.5 h-1.5 rounded-full bg-outline absolute -bottom-1 left-1/2 -translate-x-1/2"></div>
+</div>
+<!-- PIN 2: Karak Tea Cup -->
+<div class="relative group cursor-pointer transform hover:-translate-y-0.5 transition-transform" title="Satwa Karak Cup Pin">
+<div class="w-12 h-14 bg-surface-container-lowest rounded-lg p-1 shadow flex flex-col items-center justify-center border-t border-b border-secondary">
+<svg class="w-8 h-8" fill="none" viewbox="0 0 32 36">
+<ellipse cx="16" cy="9" fill="#ffdcc4" rx="8" ry="3" stroke="#895029" stroke-width="0.8"></ellipse>
+<path d="M8 9 L10 24 C10 27 22 27 22 24 L24 9 Z" fill="#895029" stroke="#504535" stroke-width="0.8"></path>
+<path d="M9 14 H23" stroke="#ffeadd" stroke-width="1.5"></path>
+<ellipse cx="16" cy="9" fill="#e5a93c" rx="6" ry="1.8"></ellipse>
+<path d="M14 4 C14 2 16 2 16 1" stroke="#fabc4d" stroke-linecap="round" stroke-width="1"></path>
+</svg>
+<span class="font-label-sm text-label-sm text-on-surface font-bold mt-0.5">KARAK</span>
+</div>
+<div class="w-1.5 h-1.5 rounded-full bg-outline absolute -bottom-1 left-1/2 -translate-x-1/2"></div>
+</div>
+<!-- PIN 3: Dubai Street Cat -->
+<div class="relative group cursor-pointer transform hover:-translate-y-0.5 transition-transform" title="Bastakiya Alley Cat Pin">
+<div class="w-12 h-14 bg-surface-container-lowest rounded-lg p-1 shadow flex flex-col items-center justify-center border-t border-b border-primary">
+<svg class="w-8 h-8" fill="none" viewbox="0 0 32 36">
+<path d="M9 12 L12 16 L10 20 Z" fill="#504535"></path>
+<path d="M23 12 L20 16 L22 20 Z" fill="#504535"></path>
+<circle cx="16" cy="19" fill="#fabc4d" r="8" stroke="#504535" stroke-width="0.8"></circle>
+<!-- Cat Ears -->
+<polygon fill="#895029" points="10,14 13,8 15,13"></polygon>
+<polygon fill="#895029" points="22,14 19,8 17,13"></polygon>
+<!-- Eyes -->
+<ellipse cx="13" cy="18" fill="#486636" rx="1.5" ry="2"></ellipse>
+<ellipse cx="19" cy="18" fill="#486636" rx="1.5" ry="2"></ellipse>
+<circle cx="13" cy="18" fill="#082100" r="0.6"></circle>
+<circle cx="19" cy="18" fill="#082100" r="0.6"></circle>
+<!-- Nose & Whiskers -->
+<polygon fill="#ba1a1a" points="15.5,21 16.5,21 16,22"></polygon>
+<path d="M10 21 L6 20 M10 22 L5 23 M22 21 L26 20 M22 22 L27 23" stroke="#504535" stroke-width="0.8"></path>
+</svg>
+<span class="font-label-sm text-label-sm text-on-surface font-bold mt-0.5">MAO</span>
+</div>
+<div class="w-1.5 h-1.5 rounded-full bg-outline absolute -bottom-1 left-1/2 -translate-x-1/2"></div>
+</div>
+</div>
+<!-- Stamped Raw Leather Patch Badge (Center-Bottom) -->
+<div class="w-full mt-4 p-2.5 rounded-lg bg-surface-container-high text-on-surface flex flex-col items-center justify-center relative shadow-inner">
+<svg class="absolute inset-1 w-[calc(100%-8px)] h-[calc(100%-8px)] pointer-events-none" preserveaspectratio="none" viewbox="0 0 100 100">
+<rect fill="none" height="96" rx="2" stroke="#895029" stroke-dasharray="2, 2" stroke-width="1.2" width="96" x="2" y="2"></rect>
+</svg>
+<div class="flex items-center gap-1.5 text-secondary">
+<span class="material-symbols-outlined text-body-md" style="font-variation-settings: 'FILL' 1;">location_on</span>
+<span class="font-label-sm text-label-sm font-bold uppercase tracking-wider text-on-secondary-fixed">GPS ARCHIVE</span>
+</div>
+<p class="font-label-sm text-label-sm text-on-secondary-fixed mt-0.5 tracking-tighter">
+              25.2048° N, 55.2708° E • DUBAI, UAE
+            </p>
+</div>
+</div>
+</div>
+</div>
+<!-- PHYSICAL RED SILK RIBBON BOOKMARK -->
+<!-- Hangs authentically out from bottom edge of closed pages -->
+<div class="relative -mt-2 z-20 flex flex-col items-center">
+<div class="w-6 h-20 bg-error rounded-b-sm shadow-md relative overflow-hidden flex flex-col justify-end" style="box-shadow: 2px 5px 10px rgba(0,0,0,0.35);">
+<!-- Ribbon Silk Highlights -->
+<div class="absolute inset-y-0 left-1 w-1 bg-surface-bright opacity-25"></div>
+<div class="absolute inset-y-0 right-1.5 w-0.5 bg-on-error-container opacity-40"></div>
+<!-- V-Notch Swallowtail Cut -->
+<svg class="w-full h-4 mb-0" fill="none" viewbox="0 0 24 16">
+<polygon fill="#fff8f5" points="0,0 24,0 24,16 12,8 0,16"></polygon>
+</svg>
+</div>
+</div>
+<!-- CREAM PAPER TICKET STRIP WITH CALL-TO-ACTION BUTTONS -->
+<div class="w-full mt-5 bg-surface-container-low rounded-xl p-3 shadow-md flex flex-col gap-2.5 relative">
+<!-- Jagged Receipt Edge Graphic on Top -->
+<div class="flex items-center justify-between px-1">
+<span class="font-label-md text-label-md uppercase text-on-surface-variant tracking-wider">JOURNAL ACTIONS</span>
+<span class="font-caption text-caption text-secondary">Ready to browse</span>
+</div>
+<!-- Action Button 1: Open Book -->
+<button class="w-full h-12 bg-primary-container text-on-primary-container rounded-lg font-headline-sm text-headline-sm flex items-center justify-center gap-2 shadow active:translate-y-0.5 transition-transform cursor-pointer" id="open-book-btn" style="box-shadow: 0 3px 0 #78431C;">
+<span class="material-symbols-outlined text-headline-sm">menu_book</span>
+<span>Open Journal</span>
+<span class="font-label-sm text-label-sm opacity-80">(Page 01)</span>
+</button>
+<!-- Action Button 2: Edit Cover Details -->
+<button class="w-full h-11 bg-surface-container-lowest text-on-surface rounded-lg font-label-lg text-label-lg flex items-center justify-center gap-2 shadow-sm active:translate-y-0.5 transition-transform cursor-pointer" id="edit-cover-btn" style="box-shadow: 0 2px 0 #d4c4b0;">
+<span class="material-symbols-outlined text-body-lg text-secondary">edit_note</span>
+<span>Edit Cover &amp; Crew Badges</span>
+</button>
+</div>
+<!-- Micro Audio / Haptic Toast Feedback -->
+<div class="mt-3 px-3 py-1.5 rounded-full bg-on-surface text-surface font-label-sm text-label-sm opacity-0 transition-opacity duration-200 pointer-events-none flex items-center gap-1.5" id="journal-toast">
+<span class="material-symbols-outlined text-body-sm text-primary-fixed">lock_open</span>
+<span id="toast-text">Unclasping leather journal...</span>
+</div>
+</div>
+</div>
+<script>
+  (function() {
+    const snapBtn = document.getElementById('snap-btn');
+    const openBtn = document.getElementById('open-book-btn');
+    const editBtn = document.getElementById('edit-cover-btn');
+    const toast = document.getElementById('journal-toast');
+    const toastText = document.getElementById('toast-text');
+    const cover = document.getElementById('scrapbook-cover');
+
+    let isLocked = true;
+
+    function showToast(msg) {
+      if (!toast || !toastText) return;
+      toastText.textContent = msg;
+      toast.classList.remove('opacity-0');
+      toast.classList.add('opacity-100');
+      setTimeout(() => {
+        toast.classList.remove('opacity-100');
+        toast.classList.add('opacity-0');
+      }, 1800);
+    }
+
+    if (snapBtn) {
+      snapBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        isLocked = !isLocked;
+        if (isLocked) {
+          showToast('Brass buckle snapped shut.');
+          cover.style.transform = 'none';
+        } else {
+          showToast('Brass snap popped open! Ready to read.');
+          cover.style.transform = 'rotate(-0.5deg) scale(1.01)';
+        }
+      });
+    }
+
+    if (openBtn) {
+      openBtn.addEventListener('click', function() {
+        showToast('Flipping open Deira Souq archives...');
+        cover.style.transform = 'translateX(-3px) rotate(-1deg)';
+        setTimeout(() => {
+          cover.style.transform = 'none';
+        }, 400);
+      });
+    }
+
+    if (editBtn) {
+      editBtn.addEventListener('click', function() {
+        showToast('Arranging enamel badges & foil deboss...');
+      });
+    }
+  })();
+</script></main></body></html>
