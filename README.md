@@ -24,6 +24,7 @@ Plain HTML/CSS/JS (ES modules), no build step. Live: https://dubai-bites-pi.verc
 | `place.js` | Place sheet and Log a Place (frames 13, 14). |
 | `book.js` | Photobook: shelf, cover, open book, filters, viewer, add photos (frames 15-22). |
 | `paper.js`, `bookview.js` | A visit as a page on paper (a fixed 360x600 canvas, scaled to fit); the book turned page by page (StPageFlip), its cover and pager. |
+| `decorate.js`, `stickers.js`, `deco.js` | Decorate mode (the sticker tray, placing, tape, undo), the sticker catalogue and unlocks, and drawing a page's sticker layer. |
 | `feel.js`, `sounds/` | The scrapbook's sounds, haptics, stamps and photos that develop; the sounds are made by `tools/make-sounds.mjs`. |
 | `ui.js`, `avatar.js`, `data.js` | Shared components, pixel avatars, categories + helpers. |
 | `demo.js`, `demo/` | Optional sample crew for preview mode, with the 30 places they've been (toggle in Settings). |

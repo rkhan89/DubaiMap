@@ -16,6 +16,7 @@ import { avatarStack } from './avatar.js';
 import { icon } from './ui.js';
 import { ratersRowHTML } from './rate.js';
 import { develops } from './feel.js';
+import { decoLayerHTML } from './deco.js';
 
 export const PAGE_W = 360, PAGE_H = 600;
 export const PAPERS = [['plain','Plain'],['dotted','Dotted'],['grid','Grid'],['kraft','Kraft']];
@@ -110,7 +111,7 @@ export function pageHTML(pg, ctx){
     ${cfg.note ? `<div class="kb-note" style="--r:${tilt('n'+pg.id, 3).toFixed(2)}deg"><span class="tape"></span>${esc(cfg.note)}</div>` : ''}
     <footer class="kb-foot">${foot}${e && S.canRate(e) ? `<button class="rp-add" data-rate="${esc(e.id)}">${icon('add')}${S.myRatingOn(e.id) || pg.photos.some(p=>p.userId===me.id) ? 'Edit yours' : 'Add yours'}</button><button class="rp-add" data-addplace="${esc(e.venueId)}">${icon('add_location_alt')}Log a new visit</button>` : ''}</footer>
     <span class="kb-num">p. ${ctx.n}</span>
-    <div class="kb-deco" aria-hidden="true"></div>
+    <div class="kb-deco" aria-hidden="true">${e ? decoLayerHTML(S.decorationsOn('visit', e.id), { meId:me.id }) : ''}</div>
   </article>`;
 }
 

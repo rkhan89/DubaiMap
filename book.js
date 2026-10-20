@@ -5,6 +5,8 @@ import { BADGES, badgeStatus, stickerHTML } from './badges.js';
 import { postageHTML, rateScope, placeRatingFor, venueOfPage, peopleOf, coverHTML as paperCover, coverLook, PAPERS } from './paper.js';
 import { mountBook, pagerHTML, preloadBook } from './bookview.js';
 import { moments } from './feel.js';
+import { decorate } from './decorate.js';
+import { decoLayerHTML } from './deco.js';
 import { APP } from './config.js';
 import * as S from './store.js';
 import * as M from './model.js';
@@ -162,39 +164,6 @@ go.shelf = shelf;
    ========================================================= */
 // the closed book (paper.js draws it; the book view uses the same one as its hard cover)
 function coverHTML(b, count){ return paperCover(b, count, bookPhotos(b)); }
-/* ---------- page editor (optional extras): layout, photo order, stickers, a note ---------- */
-function pageEditor(b, pg, after){
-  const cfg = { layout:'scrapbook', ...(pg.cfg||{}) };
-  let order = pg.photos.map(p=>p.id);
-  const earned = badgeStatus(S.me().id).filter(x=>x.done);
-  // stickers already on the page stay, even ones someone else in the crew stuck on
-  let chosen = (cfg.stickers||[]).filter(id=>BADGES.some(x=>x.id===id));
-  const v = venueOfPage(pg);
-  openSheet(body=>{
-    const paint=()=>{
-      body.innerHTML = `<div class="sheet-head"><div class="grow"><h2 class="h-md">Dress up this page</h2><span class="hand">${esc(v?.name||'')} • ${esc(fmtDay(pg.date))}</span></div></div>
-        <p class="muted small">Optional. Every page already looks finished.</p>
-        <div class="row between mt16"><span class="eyebrow">Stickers</span><span class="mono muted small">${chosen.length} of 3</span></div>
-        ${earned.length ? `<div class="sticker-pick mt8">${earned.map(x=>`<button class="${chosen.includes(x.id)?'on':''}" data-st="${x.id}" aria-label="${esc(x.name)}">${stickerHTML(x, 46)}</button>`).join('')}</div>` : `<p class="muted small mt8">Log places to earn stickers, then stick them on your pages.</p>`}
-        ${pg.photos.length ? `<div class="eyebrow mt24">Layout</div>
-        ${seg('playout', [['scrapbook','Scrapbook','auto_awesome_mosaic'],['grid','Grid','grid_view'],['hero','Hero','photo_size_select_large']], cfg.layout).replace('class="seg"','class="seg mt8"')}` : ''}
-        ${pg.photos.length>1 ? `<div class="eyebrow mt24">Photo order</div>
-        <div class="stack mt8">${order.map((id,i)=>{ const p=pg.photos.find(x=>x.id===id); return `<div class="person-row order-row"><img src="${esc(S.photoURL(p))}" alt=""><span class="pr-main"><span class="pr-name trunc">${esc(p.caption||v?.name||'Photo')}</span></span>
-          <button class="icon-btn" data-mv="${i}" data-d="-1" ${i?'':'disabled'} aria-label="Move up">${icon('arrow_upward')}</button><button class="icon-btn" data-mv="${i}" data-d="1" ${i<order.length-1?'':'disabled'} aria-label="Move down">${icon('arrow_downward')}</button></div>`; }).join('')}</div>` : ''}
-        <div class="eyebrow mt24">Page note</div>
-        <textarea class="input mt8" id="pgNote" maxlength="160" placeholder="What made this visit…">${esc(cfg.note||'')}</textarea>
-        <div class="sheet-foot btn-grid"><button class="btn btn-soft" id="pgReset">Reset</button><button class="btn btn-gold" id="pgSave">${icon('check')}Save page</button></div>`;
-      const note=()=>{ cfg.note=body.querySelector('#pgNote').value; };
-      bindSeg(body, 'playout', x=>{ cfg.layout=x; });
-      body.querySelectorAll('[data-mv]').forEach(x=>x.onclick=()=>{ const i=+x.dataset.mv, j=i+(+x.dataset.d); [order[i],order[j]]=[order[j],order[i]]; note(); paint(); });
-      body.querySelectorAll('[data-st]').forEach(x=>x.onclick=()=>{ const id=x.dataset.st; if (chosen.includes(id)) chosen=chosen.filter(c=>c!==id); else if (chosen.length<3) chosen.push(id); else return toast('Three stickers per page'); note(); paint(); });
-      body.querySelector('#pgReset').onclick=()=>{ S.resetPage(b.id, pg.entry.id); back(); after(); };
-      body.querySelector('#pgSave').onclick=()=>{ note(); S.savePage(b.id, pg.entry.id, { layout:cfg.layout, order, stickers:chosen, note:(cfg.note||'').trim() }); back(); toast('Page saved'); after(); };
-    };
-    paint();
-  });
-}
-
 function coverScreen(bookId){
   const b0=S.book(bookId); if (!b0) return;
   const look=coverLook(b0);
@@ -246,7 +215,6 @@ const starsHTML = r => { r=+r||0; if (!r) return ''; let s=''; for (let i=1;i<=5
 function pageHTML(b, pg){
   const me=S.me(), e=pg.entry, v=venueOfPage(pg), z=MAP.zoneById(v?.zone);
   const cfg=pg.cfg||{}, layout=pg.photos.length ? (cfg.layout||'scrapbook') : 'plain';
-  const stickers=(cfg.stickers||[]).map(id=>BADGES.find(x=>x.id===id)).filter(Boolean).map(x=>({ ...x, done:true }));
   const people=peopleOf(pg), cat=v?M.primaryCat(v):'coffee';
   const by = e && e.userId!==me.id ? S.user(e.userId) : null;
   // a page in your Tagged book says which crew it came from
@@ -259,7 +227,7 @@ function pageHTML(b, pg){
   }).join('');
   return `<article class="page layout-${layout}" data-page-id="${esc(pg.id)}"><span class="bookmark"></span>
     ${e?`<button class="icon-btn page-edit" data-editpage="${esc(pg.id)}" aria-label="Dress up this page">${icon('auto_fix_high')}</button>`:''}
-    ${stickers.map((st,i)=>`<span class="page-sticker ps-${i}">${stickerHTML(st, 58)}</span>`).join('')}
+    ${e ? `<div class="page-deco" aria-hidden="true">${decoLayerHTML(S.decorationsOn('visit', e.id).filter(d=>d.kind==='sticker'), { meId:me.id, pct:true })}</div>` : ''}
     <div class="page-date"><span class="cap">${esc(fmtDay(pg.date))}</span><div class="page-geo">${esc((z?z.label:APP.city).toUpperCase())}${z?` • ${z.lat.toFixed(4)}° N, ${z.lng.toFixed(4)}° E`:''}</div></div>
     <div class="pg-head">
       ${pg.photos.length ? '' : `<span class="pg-stamp">${postageHTML(cat, pg.date, 92)}</span>`}
@@ -374,7 +342,7 @@ function openFeed(bookId, opts){
     el.addEventListener('click', e=>{
       const t=e.target;
       const heart=t.closest('[data-heart]'); if (heart){ e.stopPropagation(); const on=S.toggleBookmark(heart.dataset.heart); heart.innerHTML=icon(on?'bookmark':'bookmark_border','',on); toast(on?'Bookmarked':'Bookmark removed'); return; }
-      const ed=t.closest('[data-editpage]'); if (ed){ const pg=pgs.find(p=>p.id===ed.dataset.editpage); if (pg) pageEditor(b, pg, ()=>{ const s=el.scrollTop; paint(); el.scrollTop=s; }); return; }
+      const ed=t.closest('[data-editpage]'); if (ed){ const pg=pgs.find(p=>p.id===ed.dataset.editpage); if (pg && pg.entry) decorate({ book:b, pg, n:pgs.length - pgs.indexOf(pg), after:()=>{ const s=el.scrollTop; paint(); el.scrollTop=s; } }); return; }
       const ph=t.closest('[data-photo]'); if (ph){ const ids = mode==='date' ? photoIdsOf(pgs, ph.dataset.photo) : pgs.flatMap(p=>p.photos).filter(p=>p.venueId===S.photo(ph.dataset.photo)?.venueId).map(p=>p.id); go.viewer(ids, ids.indexOf(ph.dataset.photo)); return; }
       const ap=t.closest('[data-addplace]'); if (ap){ go.log({ venueId:ap.dataset.addplace, ...(b.kind==='crew'?{ who:[b.crewId] }:{}) }); return; }
       const rt=t.closest('[data-rate]'); if (rt){ rateSheet(rt.dataset.rate, ()=>{ const s=el.scrollTop; paint(); el.scrollTop=s; }); return; }
@@ -437,7 +405,7 @@ function openPages(bookId, opts){
       el.querySelector('[data-kb="next"]').onclick = ()=>view.next();
       el.querySelector('[data-kb="last"]').onclick = ()=>view.turnTo(pgs.length-1);
       slide.oninput = ()=>view.turnTo(+slide.value - 1, true);
-      wand.onclick = ()=>{ const pg = pgs[view.index]; if (pg && pg.entry) pageEditor(b, pg, ()=>paint(view.index)); };
+      wand.onclick = ()=>{ const pg = pgs[view.index]; if (pg && pg.entry) decorate({ book:b, pg, n:view.index+1, after:()=>paint(view.index) }); };
     };
     // taps inside a page
     const act = (e)=>{

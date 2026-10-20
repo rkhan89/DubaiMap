@@ -107,6 +107,18 @@ export const MAP = {
     to: r => ({ id:r.id, entry_id:r.entryId, user_id:r.userId, rating:r.rating, note:r.note||'', updated_at:ts(r.updatedAt) }),
     from: r => ({ id:r.id, entryId:r.entry_id, userId:r.user_id, rating:+r.rating, note:r.note||'', updatedAt:ms(r.updated_at) }),
   },
+  // stickers and tape on a page (0018_stickers.sql): x, y (and the tape's other end) are 0 to 1 across and down the page
+  page_decorations: {
+    to: d => ({ id:d.id, page_type:d.pageType, page_id:d.pageId, book_id:d.bookId||null, user_id:d.userId, sticker_id:d.stickerId||null, kind:d.kind, x:d.x, y:d.y,
+      x2:d.kind==='tape'?d.x2:null, y2:d.kind==='tape'?d.y2:null, rotation:d.rotation||0, scale:d.scale||1, flip:!!d.flip, z:d.z||0, tape_style:d.kind==='tape'?d.tapeStyle:null }),
+    from: r => ({ id:r.id, pageType:r.page_type, pageId:r.page_id, bookId:r.book_id, userId:r.user_id, stickerId:r.sticker_id, kind:r.kind, x:+r.x, y:+r.y,
+      x2:r.x2==null?null:+r.x2, y2:r.y2==null?null:+r.y2, rotation:+r.rotation||0, scale:+r.scale||1, flip:!!r.flip, z:r.z||0, tapeStyle:r.tape_style, createdAt:ms(r.created_at), updatedAt:ms(r.updated_at) }),
+  },
+  // stickers someone has unlocked (milestones, critters, districts)
+  user_stickers: {
+    to: u => ({ user_id:u.userId, sticker_id:u.stickerId, unlocked_at:ts(u.unlockedAt) }),
+    from: r => ({ id:r.user_id+'|'+r.sticker_id, userId:r.user_id, stickerId:r.sticker_id, unlockedAt:ms(r.unlocked_at) }),
+  },
   events: {
     to: ev => ({ id:ev.id, crew_id:ev.crewId||null, created_by:ev.createdBy, venue_id:ev.venueId, starts_at:ev.when, note:ev.note||'', rsvps:ev.rsvps||{}, created_at:ts(ev.createdAt) }),
     from: r => ({ id:r.id, crewId:r.crew_id, createdBy:r.created_by, venueId:r.venue_id, when:r.starts_at, note:r.note||'', rsvps:r.rsvps||{}, createdAt:ms(r.created_at) }),
@@ -142,7 +154,10 @@ export async function pull(){
   const ratingRows = await c.from('visit_ratings').select('*').then(r=>r.data||[], ()=>[]);
   // critters caught by you and your crewmates (missing until migration 0011 runs)
   const catchRows = await c.from('critter_catches').select('*').then(r=>r.data||[], ()=>[]);
-  return { catches:by(catchRows,'critter_catches'), ratings:by(ratingRows,'visit_ratings'), pages:by(pageRows,'book_pages'), inbox:by(inboxRows,'share_inbox'), users:by(profiles,'profiles'), crews:crewMap, venues:by(venues,'venues'), entries:ents,
+  // stickers and tape on pages you can see, and your unlocks (missing until migration 0018 runs)
+  const decoRows = await c.from('page_decorations').select('*').then(r=>r.data||[], ()=>[]);
+  const unlockRows = await c.from('user_stickers').select('*').then(r=>r.data||[], ()=>[]);
+  return { decorations:by(decoRows,'page_decorations'), unlocks:by(unlockRows,'user_stickers'), catches:by(catchRows,'critter_catches'), ratings:by(ratingRows,'visit_ratings'), pages:by(pageRows,'book_pages'), inbox:by(inboxRows,'share_inbox'), users:by(profiles,'profiles'), crews:crewMap, venues:by(venues,'venues'), entries:ents,
            photos:by(photos,'photos'), books:by(books,'books'), events:by(events,'events') };
 }
 
@@ -215,7 +230,7 @@ async function send(c, o){
   const T = o.t && c.from(o.t);
   const res =
     o.k==='put'    ? await T.upsert(o.row) :
-    o.k==='ins'    ? await T.upsert(o.row, { onConflict:'id', ignoreDuplicates:true }) :
+    o.k==='ins'    ? await T.upsert(o.row, { onConflict:o.t==='user_stickers' ? 'user_id,sticker_id' : 'id', ignoreDuplicates:true }) :
     o.k==='upd'    ? await T.update(o.patch).eq('id', o.id) :
     o.k==='del'    ? await T.delete().eq('id', o.id) :
     o.k==='rpc'    ? await c.rpc(o.fn, o.args||{}) :

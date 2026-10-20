@@ -420,5 +420,35 @@ await db.exec(`delete from photos where entry_id='ze1' and user_id='${K2}'`);
 await as(K1, `update entries set tagged_ids=array['${K2}']::uuid[] where id='ze1'`); await as(K1, `update entries set tagged_ids='{}' where id='ze1'`);
 await db.exec('reset role');
 (await db.query(`select count(*)::int n from book_pages where id='pb-k2|ze1'`)).rows[0].n===0 ? ok('untagged with nothing of yours on it: the page leaves Everything') : bad('page stayed in Everything');
+// ---- stickers and tape on pages (0018): the catalogue, unlocks, decorations, the 12-per-person cap ----
+// K1's old Dress up stickers on ze1 (shared with the crew) become decorations
+await db.exec('reset role');
+await db.exec(`insert into books(id,owner_id,kind,crew_id,title) values ('cb-kx','${K1}','crew','${kx.id}','Crew') on conflict do nothing`);
+await as(K1, `update entries set tagged_ids=array['${K2}']::uuid[] where id='ze1'`);
+await as(K1, `insert into book_pages(id,book_id,entry_id,layout,stickers) values ('cb-kx|ze1','cb-kx','ze1','scrapbook',array['first','explorer'])`);
+await db.exec('reset role');
+const sql18 = fs.readFileSync(new URL('../../supabase/migrations/0018_stickers.sql', import.meta.url),'utf8');
+try{ await db.exec(sql18); await db.exec(sql18); ok('sticker migration runs (twice)'); } catch(e){ bad('0018: ' + e.message); }
+await db.exec('grant all on all tables in schema public to authenticated;');
+(await db.query(`select count(*)::int n from stickers where source in ('starter','tape')`)).rows[0].n===21 ? ok('13 starter discs and 8 tape rolls in the catalogue') : bad('catalogue seed');
+(await db.query(`select count(*)::int n from page_decorations where page_id='ze1' and user_id='${K1}' and sticker_id like 'milestone:%'`)).rows[0].n===2 ? ok('old Dress up stickers moved onto the page, once') : bad('old stickers not moved');
+const deco = (id, u, extra)=>`insert into page_decorations(id,page_type,page_id,user_id,sticker_id,kind,x,y${extra?','+extra[0]:''}) values ('${id}','visit','ze1','${u}','starter:coffee','sticker',0.5,0.5${extra?','+extra[1]:''})`;
+try{ await as(K2, deco('dk2-00000001', K2)); ok('someone who can see the page adds a sticker'); }catch(e){ bad('add refused: ' + e.message); }
+(await count(K1, `select * from page_decorations where id='dk2-00000001'`))===1 ? ok("…the page's owner sees it") : bad("owner can't see a crewmate's sticker");
+(await count(K3, `select * from page_decorations where page_id='ze1'`))===0 ? ok('…an outsider sees none') : bad('outsider sees decorations');
+await expectErr("adding a sticker to a page you can't see", K3, deco('dk3-00000001', K3));
+await expectErr("adding a sticker as someone else", K2, deco('dk2-00000099', K1));
+(await as(K1, `update page_decorations set x=0.1 where id='dk2-00000001' returning id`)).rows.length===0 ? ok("you can't move someone else's sticker") : bad('moved a crewmate\'s sticker');
+(await as(K1, `delete from page_decorations where id='dk2-00000001' returning id`)).rows.length===0 ? ok("…or remove it") : bad('removed a crewmate\'s sticker');
+await expectErr('a sticker more than half off the page', K2, `insert into page_decorations(id,page_type,page_id,user_id,sticker_id,kind,x,y) values ('dk2-off00001','visit','ze1','${K2}','starter:coffee','sticker',1.4,0.5)`);
+await expectErr('a sticker 300% big', K2, deco('dk2-big00001', K2, ['scale','3']));
+for (let k = 2; k <= 12; k++){ try{ await as(K2, deco('dk2-' + String(k).padStart(8,'0'), K2)); }catch(e){ bad('sticker ' + k + ' refused: ' + e.message); break; } }
+await expectErr('a 13th sticker from the same person on one page', K2, deco('dk2-00000013', K2));
+try{ await as(K1, deco('dk1-00000001', K1)); ok('…while someone else can still add theirs'); }catch(e){ bad('cap counted other people: ' + e.message); }
+await expectErr("using someone else's cutout", K1, `insert into page_decorations(id,page_type,page_id,user_id,sticker_id,kind,x,y) values ('dk1-cut00001','visit','ze1','${K1}','cutout:abc','sticker',0.5,0.5)`);
+try{ await as(K2, `insert into page_decorations(id,page_type,page_id,user_id,kind,x,y,x2,y2,tape_style) values ('dk2-tape0001','visit','ze1','${K2}','tape',0.1,0.5,0.9,0.4,'stripes')`); bad('a 13th (tape) was allowed'); }catch(e){ ok('tape counts toward the 12 too → refused'); }
+try{ await as(K2, `insert into user_stickers(user_id,sticker_id) values ('${K2}','district:satwa')`); ok('an unlock is recorded'); }catch(e){ bad('unlock: ' + e.message); }
+(await count(K1, `select * from user_stickers`))===0 ? ok("…and nobody else reads your unlocks") : bad('unlocks readable');
+await db.exec('reset role');
 console.log(process.exitCode ? '\nSOME CHECKS FAILED' : '\nall checks passed');
 

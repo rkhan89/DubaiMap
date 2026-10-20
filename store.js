@@ -43,7 +43,7 @@ const listeners = new Set();
 export function onChange(fn){ listeners.add(fn); return ()=>listeners.delete(fn); }
 function emit(what){ listeners.forEach(f=>{ try{ f(what); }catch(e){ console.error(e); } }); }
 
-function fresh(){ return { version:2, meId:null, users:{}, crews:{}, venues:{}, entries:{}, photos:{}, books:{}, events:{}, inbox:{}, pages:{}, ratings:{}, catches:{}, flags:{} }; }
+function fresh(){ return { version:2, meId:null, users:{}, crews:{}, venues:{}, entries:{}, photos:{}, books:{}, events:{}, inbox:{}, pages:{}, ratings:{}, catches:{}, decorations:{}, unlocks:{}, flags:{} }; }
 function load(){
   try{ const d=JSON.parse(localStorage.getItem(KEY)); if (d && d.version===2) return {...fresh(), ...d}; }catch(_){}
   return fresh();
@@ -126,11 +126,13 @@ export async function pullNow(){
   db.catches = { ...Object.fromEntries(Object.entries(db.catches||{}).filter(([,c])=>isLocal(c.userId))), ...(fresh.catches||{}) };
   db.ratings = { ...Object.fromEntries(Object.entries(db.ratings||{}).filter(([,r])=>isLocal(r.entryId))), ...(fresh.ratings||{}) }; ratingIdx = null;
   db.pages   = { ...Object.fromEntries(Object.entries(db.pages||{}).filter(([k])=>isLocal(k.split('|')[0]) || /^(crewbook-demo|loose)/.test(k))), ...(fresh.pages||{}) };
+  db.decorations = { ...Object.fromEntries(Object.entries(db.decorations||{}).filter(([,d])=>isLocal(d.pageId) || isLocal(d.userId))), ...(fresh.decorations||{}) }; decoIdx = null;
+  db.unlocks = { ...(db.unlocks||{}), ...(fresh.unlocks||{}) };
   // no profile row yet (an account made before the database was set up): make it from this phone's copy
   if (!db.users[db.meId] && meRec){ db.users[db.meId] = meRec; C.queue({ k:'put', t:'profiles', id:meRec.id, row:C.MAP.profiles.to(meRec) }); }
   if (db.users[db.meId] && meRec) db.users[db.meId].email = meRec.email;
   // replay what hasn't reached the server yet, so nothing flickers back
-  const T = { profiles:'users', crews:'crews', venues:'venues', entries:'entries', photos:'photos', books:'books', events:'events', share_inbox:'inbox', book_pages:'pages', visit_ratings:'ratings', critter_catches:'catches' };
+  const T = { profiles:'users', crews:'crews', venues:'venues', entries:'entries', photos:'photos', books:'books', events:'events', share_inbox:'inbox', book_pages:'pages', visit_ratings:'ratings', critter_catches:'catches', page_decorations:'decorations' };
   C.pending().forEach(o=>{
     const map = T[o.t] && db[T[o.t]]; if (!map) return;
     if (o.k==='put' || o.k==='ins'){ const rec = C.MAP[o.t].from ? C.MAP[o.t].from({ ...o.row, created_at:o.row.created_at || new Date().toISOString() }) : null; if (rec && !(o.k==='ins' && map[o.id])) map[o.id] = { ...(map[o.id]||{}), ...rec, src: map[o.id]?.src==='idb' ? 'idb' : rec.src }; }
@@ -695,6 +697,56 @@ export function unrateVisit(entryId){
   return null;
 }
 export function pageCfg(id){ return (db.pages||{})[id] || null; }
+
+/* ---------- stickers and tape on pages ----------
+   A decoration belongs to the page (a visit, or a crew's monthly spread), not the book. Everyone who can see the page
+   sees every layer; you only change your own. At most 12 per person per page (the server holds to that too). */
+export const DECO_MAX = 12;
+let decoIdx = null;
+export function decorationsOn(pageType, pageId){
+  moveOldStickers();
+  if (!decoIdx){ decoIdx = new Map(); Object.values(db.decorations||{}).forEach(d=>{ const k = d.pageType+'|'+d.pageId; if (!decoIdx.has(k)) decoIdx.set(k, []); decoIdx.get(k).push(d); }); }
+  return (decoIdx.get(pageType+'|'+pageId) || []).slice().sort((a,b)=>(a.z||0)-(b.z||0) || (a.createdAt||0)-(b.createdAt||0));
+}
+// replace my layer on a page with this list (what decorate mode holds when you're done): only the changes are sent
+export function saveMyDecorations(pageType, pageId, bookId, list){
+  const m = me(); if (!m) return;
+  const before = decorationsOn(pageType, pageId).filter(d=>d.userId===m.id), keepIds = new Set(list.map(d=>d.id));
+  const local = isLocal(pageId);
+  before.filter(d=>!keepIds.has(d.id)).forEach(d=>{ delete db.decorations[d.id]; if (!local) push('page_decorations', d, 'del'); });
+  const keys = ['x','y','x2','y2','rotation','scale','flip','z','stickerId','tapeStyle'];
+  const same = (a, b)=>a && keys.every(k=>(a[k] == null ? null : a[k]) === (b[k] == null ? null : b[k]));
+  list.slice(0, DECO_MAX).forEach(d=>{
+    const old = db.decorations[d.id], rec = { ...d, pageType, pageId, bookId:bookId||d.bookId||null, userId:m.id, createdAt:d.createdAt||Date.now(), updatedAt:Date.now() };
+    if (same(old, rec)) return;
+    db.decorations[d.id] = rec; if (!local) push('page_decorations', rec);
+  });
+  decoIdx = null; save('decorations');
+}
+// stickers unlocked: milestones, critters and districts as they're earned (recorded once, with the date)
+export function unlockedStickers(){ const m = me(); return new Set(Object.values(db.unlocks||{}).filter(u=>u.userId===m?.id).map(u=>u.stickerId)); }
+export function unlockStickers(keys){
+  const m = me(); if (!m || !keys.length) return [];
+  const have = unlockedStickers(), added = keys.filter(k=>!have.has(k));
+  db.unlocks = db.unlocks || {};
+  added.forEach(k=>{ const u = { id:m.id+'|'+k, userId:m.id, stickerId:k, unlockedAt:Date.now() }; db.unlocks[u.id] = u; if (!isLocal(m.id)) push('user_stickers', u, 'ins'); });
+  if (added.length) save('unlocks');
+  return added;
+}
+// stickers from the old "Dress up this page" sheet on pages kept on this phone, onto their pages once
+// (on the server, migration 0018 does this)
+function moveOldStickers(){
+  if (db.flags.stickersMoved) return;
+  db.decorations = db.decorations || {};
+  const spots = [[0.80,0.20,-8],[0.12,0.55,6],[0.84,0.84,-4]], done = new Set();
+  Object.values(db.pages||{}).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0)).forEach(p=>{
+    const who = p.updatedBy || db.meId, k = p.entryId+'|'+who;
+    if (!p.entryId || done.has(k) || !(p.stickers||[]).length) return; done.add(k);
+    p.stickers.slice(0,3).forEach((st, i)=>{ const id = 'mig|'+p.entryId+'|'+who+'|'+(i+1); if (db.decorations[id]) return;
+      db.decorations[id] = { id, pageType:'visit', pageId:p.entryId, bookId:p.bookId, userId:who, stickerId:'milestone:'+st, kind:'sticker', x:spots[i][0], y:spots[i][1], rotation:spots[i][2], scale:0.9, z:i+1, flip:false, createdAt:p.updatedAt||Date.now() }; });
+  });
+  db.flags.stickersMoved = true; decoIdx = null;
+}
 export function savePage(bookId, entryId, cfg){
   const b=db.books[bookId], m=me(); if (!b || !m) return;
   const id = pageId(bookId, entryId);

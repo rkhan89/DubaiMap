@@ -647,3 +647,29 @@ page on that phone. Sounds (sounds/, made by tools/make-sounds.mjs, so they're o
 Settings → Scrapbook → Sounds, off by default on the web and on by default in the Android app (`profiles.sounds_enabled`,
 migration 0017; unset = the device default). Haptics: Capacitor Haptics in the Android app, else the app's usual tick
 (haptics.js). Reduced motion: cross-fades, and stamps simply appear.
+
+## Scrapbook v2: the sticker layer (phase 2)
+
+The wand on a page (under the book, beside the pager) opens decorate mode: page turns stop, the page is scaled to fit
+above a sticker tray (about 40% of the screen). The automatic layout never moves; stickers and tape sit on top.
+- Tap a sticker to drop it in the middle of the page, or drag it up from the tray onto the page. One finger moves a
+  sticker, two turn and resize it (40% to 250%), a tap brings it to the front, a long-press offers Delete, Flip and Send
+  to back. Nothing can go more than half off the page (a sticker's centre stays on it).
+- Tape is its own tool: pick a roll (gold, mint, rose, sky, kraft, ink, stripes, dots), then drag across the page; it
+  stretches from where you start to where you lift, with torn ends, and always sits above the photos.
+- Undo and redo (the last 20 changes), Reset (your stickers on this page; undoable), Done. Changes also save on their
+  own a moment after each one, and when you leave.
+- Tray tabs: Starter (a disc for each of the 13 kinds of place, and the tape: everyone), Milestones (the milestone
+  stickers, as earned), Critters (each caught critter, die-cut with a white edge; landmark critters stay secret until
+  found), Districts (a passport stamp per area of the map, with the date of your first visit there, unlocked by your
+  first visit logged there), Layout (Scrapbook / Grid / Hero, photo order, the page note: what the Dress up sheet had).
+  Locked stickers show greyed out with a one-line hint, so the tray is also the collection. Mine (cutouts) is phase 4.
+- Stickers over the place name or the ribbon (the top 24% of the page) show at 85% so the name stays readable.
+- Decorations (`page_decorations`, migration 0018) belong to the page, not the book: x and y are 0 to 1 across and down
+  the page, plus turn, size, flip and stacking; tape has its other end. Anyone who can see the page sees every layer;
+  you only add, move or remove your own; a trigger allows at most 12 per person per page. Unlocks are recorded in
+  `user_stickers` (milestones, critters, districts) when they happen (after logging, and when the tray opens).
+- The old Dress up stickers (up to three per page) were moved onto their pages once, at the spots they used to sit.
+- Everyone in a crew can decorate a crew-shared page; others' stickers are locked (a long-press says who placed them)
+  and "Mine only" hides them. The first time you decorate a page your crew sees, it says they'll see your stickers and
+  that they're included in anything shared from the page.

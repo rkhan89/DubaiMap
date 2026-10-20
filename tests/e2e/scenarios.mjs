@@ -63,7 +63,8 @@ import critters from './critters.mjs';
 import spacing from './spacing.mjs';
 import scrapbook from './scrapbook.mjs';
 import bookperf from './bookperf.mjs';
-const dflt = { screens, baa, perf2:perf, show, e2e, p2, p3, tour, brand, share1, crews, bookadd, gallery, gv, legal, share2, share3, places, share4, shelf, scrap, scrap2, ratings, mapfull, mapart, mapcache, landmarks, mapperf2, blur, mallpack, fixpack, checkin, pack2, frametime, taps, lcritters, search:searchE2E, tagged, theme:themeE2E, marina, cars:carsE2E, fpack, a11y, mapperf, pins, critters, spacing, scrapbook, bookperf,
+import decorate from './decorate.mjs';
+const dflt = { screens, baa, perf2:perf, show, e2e, p2, p3, tour, brand, share1, crews, bookadd, gallery, gv, legal, share2, share3, places, share4, shelf, scrap, scrap2, ratings, mapfull, mapart, mapcache, landmarks, mapperf2, blur, mallpack, fixpack, checkin, pack2, frametime, taps, lcritters, search:searchE2E, tagged, theme:themeE2E, marina, cars:carsE2E, fpack, a11y, mapperf, pins, critters, spacing, scrapbook, bookperf, decorate,
   async fonts(h){
     await h.seed({mode:'crew'});
     await h.click('[data-tab="shelf"]'); await h.sleep(600); await h.shot('f-shelf');

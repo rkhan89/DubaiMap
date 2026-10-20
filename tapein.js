@@ -12,6 +12,7 @@ import { icon, toast } from './ui.js';
 import { go } from './go.js';
 import { slam } from './feel.js';
 import { inkMarkHTML } from './paper.js';
+import { unlockedNow } from './stickers.js';
 
 export function tapeIn(entry, done){
   const home = S.homeBookFor(entry), b = home.book;
@@ -37,6 +38,8 @@ export function tapeIn(entry, done){
     setTimeout(()=>wrap.remove(), 220);
     const more = home.others ? ` and ${home.others} more` : '';
     toast(`Taped into ${b.title}${more}`, 'Open page', ()=>go.bookPage && go.bookPage(b.id, pageId(b.id, entry.id)), 4500);
+    // a first visit in a district (or a milestone) unlocks its sticker: recorded now, with the date
+    try{ unlockedNow(); }catch(_){}
     if (done) setTimeout(done, 400);
   };
   wrap.addEventListener('click', finish);

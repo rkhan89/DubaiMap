@@ -34,6 +34,7 @@ export default async function a11y(h){
   });
   await step('shelf', async ()=>{ await h.js(async ()=>{ const {go}=await import('/go.js'); go.shelf(); }); await h.sleep(900); await check('shelf'); });
   await step('a scrapbook page', async ()=>{ await h.js(()=>document.querySelector('.screen.in:last-of-type [data-spread]').click()); await h.sleep(1300); await check('book'); await close(); });
+  await step('decorate mode', async ()=>{ await h.js(async ()=>{ const S=await import('/store.js'), {go}=await import('/go.js'); go.book(S.shelf().everything.id); }); for (let k=0;k<40 && !(await h.js(()=>!!document.querySelector('#screens .screen.in:last-of-type #kbWand:not([hidden])')));k++) await h.sleep(250); await h.js(()=>document.querySelector('#screens .screen.in:last-of-type #kbWand').click()); await h.sleep(900); await check('decorate'); await close(); });
   await step('critters', async ()=>{ await h.js(async ()=>{ const {go}=await import('/go.js'); go.critters(); }); await h.sleep(800); await check('critters'); await close(); });
   await step('a landmark card', async ()=>{ await h.js(async ()=>{ const L=await import('/landmarkui.js'); L.openLandmark('burj_khalifa'); }); await h.sleep(800); await check('landmark'); await close(); });
   await step('crew', async ()=>{ await h.click('[data-tab="crew"]'); await h.sleep(800); await check('crew'); await close(); });
