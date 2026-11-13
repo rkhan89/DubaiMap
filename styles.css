@@ -1787,3 +1787,14 @@ body.public-page{background:var(--surface);min-height:100vh;}
 .pp-foot .hand{font-family:var(--f-script);font-size:22px;}
 .pp-wait{text-align:center;padding:var(--sp-7) 0;}
 .pp-gone{text-align:center;padding:var(--sp-6) 0;}
+
+/* ---------- the place card (Job 4): where each value came from, the listing's suggested kinds, other links ---------- */
+.src-tag{display:inline-flex;align-items:center;height:20px;padding:0 var(--sp-2);border-radius:999px;font-family:var(--f-mono);font-size:11px;font-weight:700;letter-spacing:.02em;background:var(--sc-high);color:var(--ink-3);flex:none;}
+.src-tag.src-user{background:var(--gold-fixed);color:var(--gold-fixed-ink);}
+.src-tag.src-web{background:var(--blue-soft);color:var(--ink-2);}
+.src-tag.src-legacy_google{background:var(--rust-fixed);color:var(--rust-ink);}
+.suggest-row{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-2);}
+.suggest-chip{padding:0 var(--sp-3) 0 var(--sp-2);border:2px dashed var(--outline);background:transparent;}
+.suggest-chip svg{width:20px;height:20px;}
+.link-row{display:flex;align-items:center;gap:var(--sp-2);min-height:var(--tap);padding-left:var(--sp-3);border-radius:var(--r-lg);background:var(--sc);}
+.link-row .icon-btn{flex:none;}

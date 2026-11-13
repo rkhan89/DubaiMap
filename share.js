@@ -7,6 +7,7 @@ import * as MAP from './map.js';
 import { CATEGORIES, MEALS, catById, iconSvg, esc, ago } from './data.js';
 import { $, icon, toast, openScreen, openSheet, back, closeAll, topbar, catChip, seg, bindSeg, whoHTML, bindWho, whoDefault, whoText, catPickerHTML, bindCatPicker } from './ui.js';
 import { go } from './go.js';
+import { instagramFrom, validUrl } from './placefields.js';
 
 const SOURCE = {
   google_maps: { label:'From Google Maps', ic:'map' },
@@ -18,9 +19,18 @@ const SOURCE = {
 // "From TikTok · @biggest.bites_"
 const srcLabel = src => { const s = SOURCE[src.sourceType] || SOURCE.text; return s.label + (src.author ? ' · @' + src.author : ''); };
 export const zoneFor = (lat, lng)=>{ if (lat==null || lng==null) return null; const ai = MAP.toAI(lat, lng); return MAP.inMap(ai.a, ai.i) ? MAP.nearestZone(ai.a, ai.i).id : null; };
+// a listing (seed) place → what the place card starts with; each value it has is marked as from the listing
+export function seedInitial(p, fallbackZone){
+  const zone = zoneFor(p.lat, p.lng) || p.zone || fallbackZone;
+  const otherSocials = (p.socials||[]).filter(u=>validUrl(u) && !instagramFrom(u)).slice(0, 8);
+  const has = { name:p.name, address:p.address, coords:p.lat!=null, zone, phone:p.phone, website:p.website, instagram:p.instagram, other_socials:otherSocials.length };
+  return { name:p.name, address:p.address||'', lat:p.lat, lng:p.lng, zone, phone:p.phone||'', website:p.website||'', instagram:p.instagram||'', otherSocials,
+    categories:[], suggested:(p.kinds||[]).filter(k=>k!=='shisha' && k!=='karak'), seedId:p.id,
+    fieldSources:Object.fromEntries(Object.entries(has).filter(([,v])=>v).map(([k])=>[k, 'seed'])) };
+}
 
 /* ---------- talking to the resolver ---------- */
-// Google place suggestions (/api/places): { state:'ok', suggestions } or { state:'ok', place }; 'unavailable' without a key
+// the place listing (/api/places, Koko's copy of Overture Maps): { state:'ok', results } or { state:'ok', place }
 export async function placesApi(body){
   if (navigator.onLine === false) return { state:'offline' };
   const token = await S.accessToken(); if (!token) return { state:'signed_out' };
@@ -179,7 +189,7 @@ function iphoneShortcut(){
 }
 go.iphoneShortcut = iphoneShortcut;
 
-// what we're doing while the server works (a TikTok takes a few seconds: caption, then Claude, then Google)
+// what we're doing while the server works (a TikTok takes a few seconds: caption, then Claude, then the place listing)
 const loadingHTML = v=>{
   const s = String(v||''), tiktok = /tiktok\.com/i.test(s), caption = !/https?:\/\//i.test(s) && (s.length > 60 || /\n|📍/u.test(s));
   const [t, sub] = tiktok ? ['Reading the TikTok…', 'Finding the place in its caption'] : caption ? ['Reading the caption…', 'Finding the places it mentions'] : ['Reading link…', 'Working out which place it is'];
@@ -193,8 +203,8 @@ function handle(res, ctx){
   const guess = !link ? 'text' : /tiktok\.com/i.test(link) ? 'tiktok' : /instagram\.com/i.test(link) ? 'instagram' : /goo\.gl|google\.[a-z.]+\/maps|maps\.google/i.test(link) ? 'google_maps' : 'manual';
   const src = { sourceType: res.sourceType || guess, sourceUrl: res.sourceUrl || link || null, author: res.author || null };
   switch (res.state){
-    case 'match': return confirmPlace(res.place, src, ctx);
-    case 'candidates': return candidates(res.candidates||[], res.query||'', src, ctx, res.found);
+    case 'match': return confirmPlace({ ...res.place, matchKey:res.matchKey||null }, src, ctx);
+    case 'candidates': return candidates((res.candidates||[]).map(c=>({ ...c, matchKey:res.matchKey||null })), res.query||'', src, ctx, res.found);
     case 'needs_place': case 'unsupported': return needsPlace(res, src, ctx);
     case 'rate_limited': return needsPlace({ ...res, message: res.message || 'That’s a lot of links in one go. Try again in a bit.' }, src, ctx);
     case 'timeout': return needsPlace({ ...res, message:'That took too long. Type the place name, or try the link again in a moment.' }, src, ctx);
@@ -214,7 +224,7 @@ function candidates(list, query, src, ctx, found){
         return `<button class="search-result" data-i="${i}"><span class="sr-ico">${cat?iconSvg(cat.id, cat.color):icon('storefront')}</span><span class="grow"><b class="trunc" style="display:block">${esc(p.name)}</b><span class="muted small">${esc(z?z.label:(p.address||APP.city))}</span></span>${icon('chevron_right')}</button>`; }).join('')}</div>
       <button class="btn btn-ghost btn-block mt16" id="cdNone">None of these</button>
       ${laterHTML(ctx)}
-      <p class="g-attr mt8">Results from <b>Google Maps</b></p>`;
+      <p class="g-attr mt8">From the Dubai place listing (<b>Overture Maps</b>)</p>`;
     body.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{ back(); setTimeout(()=>confirmPlace(list[+b.dataset.i], src, ctx), 60); });
     bindLater(body, src, ctx);
     body.querySelector('#cdNone').onclick=()=>{ back(); setTimeout(()=>needsPlace({ state:'needs_place', query, message:'Search again, or add it yourself.' }, src, ctx), 60); };
@@ -246,7 +256,7 @@ function needsPlace(res, src, ctx){
       // keep where it came from (the original link) even though we searched by name
       setTimeout(()=>handle({ ...r, sourceType:src.sourceType, sourceUrl:src.sourceUrl }, { raw:v }), 60);
     };
-    body.querySelector('#npSelf').onclick = ()=>{ const v = inp.value.trim(); back(); setTimeout(()=>confirmPlace({ placeId:null, name:v, lat:res.location?.lat??null, lng:res.location?.lng??null, category:null, manual:true }, src, ctx), 60); };
+    body.querySelector('#npSelf').onclick = ()=>{ const v = inp.value.trim(); back(); setTimeout(()=>confirmPlace({ placeId:null, seedId:null, name:v, lat:res.location?.lat??null, lng:res.location?.lng??null, category:null, manual:true }, src, ctx), 60); };
     setTimeout(()=>inp.focus(), 300);
   });
 }
@@ -254,11 +264,9 @@ function needsPlace(res, src, ctx){
 /* ---------- the confirm sheet ---------- */
 function confirmPlace(place, src, ctx){
   const me = S.me(); if (!me) return;
-  // already on the map? (by Google place id; otherwise same name very close by)
-  let existing = place.venueId ? S.venue(place.venueId) : S.venueByPlaceId(place.placeId);
-  if (!existing && place.name && place.lat!=null){
-    existing = S.venues().find(v=>v.name.toLowerCase()===place.name.toLowerCase() && v.lat!=null && Math.abs(v.lat-place.lat)<0.0006 && Math.abs(v.lng-place.lng)<0.0006) || null;
-  }
+  // already on the map? By the listing's id; an old place by the Google id in the link (a matching key only, never
+  // looked up); otherwise the same name very close by
+  let existing = place.venueId ? S.venue(place.venueId) : (S.venueBySeed(place.seedId) || S.venueByPlaceId(place.matchKey) || S.venueNear(place.name, place.lat, place.lng));
   if (existing && S.entries({ venueId:existing.id, userId:me.id }).length){
     doneWithInbox(ctx); toast('Already saved'); go.place(existing.id); return;
   }
@@ -269,13 +277,13 @@ function confirmPlace(place, src, ctx){
     meals: [],
     who: whoDefault(),            // you choose every time: null until you pick
   };
-  const editName = !existing && (!place.placeId || place.manual);
+  const editName = !existing && (!place.seedId || place.manual);
   const s = SOURCE[src.sourceType] || SOURCE.text;
   openSheet(body=>{
     const paint = ()=>{
       const z = MAP.zoneById(d.zone);
       body.innerHTML = `
-        <div class="row" style="flex-wrap:wrap;gap:var(--sp-2) var(--sp-3);justify-content:space-between"><span class="tag soft trunc" style="max-width:100%">${icon(s.ic)}${esc(srcLabel(src))}</span>${place.placeId?`<span class="g-attr">Place details from <b>Google Maps</b></span>`:''}</div>
+        <div class="row" style="flex-wrap:wrap;gap:var(--sp-2) var(--sp-3);justify-content:space-between"><span class="tag soft trunc" style="max-width:100%">${icon(s.ic)}${esc(srcLabel(src))}</span>${place.seedId && !existing?`<span class="g-attr">From the place listing (<b>Overture Maps</b>)</span>`:''}</div>
         ${existing ? `<div class="note mt16">${icon('groups')}<span><b>${esc(existing.name)}</b> is already on the crew map. Add it to your list?</span></div>` : ''}
         <div class="mt16">${editName
           ? `<label class="eyebrow" for="cfN">Place</label><input class="input mt8" id="cfN" maxlength="80" value="${esc(d.name)}" placeholder="Place name">`
@@ -304,14 +312,25 @@ function confirmPlace(place, src, ctx){
       bindLater(body, src, ctx);
     };
     const keep = fn=>{ const st = body.scrollTop; fn(); body.scrollTop = st; };
-    const add = (been)=>{
+    const add = async (been)=>{
       if (!existing){
         if (!d.name.trim()) return toast('Give the place a name');
         if (!d.cats.length) return toast('Pick what kind of place it is');
       }
       if (d.who===null && !been){ body.querySelector('#cfWho').scrollIntoView({ block:'center', behavior:'smooth' }); return toast('Choose who it’s for'); }
       const created = !existing;
-      const v = existing || S.addVenue({ name:d.name, zone:d.zone, categories:d.cats, lat:place.lat, lng:place.lng, googlePlaceId:place.placeId||null });
+      // a listing place brings its details (address, phone, website, socials), each marked as from the listing;
+      // what you picked here (name, area, kinds) is yours
+      let v = existing;
+      if (!v){
+        let base = { fieldSources:{} };
+        if (place.seedId){ const r = await placesApi({ action:'seed_details', id:place.seedId }); if (r.state==='ok' && r.place) base = seedInitial(r.place, d.zone); }
+        const fs = { ...base.fieldSources, categories:'user' };
+        if (d.name.trim() !== (base.name||'')) fs.name = 'user';
+        if (d.zone !== base.zone) fs.zone = 'user';
+        if (place.lat!=null && !fs.coords) fs.coords = place.seedId ? 'seed' : 'user';
+        v = S.addVenue({ ...base, name:d.name, zone:d.zone, categories:d.cats, lat:place.lat, lng:place.lng, seedId:place.seedId||null, fieldSources:fs });
+      }
       closeAll();
       doneWithInbox(ctx);
       if (been){ setTimeout(()=>go.log({ venueId:v.id, who:d.who, meals:d.meals }), 300); return; }

@@ -12,7 +12,8 @@ import { whereAmI, locationError } from './locate.js';
 import { haversine } from './catch.js';
 import { DISH_SEED } from './search-data.js';
 import { aiTagsOn } from './aitags.js';
-import { placesApi, zoneFor } from './share.js';
+import { placesApi, zoneFor, seedInitial } from './share.js';
+import { instagramFrom, cleanWebsite, cleanPhone, validPhone, validUrl } from './placefields.js';
 import { overallHTML, miniStars, rateSheet } from './rate.js';
 import * as RT from './ratings.js';
 
@@ -154,37 +155,73 @@ function pickOnMap(start, done){
 }
 go.pickOnMap = pickOnMap;
 
-/* ---------- new / edit venue ---------- */
+/* ---------- new / edit venue: the place card ----------
+   Prefilled from the seed (Overture) when the place was picked from search, empty when added by hand, the place's
+   own values when editing. Every field can be changed; a small label says where each value came from (Listing,
+   Web, You, Old import). Kinds suggested by the listing are shown, never applied: you tap to confirm. Saving marks
+   every value you typed or changed as yours ('user'), which later enrichment never overwrites. */
+const SRC_LABEL = { seed:'Listing', web:'Web', user:'You', legacy_google:'Old import' };
+const srcTag = s => s && SRC_LABEL[s] ? `<span class="src-tag src-${s}">${SRC_LABEL[s]}</span>` : '';
 function venueForm(initial, onSave, title){
-  const d={ name:initial.name||'', zone:initial.zone||MAP.viewZone()?.id||'downtown', categories:initial.categories?[...initial.categories]:[], lat:initial.lat??null, lng:initial.lng??null };
+  const fs0 = { ...(initial.fieldSources||{}) };
+  const d={ name:initial.name||'', zone:initial.zone||MAP.viewZone()?.id||'downtown', categories:initial.categories?[...initial.categories]:[], lat:initial.lat??null, lng:initial.lng??null,
+    address:initial.address||'', phone:initial.phone||'', website:initial.website||'', instagram:initial.instagram ? '@'+initial.instagram : '', otherSocials:(initial.otherSocials||[]).slice(),
+    tags: initial.id ? S.venueTags(initial.id) : (initial.tags||[]).slice(), tagDraft:'', social:'' };
+  const was = JSON.parse(JSON.stringify({ name:d.name, zone:d.zone, coords:[d.lat, d.lng], address:d.address, phone:d.phone, website:d.website, instagram:d.instagram, other_socials:d.otherSocials, categories:d.categories }));
+  // kinds the listing suggests that you haven't picked (shisha and karak are never suggested: you pick those)
+  const suggested = ()=>(initial.suggested||[]).filter(k=>catById(k) && !d.categories.includes(k));
   // a new place: which meal was it? (goes on the visit you log next; editing a place doesn't ask)
   const askMeal = !initial.id; if (askMeal) d.meals = [];
-  if (initial.googlePlaceId) d.googlePlaceId = initial.googlePlaceId;
+  const manual = !initial.id && !initial.seedId;
   openSheet((body)=>{
     const paint=()=>{
-      const z=MAP.zoneById(d.zone);
+      const z=MAP.zoneById(d.zone), pinned = typeof d.lat==='number';
+      const src = f => srcTag(changed(f) ? 'user' : fs0[f]);
+      const fieldHTML = (id, f, label, val, attrs) => `<div class="field mt16"><div class="field-label"><label class="eyebrow" for="${id}">${label}</label>${val ? src(f) : ''}</div><input class="input mt8" id="${id}" value="${esc(val)}" ${attrs||''}></div>`;
       body.innerHTML = `<div class="sheet-head"><div class="grow"><h2 class="h-md">${esc(title||'Add a new place')}</h2></div></div>
-        ${initial.fromGoogle?`<p class="g-attr" style="text-align:left">Place details from <b>Google Maps</b>: check them and pick what kind of place it is.</p>`:''}
-        <div class="field mt8"><label class="eyebrow" for="vfN">Name</label><input class="input" id="vfN" maxlength="60" value="${esc(d.name)}" placeholder="e.g. Sunset Karak Corner"></div>
-        <div class="field mt16"><label class="eyebrow" for="vfZ">Area</label><select class="input" id="vfZ">${MAP.ZONES.slice().sort((a,b)=>a.label.localeCompare(b.label)).map(x=>`<option value="${x.id}"${x.id===d.zone?' selected':''}>${esc(x.label)}</option>`).join('')}</select></div>
-        <div class="row mt16" style="gap:var(--sp-2)"><span class="grow small ${typeof d.lat==='number'?'':'muted'}" style="${typeof d.lat==='number'?'color:var(--green);font-weight:700':''}">${typeof d.lat==='number'?'📍 Exact spot pinned':`Somewhere in ${esc(z?z.label:APP.city)}`}</span>
-          <button class="btn btn-white btn-sm" id="vfPick">${icon('pin_drop')}Pick on map</button><button class="btn btn-white btn-sm" id="vfLoc" aria-label="Use my location">${icon('my_location')}</button></div>
-        <div class="eyebrow mt24">Categories</div>
+        ${initial.seedId && !initial.id ? `<p class="muted small mt4">Filled in from the place listing. Check it, change anything, then save.</p>` : manual ? `<p class="muted small mt4">Not in the listing? Add it here and pin it on the map.</p>` : ''}
+        <div class="field mt16"><div class="field-label"><label class="eyebrow" for="vfN">Name</label>${src('name')}</div><input class="input mt8" id="vfN" maxlength="80" value="${esc(d.name)}" placeholder="e.g. Sunset Karak Corner"></div>
+        ${fieldHTML('vfA', 'address', 'Address', d.address, 'maxlength="200" placeholder="Street, building, area" autocomplete="off"')}
+        <div class="row mt16" style="gap:var(--sp-2);flex-wrap:wrap"><span class="grow small row" style="gap:var(--sp-2);flex-wrap:wrap;${pinned?'color:var(--green);font-weight:700':''}"><span class="${pinned?'':'muted'}">${pinned?'📍 Exact spot pinned':`Somewhere in ${esc(z?z.label:APP.city)}`}</span>${pinned ? src('coords') : ''}</span>
+          <button class="btn btn-white btn-sm" id="vfPick">${icon('pin_drop')}${pinned?'Move pin':'Pick on map'}</button><button class="btn btn-white btn-sm" id="vfLoc" aria-label="Use my location">${icon('my_location')}</button></div>
+        <div class="field mt16"><div class="field-label"><label class="eyebrow" for="vfZ">Area</label>${src('zone')}</div><select class="input mt8" id="vfZ">${MAP.ZONES.slice().sort((a,b)=>a.label.localeCompare(b.label)).map(x=>`<option value="${x.id}"${x.id===d.zone?' selected':''}>${esc(x.label)}</option>`).join('')}</select></div>
+        <div class="eyebrow mt24">Kind of place</div>
+        ${suggested().length ? `<div class="suggest-row mt8"><span class="small muted">The listing says</span>${suggested().map(k=>`<button type="button" class="person-chip suggest-chip" data-suggest="${k}">${iconSvg(k, catById(k).color)}${esc(catById(k).label)}${icon('add')}</button>`).join('')}</div>` : ''}
         <div class="chip-wrap mt8" id="vfC">${catPickerHTML(d.categories, {open:body.dataset.catsOpen==='1'})}</div>
+        <div class="row between mt24"><span class="eyebrow">Tags</span><span class="hand">Optional</span></div>
+        <div class="chip-wrap mt8">${d.tags.map(t=>`<button type="button" class="person-chip on" data-tag-rm="${esc(t)}" aria-label="Remove tag ${esc(t)}">${esc(t)}${icon('close')}</button>`).join('')}
+          ${S.allTags().filter(t=>!d.tags.includes(t)).slice(0, 6).map(t=>`<button type="button" class="person-chip" data-tag-add="${esc(t)}">${icon('add')}${esc(t)}</button>`).join('')}</div>
+        <input class="input mt8" id="vfT" maxlength="30" value="${esc(d.tagDraft)}" placeholder="Add a tag (rooftop, late night…) and press Enter" autocomplete="off" enterkeyhint="done">
+        <div class="row between mt24"><span class="eyebrow">Contact</span><span class="hand">Optional</span></div>
+        ${fieldHTML('vfP', 'phone', 'Phone', d.phone, 'type="tel" inputmode="tel" maxlength="20" placeholder="+971 4 000 0000" autocomplete="off"')}
+        ${fieldHTML('vfW', 'website', 'Website', d.website, 'type="url" inputmode="url" maxlength="300" placeholder="https://" autocomplete="off"')}
+        ${fieldHTML('vfI', 'instagram', 'Instagram', d.instagram, 'maxlength="60" placeholder="@handle" autocapitalize="off" autocomplete="off" spellcheck="false"')}
+        <div class="field mt16"><div class="field-label"><span class="eyebrow">Other links</span>${d.otherSocials.length ? src('other_socials') : ''}</div>
+          ${d.otherSocials.map((u,i)=>`<div class="link-row mt8"><span class="trunc grow small">${esc(u.replace(/^https?:\/\/(www\.)?/,''))}</span><button type="button" class="icon-btn" data-social-rm="${i}" aria-label="Remove link">${icon('close')}</button></div>`).join('')}
+          ${d.otherSocials.length < 8 ? `<input class="input mt8" id="vfS2" type="url" inputmode="url" maxlength="300" value="${esc(d.social)}" placeholder="Facebook, TikTok… link, then Enter" autocomplete="off" enterkeyhint="done">` : ''}</div>
         ${askMeal?`<div class="row between mt24"><span class="eyebrow">Meal</span><span class="hand">Optional</span></div>
         <div class="chip-wrap mt8" id="vfM">${MEALS.map(m=>`<button type="button" class="person-chip meal-chip${d.meals.includes(m.id)?' on':''}" data-meal="${m.id}" aria-pressed="${d.meals.includes(m.id)}">${icon(m.icon)}${m.label}</button>`).join('')}</div>`:''}
+        ${initial.seedId ? `<p class="g-attr mt16">Listing data from <b>Overture Maps Foundation</b>, Places theme</p>` : ''}
         <div class="sheet-foot"><button class="btn btn-gold btn-block" id="vfS">${askMeal ? `Next step${icon('arrow_forward')}` : `${icon('check')}Save place`}</button></div>`;
-      const n=body.querySelector('#vfN'); n.oninput=()=>{ d.name=n.value; };
-      body.querySelectorAll('#vfM [data-meal]').forEach(b=>b.onclick=()=>{ const m=b.dataset.meal; d.meals=d.meals.includes(m)?d.meals.filter(x=>x!==m):[...d.meals,m]; const st=body.scrollTop; paint(); body.scrollTop=st; });
-      body.querySelector('#vfZ').onchange=e=>{ d.zone=e.target.value; d.lat=null; d.lng=null; paint(); };
+      const keep = fn=>{ const st=body.scrollTop; fn(); body.scrollTop=st; };
+      const bindText = (sel, key)=>{ const i=body.querySelector(sel); if (i) i.oninput=()=>{ d[key]=i.value; }; };
+      bindText('#vfN','name'); bindText('#vfA','address'); bindText('#vfP','phone'); bindText('#vfW','website'); bindText('#vfI','instagram'); bindText('#vfT','tagDraft'); bindText('#vfS2','social');
+      body.querySelectorAll('#vfM [data-meal]').forEach(b=>b.onclick=()=>{ const m=b.dataset.meal; d.meals=d.meals.includes(m)?d.meals.filter(x=>x!==m):[...d.meals,m]; keep(paint); });
+      body.querySelector('#vfZ').onchange=e=>{ d.zone=e.target.value; keep(paint); };
       bindCatPicker(body.querySelector('#vfC'), body);
-      body.querySelector('#vfC').onclick=e=>{ const b=e.target.closest('[data-cat]'); if (!b) return; const id=b.dataset.cat; d.categories.includes(id)?d.categories.splice(d.categories.indexOf(id),1):d.categories.push(id); paint(); };
+      body.querySelector('#vfC').onclick=e=>{ const b=e.target.closest('[data-cat]'); if (!b) return; const id=b.dataset.cat; d.categories.includes(id)?d.categories.splice(d.categories.indexOf(id),1):d.categories.push(id); keep(paint); };
+      body.querySelectorAll('[data-suggest]').forEach(b=>b.onclick=()=>{ if (!d.categories.includes(b.dataset.suggest)) d.categories.push(b.dataset.suggest); keep(paint); });
+      body.querySelectorAll('[data-tag-rm]').forEach(b=>b.onclick=()=>{ d.tags=d.tags.filter(t=>t!==b.dataset.tagRm); keep(paint); });
+      body.querySelectorAll('[data-tag-add]').forEach(b=>b.onclick=()=>{ d.tags=[...d.tags, b.dataset.tagAdd]; keep(paint); });
+      const ti=body.querySelector('#vfT'); ti.onkeydown=e=>{ if (e.key!=='Enter' && e.key!==',') return; e.preventDefault(); addTag(); keep(paint); const n=body.querySelector('#vfT'); if (n) n.focus(); };
+      const si=body.querySelector('#vfS2'); if (si) si.onkeydown=e=>{ if (e.key!=='Enter') return; e.preventDefault(); if (addSocial()) { keep(paint); const n=body.querySelector('#vfS2'); if (n) n.focus(); } };
+      body.querySelectorAll('[data-social-rm]').forEach(b=>b.onclick=()=>{ d.otherSocials.splice(+b.dataset.socialRm,1); keep(paint); });
       body.querySelector('#vfPick').onclick=()=>{
         const layer=body.closest('.sheet'); layer.style.visibility='hidden'; document.querySelectorAll('.scrim').forEach(s=>s.style.visibility='hidden');
         const start = typeof d.lat==='number' ? MAP.placeWorld({id:'x', lat:d.lat, lng:d.lng}) : MAP.placeWorld({id:'x'+d.zone, zone:d.zone});
         pickOnMap(start, res=>{
           layer.style.visibility=''; document.querySelectorAll('.scrim').forEach(s=>s.style.visibility='');
-          if (res){ if (!res.inMap) return toast("That's outside the map"); d.lat=res.lat; d.lng=res.lng; d.zone=res.zone; paint(); }
+          if (res){ if (!res.inMap) return toast("That's outside the map"); d.lat=res.lat; d.lng=res.lng; d.zone=res.zone; keep(paint); }
         });
       };
       body.querySelector('#vfLoc').onclick=()=>{
@@ -192,23 +229,55 @@ function venueForm(initial, onSave, title){
         navigator.geolocation.getCurrentPosition(p=>{
           const ai=MAP.toAI(p.coords.latitude,p.coords.longitude);
           if (!MAP.inMap(ai.a,ai.i)) return toast("You're outside the map area");
-          d.lat=p.coords.latitude; d.lng=p.coords.longitude; d.zone=MAP.nearestZone(ai.a,ai.i).id; paint(); toast('Pinned to where you are');
+          d.lat=p.coords.latitude; d.lng=p.coords.longitude; d.zone=MAP.nearestZone(ai.a,ai.i).id; keep(paint); toast('Pinned to where you are');
         }, e=>toast(e.code===1?'Location permission is off for this site':"Couldn't get your location"), {enableHighAccuracy:true, timeout:10000});
       };
-      body.querySelector('#vfS').onclick=()=>{
-        if (!d.name.trim()){ toast('Give the place a name'); n.focus(); return; }
-        if (!d.categories.length){ toast('Pick at least one category'); return; }
-        back(); onSave(d);
-      };
+      body.querySelector('#vfS').onclick=save;
+    };
+    // has a value moved away from what the card opened with? (then it's yours)
+    const now = ()=>({ name:d.name.trim(), zone:d.zone, coords:[d.lat, d.lng], address:d.address.trim(), phone:d.phone.trim(), website:d.website.trim(), instagram:d.instagram.trim(), other_socials:d.otherSocials, categories:d.categories });
+    const changed = f => JSON.stringify(now()[f]) !== JSON.stringify(was[f]);
+    const addTag = ()=>{ const t=S.tagKey(d.tagDraft); d.tagDraft=''; if (!t) return; if (catById(t)) { if (!d.categories.includes(t)) d.categories.push(t); return; } if (!d.tags.includes(t)) d.tags=[...d.tags, t].slice(0, 12); };
+    const addSocial = ()=>{ const v=d.social.trim(); if (!v) return false; const u=/^https?:\/\//i.test(v) ? v : 'https://'+v;
+      if (!validUrl(u)) { toast('That doesn’t look like a link'); return false; }
+      if (instagramFrom(u)) { d.instagram='@'+instagramFrom(u); d.social=''; return true; }
+      if (!d.otherSocials.includes(u)) d.otherSocials.push(u); d.social=''; return true; };
+    const save = ()=>{
+      if (d.tagDraft.trim()) addTag();
+      if (d.social.trim() && !addSocial()) return;
+      if (!d.name.trim()){ toast('Give the place a name'); body.querySelector('#vfN').focus(); return; }
+      if (manual && typeof d.lat!=='number'){ toast('Drop a pin on the map so the crew can find it'); return; }
+      if (!d.categories.length){ toast('Pick at least one kind of place'); return; }
+      const ig = d.instagram.trim() ? instagramFrom(d.instagram) : null;
+      if (d.instagram.trim() && !ig){ toast('That isn’t an Instagram handle (letters, numbers, . and _)'); return; }
+      const site = d.website.trim() ? cleanWebsite(d.website) : null;
+      if (d.website.trim() && !site){ toast('That website doesn’t look right'); return; }
+      const phone = d.phone.trim() ? (cleanPhone(d.phone) || (validPhone(d.phone.trim()) ? d.phone.trim() : null)) : null;
+      if (d.phone.trim() && !phone){ toast('That phone number doesn’t look right'); return; }
+      // where each value came from now: anything you typed or changed is yours
+      const fieldSources = { ...fs0 };
+      Object.keys(was).forEach(f=>{ if (changed(f)) fieldSources[f]='user'; else if (!fieldSources[f] && JSON.stringify(now()[f]) !== JSON.stringify(f==='coords'?[null,null]:f==='other_socials'||f==='categories'?[]:'')) fieldSources[f] = initial.seedId && !initial.id ? 'seed' : 'user'; });
+      // kinds are always confirmed by a person, and so are tags
+      fieldSources.categories = 'user';
+      if (!fieldSources.zone && initial.seedId) fieldSources.zone = 'seed';
+      const out = { name:d.name.trim(), zone:d.zone, categories:d.categories, lat:d.lat, lng:d.lng, address:d.address.trim(), phone, website:site, instagram:ig, otherSocials:d.otherSocials,
+        fieldSources, seedId:initial.seedId||null, tags:d.tags, meals:d.meals };
+      back(); onSave(out);
     };
     paint();
   });
 }
-function editVenue(v, after){ venueForm(v, d=>{ S.updateVenue(v.id, d); toast('Place updated'); go.refresh(); after&&after(); }, 'Edit place'); }
+// editing a place: the changed values are yours; tags you added or took off go too
+function editVenue(v, after){ venueForm(v, d=>{
+  const before = S.venueTags(v.id);
+  S.updateVenue(v.id, { name:d.name, zone:d.zone, categories:d.categories, lat:d.lat, lng:d.lng, address:d.address, phone:d.phone, website:d.website, instagram:d.instagram, otherSocials:d.otherSocials, fieldSources:d.fieldSources });
+  d.tags.filter(t=>!before.includes(t)).forEach(t=>S.addVenueTag(v.id, t));
+  before.filter(t=>!d.tags.includes(t)).forEach(t=>S.removeVenueTag(v.id, t));
+  toast('Place updated'); go.refresh(); after&&after(); }, 'Edit place'); }
 
 /* =========================================================
    14. CHECK IN: one flow whether you're there now or it was last week.
-   Step 1 is search only (places on the map, then Google Maps, or add it by name). On step 2, "I'm here now"
+   Step 1 is search only (places on the map, then the Dubai place listing, or add it yourself). On step 2, "I'm here now"
    finds you once (never tracked). A visit saved today within CHECKIN_M of the place (AREA_M of its area
    when it has no exact spot) is a check-in; otherwise it's a visit you're logging after.
    ========================================================= */
@@ -242,9 +311,8 @@ function logFlow(opts){
   let here = null, locating = false;
   const checkedIn = ()=>{ if (!here || !venue || editing || d.kind!=='visit' || d.date!==todayISO()) return false;
     return placeDistance(venue, here) <= (typeof venue.lat==='number' ? CHECKIN_M : AREA_M); };
-  // Google suggestions while typing a new place (one session per search: the typing is free, a pick costs one lookup)
-  const newToken = ()=> (crypto.randomUUID ? crypto.randomUUID() : Array.from(crypto.getRandomValues(new Uint8Array(16)), b=>b.toString(16).padStart(2,'0')).join(''));
-  const g = { token:newToken(), list:[], q:'', loading:false, off:false, seq:0, timer:null };
+  // the place listing (Overture, in Koko's own database) while typing: places nobody has logged yet
+  const g = { list:[], q:'', loading:false, off:false, seq:0, timer:null, picking:null };
   openScreen(el=>{
     let stars=null;
     const paint=()=>{
@@ -259,17 +327,21 @@ function logFlow(opts){
             const sum=M.venueSummary(v,{...state.scope, mode:'crew', members:null}), z=MAP.zoneById(v.zone);
             return `<button class="search-result" data-v="${v.id}">${stampHTML(sum.state,{cat:M.primaryCat(v)})}<span class="grow"><b class="trunc" style="display:block">${esc(v.name)}</b><span class="muted small">${esc(z?z.label:'')}${sum.visitorIds.length?` • ${plural(sum.visitorIds.length,'crew visit')}`:''}</span></span>${icon('chevron_right')}</button>`;
           }).join('')}
-          ${googleHTML()}
-          ${query.trim()?`<button class="search-result" id="lNew" style="background:var(--sc)"><span class="sr-ico">${icon('add_location_alt')}</span><span class="grow"><b>Add “${esc(query.trim())}”</b><span class="muted small" style="display:block">New place on the map</span></span>${icon('chevron_right')}</button>`:''}
+          ${seedHTML()}
+          ${query.trim()?`<button class="search-result" id="lNew" style="background:var(--sc)"><span class="sr-ico">${icon('add_location_alt')}</span><span class="grow"><b class="trunc" style="display:block">Add “${esc(query.trim())}” yourself</b><span class="muted small" style="display:block">${g.q===query.trim() && !g.loading && !g.list.length ? 'Not in the list: type the name and pin it' : 'Not listed? Type the name and pin it'}</span></span>${icon('chevron_right')}</button>`:''}
           </div>
           ${!query.trim()?`<div class="empty"><span class="stamp st-want big"><span class="st-paper"><span class="st-ico">${iconSvg('karak','#7e5700')}</span></span><span class="st-ribbon">TRY</span></span><span class="hand">Where did you eat?</span><p class="muted small">${S.venues().length ? 'Search places you and your crew have pinned, or type a new name to add it.' : 'Type its name to add it. Every place on the map starts with someone pinning it.'}</p></div>`:''}
         </div>`;
         const q=el.querySelector("#logQ"); q.focus();
         q.oninput=()=>{ query=q.value; const pos=q.selectionStart; paint(); const n=el.querySelector("#logQ"); n.setSelectionRange(pos,pos); suggestSoon(); };
-        el.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>pickGoogle(b.dataset.g, b));
+        el.querySelectorAll('[data-seed]').forEach(b=>b.onclick=()=>pickSeed(b.dataset.seed, b));
         el.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{ venue=S.venue(b.dataset.v); paint(); });
         // a landmark's 'Add a pin here' brings its spot along
-        const nb=el.querySelector('#lNew'); if (nb) nb.onclick=()=>venueForm({name:query.trim(), ...(opts.prefill && opts.prefill.lat!=null ? { lat:opts.prefill.lat, lng:opts.prefill.lng, zone:zoneFor(opts.prefill.lat, opts.prefill.lng) || opts.zone } : { zone:opts.zone })}, dd=>{ venue=S.addVenue(dd); if (dd.meals && dd.meals.length) d.meals=dd.meals.slice(); paint(); });
+        const nb=el.querySelector('#lNew'); if (nb) nb.onclick=()=>venueForm({name:query.trim(), ...(opts.prefill && opts.prefill.lat!=null ? { lat:opts.prefill.lat, lng:opts.prefill.lng, zone:zoneFor(opts.prefill.lat, opts.prefill.lng) || opts.zone } : { zone:opts.zone })}, dd=>{
+          // the same name pinned right next to a place already on the map is that place
+          const same = S.venueNear(dd.name, dd.lat, dd.lng);
+          if (same) toast(same.name+' is already on the map: your visit goes there');
+          venue = same || S.addVenue(dd); if (dd.meals && dd.meals.length) d.meals=dd.meals.slice(); paint(); });
         el.querySelector('#lMore').onclick=()=>toast('Search your crew’s places, or type a new name to add it');
         return;
       }
@@ -353,42 +425,48 @@ function logFlow(opts){
         toast('Log deleted', snap && !snap.photos.length ? 'Undo' : null, ()=>{ S.restoreEntry(snap); go.refresh(); });
       };
     };
-    // the "On Google Maps" list (places already on the map show above instead)
-    const googleHTML = ()=>{
+    // the listing's places (ones already on your map show above instead, and aren't repeated)
+    const seedHTML = ()=>{
       if (!query.trim() || g.off) return '';
-      const list = g.list.filter(p=>!S.venueByPlaceId(p.placeId));
-      if (!list.length) return g.loading ? `<p class="muted small mt16 row" style="gap:var(--sp-2)">${icon('travel_explore')}Searching Google Maps…</p>` : '';
-      return `<div class="eyebrow mt16">On Google Maps</div>${list.map(p=>`<button class="search-result" data-g="${esc(p.placeId)}"><span class="sr-ico">${icon('location_on')}</span><span class="grow"><b class="trunc" style="display:block">${esc(p.name)}</b><span class="muted small trunc" style="display:block">${esc(p.detail)}</span></span>${icon('chevron_right')}</button>`).join('')}<p class="g-attr mt4">Results from <b>Google Maps</b></p>`;
+      const list = g.list.filter(p=>!S.venueBySeed(p.id));
+      if (!list.length) return g.loading ? `<p class="muted small mt16 row" style="gap:var(--sp-2)">${icon('travel_explore')}Looking through Dubai’s places…</p>` : '';
+      return `<div class="eyebrow mt16">Places in Dubai</div>${list.map(p=>{ const z=MAP.zoneById(p.zone), k=(p.kinds||[])[0];
+        return `<button class="search-result" data-seed="${esc(p.id)}"><span class="sr-ico">${k && catById(k) ? iconSvg(k, catById(k).color) : icon('storefront')}</span><span class="grow" style="min-width:0"><b class="trunc" style="display:block">${esc(p.name)}</b><span class="muted small trunc" style="display:block">${esc([z?z.label:'', p.address].filter(Boolean).join(' • '))}</span></span>${g.picking===p.id ? '<span class="muted small">Opening…</span>' : icon('chevron_right')}</button>`; }).join('')}`;
     };
     // repaint without losing the cursor in the search box
     const repaintSearch = ()=>{ if (venue) return; const q=el.querySelector('#logQ'), had = q && document.activeElement===q, pos = q ? q.selectionStart : 0; paint(); const n=el.querySelector('#logQ'); if (n && had){ n.focus(); n.setSelectionRange(pos,pos); } };
     const suggestSoon = ()=>{
       clearTimeout(g.timer);
       const qq = query.trim();
-      if (g.off || qq.length < 3){ g.list = []; g.q = qq; g.loading = false; return; }
+      if (g.off || qq.length < 2){ g.list = []; g.q = qq; g.loading = false; return; }
       if (qq === g.q) return;
       g.timer = setTimeout(async ()=>{
         const my = ++g.seq; g.loading = true; repaintSearch();
-        const r = await placesApi({ action:'suggest', input:qq, sessionToken:g.token });
+        // nearest first among equally good names: around where the map is looking
+        const at = MAP.centerLatLng ? MAP.centerLatLng() : null;
+        const r = await placesApi({ action:'seed_search', input:qq, ...(at && at.lat!=null ? { lat:at.lat, lng:at.lng } : {}) });
         if (my !== g.seq) return;                       // a newer search is on its way
         g.loading = false; g.q = qq;
         if (r.state === 'unavailable' || r.state === 'signed_out'){ g.off = true; g.list = []; }
-        else g.list = r.state === 'ok' ? (r.suggestions||[]) : [];
+        else g.list = r.state === 'ok' ? (r.results||[]) : [];
         repaintSearch();
-      }, 300);
+      }, 250);
     };
-    const pickGoogle = async (placeId, btn)=>{
-      const pred = g.list.find(p=>p.placeId===placeId) || { name:query.trim() };
-      if (btn){ btn.disabled = true; btn.querySelector('.muted').textContent = 'Getting the details…'; }
-      const r = await placesApi({ action:'details', placeId, sessionToken:g.token });
-      g.token = newToken(); g.list = []; g.q = '';          // that search is done; the next one is a new session
-      if (r.state !== 'ok' || !r.place){ toast('Couldn’t get that place from Google. Add it yourself.'); repaintSearch(); return; }
+    // a listing place: the Koko place if someone has logged it (a second visit, never a second place), otherwise
+    // its details on a card to check and save
+    const pickSeed = async (id, btn)=>{
+      const known = S.venueBySeed(id);
+      if (known){ venue = known; paint(); return; }
+      if (g.picking) return;
+      g.picking = id; repaintSearch();
+      const r = await placesApi({ action:'seed_details', id });
+      g.picking = null;
+      if (r.state !== 'ok' || !r.place){ toast('Couldn’t open that place. Add it yourself.'); repaintSearch(); return; }
       const p = r.place;
-      // already on the map? (by Google's id, or the same name very close by)
-      const same = S.venueByPlaceId(p.placeId) || (p.lat!=null && S.venues().find(v=>v.name.toLowerCase()===p.name.toLowerCase() && v.lat!=null && Math.abs(v.lat-p.lat)<0.0006 && Math.abs(v.lng-p.lng)<0.0006));
+      // typed by hand before, right here: that's the same place
+      const same = S.venueNear(p.name, p.lat, p.lng);
       if (same){ venue = same; paint(); return; }
-      venueForm({ name:p.name||pred.name, lat:p.lat, lng:p.lng, zone: zoneFor(p.lat, p.lng) || opts.zone, categories: p.category ? [p.category] : [], googlePlaceId:p.placeId, fromGoogle:true },
-        dd=>{ venue=S.addVenue(dd); if (dd.meals && dd.meals.length) d.meals=dd.meals.slice(); paint(); });
+      venueForm(seedInitial(p, opts.zone), dd=>{ venue=S.addVenue(dd); if (dd.meals && dd.meals.length) d.meals=dd.meals.slice(); paint(); });
     };
     const keepScroll=(fn)=>{ const s=el.scrollTop; fn(); el.scrollTop=s; };
     // "What did you have?": the chosen ones, then suggestions (from this visit's photos when tagging is on, your own

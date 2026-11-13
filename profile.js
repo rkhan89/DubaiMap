@@ -1,6 +1,6 @@
 // Profile (yours or a crew friend's) and Settings. Phase 2, own design: there are no
 // Stitch frames for these, so they're built from the existing components.
-import { APP } from './config.js';
+import { APP, DATA_SOURCES } from './config.js';
 import * as S from './store.js';
 import * as MAP from './map.js';
 import { userStats, thisMonth } from './stats.js';
@@ -137,6 +137,7 @@ function settingsScreen(){
           ${link('gavel','Terms of use','The rules for using '+esc(APP.name),'legal-terms')}
           ${link('shield','Privacy policy','What we collect and why','legal-privacy')}
           ${link('table_view','How we use your data','Everything we keep, in one table','legal-data')}
+          ${link('dataset','Data sources','Where place names, addresses and links come from','sources')}
         </div>
         <button class="btn btn-danger btn-block mt24" id="sOut">${icon('logout')}Sign out</button>
         <button class="btn btn-ghost btn-block mt8" id="sDelete" style="color:var(--red)">${icon('delete_forever')}Delete my account</button>
@@ -163,6 +164,7 @@ function settingsScreen(){
         if (k==='import') go.importPhone();
         if (k.startsWith('legal-')) go.legal(k.slice(6));
         if (k==='feedback') feedbackSheet();
+        if (k==='sources') dataSourcesScreen();
         if (k==='tour'){ go.closeAll(); go.switchView('map'); setTimeout(()=>go.startTour(), 300); }
         if (k==='export'){
           toast('Preparing backup…');
@@ -208,6 +210,24 @@ function legalScreen(name){
   });
 }
 go.legal = legalScreen;
+
+/* ---------- data sources: where place details come from (attribution the seed's licence asks for) ---------- */
+function dataSourcesScreen(){
+  const o = DATA_SOURCES.overture;
+  openScreen(el=>{
+    el.innerHTML = topbar({ title:'Data sources', eyebrow:'About '+APP.name, profile:false }) + `<div class="screen-body">
+      <div class="card mt8"><span class="eyebrow">Places</span>
+        <h2 class="h-md mt8">${esc(o.attribution)}</h2>
+        <p class="muted small mt8">When you log a place, its name, address, phone number, website and social links are filled in from ${esc(o.name)}'s open places data, which ${esc(APP.name)} keeps a copy of. Licence: ${esc(o.licence)}. Release ${esc(o.release)}.</p>
+        <a class="btn btn-soft btn-block mt16" href="${esc(o.link)}" target="_blank" rel="noopener">${icon('open_in_new')}overturemaps.org/attribution</a></div>
+      <div class="card mt16"><span class="eyebrow">Labels on a place</span>
+        <p class="small mt8"><b>Listing</b> came from the place data above. <b>You</b> means someone in ${esc(APP.name)} typed or changed it, and nothing automatic ever overwrites it. <b>Web</b> was read from the place's own website or social page. <b>Old import</b> came from an earlier version of the app and is being replaced.</p></div>
+      <div class="card mt16"><span class="eyebrow">The map</span>
+        <p class="small mt8">The pixel map of Dubai is drawn by ${esc(APP.name)}.</p></div>
+    </div>`;
+  });
+}
+go.dataSources = dataSourcesScreen;
 
 /* ---------- send feedback ---------- */
 function feedbackSheet(){

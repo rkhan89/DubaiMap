@@ -159,7 +159,8 @@ Steps 2–4: Android share target and /share, TikTok captions, Inbox and offline
 
 - **+ button** opens a small menu: *Check in* or *Add from link or text* (and *Inbox* when shares are waiting).
 - **Check in is one flow, now or after.** Same screen whether you're at the place or logging it later.
-  - Step 1 is search only: places on the map, then Google Maps, or add it by name. A new place's form ends in
+  - Step 1 is search only: places on the map, then **Places in Dubai** (the place listing, see "The places
+    record" below), or *Add it yourself*. A new place's form ends in
     *Next step* (editing a place still says *Save place*). Places near you (auto-locate) are left for after the MVP.
   - Step 2: *I'm here now* finds you once (never tracked) to make it a check-in. Photos: *Take photo* opens the
     camera, *Add photos* picks from the library.
@@ -171,32 +172,35 @@ Steps 2–4: Android share target and /share, TikTok captions, Inbox and offline
 - **Add from link or text**: paste a Google Maps link (short or full), a caption, or a name. The
   clipboard is read only when you tap Paste. Nothing is added until you confirm.
 - **Resolver** (`api/resolve-share.js`, server only): signed-in users only, 30 per hour each,
-  4 KB body limit. Only Google Maps and TikTok hosts are ever fetched; redirects are followed by
-  hand (3 hops, 5 s each), private addresses are refused, page bodies are never read. Places
-  (New) is asked for id, displayName, location, formattedAddress and types only. Answers:
+  4 KB body limit. A short Google Maps link is followed to its full URL (3 hops, 5 s each, private
+  addresses refused, only the Location header read); TikTok's oEmbed is read for the caption. The
+  name and pin in the link (or the names in a caption) are matched against the place listing
+  (`place_seed`), never Google Places. A Google place id in a link is kept only as a key to find an old
+  place already on the map. A link to a city or an area ("Dubai", "JLT") is not a place. Answers:
   `match`, `candidates`, `needs_place`, `already_exists` (decided on the phone), `unsupported`,
   `error`. Logs hold the source type, state and time only, never the shared text.
 - **States on screen**: a match opens the confirm sheet; several matches show up to 3 to pick
   from ("None of these" → search); otherwise "Which place is it?" with the search pre-filled,
   places already on your crew's map listed first, and *Add it myself*. Directions links, saved
   lists, Instagram, offline, slow and busy each say what happened in plain words.
-- **Confirm sheet**: where it came from; the name (editable when it didn't come from Google);
+- **Confirm sheet**: where it came from; the name (editable when it didn't come from the listing);
   **Who's this for?** *Just me* (padlock) or *My crew* (the crew's name), starting from your
   default in Settings, with *Change my default*; area and kind of place for new places.
   *Add to want-to-try* saves it; *I've been here* goes to logging. Already saved → "Already
   saved" and the place opens. Already on the crew map → it says so and no second place is made.
 - **After adding**: a toast with *Undo* (5 s; also removes a place it just made) and *View on
   map* (flies there and drops the pin).
-- **Data**: `venues.google_place_id` (+ `places_fetched_at`); `entries.source_type`
+- **Data**: `venues.seed_id` (the listing row; `google_place_id` stays on old places as a matching key
+  only, and no new place gets one); `entries.source_type`
   (google_maps, tiktok, instagram, text, manual). The shared **link** is kept in
   `entry_sources`, readable by its owner only — not on `entries`, which crewmates can read. The
   crew sees at most "from TikTok". `share_inbox` (owner only), `place_type_categories` (Places
   type → our category), `share_rate` and `share_cache` (server functions only).
-- **Google terms**: Place IDs may be stored indefinitely; coordinates may be cached for at most
-  30 days; other Places content (names, addresses) may not be stored. So the cache keeps only
-  link → full link, venues keep the place ID and our own name and pin, and addresses are shown
-  but never saved. Sources: developers.google.com/maps/documentation/places/web-service/policies
-  and cloud.google.com/maps-platform/terms/maps-service-terms.
+- **No Google place data**: Google's terms allow storing only the place ID (indefinitely) and
+  coordinates (30 days), and bar using Places content with a non-Google map, which Koko's pixel map is.
+  So no Google Places, Geocoding or Maps JavaScript data goes into the database or the UI. Places older
+  than 0020 that were picked from Google are marked `legacy_google` in `field_sources` until the backfill
+  replaces their values (or lists them under "Needs a quick check").
 - **Tests**: `node --test tests/share-parse.test.mjs` (link shapes, short-link expansion,
   redirect and host limits, ranking); `tests/e2e/sqltest.mjs` (share privacy: a crewmate can't
   read your link or Inbox, can't call the cache or rate tables); `tests/e2e/share1.mjs` (the
@@ -266,8 +270,9 @@ Steps 2–4: Android share target and /share, TikTok captions, Inbox and offline
 - A TikTok link (shared or pasted): the server asks TikTok's public oEmbed for the post's caption
   and creator (only that JSON is read). Claude (`claude-haiku-4-5`) reads the caption and must answer
   through one tool, so all it can return is up to 3 place names with areas. The caption is wrapped
-  and labelled as data, and the answer is only ever used as a search term. Each name is looked up on
-  Google Places (names may be spelt slightly differently: "Amritsar" finds "Amritsr").
+  and labelled as data, and the answer is only ever used as a search term. Each name is matched
+  against the place listing (names may be spelt slightly differently: "Amritsar" finds "Amritsr"); a
+  name in another area than the caption says is offered, not matched.
 - One clear match opens the confirm sheet; several give "Which one is it?" with "The caption
   mentions …"; nothing found asks for the name, already filled in. The source label shows the
   creator ("From TikTok · @biggest.bites_").
@@ -277,18 +282,45 @@ Steps 2–4: Android share target and /share, TikTok captions, Inbox and offline
   searched directly and never sent to Claude.
 - Cached per person for 30 days: the place names and creator a TikTok gave (never the caption), so
   sharing it again costs nothing. Logs record which path answered (`via`), never the text.
-- Tests: `tests/caption.test.mjs` (16, with faked TikTok/Claude/Google), `tests/e2e/share3.mjs`
+- Tests: `tests/caption.test.mjs` (17, with faked TikTok, Claude and listing search), `tests/e2e/share3.mjs`
   (a real TikTok through the dev server, the pick-one sheet, pasted captions).
 
-## Adding a place by hand: Google suggestions
-- Typing a new place's name on the log screen (3+ letters, after a short pause) shows **On Google
-  Maps** under the places already on your crews' maps. Tapping one opens the new-place form with
-  the name, exact pin, area and kind of place filled in; you check it, pick a meal, save. Places
-  already on the map aren't offered twice. "Add 'X'" by hand still works, and the list simply isn't
-  there without the key or a connection.
-- `api/places.js` (signed in, 300 an hour each) calls Places Autocomplete with one session token
-  per search, then Place Details with the same token, so the typing is free and a pick costs one
-  lookup. The Google address isn't stored (only the place id and pin, as with shares).
+## The places record (Job 4)
+- **The listing** (`place_seed`): the Dubai part of one pinned Overture Maps release (places theme), in
+  our own database: name, address, phone, website, socials, taxonomy, confidence, and each row's sources
+  and licences. Read-only (any signed-in person can search it; only the import writes it). The app never
+  talks to Overture at runtime. Attribution in Settings → About → Data sources ("Data from Overture Maps
+  Foundation, Places theme", overturemaps.org/attribution). Release in `config.js` (`DATA_SOURCES`) and
+  `place_seed_releases`.
+- **Loading it**: `python -I tools/overture-extract.py <release>` (DuckDB, anonymous S3, a generous box
+  around the emirate), `node tools/overture-prep.mjs <extract> <release>` (keeps places on Koko's map and
+  in the kinds of place people log, tidies the fields; `--sample dev/place-seed-sample.json` refreshes
+  the dev fixture), then `python -I tools/overture-import.py <seed.ndjson> <release> [--migrate]
+  [--dry-run]` (one transaction, COPY, over the direct connection in `DATABASE_URL`, .env.local).
+  Step 0: `python -I tools/coverage-step0.py` (crew-shared visits only; counts and place names only).
+- **Searching while logging**: `api/places.js` (`seed_search`, `seed_details`; signed in, 300 an hour)
+  runs `search_place_seed()` as the person: trigram match on the name, nearest first among equals.
+  Places already on your map show first and aren't offered twice. Picking one opens the **place card**
+  filled in from the listing: name, address, pin, area, phone, website, Instagram, other links, each
+  labelled *Listing*, *Web*, *You* or *Old import*. Everything is editable; whatever you type or change is
+  marked yours (`user`), and the database never lets enrichment overwrite a `user` value
+  (`venues_keep_user_fields`). The kinds the listing suggests are shown, never applied: you tap to
+  confirm (shisha and karak are never suggested). Tags: your own words, as chips.
+- **Add it yourself**: a name and a pin on the map are required; the same name pinned within ~120 m of a
+  place already on the map is that place.
+- **One place per real place**: a listing place is the Koko place with that `seed_id`, if you can see one;
+  a second visit adds a visit. The record is the crew's, derived from visits you can already see: a place
+  is visible only to someone who can see a visit, plan or photo at it (or who made it), so a Just me
+  place stays with its logger and someone outside the crew who logs the same listing place gets their
+  own row (nothing about the crew comes with it).
+- **Area**: the map's zones (the passport-stamp districts) by nearest centre (`zoneFor`). There are no
+  district polygons yet; when there are, replace `nearestZone` in `map.js`. The card lets you change it.
+- **Data**: `venues` + `seed_id, phone, website, instagram` (a handle, checked), `other_socials` (URLs),
+  `field_sources`, `verified_at`; `tags` (the 13 kinds as system tags, plus words people add) and
+  `venue_tags` (kinds follow `venues.categories`); `taxonomy_kinds` (Overture taxonomy → kind, as data).
+  Migration `0020_places_record.sql`.
+- Tests: `tests/seed.test.mjs`, the 0020 section of `tests/e2e/sqltest.mjs` (an outsider sees none of the
+  crew's places, Just me stays private, user values kept, tags), `tests/e2e/record.mjs`.
 
 ## Feedback and error reports
 - Settings → **Send feedback** (something broke / an idea / other), with the app version and phone

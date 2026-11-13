@@ -19,7 +19,8 @@
 // visible to the owner's crew. Crew totals, the crew map, feed and crew book only
 // ever count visible records.
 import { APP } from './config.js';
-import { uid, todayISO } from './data.js';
+import { uid, todayISO, CATEGORIES } from './data.js';
+const CAT_IDS = new Set(CATEGORIES.map(c=>c.id));
 import * as C from './cloud.js';
 import { legacyPageRows, pageId } from './pages.js';
 import * as P from './pages.js';
@@ -130,6 +131,7 @@ export async function pullNow(){
   db.decorations = { ...Object.fromEntries(Object.entries(db.decorations||{}).filter(([,d])=>isLocal(d.pageId) || isLocal(d.userId))), ...(fresh.decorations||{}) }; decoIdx = null;
   db.unlocks = { ...(db.unlocks||{}), ...(fresh.unlocks||{}) };
   db.spreads = { ...(fresh.spreads||{}) };
+  db.venueTags = { ...Object.fromEntries(Object.entries(db.venueTags||{}).filter(([,t])=>isLocal(t.venueId))), ...(fresh.venueTags||{}) };
   // no profile row yet (an account made before the database was set up): make it from this phone's copy
   if (!db.users[db.meId] && meRec){ db.users[db.meId] = meRec; C.queue({ k:'put', t:'profiles', id:meRec.id, row:C.MAP.profiles.to(meRec) }); }
   if (db.users[db.meId] && meRec) db.users[db.meId].email = meRec.email;
@@ -434,10 +436,42 @@ export async function invitePreview(code){
    ========================================================= */
 export function venues(){ return Object.values(db.venues); }
 export function venue(id){ return db.venues[id]||null; }
-export function addVenue({name, zone, categories, lat, lng, address, googlePlaceId}){
+// a new place: typed and pinned by someone, or copied from the seed (Overture) on its first visit. fieldSources says
+// where each value came from (seed, web or user); the server never lets enrichment replace a 'user' value.
+export function addVenue({name, zone, categories, lat, lng, address, seedId, phone, website, instagram, otherSocials, fieldSources, tags}){
   const v = { id:uid(), name:name.trim(), zone, categories:categories||[], lat:lat??null, lng:lng??null, address:address||'', createdBy:me()?.id||null, createdAt:Date.now(), seed:false,
-              googlePlaceId:googlePlaceId||null, placesFetchedAt:googlePlaceId?Date.now():null };
-  db.venues[v.id]=v; save('venues'); push('venues', v); return v;
+              seedId:seedId||null, phone:phone||null, website:website||null, instagram:instagram||null, otherSocials:(otherSocials||[]).slice(0, 8), fieldSources:{ ...(fieldSources||{}) } };
+  db.venues[v.id]=v; save('venues'); push('venues', v);
+  (tags||[]).forEach(t=>addVenueTag(v.id, t));
+  return v;
+}
+// the Koko place for a seed row, if you can see one already (a second visit adds a visit, never a second place)
+export function venueBySeed(seedId){ return seedId ? venues().find(v=>v.seedId===seedId) || null : null; }
+// the same place typed by hand: the same name (ignoring case and punctuation) within ~120 m
+const sameName = (a, b)=>{ const n = s=>String(s||'').toLowerCase().normalize('NFKD').replace(/[^\p{L}\p{N}]+/gu, ' ').trim(); return n(a) && n(a)===n(b); };
+export function venueNear(name, lat, lng){
+  if (lat==null || lng==null) return null;
+  return venues().find(v=>v.lat!=null && sameName(v.name, name) && Math.abs(v.lat-lat) < 0.0011 && Math.abs(v.lng-lng) < 0.0012) || null;
+}
+
+/* ---------- tags on places (0020): the kinds are venues.categories; words people add are venue tags ---------- */
+export const tagKey = t => String(t||'').toLowerCase().replace(/[^a-z0-9 &'-]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 30).trim();
+export function venueTags(venueId){ return Object.values(db.venueTags||{}).filter(t=>t.venueId===venueId).map(t=>t.tagId).sort(); }
+// every tag word on places you can see, most used first (for suggestions and the Places filters)
+export function allTags(){ const n = new Map(); Object.values(db.venueTags||{}).forEach(t=>{ if (db.venues[t.venueId]) n.set(t.tagId, (n.get(t.tagId)||0) + 1); }); return [...n.entries()].sort((a,b)=>b[1]-a[1] || a[0].localeCompare(b[0])).map(([t])=>t); }
+export function addVenueTag(venueId, tag){
+  const t = tagKey(tag); if (!t || !/^[a-z0-9]/.test(t) || CAT_IDS.has(t)) return null;   // kinds go in categories
+  db.venueTags = db.venueTags || {};
+  const k = venueId+'|'+t; if (db.venueTags[k]) return t;
+  db.venueTags[k] = { venueId, tagId:t, addedBy:me()?.id||null }; save('venues');
+  if (cloud && !volatile && !isLocal(venueId)) C.queue({ k:'tagadd', venueId, tagId:t });
+  emit('venues'); return t;
+}
+export function removeVenueTag(venueId, tag){
+  const k = venueId+'|'+tag; if (!(db.venueTags||{})[k]) return;
+  delete db.venueTags[k]; save('venues');
+  if (cloud && !volatile && !isLocal(venueId)) C.queue({ k:'tagdel', venueId, tagId:tag });
+  emit('venues');
 }
 // remove a place you added that nobody has logged (used by Undo after a share)
 export function deleteVenue(id){

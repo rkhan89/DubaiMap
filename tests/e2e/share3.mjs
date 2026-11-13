@@ -52,7 +52,9 @@ export default async function share3(h){
       if (!/Reading the caption/.test(await text())) throw new Error('no caption loading text');
       await p.waitForSelector('#npQ, #cfAdd, .sheet [data-i]', { visible:true, timeout:20000 }); });
     await p.waitForSelector('#npQ, #cfAdd, .sheet [data-i]', { visible:true, timeout:20000 });
-    if (await h.js(()=>document.querySelector('#npQ')?.value) !== 'Filli Cafe') throw new Error('pin not read from the pasted caption');
+    // not in the listing → the name is ready to search; in the listing but another branch → pick from the branches
+    const got = await h.js(()=>({ q:document.querySelector('#npQ')?.value, opts:[...document.querySelectorAll('.sheet [data-i]')].map(b=>b.innerText).join(' | ') }));
+    if (got.q !== 'Filli Cafe' && !/filli/i.test(got.opts)) throw new Error('pin not read from the pasted caption: '+JSON.stringify(got));
     await close();
   });
 }

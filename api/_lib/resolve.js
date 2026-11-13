@@ -1,16 +1,16 @@
 // Working out which place a share points at. Called by api/resolve-share.js (authenticated,
-// rate limited). Network access is deliberately narrow: only Google Maps and TikTok hosts are
-// ever fetched, redirects are followed by hand (3 hops at most, 5 s each), private addresses
-// are refused, and response bodies are never read. Places (New) is asked for five fields only.
+// rate limited). Network access is deliberately narrow: only TikTok's oEmbed is read, and a short Google Maps link
+// is only followed to the full URL it redirects to (3 hops at most, 5 s each, private addresses refused): the
+// Location header is read, never a page. What a link or caption names is then matched against Koko's own place
+// seed (Overture Maps, in our database: deps.search, from api/_lib/seedsearch.js). No Google Places calls.
 import dns from 'node:dns/promises';
 import net from 'node:net';
 import { firstUrl, sourceOf, mayFetch, isShortMaps, parseMapsUrl, unwrapContinue, metres, nameScore } from './maps.js';
-import { categoryFor } from './categories.js';
 import { extractPlaces, looksLikeCaption } from './caption.js';
+import { AREAS } from '../../search-data.js';
 
 const UA = 'Koko/1.0';
 const TIMEOUT = 5000, HOPS = 3;
-const FIELDS = 'id,displayName,location,formattedAddress,types';
 
 /* ---------- safe fetching ---------- */
 function privateIp(ip){
@@ -50,31 +50,11 @@ export async function expandMaps(url, deps){
   throw Object.assign(new Error('too many redirects'), { code:'unreadable' });
 }
 
-/* ---------- Google Places (New) ---------- */
-const toPlace = (p, src) => ({
-  placeId: p.id, name: p.displayName?.text || '', lat: p.location?.latitude ?? null, lng: p.location?.longitude ?? null,
-  address: p.formattedAddress || '', types: p.types || [], category: categoryFor(p.types), source: src || 'places',
-});
-export async function placesSearch(query, bias, deps){
-  if (!deps.placesKey) return null;
-  const body = { textQuery: query, maxResultCount: 5, languageCode: 'en' };
-  if (bias) body.locationBias = { circle:{ center:{ latitude:bias.lat, longitude:bias.lng }, radius: bias.radius || 2000 } };
-  const r = await (deps.fetch || fetch)('https://places.googleapis.com/v1/places:searchText', {
-    method:'POST', signal:AbortSignal.timeout(TIMEOUT),
-    headers:{ 'Content-Type':'application/json', 'X-Goog-Api-Key':deps.placesKey, 'X-Goog-FieldMask':FIELDS.split(',').map(f=>'places.'+f).join(',') },
-    body: JSON.stringify(body),
-  });
-  if (!r.ok) throw Object.assign(new Error('places '+r.status), { code:'places' });
-  const j = await r.json();
-  return (j.places || []).map(p=>toPlace(p));
-}
-export async function placeDetails(id, deps){
-  if (!deps.placesKey) return null;
-  const r = await (deps.fetch || fetch)('https://places.googleapis.com/v1/places/'+encodeURIComponent(id), {
-    signal:AbortSignal.timeout(TIMEOUT), headers:{ 'X-Goog-Api-Key':deps.placesKey, 'X-Goog-FieldMask':FIELDS },
-  });
-  if (!r.ok) return null;
-  return toPlace(await r.json());
+/* ---------- the place seed ---------- */
+// a name (and where the link points, if it does) → seed places (null when there's no seed to search)
+export async function seedSearch(query, near, deps){
+  if (!deps.search) return null;
+  return (await deps.search(shortName(query), near || null)) || [];
 }
 
 /* ---------- deciding ---------- */
@@ -92,11 +72,15 @@ function pick(results, want){
 const words = s => new Set(String(s||'').toLowerCase().normalize('NFKD').replace(/[^\p{L}\p{N}\s]/gu,' ').split(/\s+/).filter(x=>x.length>1));
 const wordsIn = (a, b) => { const B = words(b); let n = 0; words(a).forEach(x=>{ if (B.has(x)) n++; }); return n; };
 
-// "JGROUP, GBS Building - 2nd floor - Al Sufouh" → "JGROUP" (for the search box; Places gets the full text)
+// "JGROUP, GBS Building - 2nd floor - Al Sufouh" → "JGROUP" (what gets searched; the full text picks a branch)
 export const shortName = q => String(q||'').split(/\s+-\s+|,/)[0].trim() || String(q||'').trim();
-// cities, areas and countries aren't places you save
-const NOT_A_VENUE = new Set(['locality','political','country','administrative_area_level_1','administrative_area_level_2','sublocality','sublocality_level_1','neighborhood','postal_code','route','geocode']);
-const isVenue = p => !(p.types||[]).length || !(p.types||[]).every(t=>NOT_A_VENUE.has(t));
+// cities, areas and countries aren't places you save (a link to "Dubai" or "JLT" is an area, not a place)
+const AREA_NAMES = new Set(['dubai','sharjah','abu dhabi','ajman','uae','united arab emirates',
+  ...AREAS.flatMap(a=>[a.name, ...(a.aliases||[])]).map(n=>String(n).toLowerCase())]);
+const isAreaName = n => AREA_NAMES.has(String(n||'').toLowerCase().replace(/[^\p{L}\p{N} ]/gu, ' ').replace(/\s+/g, ' ').trim());
+const isVenue = p => !isAreaName(p.name);
+// an area id ("jlt") → the words people use for it ("JLT jumeirah lakes towers"), to check a caption's area
+const zoneWords = id => { const a = AREAS.find(x=>x.id===id); return a ? [a.name, ...(a.aliases||[])].join(' ') : String(id||''); };
 
 const MSG = {
   directions: 'That’s a directions link. Share the place itself (open the place, then Share).',
@@ -115,19 +99,16 @@ export async function resolveMaps(url, deps){
     catch(e){ return { state:'needs_place', message: e.name==='TimeoutError' ? 'That link took too long to open. Type the place name instead.' : MSG.unreadable, error:e.code||e.name }; }
   }
   const p = parseMapsUrl(final);
-  const base = { finalUrl: final, parsed:{ kind:p.kind } };
+  // a Google place id in the link is kept only as a key to find an old place already on the map (never looked up)
+  const base = { finalUrl: final, parsed:{ kind:p.kind }, ...(p.placeId ? { matchKey:p.placeId } : {}) };
   if (p.kind==='directions') return { ...base, state:'unsupported', message:MSG.directions };
   if (p.kind==='list') return { ...base, state:'unsupported', message:MSG.list };
-  // the link names the exact Places id
-  if (p.placeId){
-    const d = await placeDetails(p.placeId, deps).catch(()=>null);
-    if (d) return { ...base, state:'match', place:d };
-  }
   const at = p.place || null, near = p.place || p.centre || null;
   const name = p.name || p.query || null;
+  if (name && isAreaName(shortName(name))) return { ...base, state:'needs_place', location:near, message:MSG.area };
   if (name){
     let results = null;
-    try{ results = await placesSearch(name, near ? { ...near, radius: p.place ? 300 : 3000 } : deps.cityBias, deps); }catch(_){ results = null; }
+    try{ results = await seedSearch(name, near || deps.cityBias, deps); }catch(_){ results = null; }
     if (results) results = results.filter(isVenue);
     if (results && results.length){
       const ranked = pick(results, { at, name });
@@ -143,9 +124,8 @@ export async function resolveMaps(url, deps){
       }
       return { ...base, state:'candidates', candidates: ranked.slice(0,3).map(r=>r.p), query:shortName(name) };
     }
-    if (results && !results.length && deps.placesKey) return { ...base, state:'needs_place', query:shortName(name), location:near, message:MSG.area };
-    // no Places key (or no result): fall back to what the link itself says
-    if (p.kind==='place' && at) return { ...base, state:'match', place:{ placeId:null, name, lat:at.lat, lng:at.lng, address:'', types:[], category:null, source:'link' } };
+    // not in the seed (or no seed to search): fall back to what the link itself says (its name and pin)
+    if (p.kind==='place' && at) return { ...base, state:'match', place:{ placeId:null, seedId:null, name:shortName(name), lat:at.lat, lng:at.lng, address:'', types:[], category:null, source:'link' } };
     return { ...base, state:'needs_place', query:shortName(name), location:near, message:MSG.noplace };
   }
   if (p.kind==='coords' || at) return { ...base, state:'needs_place', location:at || near, message:'That link is a pin, not a named place. Type the name and we’ll put it there.' };
@@ -179,7 +159,7 @@ export function fuzzyName(a, b){
   const A = w(a), B = w(b); if (!A.length || !B.length) return 0;
   return A.filter(x=>B.some(y=>close(x, y))).length / Math.min(A.length, B.length);
 }
-// a caption → the places it mentions → Google Places
+// a caption → the places it mentions → the place seed
 export async function placesFromCaption(caption, deps){
   const ex = deps.captionPlaces ? { places: deps.captionPlaces, via:'cache' } : await extractPlaces(caption, deps);
   const found = ex.places;
@@ -187,21 +167,23 @@ export async function placesFromCaption(caption, deps){
   if (!found.length) return { state:'needs_place', found, via:ex.via,
     message: deps.anthropicKey ? 'We couldn’t spot a place in that caption. Type the place name and we’ll find it.' : 'Type the place name and we’ll find it.' };
   const first = found[0];
-  if (!deps.placesKey) return { state:'needs_place', found, via:ex.via, query:first.name,
+  if (!deps.search) return { state:'needs_place', found, via:ex.via, query:first.name,
     message: found.length > 1 ? 'The caption mentions ' + found.map(label).join(' and ') + '. Search for the one you want.' : null };
-  const lists = await Promise.all(found.map(n=>placesSearch(label(n), deps.cityBias, deps).catch(()=>null)));
+  const lists = await Promise.all(found.map(n=>seedSearch(n.name, deps.cityBias, deps).catch(()=>null)));
   const picked = [], ids = new Set();
   found.forEach((n, i)=>{
     const rs = (lists[i]||[]).filter(isVenue); if (!rs.length) return;
-    const ranked = rs.map((p, k)=>({ p, k, s: fuzzyName(n.name, p.name), inArea: !!(n.area && fuzzyName(n.area, p.address) >= 0.5) }))
+    const ranked = rs.map((p, k)=>({ p, k, s: fuzzyName(n.name, p.name), inArea: !!(n.area && fuzzyName(n.area, p.address + ' ' + zoneWords(p.zone)) >= 0.5) }))
       .sort((x, y)=>y.s - x.s || x.k - y.k);
-    // the name matches, or Google's own top answer is in the area the caption names
-    const best = ranked[0].s >= 0.5 ? ranked[0] : ranked.find(r=>r.k===0 && r.inArea);
-    if (best && !ids.has(best.p.placeId)){ ids.add(best.p.placeId); picked.push({ ...best, n }); }
+    // a matching name in the area the caption names; else the best name; else the top answer if it's in that area
+    const best = ranked.find(r=>r.s >= 0.5 && r.inArea) || (ranked[0].s >= 0.5 ? ranked[0] : ranked.find(r=>r.k===0 && r.inArea));
+    if (best && !ids.has(best.p.seedId)){ ids.add(best.p.seedId); picked.push({ ...best, n }); }
   });
-  if (picked.length === 1 && found.length === 1 && picked[0].s >= 0.8) return { state:'match', place:picked[0].p, found, via:ex.via, query:first.name };
+  // one place, the name agrees, and so does the area when the caption names one (another branch is not a match)
+  if (picked.length === 1 && found.length === 1 && picked[0].s >= 0.8 && (!first.area || picked[0].inArea)) return { state:'match', place:picked[0].p, found, via:ex.via, query:first.name };
   if (picked.length) return { state:'candidates', candidates:picked.slice(0,3).map(x=>x.p), found, via:ex.via, query:first.name };
-  return { state:'needs_place', found, via:ex.via, query:first.name, message:'We couldn’t find ' + label(first) + ' on Google. Check the name or add it yourself.' };
+  // not in the listing: the sheet says what the caption mentions, with the name ready to search or add
+  return { state:'needs_place', found, via:ex.via, query:first.name, message:null };
 }
 
 // a shared link or text → the place. Google Maps links, TikTok posts (caption), captions, names.
@@ -234,11 +216,11 @@ export async function resolveShare(input, deps){
   const q = text.slice(0, 120);
   if (!q) return { sourceType:'text', state:'needs_place', message:'Paste a link or type a place name.' };
   let results = null;
-  try{ results = await placesSearch(q, deps.cityBias, deps); }catch(_){}
+  try{ results = await seedSearch(q, deps.cityBias, deps); }catch(_){}
   if (results && results.length){
     const ranked = pick(results, { name:q });
     if (ranked[0].n >= 0.8 && (ranked.length===1 || ranked[1].n < 0.8)) return { sourceType:'text', state:'match', place:ranked[0].p, query:q };
     return { sourceType:'text', state:'candidates', candidates:ranked.slice(0,3).map(r=>r.p), query:q };
   }
-  return { sourceType:'text', state:'needs_place', query:q, message: deps.placesKey ? 'No place found with that name. Check the spelling or add it yourself.' : 'Add it yourself: pick the area and kind of place.' };
+  return { sourceType:'text', state:'needs_place', query:q, message: deps.search ? 'No place found with that name. Check the spelling or add it yourself.' : 'Add it yourself: pick the area and kind of place.' };
 }

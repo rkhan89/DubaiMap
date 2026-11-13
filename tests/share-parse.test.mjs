@@ -68,7 +68,7 @@ test('category from Places types', ()=>{ assert.equal(categoryFor(['coffee_shop'
 /* ---------- network behaviour with fakes ---------- */
 const publicDns = async ()=>[{ address:'142.250.0.1', family:4 }];
 const redirects = map => async (url)=>{ const to = map[url]; return to ? new Response(null, { status:302, headers:{ location:to } }) : new Response('<html>js</html>', { status:200 }); };
-const deps = (map, extra)=>({ lookup:publicDns, fetch:redirects(map), placesKey:'', ...extra });
+const deps = (map, extra)=>({ lookup:publicDns, fetch:redirects(map), ...extra });
 
 for (const [name, target] of Object.entries({ fullPlace:F.fullPlace, centreOnly:F.centreOnly, q:F.q, cid:F.cid, search:F.search, directions:F.directions, list:F.list })){
   test(`short link expands to: ${name}`, async ()=>{
@@ -100,33 +100,34 @@ test('a short link that answers with a page (no redirect) → needs_place, not a
 test('directions and lists → unsupported with a message', async ()=>{
   for (const u of [F.directions, F.list]){ const r = await resolveShare({ url:u }, deps({})); assert.equal(r.state, 'unsupported'); assert.ok(r.message); }
 });
-test('no Places key: a full place link still matches from the link itself', async ()=>{
+test('nothing in the seed: a full place link still matches from the link itself (its name and pin)', async ()=>{
   const r = await resolveShare({ text:'look '+F.fullPlace }, deps({}));
   assert.equal(r.state, 'match'); assert.equal(r.place.name, 'Ravi Restaurant'); assert.equal(r.place.lat, 25.2331); assert.equal(r.place.placeId, null);
 });
-const fakePlaces = places => async (url, opts)=>{
-  if (String(url).includes('places:searchText')) return new Response(JSON.stringify({ places }), { status:200 });
-  if (String(url).includes('/v1/places/')) return new Response(JSON.stringify(places[0]), { status:200 });
-  return redirects({})(url);
-};
-const P = (id, name, lat, lng, types) => ({ id, displayName:{ text:name }, location:{ latitude:lat, longitude:lng }, formattedAddress:'Dubai', types:types||['restaurant'] });
-test('with Places: the result at the link\'s pin wins', async ()=>{
-  const r = await resolveShare({ url:F.fullPlace }, { lookup:publicDns, placesKey:'k', fetch:fakePlaces([P('far','Ravi Restaurant',25.30,55.40), P('ravi','Ravi Restaurant',25.2332,55.2758,['indian_restaurant'])]) });
-  assert.equal(r.state, 'match'); assert.equal(r.place.placeId, 'ravi'); assert.equal(r.place.category, 'restaurant');
+// the place seed (Overture, in Koko's database), faked; Google must never be called
+const noGoogle = async (url)=>{ if (/googleapis|places\.google/.test(String(url))) throw new Error('Google Places must not be called'); return redirects({})(url); };
+const fakeSeed = (places, calls) => async (name, near)=>{ if (calls) calls.push({ name, near }); return places; };
+const P = (id, name, lat, lng, kind, address) => ({ seedId:id, placeId:null, name, lat, lng, address:address||'Dubai', zone:null, types:[], category:kind===undefined?'restaurant':kind, source:'seed' });
+const seedDeps = (places, calls) => ({ lookup:publicDns, fetch:noGoogle, search:fakeSeed(places, calls) });
+test('with the seed: the result at the link\'s pin wins, searched near the pin', async ()=>{
+  const calls = [];
+  const r = await resolveShare({ url:F.fullPlace }, seedDeps([P('far','Ravi Restaurant',25.30,55.40), P('ravi','Ravi Restaurant',25.2332,55.2758)], calls));
+  assert.equal(r.state, 'match'); assert.equal(r.place.seedId, 'ravi'); assert.equal(r.place.category, 'restaurant'); assert.equal(r.place.placeId, null);
+  assert.equal(calls[0].name, 'Ravi Restaurant'); assert.equal(calls[0].near.lat, 25.2331);
 });
-test('with Places: several plausible results → candidates (up to 3)', async ()=>{
-  const r = await resolveShare({ url:F.search }, { lookup:publicDns, placesKey:'k', fetch:fakePlaces([P('a','Karak House',25.23,55.27), P('b','Karak Spot',25.231,55.271), P('c','Chai Karak',25.232,55.272), P('d','Karak 4',25.233,55.273)]) });
+test('with the seed: several plausible results → candidates (up to 3)', async ()=>{
+  const r = await resolveShare({ url:F.search }, seedDeps([P('a','Karak House',25.23,55.27), P('b','Karak Spot',25.231,55.271), P('c','Chai Karak',25.232,55.272), P('d','Karak 4',25.233,55.273)]));
   assert.equal(r.state, 'candidates'); assert.equal(r.candidates.length, 3);
 });
-test('api=1 link with a place id → details lookup', async ()=>{
-  const r = await resolveShare({ url:F.apiQuery }, { lookup:publicDns, placesKey:'k', fetch:fakePlaces([P('ChIJabc123','Knot Bakehouse',25.2,55.25,['bakery'])]) });
-  assert.equal(r.state, 'match'); assert.equal(r.place.placeId, 'ChIJabc123'); assert.equal(r.place.category, 'dessert');
+test('a Google place id in a link is never looked up: it is kept only as a key to find an old place', async ()=>{
+  const r = await resolveShare({ url:F.apiQuery }, seedDeps([P('kn','Knot Bakehouse',25.2,55.25,'dessert')]));
+  assert.equal(r.matchKey, 'ChIJabc123'); assert.equal(r.candidates?.[0]?.seedId ?? r.place?.seedId, 'kn');
 });
 test('Instagram is never fetched → unsupported, link kept', async ()=>{
   const r = await resolveShare({ url:'https://www.instagram.com/reel/abc/' }, { lookup:publicDns, fetch:()=>{ throw new Error('must not fetch'); } });
   assert.equal(r.state, 'unsupported'); assert.equal(r.sourceUrl, 'https://www.instagram.com/reel/abc/');
 });
-test('a plain place name with no Places key → needs_place with the name as the query', async ()=>{
+test('a plain place name with no seed to search → needs_place with the name as the query', async ()=>{
   const r = await resolveShare({ text:'Ravi Restaurant' }, deps({}));
   assert.equal(r.state, 'needs_place'); assert.equal(r.query, 'Ravi Restaurant');
 });
@@ -135,16 +136,18 @@ test('a ?q= link with name and address pre-fills just the name', ()=>{
   assert.equal(shortName('JGROUP, GBS Building - 2nd floor - Al Sufouh - Dubai Media City - Dubai'), 'JGROUP');
   assert.equal(shortName('Dubai Multi Commodities Centre - 1st Floor, Almas Tower'), 'Dubai Multi Commodities Centre');
 });
-test('with Places: a link naming one branch (by its address) matches that branch', async ()=>{
+test('with the seed: a link naming one branch (by its address) matches that branch', async ()=>{
   // real shape: name + address, no coordinates (maps.app.goo.gl/7K43PRC3ZeCshwQJA)
   const url = 'https://www.google.com/maps/place/Thalassery+Restaurant+Karama+Adcb+Branch,+Trade+Centre+Road+-+133+Sheikh+Khalifa+Bin+Zayed+St+-+Al+Karama+-+Dubai/data=!4m2!3m1!1s0x3e5f43006cea643b:0x753e78ab979f319d!18m1!1e1';
-  const br = (id, area) => ({ id, displayName:{ text:'Thalassery Restaurant' }, location:{ latitude:25.24, longitude:55.30 }, formattedAddress:area+' - Dubai - United Arab Emirates', types:['restaurant'] });
-  const r = await resolveShare({ url }, { lookup:publicDns, placesKey:'k', fetch:fakePlaces([br('deira','Al Rigga Rd - Deira'), br('karama','Trade Centre Rd - 133 Sheikh Khalifa Bin Zayed St - Al Karama'), br('qusais','Al Qusais')]) });
-  assert.equal(r.state, 'match'); assert.equal(r.place.placeId, 'karama');
-  const one = await resolveShare({ url }, { lookup:publicDns, placesKey:'k', fetch:fakePlaces([br('karama','Al Karama')]) });
+  const br = (id, area) => P(id, 'Thalassery Restaurant', 25.24, 55.30, 'restaurant', area+' - Dubai');
+  const r = await resolveShare({ url }, seedDeps([br('deira','Al Rigga Rd - Deira'), br('karama','Trade Centre Rd - 133 Sheikh Khalifa Bin Zayed St - Al Karama'), br('qusais','Al Qusais')]));
+  assert.equal(r.state, 'match'); assert.equal(r.place.seedId, 'karama');
+  const one = await resolveShare({ url }, seedDeps([br('karama','Al Karama')]));
   assert.equal(one.state, 'match');
 });
-test('with Places: a city is not a place to save', async ()=>{
-  const r = await resolveShare({ url:'https://www.google.com/maps/place/Dubai/@25.2,55.27,10z/data=!3d25.2048!4d55.2708' }, { lookup:async()=>[{address:'1.1.1.1'}], placesKey:'k', fetch: async ()=>new Response(JSON.stringify({ places:[{ id:'dxb', displayName:{text:'Dubai'}, location:{latitude:25.2048,longitude:55.2708}, types:['locality','political'] }] }), { status:200 }) });
+test('a city or an area is not a place to save', async ()=>{
+  const r = await resolveShare({ url:'https://www.google.com/maps/place/Dubai/@25.2,55.27,10z/data=!3d25.2048!4d55.2708' }, seedDeps([P('dm','Dubai Mall',25.198,55.279)]));
   assert.equal(r.state, 'needs_place');
+  const jlt = await resolveShare({ url:'https://www.google.com/maps/place/Jumeirah+Lakes+Towers/@25.07,55.14,14z/data=!3d25.0693!4d55.144' }, seedDeps([]));
+  assert.equal(jlt.state, 'needs_place');
 });

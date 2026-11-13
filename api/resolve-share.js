@@ -1,15 +1,17 @@
 // POST /api/resolve-share  { url?, text?, title? }  →  { state, place?, candidates?, ... }
 // Signed-in users only (Supabase session token in Authorization). 30 a hour per person.
-// Keys stay here on the server: GOOGLE_PLACES_API_KEY (and, from step 3, ANTHROPIC_API_KEY).
+// Places are matched against Koko's own place seed (Overture Maps, in our database), never Google Places.
+// The Claude key (ANTHROPIC_API_KEY, for reading captions) stays here on the server.
 // Logs carry only the source type, the state and the timing, never the shared text.
 import { resolveShare } from './_lib/resolve.js';
 import { cacheKey, sourceOf, firstUrl } from './_lib/maps.js';
+import { seedSearcher } from './_lib/seedsearch.js';
 
 import { json, userFor, rpc, overLimit as overHourly, CITY } from './_lib/server.js';
 const LIMIT = 30, MAX_BYTES = 4000;
 const mem = { cache:new Map() };   // link cache fallback when the database helper isn't there
 const overLimit = (token, userId)=>overHourly(token, userId, 'share_rate_hit', LIMIT);
-// the cache only keeps where a link leads (its full Maps URL), never Google's place content
+// the cache only keeps where a link leads (its full Maps URL), never any place content
 async function cacheGet(token, key){
   try{ return await rpc(token, 'share_cache_get', { p_key:key }); }catch(_){ return mem.cache.get(key) || null; }
 }
@@ -34,7 +36,7 @@ export async function POST(request){
 
     const link = firstUrl(input.url, input.text, input.title);
     type = link ? sourceOf(link) : 'text';
-    const deps = { placesKey: process.env.GOOGLE_PLACES_API_KEY || '', anthropicKey: process.env.ANTHROPIC_API_KEY || '', cityBias: CITY };
+    const deps = { search: seedSearcher(token), anthropicKey: process.env.ANTHROPIC_API_KEY || '', cityBias: CITY };
     // cache: where a Maps link leads; for a TikTok, just the place names its caption mentions (never the caption)
     const key = link && type==='google_maps' ? cacheKey(link) : link && type==='tiktok' ? 'tt:'+cacheKey(link) : null;
     if (key){ const hit = await cacheGet(token, key);
@@ -46,7 +48,7 @@ export async function POST(request){
     via = out.via || null;
     state = out.state;
     delete out.finalUrl;                                     // the client doesn't need it
-    return json(200, { ...out, places: !!deps.placesKey });
+    return json(200, { ...out, places: true });
   }catch(e){
     state = 'error';
     // never send the error itself back: a generic message, the details stay out of the response

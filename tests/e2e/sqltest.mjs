@@ -503,5 +503,62 @@ await as(K2, `insert into page_decorations(id,page_type,page_id,user_id,sticker_
 await db.exec(`reset role; delete from crew_members where crew_id='${kx.id}' and user_id='${K2}'`);
 (await db.query(`select count(*)::int n from page_decorations where user_id='${K2}' and (page_id='sp3' or page_type='spread')`)).rows[0].n===0 ? ok('leaving a crew removes your stickers from its pages and spreads') : bad('stickers stayed after leaving');
 await db.exec('reset role');
+
+// ---- the places record (0020): the seed, who sees a place, user values kept, tags, no new Google ids ----
+// K1 and K2 share a crew (kx); K3 is outside it. Made under the old rules first: a Google-picked place, a place
+// logged only Just me, and a crew-shared one.
+await db.exec(`reset role; insert into crew_members(crew_id,user_id) values ('${kx.id}','${K2}') on conflict do nothing`);
+await as(K1, `insert into venues(id,name,zone,lat,lng,google_place_id,categories) values ('r20pg1','Google Cafe','satwa',25.22,55.27,'ChIJgoogle1','{coffee}'),('r20pp1','Secret Karak','satwa',25.23,55.28,null,'{karak}'),('r20ps1','Crew Spot','satwa',25.21,55.26,null,'{coffee}')`);
+await as(K1, `insert into entries(id,venue_id,kind,private,crew_ids) values ('r20pe1','r20pp1','visit',true,'{}'),('r20pe2','r20ps1','visit',false,array['${kx.id}']::uuid[]),('r20pe3','r20pg1','visit',false,array['${kx.id}']::uuid[])`);
+await db.exec('reset role');
+const sql20 = fs.readFileSync(new URL('../../supabase/migrations/0020_places_record.sql', import.meta.url),'utf8');
+try{ await db.exec(sql20); await db.exec(sql20); ok('places record migration runs (twice)'); } catch(e){ bad('0020: ' + e.message); }
+await db.exec(`grant all on all tables in schema public to authenticated; revoke insert, update, delete on public.place_seed, public.place_seed_releases, public.tags from authenticated;`);
+const fsrc = (await db.query(`select id, field_sources fs from venues where id in ('r20pg1','r20pp1')`)).rows;
+fsrc.find(r=>r.id==='r20pg1').fs.name==='legacy_google' && fsrc.find(r=>r.id==='r20pg1').fs.coords==='legacy_google' && fsrc.find(r=>r.id==='r20pp1').fs.name==='user'
+  ? ok('old Google-picked places are marked legacy_google; typed ones user') : bad('field_sources backfill ' + JSON.stringify(fsrc));
+{ const lg = (await db.query(`select (select count(*)::int from venues where field_sources::text like '%legacy_google%') n, (select count(*)::int from venues where google_place_id is not null) g`)).rows[0];
+  lg.n===lg.g ? ok('legacy_google count reported: ' + lg.n + ' (every place with a Google id)') : bad('legacy count ' + JSON.stringify(lg)); }
+// the seed: the loader (database role) writes it, people only search it
+await db.exec(`insert into place_seed(id,source_id,release,name,address,lat,lng,zone,phone,website,instagram,socials,taxonomy_primary,taxonomy_hierarchy,confidence,licenses,sources) values
+  ('overture:11111111-aaaa','11111111-aaaa','2026-10-21.0','Karak House','Jumeirah Beach Rd, Dubai',25.2,55.25,'jumeirah','+97143334444','https://karakhouse.ae','karakhouse','[]','cafe','["food_and_drink","casual_eatery","cafe"]',0.95,'["CDLA-Permissive-2.0"]','[]'),
+  ('overture:22222222-bbbb','22222222-bbbb','2026-10-21.0','Karak Corner','Al Satwa Rd, Dubai',25.23,55.28,'satwa',null,null,null,'[]','indian_restaurant','["food_and_drink","restaurant","asian_restaurant","indian_restaurant"]',0.8,'[]','[]'),
+  ('overture:33333333-cccc','33333333-cccc','2026-10-21.0','Smoke Lounge','Marina, Dubai',25.08,55.14,'marina',null,null,null,'[]','hookah_bar','["food_and_drink","alcoholic_beverage_venue","bar","hookah_bar"]',0.9,'[]','[]')`);
+const found = (await as(K3, `select * from search_place_seed('karak', 25.23, 55.28, 8)`)).rows;
+found.length===2 && found[0].name==='Karak Corner' ? ok('seed search by name, nearest first among equals: ' + found.map(r=>r.name).join(', ')) : bad('seed search ' + JSON.stringify(found));
+JSON.stringify(found.find(r=>r.name==='Karak House').kinds)==='["coffee"]' && JSON.stringify(found.find(r=>r.name==='Karak Corner').kinds)==='["restaurant"]' ? ok('suggested kinds from the taxonomy table (cafe → coffee, indian_restaurant → restaurant)') : bad('kinds ' + JSON.stringify(found));
+(await as(K3, `select public.seed_kinds('["food_and_drink","alcoholic_beverage_venue","bar","hookah_bar"]') k`)).rows[0].k.length===0 ? ok('shisha is never guessed from the taxonomy') : bad('hookah_bar guessed');
+await expectErr('writing to the seed as a person', K3, `insert into place_seed(id,source_id,release,name,lat,lng) values ('overture:99999999-zzzz','x','2026-10-21.0','Mine',25,55)`);
+await expectErr('editing the seed as a person', K1, `update place_seed set name='Hacked' where id='overture:11111111-aaaa' returning id`);
+// who sees a place: only through a visit (or plan, photo) they can see
+(await count(K2, `select * from venues where id='r20pp1'`))===0 ? ok('a place logged only Just me is invisible to a crewmate') : bad('crewmate sees a Just me place');
+(await count(K3, `select * from venues where id in ('r20pp1','r20ps1','r20pg1')`))===0 ? ok('…and an account outside the crew sees none of the crew’s places') : bad('outsider sees crew places');
+(await count(K2, `select * from venues where id='r20ps1'`))===1 ? ok('a crew-shared place is in the crewmate’s record') : bad('crewmate cannot see shared place');
+(await count(K1, `select * from venues where id='r20pp1'`))===1 ? ok('…and the Just me place stays in its logger’s record') : bad('owner lost own place');
+// the same seed place logged by an outsider is their own row: nothing about the crew comes with it
+await as(K3, `insert into venues(id,name,zone,lat,lng,seed_id,google_place_id) values ('r20pk3','Karak House','jumeirah',25.2,55.25,'overture:11111111-aaaa','ChIJsneaky')`);
+(await db.query(`select google_place_id from venues where id='r20pk3'`)).rows[0].google_place_id===null ? ok('a new place never stores a Google place id') : bad('google id stored on a new place');
+// a value someone typed is kept when enrichment comes along; a missing one can be filled
+await as(K1, `insert into venues(id,name,zone,lat,lng,seed_id,phone,field_sources) values ('r20pu1','Karak House','jumeirah',25.2,55.25,'overture:11111111-aaaa','+97143334444','{"name":"user","phone":"seed","coords":"seed"}')`);
+await as(K1, `update venues set name='Karak House Jumeirah', field_sources = field_sources || '{"name":"web"}' where id='r20pu1'`);
+(await db.query(`select name, field_sources->>'name' s from venues where id='r20pu1'`)).rows[0].name==='Karak House' ? ok('enrichment never overwrites a user-entered name') : bad('user name overwritten');
+await as(K1, `update venues set instagram='karakhouse', field_sources = field_sources || '{"instagram":"web"}' where id='r20pu1'`);
+(await db.query(`select instagram from venues where id='r20pu1'`)).rows[0].instagram==='karakhouse' ? ok('…but fills a missing Instagram') : bad('instagram fill');
+await as(K1, `update venues set name='Karak House JBR', field_sources = field_sources || '{"name":"user"}' where id='r20pu1'`);
+(await db.query(`select name from venues where id='r20pu1'`)).rows[0].name==='Karak House JBR' ? ok('…and a person can still change their own value') : bad('user edit blocked');
+await expectErr('an Instagram that is not a handle', K1, `update venues set instagram='https://instagram.com/x' where id='r20pu1'`);
+await expectErr('an Instagram handle with spaces', K1, `update venues set instagram='karak house' where id='r20pu1'`);
+await expectErr('a website that is not a link', K1, `update venues set website='karakhouse' where id='r20pu1'`);
+await expectErr('other socials that are not URLs', K1, `update venues set other_socials='["facebook"]' where id='r20pu1'`);
+// tags: kinds follow categories; words people add are seen only with the place
+(await count(K1, `select * from venue_tags where venue_id='r20ps1' and tag_id='coffee'`))===1 ? ok('existing kinds became system tags on their places') : bad('kind tags not synced');
+await as(K1, `update venues set categories='{coffee,dessert}' where id='r20ps1'`);
+(await count(K1, `select * from venue_tags where venue_id='r20ps1' and tag_id='dessert'`))===1 ? ok('…and follow a change of kinds') : bad('kind tag sync on update');
+try{ await as(K2, `insert into venue_tags(venue_id,tag_id) values ('r20ps1','rooftop')`); ok('a crewmate adds their own tag (the word becomes a tag)'); }catch(e){ bad('add tag: ' + e.message); }
+(await count(K1, `select * from tags where id='rooftop'`))===1 ? ok('…the crew sees it') : bad('crew cannot see the new tag');
+(await count(K3, `select * from tags where id='rooftop'`))===0 ? ok('…and an outsider never sees a word the crew used') : bad('outsider sees crew tag');
+await expectErr('tagging a place you cannot see', K3, `insert into venue_tags(venue_id,tag_id) values ('r20pp1','secret')`);
+await expectErr('adding a kind tag by hand (kinds come from categories)', K2, `insert into venue_tags(venue_id,tag_id) values ('r20ps1','karak')`);
+await db.exec('reset role');
 console.log(process.exitCode ? '\nSOME CHECKS FAILED' : '\nall checks passed');
 

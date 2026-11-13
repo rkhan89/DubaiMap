@@ -2,7 +2,8 @@
 //   node dev/server.mjs [--port 5174] [--dev-no-auth] [--headers]
 // --headers sends vercel.json's security headers (CSP etc.) to check nothing gets blocked.
 // --dev-no-auth lets the resolver run for the app's ?local mode (no Supabase session). Local only.
-// Keys come from the environment (GOOGLE_PLACES_API_KEY, ANTHROPIC_API_KEY); never commit them.
+// Keys come from the environment (ANTHROPIC_API_KEY); never commit them. With --dev-no-auth, place search answers
+// from dev/place-seed-sample.json (a slice of the Overture seed), so no database is needed.
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';

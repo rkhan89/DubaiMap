@@ -64,10 +64,15 @@ export const MAP = {
     from: r => ({ id:r.id, name:r.name, tagline:r.tagline||'', code:r.code, ownerId:r.owner_id, memberIds:[], createdAt:ms(r.created_at) }),
     fields: { name:'name', tagline:'tagline' },
   },
+  // the places record (0020): details from the seed, the web or a person, and where each came from (fieldSources).
+  // The Google place id is never sent: old places keep theirs on the server as a matching key only.
   venues: {
-    to: v => ({ id:v.id, name:v.name, zone:v.zone, categories:v.categories||[], lat:v.lat??null, lng:v.lng??null, address:v.address||'', created_by:v.createdBy, created_at:ts(v.createdAt), ...(v.googlePlaceId ? { google_place_id:v.googlePlaceId, places_fetched_at:v.placesFetchedAt?ts(v.placesFetchedAt):null } : {}) }),
-    from: r => ({ id:r.id, name:r.name, zone:r.zone, categories:r.categories||[], lat:r.lat, lng:r.lng, address:r.address||'', createdBy:r.created_by, createdAt:ms(r.created_at), googlePlaceId:r.google_place_id||null, placesFetchedAt:r.places_fetched_at?ms(r.places_fetched_at):null }),
-    fields: { name:'name', zone:'zone', categories:'categories', lat:'lat', lng:'lng', address:'address' },
+    to: v => ({ id:v.id, name:v.name, zone:v.zone, categories:v.categories||[], lat:v.lat??null, lng:v.lng??null, address:v.address||'', created_by:v.createdBy, created_at:ts(v.createdAt),
+      ...(v.seedId ? { seed_id:v.seedId } : {}), ...(v.phone ? { phone:v.phone } : {}), ...(v.website ? { website:v.website } : {}), ...(v.instagram ? { instagram:v.instagram } : {}),
+      ...((v.otherSocials||[]).length ? { other_socials:v.otherSocials } : {}), ...(v.fieldSources && Object.keys(v.fieldSources).length ? { field_sources:v.fieldSources } : {}) }),
+    from: r => ({ id:r.id, name:r.name, zone:r.zone, categories:r.categories||[], lat:r.lat, lng:r.lng, address:r.address||'', createdBy:r.created_by, createdAt:ms(r.created_at), googlePlaceId:r.google_place_id||null,
+      seedId:r.seed_id||null, phone:r.phone||null, website:r.website||null, instagram:r.instagram||null, otherSocials:r.other_socials||[], fieldSources:r.field_sources||{}, verifiedAt:r.verified_at?ms(r.verified_at):null }),
+    fields: { name:'name', zone:'zone', categories:'categories', lat:'lat', lng:'lng', address:'address', phone:'phone', website:'website', instagram:'instagram', otherSocials:'other_socials', fieldSources:'field_sources', seedId:'seed_id' },
   },
   // the Inbox: shares to finish later (yours only; deleted once added or removed)
   share_inbox: {
@@ -163,7 +168,9 @@ export async function pull(){
   const unlockRows = await c.from('user_stickers').select('*').then(r=>r.data||[], ()=>[]);
   // your crews' monthly spreads (missing until migration 0019 runs)
   const spreadRows = await c.from('monthly_spreads').select('*').then(r=>r.data||[], ()=>[]);
-  return { spreads:by(spreadRows,'monthly_spreads'), decorations:by(decoRows,'page_decorations'), unlocks:by(unlockRows,'user_stickers'), catches:by(catchRows,'critter_catches'), ratings:by(ratingRows,'visit_ratings'), pages:by(pageRows,'book_pages'), inbox:by(inboxRows,'share_inbox'), users:by(profiles,'profiles'), crews:crewMap, venues:by(venues,'venues'), entries:ents,
+  // tags on places you can see (missing until migration 0020 runs)
+  const venueTagRows = await c.from('venue_tags').select('venue_id,tag_id,added_by').then(r=>r.data||[], ()=>[]);
+  return { venueTags:Object.fromEntries(venueTagRows.map(t=>[t.venue_id+'|'+t.tag_id, { venueId:t.venue_id, tagId:t.tag_id, addedBy:t.added_by }])), spreads:by(spreadRows,'monthly_spreads'), decorations:by(decoRows,'page_decorations'), unlocks:by(unlockRows,'user_stickers'), catches:by(catchRows,'critter_catches'), ratings:by(ratingRows,'visit_ratings'), pages:by(pageRows,'book_pages'), inbox:by(inboxRows,'share_inbox'), users:by(profiles,'profiles'), crews:crewMap, venues:by(venues,'venues'), entries:ents,
            photos:by(photos,'photos'), books:by(books,'books'), events:by(events,'events') };
 }
 
@@ -269,13 +276,16 @@ async function send(c, o){
     o.k==='upd'    ? await T.update(o.patch).eq('id', o.id) :
     o.k==='del'    ? await T.delete().eq('id', o.id) :
     o.k==='rpc'    ? await c.rpc(o.fn, o.args||{}) :
+    // a tag on a place (0020): keyed by the place and the tag, not an id
+    o.k==='tagadd' ? await c.from('venue_tags').upsert({ venue_id:o.venueId, tag_id:o.tagId }, { onConflict:'venue_id,tag_id', ignoreDuplicates:true }) :
+    o.k==='tagdel' ? await c.from('venue_tags').delete().eq('venue_id', o.venueId).eq('tag_id', o.tagId) :
     o.k==='rmfile' ? await c.storage.from('photos').remove([o.path]) :
     o.k==='upload' ? await (async()=>{ const blob = getBlob && await getBlob(o.id); if (!blob) return { error:null }; return c.storage.from('photos').upload(o.path, blob, { contentType:'image/jpeg', upsert:true }); })() :
     { error:null };
   // a server without a newer migration yet doesn't know a column (0013: dish_tags; 0017: paper, book_key,
-  // sounds_enabled): send the record without it rather than lose it
+  // sounds_enabled; 0020: the place details): send the record without it rather than lose it
   const said = res && res.error ? String(res.error.message||'') + String(res.error.details||'') : '';
-  const col = said && ['dish_tags','paper','book_key','sounds_enabled'].find(k=>((o.row && k in o.row) || (o.patch && k in o.patch)) && said.includes(k));
+  const col = said && ['dish_tags','paper','book_key','sounds_enabled','seed_id','phone','website','instagram','other_socials','field_sources'].find(k=>((o.row && k in o.row) || (o.patch && k in o.patch)) && said.includes(k));
   if (col){
     const strip = x => { if (!x) return x; const y = { ...x }; delete y[col]; return y; };
     const next = { ...o, row:strip(o.row), patch:strip(o.patch) };

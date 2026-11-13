@@ -80,3 +80,11 @@ export const ENV = (()=>{
 })();
 // the Supabase project this copy talks to
 export const SUPABASE = ENV === 'preview' && APP.stagingSupabase ? APP.stagingSupabase : APP.supabase;
+
+// Where place details come from (Settings → About → Data sources). The seed release is pinned: change it here and
+// in the import (tools/overture-import.py) together.
+export const DATA_SOURCES = {
+  overture: { name:'Overture Maps Foundation', theme:'Places theme', release:'2026-10-21.0',
+    attribution:'Data from Overture Maps Foundation, Places theme', link:'https://overturemaps.org/attribution',
+    licence:'CDLA-Permissive-2.0 (some sources Apache-2.0 or CC0)' },
+};
