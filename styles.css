@@ -1798,3 +1798,27 @@ body.public-page{background:var(--surface);min-height:100vh;}
 .suggest-chip svg{width:20px;height:20px;}
 .link-row{display:flex;align-items:center;gap:var(--sp-2);min-height:var(--tap);padding-left:var(--sp-3);border-radius:var(--r-lg);background:var(--sc);}
 .link-row .icon-btn{flex:none;}
+
+/* ---------- the Places record on List (Job 4): one row per place ---------- */
+.place-row{display:flex;align-items:flex-start;gap:var(--sp-3);width:100%;min-height:var(--tap);text-align:left;padding:var(--sp-3);border-radius:14px;background:var(--card);box-shadow:var(--shadow-sm);}
+.place-row .pr-ico{width:40px;height:40px;border-radius:10px;background:var(--sc-high);display:flex;align-items:center;justify-content:center;flex:none;}
+.place-row .pr-ico svg{width:22px;height:22px;}
+.place-row .pr-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:var(--sp-1);}
+.place-row .pr-title{font-weight:800;font-size:16px;line-height:1.25;color:var(--ink);overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.place-row .pr-meta{display:flex;align-items:center;gap:var(--sp-1);min-width:0;font-size:13px;color:var(--ink-3);}
+.place-row .pr-meta .ms{font-size:16px;}
+.place-row .pr-meta .trunc{min-width:0;}
+.place-row .pr-dot{flex:none;}
+.place-row .pr-meta > span:last-child{flex:none;}
+.place-row .pr-tags{display:flex;flex-wrap:wrap;gap:var(--sp-1);margin-top:var(--sp-1);}
+.place-row .pr-tags .tag{font-size:11px;}
+.place-row .pr-who{flex:none;align-self:center;}
+.pt-ico{width:26px;height:26px;display:flex;}
+#lTab button .ms{font-size:20px;}
+/* the place's details on its page: call, website, socials (empty ones aren't shown) */
+.contact-list{display:flex;flex-direction:column;background:var(--card);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);overflow:hidden;}
+.contact-list a.person-row{min-height:var(--tap);color:inherit;text-decoration:none;background:transparent;box-shadow:none;border-radius:0;}
+.contact-list a.person-row + a.person-row{border-top:1px solid var(--outline-v);}
+.contact-list a.person-row > .ms:first-child{color:var(--gold-deep);}
+.contact-list a.person-row > .ms:last-child{color:var(--outline);font-size:20px;}
+.contact-list .pr-sub{overflow-wrap:anywhere;}

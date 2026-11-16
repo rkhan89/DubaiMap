@@ -319,8 +319,16 @@ Steps 2–4: Android share target and /share, TikTok captions, Inbox and offline
   `field_sources`, `verified_at`; `tags` (the 13 kinds as system tags, plus words people add) and
   `venue_tags` (kinds follow `venues.categories`); `taxonomy_kinds` (Overture taxonomy → kind, as data).
   Migration `0020_places_record.sql`.
+- **Places on List** (`placesview.js`): a *Feed / Places* toggle at the top of List (remembered on the phone).
+  Places is every place with a visit you can see (the feed's rule; saves to try don't count): name search,
+  area chips (only areas with a place; any of the picked ones), tag chips (kinds and people's words; all of
+  the picked ones), sorted by most recent visit, most visited or A to Z. Each row: name (two lines at most),
+  area, visit count, up to three tags, and the faces of who went. "No places match" with Clear filters.
+- **Place page details**: Call (tel:), Website, Instagram, other links (Facebook, TikTok…), each only when
+  the place has it, plus its tags. Directions open the phone's maps app (Apple Maps on iPhone/Mac, geo: on
+  Android, OpenStreetMap elsewhere), never a Google link.
 - Tests: `tests/seed.test.mjs`, the 0020 section of `tests/e2e/sqltest.mjs` (an outsider sees none of the
-  crew's places, Just me stays private, user values kept, tags), `tests/e2e/record.mjs`.
+  crew's places, Just me stays private, user values kept, tags), `tests/e2e/record.mjs`, `tests/e2e/recordlist.mjs`, and the Places states in `tests/e2e/spacing.mjs`.
 
 ## Feedback and error reports
 - Settings → **Send feedback** (something broke / an idea / other), with the app version and phone

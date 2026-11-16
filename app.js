@@ -18,6 +18,7 @@ import './profile.js';
 import './social.js';
 import './share.js';
 import { prefs, setPref } from './prefs.js';
+import { placesHTML, bindPlaces } from './placesview.js';
 import { takeSharedPlace, openSharedPlace, eventSheet } from './events.js';
 import { registerSW, scheduleReminders } from './notify.js';
 import { maybeStartTour, paintEmptyMap } from './tour.js';
@@ -334,8 +335,17 @@ go.filters = openFilters;
    LIST VIEW (feed)
    ========================================================= */
 let listQuery='', listSort='recent', listCat=null;
+// List shows the feed or the Places record (remembered on this phone)
+const listTabHTML = tab => `<div class="seg" id="lTab" role="tablist" aria-label="List view"><button role="tab" data-tab-l="feed" aria-selected="${tab==='feed'}" class="${tab==='feed'?'on':''}">${icon('auto_stories')}Feed</button><button role="tab" data-tab-l="places" aria-selected="${tab==='places'}" class="${tab==='places'?'on':''}">${icon('storefront')}Places</button></div>`;
+function bindListTab(el){ el.querySelector('#lTab').addEventListener('click', e=>{ const b=e.target.closest('[data-tab-l]'); if (!b) return; setPref('listTab', b.dataset.tabL); renderList(); el.scrollTop = 0; }); }
 function renderList(){
   const el=$('#listView'); const sc=scope(); const crew=S.myCrew();
+  if (prefs().listTab === 'places'){
+    el.innerHTML = `<div class="list-inner">${listTabHTML('places')}<div class="mt16">${placesHTML()}</div></div>`;
+    bindListTab(el); bindPlaces(el, renderList);
+    el.querySelectorAll('[data-venue]').forEach(c=>c.addEventListener('click', ()=>go.place(c.dataset.venue)));
+    return;
+  }
   const meCount = M.mapModel({...sc, mode:'me', members:null}).filter(s=>s.state!=='unlit').length;
   const crewCount = M.mapModel({...sc, mode:'crew'}).filter(s=>s.state!=='unlit').length;
   let items = modelCache.filter(s=>s.state!=='unlit');
@@ -351,8 +361,8 @@ function renderList(){
   const cats = Object.keys(byCat).sort((a,b)=>byCat[b]-byCat[a]);
   const hidden = sc.mode==='crew' ? 0 : M.mapModel({...sc, privacy:'all', cats:null, status:{been:true,want:true}}).filter(s=>s.state!=='unlit').length - meCount;
   const unlitCount = modelCache.filter(s=>s.state==='unlit').length;
-  el.innerHTML = `<div class="list-inner">
-    <div class="search-row"><label class="search">${icon('search')}<input id="lq" type="search" placeholder="Search ${items.length} spots…" value="${esc(listQuery)}" aria-label="Search"></label>
+  el.innerHTML = `<div class="list-inner">${listTabHTML('feed')}
+    <div class="search-row mt16"><label class="search">${icon('search')}<input id="lq" type="search" placeholder="Search ${items.length} spots…" value="${esc(listQuery)}" aria-label="Search"></label>
       <button class="sq-btn${isFiltered()?' filtered':''}" id="lFilter" aria-label="Filters">${icon('tune')}</button></div>
     <div class="seg mt16" id="lMode"><button data-v="me" class="${sc.mode==='me'?'on':''}">Me <em>${meCount}</em></button><button data-v="crew" class="${sc.mode==='crew'?'on':''}">Crew <em>${crewCount}</em></button></div>
     <div class="chip-scroll mt16" id="lCats">
@@ -366,7 +376,7 @@ function renderList(){
   </div>`;
   const lq=el.querySelector('#lq');
   lq.addEventListener('input', ()=>{ listQuery=lq.value; const pos=lq.selectionStart; renderList(); const n=$('#lq'); n.focus(); n.setSelectionRange(pos,pos); });
-  el.querySelector('#lFilter').onclick=openFilters;
+  el.querySelector('#lFilter').onclick=openFilters; bindListTab(el);
   el.querySelector('#lMode').addEventListener('click', e=>{ const b=e.target.closest('button'); if (!b) return; scope().mode=b.dataset.v; scope().members=null; saveScope(); rebuild(); });
   el.querySelector('#lCats').addEventListener('click', e=>{ const b=e.target.closest('[data-c]'); if (!b) return; listCat=b.dataset.c||null; renderList(); });
   el.querySelector('#lSort').onchange=e=>{ listSort=e.target.value; renderList(); };

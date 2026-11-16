@@ -26,10 +26,28 @@ function whenText(e){
   if (days<14) return 'Last week';
   return fmtDate(e.date);
 }
-function mapsURL(v){
-  const z=MAP.zoneById(v.zone);
-  const q = typeof v.lat==='number' ? `${v.lat.toFixed(6)},${v.lng.toFixed(6)}` : `${v.name}, ${z?z.label:''}, ${APP.city}`;
-  return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(q);
+// Directions open the phone's own maps app: Apple Maps on iPhone/iPad/Mac, the default maps app on Android (geo:),
+// OpenStreetMap anywhere else. To the pin when there is one, otherwise by name and address.
+export function directionsURL(v, ua){
+  ua = ua || (typeof navigator!=='undefined' ? navigator.userAgent : '');
+  const z=MAP.zoneById(v.zone), pinned = typeof v.lat==='number' && typeof v.lng==='number';
+  const ll = pinned ? `${v.lat.toFixed(6)},${v.lng.toFixed(6)}` : '';
+  const q = [v.name, v.address || (z?z.label:''), APP.city].filter(Boolean).join(', ');
+  if (/iPhone|iPad|iPod|Macintosh/.test(ua)) return 'https://maps.apple.com/?' + (pinned ? `daddr=${ll}&q=${encodeURIComponent(v.name)}` : `daddr=${encodeURIComponent(q)}`);
+  if (/Android/.test(ua)) return pinned ? `geo:${ll}?q=${ll}(${encodeURIComponent(v.name)})` : `geo:0,0?q=${encodeURIComponent(q)}`;
+  return pinned ? `https://www.openstreetmap.org/directions?to=${encodeURIComponent(ll)}` : `https://www.openstreetmap.org/search?query=${encodeURIComponent(q)}`;
+}
+// a place's contact details: only the ones it has
+const SOCIAL = [[/facebook\.com|fb\.com/i,'Facebook','public'],[/tiktok\.com/i,'TikTok','music_note'],[/(^|\.)x\.com|twitter\.com/i,'X','alternate_email'],[/snapchat\.com/i,'Snapchat','photo_camera'],[/youtube\.com|youtu\.be/i,'YouTube','smart_display'],[/linkedin\.com/i,'LinkedIn','work'],[/wa\.me|whatsapp/i,'WhatsApp','chat']];
+const shortUrl = u => String(u).replace(/^https?:\/\/(www\.)?/i,'').replace(/\/$/,'');
+export function contactHTML(v){
+  const rows = [];
+  const row = (href, ic, name, sub, ext)=>`<a class="person-row" href="${esc(href)}"${ext?' target="_blank" rel="noopener"':''}>${icon(ic)}<span class="pr-main"><span class="pr-name">${esc(name)}</span><span class="pr-sub">${esc(sub)}</span></span>${icon(ext?'open_in_new':'chevron_right')}</a>`;
+  if (v.phone) rows.push(row('tel:'+String(v.phone).replace(/[^\d+]/g,''), 'call', 'Call', v.phone));
+  if (v.website) rows.push(row(v.website, 'language', 'Website', shortUrl(v.website), true));
+  if (v.instagram) rows.push(row('https://www.instagram.com/'+encodeURIComponent(v.instagram)+'/', 'photo_camera', 'Instagram', '@'+v.instagram, true));
+  (v.otherSocials||[]).forEach(u=>{ const m = SOCIAL.find(([re])=>re.test(u)); rows.push(row(u, m?m[2]:'link', m?m[1]:'Link', shortUrl(u), true)); });
+  return rows.length ? `<div class="contact-list mt16">${rows.join('')}</div>` : '';
 }
 
 /* =========================================================
@@ -72,7 +90,9 @@ function placeScreen(venueId){
         <div class="sheet-handle" style="margin:0 auto var(--sp-3)"></div>
         <div class="row" style="flex-wrap:wrap;gap:var(--sp-2)"><span class="tag">${iconSvg(cat.id,'#5e4000').replace('<svg','<svg width="14" height="14"')}${esc(cat.label)}</span>${sum.visitCount?`<span class="tag green">${icon('check_circle')}Visited ${sum.visitCount}x</span>`:''}${sum.state==='unlit'?'<span class="tag soft">Undiscovered</span>':''}${sum.meals.map(m=>`<span class="tag soft">${icon(mealById(m).icon)}${mealById(m).label}</span>`).join('')}</div>
         <h1 class="h-xl mt8">${esc(v.name)}</h1>
-        <div class="row muted mt4" style="gap:var(--sp-2)">${icon('storefront')}${esc([z?z.label:APP.city, v.address].filter(Boolean).join(' • '))}</div>
+        <div class="row muted mt4" style="gap:var(--sp-2);align-items:flex-start">${icon('storefront')}<span style="overflow-wrap:anywhere">${esc([z?z.label:APP.city, v.address].filter(Boolean).join(' • '))}</span></div>
+        ${S.venueTags(v.id).length ? `<div class="chip-wrap mt8">${S.venueTags(v.id).map(t=>`<span class="tag soft">${esc(t)}</span>`).join('')}</div>` : ''}
+        ${contactHTML(v)}
         ${mine.length?`<div class="share-card mt24${minePrivate?' private':''}"><span class="sc-ico">${icon(minePrivate?'lock':'lock_open')}</span>
           <div class="grow"><b class="h-sm">${minePrivate?'Only you can see your log':esc(whoText(mineWho).replace(/.$/,''))}</b>
           <div class="muted small">${minePrivate?'Your notes & rating stay in your own scrapbook.':'They can see your notes, rating and photos here.'}</div></div>
@@ -96,7 +116,7 @@ ${S.events({venueId:v.id, upcoming:true}).length?`<div class="card mt16"><span c
         ${photos.length?`<div class="row between mt24"><span class="row h-md" style="gap:var(--sp-2)">${icon('photo_camera')}Photos</span><span class="muted small">${photos.length}</span></div>
         <div class="strip">${photos.map(p=>polaroidHTML({src:S.photoURL(p), caption:p.caption, id:p.id, badge:p.private?`<span class="pol-badge tr">${icon('lock')}Only me</span>`:''})).join('')}</div>`:''}
         <button class="btn btn-gold btn-block mt16" id="pSend">${icon('send')}Send to crew</button>
-        <div class="btn-grid mt16"><a class="btn btn-soft" href="${mapsURL(v)}" target="_blank" rel="noopener">${icon('directions')}Directions</a><button class="btn btn-soft" id="pMap">${icon('map')}Show on map</button></div>
+        <div class="btn-grid mt16"><a class="btn btn-soft" href="${esc(directionsURL(v))}" target="_blank" rel="noopener">${icon('directions')}Directions</a><button class="btn btn-soft" id="pMap">${icon('map')}Show on map</button></div>
         ${!mine.some(e=>e.kind==='want') && !mine.some(e=>e.kind==='visit')?`<button class="btn btn-ghost btn-block mt8" id="pWant">${icon('bookmark_add')}Save to try later</button>`:''}
       </div>`;
       MAP.whenReady(()=>requestAnimationFrame(()=>{ const c=el.querySelector('#pSnap'); if (c) MAP.drawSnapshot(c, MAP.placeWorld(v), 6); }));

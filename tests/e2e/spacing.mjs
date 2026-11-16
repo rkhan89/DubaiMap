@@ -70,6 +70,15 @@ export default async function spacing(h){
   await state('bell', ()=>go(async ()=>{ const {go}=await import('/go.js'); go.activity(); }));
   await close();
   await state('list', ()=>go(()=>document.querySelector('[data-tab="list"]').click()));
+  // the Places record on List (Job 4): the list, filters on, nothing matching, a place with all its details
+  await state('places', ()=>go(()=>document.querySelector('[data-tab-l="places"]').click()));
+  await state('places-filtered', ()=>go(()=>{ document.querySelector('[data-area]')?.click(); document.querySelector('[data-ptag]')?.click(); }));
+  await state('places-empty', ()=>go(()=>{ const q=document.querySelector('#pq'); q.value='zzzz nothing'; q.dispatchEvent(new Event('input',{bubbles:true})); }));
+  await h.js(()=>document.querySelector('#pClear2')?.click());
+  await state('place-contact', ()=>go(async ()=>{ const S=await import('/store.js'), {go}=await import('/go.js'); const v=S.venues().find(v=>v.name==='Ravi Restaurant');
+    S.updateVenue(v.id, { phone:'+97143334444', website:'https://ravi-restaurant.example.com/menu/today', instagram:'ravi.restaurant.satwa', otherSocials:['https://www.facebook.com/ravirestaurantsatwa'] }); S.addVenueTag(v.id, 'late night'); go.place(v.id); }));
+  await close();
+  await h.js(()=>{ document.querySelector('[data-tab-l="feed"]')?.click(); });
   await state('crew', ()=>go(()=>document.querySelector('[data-tab="crew"]').click()));
   await state('shelf', ()=>go(()=>document.querySelector('[data-tab="shelf"]').click()));
   await state('book', ()=>go(async ()=>{ const S=await import('/store.js'), {go}=await import('/go.js'); go.book(S.books().find(b=>b.kind==='personal').id); }));
@@ -112,6 +121,8 @@ export default async function spacing(h){
   await state('long-place', ()=>go(async ()=>{ const S=await import('/store.js'), {go}=await import('/go.js'); go.place(S.venues().find(v=>v.name.startsWith('Ravi')).id); }));
   await close();
   await state('long-list', ()=>go(()=>document.querySelector('[data-tab="list"]').click()));
+  await state('long-places', ()=>go(()=>document.querySelector('[data-tab-l="places"]').click()));
+  await h.js(()=>{ document.querySelector('[data-tab-l="feed"]')?.click(); });
   await state('long-book', ()=>go(async ()=>{ const S=await import('/store.js'), {go}=await import('/go.js'); go.book(S.books().find(b=>b.kind==='personal').id); }));
   await close();
   await state('long-shelf', ()=>go(()=>document.querySelector('[data-tab="shelf"]').click()));
