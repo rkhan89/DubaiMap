@@ -30,7 +30,7 @@ export default async function a11y(h){
   await step('place screen', async ()=>{ await h.js(async ()=>{ const S=await import('/store.js'), {go}=await import('/go.js'); go.place(S.venues().find(v=>v.name==='Ravi Restaurant').id); }); await h.sleep(900); await check('place'); await close(); });
   await step('check in: find the place, then details', async ()=>{
     await h.js(async ()=>{ const {go}=await import('/go.js'); go.log({}); }); await h.sleep(800); await check('checkin-1');
-    await h.js(async ()=>{ const S=await import('/store.js'), {go}=await import('/go.js'); const U=await import('/ui.js'); U.closeAll(); go.log({ venueId:S.venues()[0].id }); }); await h.sleep(900); await check('checkin-2'); await close();
+    await h.js(async ()=>{ const S=await import('/store.js'), {go}=await import('/go.js'); const U=await import('/ui.js'); await new Promise(r=>U.closeAll(r)); go.log({ venueId:S.venues()[0].id }); }); await h.sleep(900); await check('checkin-2'); await close();
   });
   await step('shelf', async ()=>{ await h.js(async ()=>{ const {go}=await import('/go.js'); go.shelf(); }); await h.sleep(900); await check('shelf'); });
   await step('a scrapbook page', async ()=>{ await h.js(()=>document.querySelector('.screen.in:last-of-type [data-spread]').click()); await h.sleep(1300); await check('book'); await close(); });
