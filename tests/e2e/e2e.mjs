@@ -24,11 +24,11 @@ export default async function e2e(h){
     await h.js(()=>document.querySelector('#vfLoc').click()); await h.sleep(900); await p.select('#vfZ','satwa');
     await h.shot('e-07b-newplace'); await h.js(()=>document.querySelector('#vfS').click()); await h.sleep(600);
     await h.js(()=>{ const b=document.querySelectorAll('#lStars button')[3]; const r=b.getBoundingClientRect(); b.dispatchEvent(new MouseEvent('click',{bubbles:true, clientX:r.right-2, clientY:r.top+5})); });
+    await h.js(()=>document.querySelector('#lDetails').click()); await h.sleep(300);
     await typeIn('#lNotes', 'Butter chicken, two parottas.');
     const input = await p.$('#lPh'); await input.uploadFile(path.resolve('fixture.jpg')); await h.sleep(1500);
-    await h.js(()=>document.querySelector('[data-who]:not([data-who="me"])').click()); await h.sleep(200);
     await h.shot('e-08-log');
-    await h.js(()=>document.querySelector('#lSave').click()); await h.sleep(1800);
+    await h.js(()=>document.querySelector('[data-save]:not([data-save="me"])').click()); await h.sleep(1800);
     await h.shot('e-09-saved');
     const meals = await h.js(async ()=>{ const S=await import('/store.js'); const v=S.venues().find(v=>v.name==='Ravi Restaurant'); return S.entries({venueId:v.id, userId:S.me().id})[0]?.meals; });
     if (String(meals)!=='lunch') throw new Error('meal from the new-place form: '+meals);

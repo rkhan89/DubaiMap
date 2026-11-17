@@ -23,9 +23,9 @@ export default async function bookadd(h){
     await h.js(()=>{ const i=document.querySelector('#logQ'); i.value='Ravi'; i.dispatchEvent(new Event('input')); }); await h.sleep(500);
     await h.js(()=>[...document.querySelectorAll('.search-result[data-v]')].find(b=>/Ravi/.test(b.textContent)).click()); await h.sleep(600);
     if (!(await h.js(()=>document.querySelectorAll('.reel [data-rm]').length))) throw new Error('photo not in the form');
-    if (!(await h.js(()=>document.querySelector('#lWho [data-who].on')?.textContent||'')).includes('Sample')) throw new Error('crew not pre-picked');
+    if (!(await h.js(()=>document.querySelector('[data-save]:not([data-save="me"])')?.textContent||'')).includes('Sample')) throw new Error('crew not offered');
     await h.js(()=>document.querySelector('#lWho').scrollIntoView({block:'center'})); await h.sleep(200); await h.shot('b-add-2');
-    await h.js(()=>document.querySelector('#lSave').click()); await h.sleep(500);
+    await h.js(()=>document.querySelector('[data-save]:not([data-save="me"])').click()); await h.sleep(500);
     if (!/Sample Crew Scrapbook/.test(await h.js(()=>document.querySelector('.tapein')?.innerText||''))) throw new Error('not taped into the crew book');
     await h.sleep(1300);
     const after = await crewBookPhotos();

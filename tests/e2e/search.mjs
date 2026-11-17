@@ -86,6 +86,7 @@ export default async function searchE2E(h){
   });
   await step('the visit form: "What did you have?" chips still work', async ()=>{
     await h.js(async id=>{ const { go } = await import('/go.js'); go.log({ entryId:id }); }, ids.e); await h.sleep(800);
+    await h.js(()=>{ const t=document.querySelector('#lDetails[aria-expanded="false"]'); if (t) t.click(); }); await h.sleep(300);
     const sug = await h.js(()=>[...document.querySelectorAll('#lDishSug [data-dish-add]')].map(b=>b.dataset.dishAdd));
     if (!sug.length) throw new Error('no suggestions');
     await close();

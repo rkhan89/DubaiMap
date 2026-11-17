@@ -43,7 +43,7 @@ export default async function tagged(h){
     await h.js(()=>document.querySelector('#pLog').click()); await h.sleep(900);
     const t = await h.js(()=>document.querySelector('.screen.in:last-of-type')?.innerText || '');
     await h.shot('tg-log');
-    if (!/tagged you on their visit/.test(t) || !/Add to their visit/.test(t)) throw new Error(t.slice(0, 300));
+    if (!/tagged you here/.test(t) || !/Add to their visit/.test(t)) throw new Error(t.slice(0, 300));
     await h.js(()=>document.querySelector('#lJoin').click()); await h.sleep(700);
     if (!/Kabir tagged you/.test(await text())) throw new Error('join sheet');
     await close();

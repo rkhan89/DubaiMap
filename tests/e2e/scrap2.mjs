@@ -15,8 +15,7 @@ export default async function scrap2(h){
       return v.id;
     });
     await h.js(async (vid)=>{ const {go}=await import('/go.js'); go.log({ venueId:vid }); }, vid); await h.sleep(700);
-    await h.js(()=>document.querySelector('[data-who]:not([data-who="me"])').click()); await h.sleep(150);
-    await h.js(()=>document.querySelector('#lSave').click());
+    await h.js(()=>document.querySelector('[data-save]:not([data-save="me"])').click());
     await h.sleep(2000);
     const r = await h.js(()=>({ peel:document.querySelector('.sticker-peel')?.innerText||'', modal:!!document.querySelector('.unlock') }));
     if (!/sticker unlocked|stickers unlocked/i.test(r.peel)) throw new Error('no sticker card: '+JSON.stringify(r));

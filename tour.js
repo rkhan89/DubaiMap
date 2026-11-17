@@ -9,7 +9,7 @@ import { go } from './go.js';
 
 const $ = s => document.querySelector(s);
 const has = s => !!$(s);
-const logOpen = () => has('#logQ') || has('#lStars') || has('#lSave') || has('#vfN');
+const logOpen = () => has('#logQ') || has('#lStars') || has('#lWho') || has('#vfN');
 
 // step: { id, target, title, body, next (show a Next button), done (moves on by itself), ctx (where it lives) }
 const STEPS = [
@@ -24,9 +24,8 @@ const STEPS = [
     ctx:()=>has('#vfN') || has('#lStars'), done:()=>has('#lStars'), skipIf:()=>has('#lStars') },
   { id:'rate', target:'#lStars', title:'How was it?', body:'Tap a star. Tap the left half of one for a half star.', next:true,
     ctx:()=>has('#lStars'), done:()=>has('#lStars .on, #lStars .half') },
-  { id:'photo', target:'.reel .add-photo', title:'Add a photo (optional)', body:'Photos go on this visit’s scrapbook page. No photos? It still gets a page.', next:true, ctx:()=>has('#lSave') },
-  { id:'share', target:'#lWho', title:'Who sees it?', body:'Pick Just me, or one of your crews to put it on their map. You choose every time.', next:true, ctx:()=>has('#lSave') },
-  { id:'save', target:'#lSave', title:'Save it', body:'That’s it. Watch it land on your map.', ctx:()=>has('#lSave') || tourSaved, done:()=>tourSaved },
+  { id:'photo', target:'.reel .add-photo', title:'Add a photo (optional)', body:'Photos go on this visit’s scrapbook page. No photos? It still gets a page.', next:true, ctx:()=>has('#lWho') },
+  { id:'save', target:'#lWho', title:'Save it', body:'The button says who sees it: Just me, or your crew’s map. You choose every time. Then watch it land.', ctx:()=>has('#lWho') || tourSaved, done:()=>tourSaved },
   { id:'stamp', target:'.stamp-anchor.dropped .stamp, .stamp-anchor.selected .stamp, .stamp-anchor .stamp', title:'Your first stamp', body:'Every place you log becomes a stamp. Tap one any time for its card, notes and photos.', next:true, wait:1500 },
   { id:'mode', target:'#mapMode', title:'You, or your crew', body:'Me shows your own places, private ones included. Crew shows what your friends share, each friend’s pins in their own colour, with their face up close.', next:true },
   { id:'filter', target:'#btnFilter', title:'Filters', body:'Filter by friend, kind of place or meal, or colour the areas you’ve explored.', next:true },

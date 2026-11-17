@@ -43,10 +43,10 @@ export default async function scrap(h){
   });
   await step('log a visit with no photos: taped into the personal book, toast opens the page', async ()=>{
     await h.js(async ()=>{ const {go}=await import('/go.js'); const S=await import('/store.js'); go.log({ venueId:S.venues().find(v=>v.name==='Knot Bakehouse').id }); }); await h.sleep(700);
-    await h.js(()=>document.querySelector('[data-who="me"]').click()); await h.sleep(200);
+    await h.js(()=>document.querySelector('#lDetails').click()); await h.sleep(200);
     await h.js(()=>document.querySelector('#lNotes').value='Cardamom knot, still warm'); await h.js(()=>document.querySelector('#lNotes').dispatchEvent(new Event('input')));
     if (/New place|Repeat visit|Combo/.test(await text())) throw new Error('points still shown in the form');
-    await h.js(()=>document.querySelector('#lSave').click()); await h.sleep(450);
+    await h.js(()=>document.querySelector('[data-save="me"]').click()); await h.sleep(450);
     const ov = await h.js(()=>document.querySelector('.tapein')?.innerText||'');
     if (!/Taped into/.test(ov)) throw new Error('no taped-in moment');
     await h.shot('sc-tapein');
@@ -78,19 +78,18 @@ export default async function scrap(h){
   });
   await step('a crew visit is taped into the crew book', async ()=>{
     await h.js(async ()=>{ const {go}=await import('/go.js'); const S=await import('/store.js'); go.log({ venueId:S.venues().find(v=>v.name==='Arabian Tea House').id }); }); await h.sleep(700);
-    await h.js(()=>document.querySelector('[data-who]:not([data-who="me"])').click()); await h.sleep(200);
-    await h.js(()=>document.querySelector('#lSave').click()); await h.sleep(450);
+    await h.js(()=>document.querySelector('[data-save]:not([data-save="me"])').click()); await h.sleep(450);
     const ov = await h.js(()=>document.querySelector('.tapein')?.innerText||'');
     if (!/Sample Crew Scrapbook/.test(ov)) throw new Error('overlay: '+ov);
     await settle();
   });
   await step('tagging a crewmate on a Just me visit shares it with the crew (with a note)', async ()=>{
     await h.js(async ()=>{ const {go}=await import('/go.js'); const S=await import('/store.js'); go.log({ venueId:S.venues().find(v=>v.name==='Ravi Restaurant').id }); }); await h.sleep(700);
-    await h.js(()=>document.querySelector('[data-who="me"]').click()); await h.sleep(200);
+    await h.js(()=>document.querySelector('#lDetails').click()); await h.sleep(200);
     await h.js(()=>document.querySelector('[data-tag="demo-kabir"]').click()); await h.sleep(300);
-    if (!/Tagging shares this visit with Sample Crew/.test(await text())) throw new Error('no note: '+JSON.stringify(await h.js(()=>({ on:[...document.querySelectorAll('#lTags .on')].map(x=>x.dataset.tag), who:[...document.querySelectorAll('#lWho .on')].map(x=>x.dataset.who), note:document.querySelector('.tag-note')?.innerText, unlock:!!document.querySelector('.unlock') }))));
-    await h.js(()=>document.querySelector('#lTags').scrollIntoView({block:'center'})); await h.shot('sc-tagnote');
-    await h.js(()=>document.querySelector('#lSave').click()); await h.sleep(500);
+    if (!/Tagging also shares it with Sample Crew/.test(await text())) throw new Error('no note: '+JSON.stringify(await h.js(()=>({ on:[...document.querySelectorAll('#lTags .on')].map(x=>x.dataset.tag), who:[...document.querySelectorAll('#lWho .on')].map(x=>x.dataset.who), note:document.querySelector('.tag-note')?.innerText, unlock:!!document.querySelector('.unlock') }))));
+    await h.shot('sc-tagnote');
+    await h.js(()=>document.querySelector('[data-save="me"]').click()); await h.sleep(500);
     const e = await h.js(async ()=>{ const S=await import('/store.js'); const x=S.entries({kind:'visit'}).filter(e=>e.userId===S.me().id).sort((a,b)=>b.createdAt-a.createdAt)[0]; return { private:x.private, crewIds:x.crewIds }; });
     if (e.private || !e.crewIds.length) throw new Error(JSON.stringify(e));
     await settle();

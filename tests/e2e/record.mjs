@@ -48,8 +48,7 @@ export default async function record(h){
   });
   await step('then step 2, and the visit saves', async ()=>{
     if (!/Step 2/.test(await text())) throw new Error('not on step 2');
-    await h.js(()=>{ const b=document.querySelector('#lWho [data-who]'); if (b) b.click(); }); await h.sleep(200);
-    await h.js(()=>document.querySelector('#lSave').click()); await h.sleep(2500);
+    await h.js(()=>document.querySelector('[data-save="me"]').click()); await h.sleep(2500);
   });
   await step('a second visit to the same place adds a visit, never a second place', async ()=>{
     await openLog();
@@ -58,8 +57,7 @@ export default async function record(h){
     if (listed.seed) throw new Error('the logged place is offered again from the listing');
     const vid = await h.js(async id=>{ const S=await import('/store.js'); return S.venueBySeed(id).id; }, seedId);
     await h.js(id=>document.querySelector(`#lRes [data-v="${id}"]`).click(), vid); await h.sleep(700);
-    await h.js(()=>{ const b=document.querySelector('#lWho [data-who]'); if (b) b.click(); }); await h.sleep(200);
-    await h.js(()=>document.querySelector('#lSave').click()); await h.sleep(2500);
+    await h.js(()=>document.querySelector('[data-save="me"]').click()); await h.sleep(2500);
     const n = await h.js(async id=>{ const S=await import('/store.js'); const vs=S.venues().filter(v=>v.seedId===id); return { places:vs.length, visits:S.entries({ venueId:vs[0].id, kind:'visit' }).length }; }, seedId);
     if (n.places!==1 || n.visits!==2) throw new Error(JSON.stringify(n));
   });

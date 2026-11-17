@@ -30,8 +30,7 @@ export default async function checkin(h){
   await step('at the place today it says checked in, and saves as a check-in', async ()=>{
     if (!/Checked in: you’re here/.test(await text())) throw new Error('no checked-in line');
     await h.shot('ci-here');
-    await h.js(()=>{ const b=document.querySelector('#lWho [data-who]:not(.on)'); if (b) b.click(); }); await h.sleep(300);
-    await h.js(()=>document.querySelector('#lSave').click()); await h.sleep(1500);
+    await h.js(()=>document.querySelector('[data-save]:not([data-save="me"])').click()); await h.sleep(1500);
     const e = await h.js(async id=>{ const S=await import('/store.js'); return S.entries({venueId:id, userId:S.me().id, kind:'visit'}).map(e=>({ checkin:!!e.checkin, date:e.date })); }, v.id);
     if (e.length !== 1 || !e[0].checkin) throw new Error(JSON.stringify(e));
   });
@@ -39,8 +38,7 @@ export default async function checkin(h){
     await h.js(async ()=>{ const U=await import('/ui.js'); U.closeAll(); }); await h.sleep(500);
     await h.js(async id=>{ const {go}=await import('/go.js'); go.log({ venueId:id, date:'2026-01-05' }); }, v.id); await h.sleep(700);
     if (/Checked in: you’re here|I’m here now/.test(await h.js(()=>document.querySelector('.screen.in')?.innerText || ''))) throw new Error('a past visit offers a check-in');
-    await h.js(()=>{ const b=document.querySelector('#lWho [data-who]:not(.on)'); if (b) b.click(); }); await h.sleep(300);
-    await h.js(()=>document.querySelector('#lSave').click()); await h.sleep(1500);
+    await h.js(()=>document.querySelector('[data-save]:not([data-save="me"])').click()); await h.sleep(1500);
     const e = await h.js(async id=>{ const S=await import('/store.js'); return S.entries({venueId:id, userId:S.me().id, kind:'visit'}).filter(e=>e.date==='2026-01-05').map(e=>!!e.checkin); }, v.id);
     if (e.length !== 1 || e[0]) throw new Error(JSON.stringify(e));
   });

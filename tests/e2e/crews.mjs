@@ -40,17 +40,20 @@ export default async function crews(h){
   const raviId = await store(S=>S.venues().find(v=>v.name==='Ravi Restaurant').id);
   await step('log: nothing pre-picked; Family only; tag @maya', async ()=>{
     await go('log', { venueId: raviId }); await h.sleep(800);
-    if (await h.js(()=>document.querySelectorAll('#lWho [data-who].on').length)) throw new Error('pre-picked');
-    await h.js(()=>document.querySelector('#lSave').click()); await h.sleep(400);
-    if (!/Choose who it’s for/.test(await toastText())) throw new Error('saved without choosing');
-    await clickText('#lWho [data-who]', /Family/); await h.sleep(300);
+    if (await h.js(()=>!document.querySelector('[data-save="me"]') || !document.querySelector('#lWhoMore') || !!document.querySelector('#lSave'))) throw new Error('no save buttons');
+    await h.js(()=>document.querySelector('#lDetails').click()); await h.sleep(300);
     await h.js(()=>document.querySelector('#lTags [data-tag="demo-maya"]').click()); await h.sleep(300);
     await h.js(()=>document.querySelector('#lMeals [data-meal="breakfast"]').click()); await h.sleep(300);
     await h.js(()=>{ const n=document.querySelector('#lNotes'); n.value='Matcha with @omar'; n.dispatchEvent(new Event('input')); });
     const input = await p.$('#lPh'); await input.uploadFile(path.resolve('fixture.jpg')); await h.sleep(1500);
     await h.js(()=>document.querySelector('#lWho').scrollIntoView({block:'start'})); await h.sleep(200); await h.shot('c-log-who');
-    if (!/Tagging shares this visit with/.test(await text())) throw new Error('no note that tagging shares it');
-    await h.js(()=>document.querySelector('#lSave').click()); await h.sleep(1500);
+    if (!/Tagging also shares it with/.test(await text())) throw new Error('no note that tagging shares it');
+    await h.js(()=>document.querySelector('#lWhoMore').click()); await h.sleep(600);
+    if (await h.js(()=>document.querySelectorAll('.sheet [data-who].on').length)) throw new Error('pre-picked');
+    await h.js(()=>document.querySelector('#awGo').click()); await h.sleep(400);
+    if (!/Choose who it’s for/.test(await toastText())) throw new Error('saved without choosing');
+    await clickText('.sheet [data-who]', /Family/); await h.sleep(300);
+    await h.js(()=>document.querySelector('#awGo').click()); await h.sleep(1500);
     const e = await store((S, a)=>{ const e=S.entries({venueId:a[0], userId:S.me().id}).sort((x,y)=>y.createdAt-x.createdAt)[0]; return { crews:e.crewIds, tags:e.taggedIds, priv:e.private, here:S.sharedHere(e) }; }, raviId);
     const fam = await store(S=>S.myCrews().find(c=>c.name==='Family').id);
     // tagging @maya (not in Family) also shares it with the crew you're both in

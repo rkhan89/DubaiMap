@@ -333,7 +333,9 @@ function logFlow(opts){
     return placeDistance(venue, here) <= (typeof venue.lat==='number' ? CHECKIN_M : AREA_M); };
   // the place listing (Overture, in Koko's own database) while typing: places nobody has logged yet
   const g = { list:[], q:'', loading:false, off:false, seq:0, timer:null, picking:null };
-  openScreen(el=>{
+  // the folded details (date, meal, dishes, notes, who you were with): open when editing or already filled
+  let details = !!(d.meals.length || d.dish.length || d.notes.trim() || d.tags.length || d.date!==todayISO());
+  openScreen(el=>{ el.classList.add('cover');
     let stars=null;
     const paint=()=>{
       const crew=S.myCrew();
@@ -382,24 +384,36 @@ function logFlow(opts){
       const used = S.myPhotoCount() + newPhotos.length;
       // tagging a crewmate shares the visit with a crew you're both in
       const tagCrews = d.kind==='visit' ? S.crewsForTags([...d.tags, ...S.mentionIds(d.notes)], d.who||[], editing ? editing.taggedIds : []) : [];
+      // the crew button: the crew you came from (a crew book's Add), else your current crew
+      const crews = S.myCrews(), pre = !editing && d.who && d.who.length===1 ? crews.find(c=>c.id===d.who[0]) : null;
+      const active = pre || (crew && crews.some(c=>c.id===crew.id) ? crew : crews[0]);
+      const isVisit = d.kind==='visit';
+      // what's in the folded details, for its one-line summary
+      const filled = [isVisit ? `${d.date===todayISO()?'Today':fmtDate(d.date,{day:'numeric',month:'short'})}` : '', d.meals.length ? d.meals.map(m=>(mealById(m)||{label:m}).label).join(', ') : '', d.dish.length ? plural(d.dish.length,'dish','dishes') : '', d.notes.trim() ? 'notes' : '', d.tags.length ? `${d.tags.length} tagged` : ''].filter(Boolean);
+      const who = editing
+        ? `<div class="eyebrow mt24">Who's this for?</div><div class="mt8" id="lWho">${whoHTML(d.who)}</div>`
+        // a new log: choosing who it's for is the save (still chosen every time, nothing pre-picked)
+        : `<div class="save-dock"><div class="save-who" id="lWho" role="group" aria-label="Save for">
+            <span class="eyebrow">${isVisit ? 'Save for' : 'Save to try, for'}</span>
+            <div class="save-row mt8">
+              <button type="button" class="btn btn-save-me" data-save="me">${icon('lock')}<span>Just me</span></button>
+              ${active ? `<button type="button" class="btn btn-save-crew" data-save="${esc(active.id)}" aria-label="Save to ${esc(active.name)}">${icon('groups')}<span class="trunc">${esc(active.name)}</span></button>` : ''}
+              ${crews.length>1 ? `<button type="button" class="btn btn-soft btn-more" id="lWhoMore" aria-label="Choose one or more crews">${icon('expand_more')}</button>` : ''}
+            </div>
+            ${tagCrews.length ? `<p class="tag-note mt8">${icon('groups')}<span>Tagging also shares it with <b>${esc(tagCrews.map(c=>c.name).join(' and '))}</b></span></p>` : ''}
+          </div></div>`;
       el.innerHTML = header + `<div class="screen-body">${stepRow}
         <label class="search mt16">${icon('search')}<input value="${esc(venue.name)}" readonly aria-label="Place">${editing?'':`<button type="button" id="lChange" class="link small" aria-label="Change place">Change</button>`}</label>
-        ${others.length?`<div class="already mt16"><b>${esc(venue.name)} is already on the crew map!</b>
-          <p class="muted mt4">${tagged ? `<span class="hl">${esc(S.user(tagged.userId)?.name||'A friend')}</span> tagged you on their visit. Add your rating and photos to it, or log a new visit of your own below.` : `Your visit goes on the same pin as ${others.slice(0,2).map(u=>`<span class="hl">${esc(u.name||u.handle)}</span>`).join(' and ')}${others.length>2?` +${others.length-2}`:''}'s.`}</p>
-          ${tagged ? `<button type="button" class="btn btn-gold btn-block mt16" id="lJoin">${icon('add_a_photo')}Add to their visit</button>` : ''}
-          <div class="row mt8">${avatarStack(others,30,3)}<span class="hand">Visited ${lastOther?whenText(lastOther).toLowerCase().replace(/ •.*/,''):''}</span></div></div>`:''}
+        ${others.length?`<div class="already-line mt16">${avatarStack(others,28,3)}<span class="grow">${tagged
+            ? `<b>${esc(S.user(tagged.userId)?.name||'A friend')}</b> tagged you here. Add your rating and photos to their visit, or log your own.`
+            : `${others.slice(0,2).map(u=>`<b>${esc(u.name||u.handle)}</b>`).join(' and ')}${others.length>2?` +${others.length-2}`:''} ${others.length===1?'has':'have'} been${lastOther?` · ${esc(whenText(lastOther).toLowerCase().replace(/ •.*/,''))}`:''}`}</span></div>
+          ${tagged ? `<button type="button" class="btn btn-soft btn-block mt8" id="lJoin">${icon('add_a_photo')}Add to their visit</button>` : ''}`:''}
         <div class="card mt16" style="border-radius:var(--r-xl)">
-          <div class="seg"><button data-k="visit" class="${d.kind==='visit'?'on':''}">Been here</button><button data-k="want" class="${d.kind==='want'?'on':''}">Want to try</button></div>
-          ${d.kind==='visit'?`<div class="row between mt24" style="align-items:flex-end;flex-wrap:wrap;gap:var(--sp-3)"><div><span class="eyebrow">Rating</span><div class="star-input mt8" id="lStars"></div></div>
-            <div><span class="eyebrow">Date</span><label class="date-pill mt8">${icon('calendar_month')}<span id="lDateTxt">${d.date===todayISO()?'Today, ':''}${fmtDate(d.date,{day:'numeric',month:'short'})}</span><input type="date" id="lDate" value="${d.date}" max="${todayISO()}"></label></div></div>
+          <div class="seg"><button data-k="visit" class="${isVisit?'on':''}">Been here</button><button data-k="want" class="${!isVisit?'on':''}">Want to try</button></div>
+          ${isVisit?`<div class="mt24"><span class="eyebrow">Rating</span><div class="star-input mt8" id="lStars"></div></div>
             ${!editing && d.date===todayISO() ? (checkedIn() ? `<p class="tag green mt16">${icon('where_to_vote')}Checked in: you’re here</p>`
               : here ? `<p class="muted small mt16">You’re ${distText(placeDistance(venue, here))} away, so this saves as a visit, not a check-in.</p>`
               : `<button type="button" class="btn btn-soft mt16" id="lVerify"${locating?' disabled':''}>${icon('my_location')}${locating?'Finding you…':'I’m here now'}</button>`) : ''}`:''}
-          <div class="row between mt24"><span class="eyebrow">Meal</span><span class="hand">Optional</span></div>
-          <div class="chip-wrap mt8" id="lMeals">${MEALS.map(m=>`<button type="button" class="person-chip meal-chip${d.meals.includes(m.id)?' on':''}" data-meal="${m.id}" aria-pressed="${d.meals.includes(m.id)}">${icon(m.icon)}${m.label}</button>`).join('')}</div>
-          ${d.kind==='visit' ? dishHTML() : ''}
-          <div class="field-label mt24"><span class="eyebrow">${d.kind==='visit'?'Notes':'Why you want to go'}</span><span class="hand">Optional</span></div>
-          <textarea class="input mt8" id="lNotes" maxlength="400" placeholder="${d.kind==='visit'?'Tasting notes, hidden gems, dish recommendations…':'Who recommended it, what to order…'}">${esc(d.notes)}</textarea>
           <div class="row between mt24"><span class="eyebrow">Photos</span><span class="muted small">${allPhotos} of ${APP.photosPerLog}</span></div>
           ${aiTagsOn() ? '<p class="muted small mt4 ai-note">Photos are read by AI to make them searchable.</p>' : ''}
           <div class="reel mt16">
@@ -407,17 +421,24 @@ function logFlow(opts){
             ${newPhotos.map((p,i)=>`<div style="position:relative"><button class="rm" data-rm="${i}" aria-label="Remove photo">${icon('close')}</button>${polaroidHTML({src:p.url, id:'n'+i, tape:false, rot:0, sub:`<input data-cap="${i}" value="${esc(p.caption)}" placeholder="caption" maxlength="40">`})}</div>`).join('')}
             ${allPhotos<APP.photosPerLog && used<APP.photoLimit?`<label class="add-photo">${icon('photo_camera')}<span>Take photo</span><input type="file" accept="image/*" capture="environment" id="lCam" aria-label="Take a photo"></label><label class="add-photo">${icon('photo_library')}<span>Add photos</span><input type="file" accept="image/*" multiple id="lPh" aria-label="Add photos from your library"></label>`:''}
           </div>
-          <div class="capacity mt16"><span class="cap-ico">${icon('photo_library')}</span><div class="grow"><div class="row between mono" style="font-size:12px;font-weight:700"><span>Scrapbook Roll Capacity</span><span style="color:var(--rust)">${used} / ${APP.photoLimit}</span></div><div class="cap-bar mt8"><i style="width:${Math.min(100,used/APP.photoLimit*100)}%"></i></div></div></div>
-          ${used>=APP.photoLimit?`<div class="alert warn mt16">${icon('photo_library')}<div><b>Photo roll is full</b>Delete a photo from your book to add more.</div></div>`:''}
-          <div class="eyebrow mt24">Who's this for?</div>
-          <div class="mt8" id="lWho">${whoHTML(d.who)}</div>
-          ${S.crewmates().length && d.kind==='visit' ? `<div class="row between mt24"><span class="eyebrow">Who were you with?</span>${d.tags.length?`<span class="tag soft">${d.tags.length} tagged</span>`:''}</div>
+          ${used>=APP.photoLimit ? `<div class="alert warn mt16">${icon('photo_library')}<div><b>Photo roll is full</b>Delete a photo from your book to add more.</div></div>`
+            : used>=APP.photoLimit-20 ? `<p class="muted small mt8">${used} of ${APP.photoLimit} photos used</p>` : ''}
+          <button type="button" class="details-toggle mt24" id="lDetails" aria-expanded="${details}" aria-controls="lDetailBox"><span class="grow"><b>${details?'Details':'Add details'}</b><small>${esc(filled.join(' · ') || (isVisit?'Date, meal, what you had, notes, who you were with':'Meal, why you want to go'))}</small></span>${icon(details?'expand_less':'expand_more')}</button>
+          ${details ? `<div id="lDetailBox">
+          ${isVisit?`<div class="mt16"><span class="eyebrow">Date</span><label class="date-pill mt8">${icon('calendar_month')}<span id="lDateTxt">${d.date===todayISO()?'Today, ':''}${fmtDate(d.date,{day:'numeric',month:'short'})}</span><input type="date" id="lDate" value="${d.date}" max="${todayISO()}"></label></div>`:''}
+          <div class="row between mt24"><span class="eyebrow">Meal</span><span class="hand">Optional</span></div>
+          <div class="chip-wrap mt8" id="lMeals">${MEALS.map(m=>`<button type="button" class="person-chip meal-chip${d.meals.includes(m.id)?' on':''}" data-meal="${m.id}" aria-pressed="${d.meals.includes(m.id)}">${icon(m.icon)}${m.label}</button>`).join('')}</div>
+          ${isVisit ? dishHTML() : ''}
+          <div class="field-label mt24"><span class="eyebrow">${isVisit?'Notes':'Why you want to go'}</span><span class="hand">Optional</span></div>
+          <textarea class="input mt8" id="lNotes" maxlength="400" placeholder="${isVisit?'Tasting notes, hidden gems, dish recommendations…':'Who recommended it, what to order…'}">${esc(d.notes)}</textarea>
+          ${S.crewmates().length && isVisit ? `<div class="row between mt24"><span class="eyebrow">Who were you with?</span>${d.tags.length?`<span class="tag soft">${d.tags.length} tagged</span>`:''}</div>
           <p class="muted small mt4">They'll see it in their Tagged scrapbook, and it goes in the crew book you share. Or type @name in your notes.</p>
-          <div class="chip-scroll mt8" id="lTags">${S.crewmates().map(u=>`<button type="button" class="person-chip${d.tags.includes(u.id)?' on':''}" data-tag="${u.id}" aria-pressed="${d.tags.includes(u.id)}">${avatarHTML(u,30)}@${esc(u.handle)}${d.tags.includes(u.id)?icon('check_circle'):''}</button>`).join('')}</div>${tagCrews.length?`<p class="tag-note mt8">${icon('groups')}<span>Tagging shares this visit with <b>${esc(tagCrews.map(c=>c.name).join(' and '))}</b></span></p>`:''}` : ''}
+          <div class="chip-scroll mt8" id="lTags">${S.crewmates().map(u=>`<button type="button" class="person-chip${d.tags.includes(u.id)?' on':''}" data-tag="${u.id}" aria-pressed="${d.tags.includes(u.id)}">${avatarHTML(u,30)}@${esc(u.handle)}${d.tags.includes(u.id)?icon('check_circle'):''}</button>`).join('')}</div>` : ''}
+          </div>` : ''}
         </div>
-        <button class="btn btn-gold btn-block mt24" id="lSave" style="min-height:62px;font-size:21px">${icon('bookmark_add')}${editing?'Save changes':'Save to Scrapbook'}</button>
-        ${editing?`<button class="btn btn-danger btn-block mt16" id="lDel">${icon('delete')}Delete this log</button>`:''}
-      </div>`;
+        ${editing?`${who}<button class="btn btn-gold btn-block mt24" id="lSave" style="min-height:62px;font-size:21px">${icon('bookmark_add')}Save changes</button>
+          <button class="btn btn-danger btn-block mt16" id="lDel">${icon('delete')}Delete this log</button>`:''}
+      </div>${editing ? '' : who}`;
       // wiring
       const ch=el.querySelector('#lChange'); if (ch) ch.onclick=()=>{ venue=null; paint(); };
       const jn=el.querySelector('#lJoin'); if (jn) jn.onclick=()=>{ back(); setTimeout(()=>rateSheet(tagged.id), 80); };
@@ -425,8 +446,12 @@ function logFlow(opts){
       const st=el.querySelector('#lStars'); if (st) stars=starInput(st, d.rating, v=>{ d.rating=v; });
       const dt=el.querySelector('#lDate'); if (dt) dt.onchange=()=>{ d.date=dt.value||todayISO(); keepScroll(paint); };
       const vf=el.querySelector('#lVerify'); if (vf) vf.onclick=()=>locate();
-      const nt=el.querySelector('#lNotes'); nt.oninput=()=>{ d.notes=nt.value; };
-      bindWho(el, ()=>d.who, v=>{ d.who=v; keepScroll(paint); });
+      const nt=el.querySelector('#lNotes'); if (nt) nt.oninput=()=>{ d.notes=nt.value; };
+      const dl=el.querySelector('#lDetails'); if (dl) dl.onclick=()=>{ details=!details; keepScroll(paint); };
+      if (editing) bindWho(el, ()=>d.who, v=>{ d.who=v; keepScroll(paint); });
+      // a new log: the button you tap says who it's for, and saves
+      el.querySelectorAll('[data-save]').forEach(b=>b.onclick=()=>{ d.who = b.dataset.save==='me' ? [] : [b.dataset.save]; save(); });
+      const wm=el.querySelector('#lWhoMore'); if (wm) wm.onclick=()=>askWho({ title:'Save '+venue.name+' for', action: d.kind==='visit' ? 'Save' : 'Save to try' }, sel=>{ d.who=sel; save(); });
       el.querySelectorAll('[data-meal]').forEach(b=>b.onclick=()=>{ const m=b.dataset.meal; d.meals=d.meals.includes(m)?d.meals.filter(x=>x!==m):[...d.meals,m]; keepScroll(paint); });
       // what you had: tap a suggestion to add it, tap a chosen one to take it off, or type one and press Enter
       el.querySelectorAll('[data-dish-add]').forEach(b=>b.onclick=()=>{ d.dish = S.dishTagsOf([...d.dish, b.dataset.dishAdd]); keepScroll(paint); });
@@ -447,7 +472,7 @@ function logFlow(opts){
       };
       ['#lPh', '#lCam'].forEach(s=>{ const i=el.querySelector(s); if (i) i.onchange=()=>addFiles(i); });
       el.querySelector('#lMore').onclick=()=>placeScreen(venue.id);
-      el.querySelector('#lSave').onclick=save;
+      const sv=el.querySelector('#lSave'); if (sv) sv.onclick=save;
       const del=el.querySelector('#lDel'); if (del) del.onclick=async()=>{
         const snap=await S.deleteEntry(editing.id); back(); go.refresh();
         toast('Log deleted', snap && !snap.photos.length ? 'Undo' : null, ()=>{ S.restoreEntry(snap); go.refresh(); });
@@ -519,7 +544,7 @@ function logFlow(opts){
     };
     const save=async()=>{
       if (d.who===null){ el.querySelector('#lWho').scrollIntoView({ block:'center', behavior:'smooth' }); return toast('Choose who it’s for'); }
-      const btn=el.querySelector('#lSave'); btn.disabled=true;
+      el.querySelectorAll('#lSave, [data-save], #lWhoMore').forEach(b=>{ b.disabled=true; });
       go.tourSaved && go.tourSaved();
       // one check-in per place a day; another visit the same day is just a visit
       const isCheckin = checkedIn() && !S.entries({venueId:venue.id, userId:me.id, kind:'visit'}).some(x=>x.checkin && x.date===todayISO());
