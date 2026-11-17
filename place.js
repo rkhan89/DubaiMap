@@ -337,7 +337,8 @@ function logFlow(opts){
     let stars=null;
     const paint=()=>{
       const crew=S.myCrew();
-      const header = topbar({title: editing?'Edit visit':'Check in', center:true, actions:`<button class="icon-btn" id="lMore" aria-label="More">${icon('more_vert')}</button>`});
+      // step 2's ⋮ opens the place page; step 1 has no place yet, so no menu
+      const header = topbar({title: editing?'Edit visit':'Check in', center:true, actions: venue ? `<button class="icon-btn" id="lMore" aria-label="More">${icon('more_vert')}</button>` : ''});
       const stepRow = `<div class="row between mt8"><span class="row" style="gap:var(--sp-2)"><i style="width:14px;height:14px;border-radius:50%;background:${venue?'var(--gold-deep)':'var(--gold)'};display:inline-block"></i><i style="width:46px;height:8px;border-radius:4px;background:var(--gold);display:inline-block"></i><i style="width:14px;height:14px;border-radius:50%;background:${venue?'var(--gold)':'var(--sc-highest)'};display:inline-block"></i></span><span class="hand">${venue?'Step 2: details and memories':'Step 1: find the place'}</span></div>`;
       if (!venue){
         const results = S.searchVenues(query, 10);
@@ -362,7 +363,6 @@ function logFlow(opts){
           const same = S.venueNear(dd.name, dd.lat, dd.lng);
           if (same) toast(same.name+' is already on the map: your visit goes there');
           venue = same || S.addVenue(dd); if (dd.meals && dd.meals.length) d.meals=dd.meals.slice(); paint(); });
-        el.querySelector('#lMore').onclick=()=>toast('Search your crew’s places, or type a new name to add it');
         return;
       }
       const sum=M.venueSummary(venue,{...state.scope, mode:'crew', members:null});
@@ -375,7 +375,7 @@ function logFlow(opts){
       // tagging a crewmate shares the visit with a crew you're both in
       const tagCrews = d.kind==='visit' ? S.crewsForTags([...d.tags, ...S.mentionIds(d.notes)], d.who||[], editing ? editing.taggedIds : []) : [];
       el.innerHTML = header + `<div class="screen-body">${stepRow}
-        <label class="search mt16">${icon('search')}<input value="${esc(venue.name)}" readonly aria-label="Place">${editing?'':`<button id="lChange" aria-label="Change place" class="icon-btn">${icon('check_circle')}</button>`}</label>
+        <label class="search mt16">${icon('search')}<input value="${esc(venue.name)}" readonly aria-label="Place">${editing?'':`<button type="button" id="lChange" class="link small" aria-label="Change place">Change</button>`}</label>
         ${others.length?`<div class="already mt16"><b>${esc(venue.name)} is already on the crew map!</b>
           <p class="muted mt4">${tagged ? `<span class="hl">${esc(S.user(tagged.userId)?.name||'A friend')}</span> tagged you on their visit. Add your rating and photos to it, or log a new visit of your own below.` : `Your visit goes on the same pin as ${others.slice(0,2).map(u=>`<span class="hl">${esc(u.name||u.handle)}</span>`).join(' and ')}${others.length>2?` +${others.length-2}`:''}'s.`}</p>
           ${tagged ? `<button type="button" class="btn btn-gold btn-block mt16" id="lJoin">${icon('add_a_photo')}Add to their visit</button>` : ''}
