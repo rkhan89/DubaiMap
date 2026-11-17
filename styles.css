@@ -1910,3 +1910,20 @@ body.public-page{background:var(--surface);min-height:100vh;}
 /* shared with a crew: a sea-teal band between two ink lines around the pin, with the owner's face (Just me pins have the lock and no band) */
 .stamps-layer .stamp.shared .st-paper{box-shadow:0 0 0 1px #1d1712, 0 0 0 4px var(--crew), 0 0 0 5px #1d1712, -3px 3px 0 rgba(18,20,38,.45);}
 .stamps-layer .stamp-anchor.selected>.stamp.shared .st-paper{box-shadow:0 0 0 1px #1d1712, 0 0 0 4px var(--crew), 0 0 0 5px #1d1712, 0 0 0 8px #fffdf8, 0 0 0 10px #1d1712, -3px 3px 0 rgba(18,20,38,.45);}
+
+/* =========================================================
+   STEP 4 SPIKE (?nav=sheet): the map sheet. Peek, half and full; the List's content inside.
+   ========================================================= */
+.msheet{position:absolute;left:0;right:0;bottom:0;height:100%;z-index:18;background:var(--surface);border-radius:22px 22px 0 0;box-shadow:0 -1px 0 var(--ink), 0 -6px 18px rgba(var(--shade),.18);display:flex;flex-direction:column;touch-action:none;will-change:transform;}
+.ms-grab{flex:none;height:28px;display:flex;align-items:center;justify-content:center;cursor:grab;}
+.ms-grab i{width:40px;height:5px;border-radius:3px;background:var(--line);}
+.ms-body{flex:1;min-height:0;overflow:hidden;overscroll-behavior:contain;}
+.msheet.full .ms-body{overflow-y:auto;touch-action:pan-y;-webkit-overflow-scrolling:touch;}
+.msheet.full.at-top .ms-body{touch-action:pan-down;}
+.msheet #listView{display:block;position:static;inset:auto;overflow:visible;padding:0 max(var(--gutter),var(--safe-r)) calc(var(--sp-4) + var(--safe-b)) max(var(--gutter),var(--safe-l));}
+.msheet #listView .list-inner{padding-bottom:var(--sp-5);}
+/* the map's own buttons ride above the sheet */
+body.nav-sheet .map-ctrl{bottom:calc(var(--sheet-y, 148px) + var(--sp-3));transition:bottom .32s cubic-bezier(.2,.9,.3,1);}
+body.nav-sheet .mem-strip{display:none;}
+body.nav-sheet #nav [data-tab="list"]{display:none;}
+body.nav-sheet .peek{z-index:19;}

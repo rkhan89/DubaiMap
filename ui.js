@@ -30,6 +30,13 @@ function pushLayer(layer){
 }
 // close the top layer programmatically (keeps history in step)
 export function back(){ if (stack.length) history.back(); }
+// something that isn't a screen or sheet but should go on Android back (the map sheet, raised): returns a
+// release for when it goes down by itself
+export function pushBackLayer(onBack){
+  const l = { close:()=>onBack() };
+  pushLayer(l);
+  return ()=>{ const i = stack.indexOf(l); if (i < 0) return; if (i === stack.length-1){ stack.pop(); ignorePop++; history.back(); } else stack.splice(i, 1); };
+}
 export function closeAll(then, instant){ popTo(0, then, instant); }
 // close everything above the first k layers; then() runs once history has caught up.
 // instant: no slide-out (switching tabs, as on iPhone, is a cut, not a transition)

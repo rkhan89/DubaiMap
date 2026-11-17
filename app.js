@@ -29,6 +29,8 @@ import { paintStrip, onThisDay, openMemory } from './memories.js';
 import './rate.js';
 import './critterui.js';
 import { openLandmark } from './landmarkui.js';
+import { sheetFlag, mountSheet } from './sheet.js';
+let sheet = null;   // step 4 spike: the map sheet (?nav=sheet)
 import { mountMapSearch } from './searchui.js';
 import { checkAiTags, tagAfterUpload } from './aitags.js';
 S.onPhotoSaved(id=>tagAfterUpload(id));
@@ -111,7 +113,7 @@ function rebuild(){
   // filter dot
   const filtered = isFiltered();
   $('#btnFilter').classList.toggle('filtered', filtered);
-  if (state.view==='list') renderList();
+  if (state.view==='list' || sheet) renderList();
   paintProfileButtons();
 }
 function isFiltered(){ const sc=scope(); return !!(sc.cats || sc.meals || sc.members || sc.privacy!=='all' || !sc.status.been || !sc.status.want); }
@@ -190,6 +192,7 @@ go.activity = openActivity;
 /* ---------- peek card ---------- */
 let peekId=null;
 function showPeek(venueId){
+  sheet && sheet.go(0);   // (spike) the place card comes up over a lowered sheet
   const v=S.venue(venueId); if (!v) return;
   const sum=M.venueSummary(v, {...scope(), members:null});
   peekId=venueId;
@@ -497,7 +500,7 @@ async function boot(){
     onMeTap:()=>go.editAvatar(),
     onEmptyTap:()=>hidePeek(),
     onLandmarkTap:(lm)=>{ hidePeek(); openLandmark(lm.id); },
-    onDragStart:()=>hidePeek(),
+    onDragStart:()=>{ hidePeek(); sheet && sheet.stop==='half' && sheet.go(0); },
     onLocation:(st)=>{
       const b=$('#btnLocate');
       b.classList.toggle('busy', st==='busy'); b.classList.toggle('on', st==='on');
@@ -507,6 +510,7 @@ async function boot(){
     },
   });
   MAP.whenReady(()=>{ $('#mapLoading').classList.add('done'); });
+  if (sheetFlag()){ sheet = mountSheet({ host:$('#mapView'), list:$('#listView') }); renderList(); }
   paintMe();
   const join = new URLSearchParams(location.search).get('join');
   if (join){ state.pendingJoin = join.toUpperCase(); history.replaceState(null,'',location.pathname); }
