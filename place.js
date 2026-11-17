@@ -339,7 +339,7 @@ function logFlow(opts){
       const crew=S.myCrew();
       // step 2's ⋮ opens the place page; step 1 has no place yet, so no menu
       const header = topbar({title: editing?'Edit visit':'Check in', center:true, actions: venue ? `<button class="icon-btn" id="lMore" aria-label="More">${icon('more_vert')}</button>` : ''});
-      const stepRow = `<div class="row between mt8"><span class="row" style="gap:var(--sp-2)"><i style="width:14px;height:14px;border-radius:50%;background:${venue?'var(--gold-deep)':'var(--gold)'};display:inline-block"></i><i style="width:46px;height:8px;border-radius:4px;background:var(--gold);display:inline-block"></i><i style="width:14px;height:14px;border-radius:50%;background:${venue?'var(--gold)':'var(--sc-highest)'};display:inline-block"></i></span><span class="hand">${venue?'Step 2: details and memories':'Step 1: find the place'}</span></div>`;
+      const stepRow = `<div class="row between mt8"><span class="ck-steps" aria-hidden="true"><i class="${venue?'done':'on'}"></i><i class="bar"></i><i class="${venue?'on':''}"></i></span><span class="hand">${venue?'Step 2: details and memories':'Step 1: find the place'}</span></div>`;
       if (!venue){
         const results = S.searchVenues(query, 10);
         el.innerHTML = header + `<div class="screen-body">${stepRow}

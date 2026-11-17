@@ -765,7 +765,7 @@ textarea.input{min-height:110px;resize:none;line-height:1.45;}
 .radio-card.on{background:var(--card);box-shadow:none;}
 .radio-card .rc-head{display:flex;align-items:center;gap:var(--sp-2);font-family:var(--f-head);font-weight:800;font-size:19px;}
 .radio-card .rc-head .dot{width:20px;height:20px;border-radius:50%;box-shadow:inset 0 0 0 2px var(--outline);}
-.radio-card.on .rc-head .dot{box-shadow:inset 0 0 0 6px var(--gold-deep);}
+.radio-card.on .rc-head .dot{box-shadow:inset 0 0 0 6px var(--ink);}
 .radio-card p{margin:var(--sp-2) 0 0 var(--sp-5);color:var(--ink-2);}
 .skeleton{background:linear-gradient(90deg,var(--sc) 0%,var(--sc-low) 50%,var(--sc) 100%);background-size:200% 100%;animation:shimmer 1.4s linear infinite;border-radius:10px;}
 @keyframes shimmer{to{background-position:-200% 0;}}
@@ -982,7 +982,16 @@ html{overflow:hidden;}
 .rv-with{display:flex;align-items:center;gap:var(--sp-2);margin-top:var(--sp-2);font-size:14px;color:var(--ink-2);}
 .rv-with .ms{font-size:18px;}
 .rv-with .link{margin-left:auto;}
-.who-grid .radio-card.on{box-shadow:inset 0 0 0 2px var(--gold);}
+/* who it's for: selected is ink; a crew picked shows the shared colour, with its crew icon */
+.who-grid .radio-card.on{box-shadow:inset 0 0 0 2px var(--ink);}
+.who-grid .radio-card.on:not([data-who="me"]){background:var(--crew-tint);}
+.who-grid .radio-card.on:not([data-who="me"]) .rc-head .ms{color:var(--crew);}
+/* check-in steps: two dots and a bar, ink for where you are */
+.ck-steps{display:flex;align-items:center;gap:var(--sp-2);}
+.ck-steps i{width:14px;height:14px;border-radius:50%;background:var(--sc-highest);display:inline-block;}
+.ck-steps i.bar{width:46px;height:8px;border-radius:4px;background:var(--ink-3);}
+.ck-steps i.on{background:var(--ink);}
+.ck-steps i.done{background:var(--ink-3);}
 .who-grid .radio-card .rc-head .trunc{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;line-height:1.15;}
 .who-grid .radio-card p.trunc{white-space:normal;}
 .meal-chip{padding:0 var(--sp-3) 0 var(--sp-3);gap:var(--sp-2);}
@@ -1471,7 +1480,7 @@ button,.btn,.icon-btn,.cat-chip,.person-chip,.switch{-webkit-user-select:none;us
 /* keyboard focus: one visible ring everywhere (taps don't show it; :focus-visible is keyboard and switch access) */
 :focus-visible{outline:2px solid var(--gold-deep, #7e5700);outline-offset:2px;}
 .input:focus-visible,.search input:focus-visible,.ksearch-bar input:focus-visible,.handle-input input:focus-visible,.caption-box input:focus-visible{outline:none;}
-.search:focus-within,.handle-input:focus-within,.caption-box:focus-within{box-shadow:inset 0 0 0 2px var(--gold-deep, #7e5700);}
+.search:focus-within,.handle-input:focus-within,.caption-box:focus-within{box-shadow:inset 0 0 0 2px var(--ink);}
 
 /* =========================================================
    TABS: the tab bar stays on every page (tab roots and pages pushed on them),
