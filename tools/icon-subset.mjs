@@ -23,7 +23,8 @@ const UA = 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Geck
 export function scanWords(root = ROOT){
   const words = new Set();
   for (const f of fs.readdirSync(root)){
-    if (!/\.(js|html)$/.test(f)) continue;
+    // the app's pages and modules (the style guide page is a review aid, not the app)
+    if (!/\.(js|html)$/.test(f) || f === 'styleguide.html') continue;
     const s = fs.readFileSync(path.join(root, f), 'utf8');
     for (const m of s.matchAll(/['"`>]([a-z][a-z0-9_]{1,40})['"`<]/g)) words.add(m[1]);
   }
