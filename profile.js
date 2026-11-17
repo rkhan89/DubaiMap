@@ -39,7 +39,7 @@ function profileScreen(userId){
       const favArea = Object.entries(areaCounts).sort((a,b)=>b[1]-a[1])[0];
       const recent = all.visitList.slice().reverse().slice(0,5);
       const goals = mine ? goalProgress() : [];
-      el.innerHTML = topbar({title: mine ? 'Your profile' : (u.name||u.handle), eyebrow: mine ? 'Scrapbook passport' : 'Crew friend', profile:false,
+      el.innerHTML = topbar({title: mine ? 'Your profile' : (u.name||u.handle), eyebrow: mine ? 'Profile' : 'Crew friend', profile:false,
         actions: mine ? `<button class="icon-btn" id="prSettings" aria-label="Settings">${icon('settings')}</button>` : ''}) + `<div class="screen-body">
         <div class="passport mt16 profile-hero"><span class="tape"></span>
           <div class="row" style="gap:var(--sp-3);align-items:center">${avatarHTML(u, 84)}
@@ -121,7 +121,7 @@ function settingsScreen(){
           ${row('share','Who sees your places','You choose every time you save: just you, or any of your crews. Change a place later from its page.', '')}
         </div>
         <div class="eyebrow mt24">Notifications</div><div class="stack mt8">
-          ${row('notifications_active','Reminders on this phone', 'Crew bites you’re going to, and a heads-up before light shows. Needs the app open or installed.', toggleHTML('sNotify', p.notify && ('Notification' in window) && Notification.permission==='granted','Reminders'))}
+          ${row('notifications_active','Reminders on this phone', 'Crew plans you’re going to, and a heads-up before light shows. Needs the app open or installed.', toggleHTML('sNotify', p.notify && ('Notification' in window) && Notification.permission==='granted','Reminders'))}
         </div>
         <div class="eyebrow mt24">Crew</div><div class="stack mt8">
           ${link('groups', crew?esc(crew.name):'Your crew', crew?plural(crew.memberIds.length,'member'):'Start or join a crew', 'crew')}

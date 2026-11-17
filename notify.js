@@ -33,7 +33,7 @@ export function scheduleReminders(){
   const t0 = now().getTime(), me = S.me();
   S.events({upcoming:true}).filter(ev=>ev.rsvps[me.id]==='going').forEach(ev=>{
     const at = new Date(ev.when).getTime() - 3600e3, v = S.venue(ev.venueId);
-    if (at > t0 && at - t0 < 864e5) timers.push(setTimeout(()=>notify(`${v?v.name:'Crew bite'} in an hour`, ev.note || 'The crew is meeting soon.'), at - t0));
+    if (at > t0 && at - t0 < 864e5) timers.push(setTimeout(()=>notify(`${v?v.name:'Crew plan'} in an hour`, ev.note || 'The crew is meeting soon.'), at - t0));
   });
   if (prefs().shows){
     const at = nextShowHeadsUp();
@@ -47,6 +47,6 @@ go.setNotify = async on=>{
   const p = await Notification.requestPermission();
   if (p !== 'granted'){ setPref('notify', false); toast('Notifications are blocked for this site'); return false; }
   setPref('notify', true); scheduleReminders();
-  notify('Reminders are on', "We'll nudge you before crew bites.");
+  notify('Reminders are on', "We'll nudge you before crew plans.");
   return true;
 };

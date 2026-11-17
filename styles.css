@@ -614,8 +614,8 @@ textarea.input{min-height:110px;resize:none;line-height:1.45;}
 .search-result{display:flex;align-items:center;gap:var(--sp-3);width:100%;text-align:left;padding:var(--sp-3);border-radius:14px;background:var(--card);box-shadow:var(--shadow-sm);}
 .search-result .sr-ico{width:40px;height:40px;border-radius:10px;background:var(--sc-high);display:flex;align-items:center;justify-content:center;flex:none;}
 .search-result .sr-ico svg{width:22px;height:22px;}
-.already{position:relative;background:var(--sc-highest);border-radius:var(--r-lg);padding:var(--sp-3) var(--sp-3) var(--sp-3) 56px;}
-.already::before{content:"📌";position:absolute;left:16px;top:14px;font-size:26px;}
+.already{position:relative;background:var(--sc-highest);border-radius:var(--r-lg);padding:var(--sp-3);}
+
 .already b{font-family:var(--f-head);font-size:19px;display:block;line-height:1.25;}
 .already .hl{color:var(--rust);font-weight:700;}
 .date-pill{display:flex;align-items:center;gap:var(--sp-2);height:54px;padding:0 var(--sp-3);border-radius:999px;background:var(--sc-low);font-family:var(--f-mono);font-weight:700;font-size:14px;position:relative;}
@@ -1700,7 +1700,7 @@ img.developing{animation:develop 1.5s ease-out forwards;}
 .dc-tray{flex:none;height:40%;min-height:260px;max-height:420px;display:flex;flex-direction:column;background:var(--surface);border-radius:24px 24px 0 0;box-shadow:0 -8px 24px rgba(var(--shade),.14);padding-bottom:var(--safe-b);}
 .dc-tabs{flex:none;display:flex;gap:var(--sp-1);overflow-x:auto;scrollbar-width:none;padding:var(--sp-2) max(var(--gutter),var(--safe-r)) 0 max(var(--gutter),var(--safe-l));}
 .dc-tabs::-webkit-scrollbar{display:none;}
-.dc-tabs button{flex:none;min-height:var(--tap);padding:0 var(--sp-3);border-radius:999px;font-family:var(--f-type);font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-2);}
+.dc-tabs button{flex:none;min-height:var(--tap);padding:0 var(--sp-3);border-radius:999px;font-family:var(--f-type);font-size:12px;font-weight:700;letter-spacing:0;color:var(--ink-2);}
 .dc-tabs button.on{background:var(--gold);color:var(--gold-ink);}
 .dc-tray-body{flex:1;min-height:0;overflow-y:auto;padding:var(--sp-2) max(var(--gutter),var(--safe-r)) var(--sp-3) max(var(--gutter),var(--safe-l));}
 .dc-tray-head{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-2);min-height:var(--tap);}

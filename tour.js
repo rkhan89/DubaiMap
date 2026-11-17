@@ -30,7 +30,7 @@ const STEPS = [
   { id:'stamp', target:'.stamp-anchor.dropped .stamp, .stamp-anchor.selected .stamp, .stamp-anchor .stamp', title:'Your first stamp', body:'Every place you log becomes a stamp. Tap one any time for its card, notes and photos.', next:true, wait:1500 },
   { id:'mode', target:'#mapMode', title:'You, or your crew', body:'Me shows your own places, private ones included. Crew shows what your friends share, each friend’s pins in their own colour, with their face up close.', next:true },
   { id:'filter', target:'#btnFilter', title:'Filters', body:'Filter by friend, kind of place or meal, or colour the areas you’ve explored.', next:true },
-  { id:'bell', target:'#btnBell', title:'Crew news', body:'A dot here means a friend logged somewhere, planned a bite or tagged you (add your own rating). Memories from this day in past years show up here too.', next:true },
+  { id:'bell', target:'#btnBell', title:'Crew news', body:'A dot here means a friend logged somewhere, made a plan or tagged you (add your own rating). Memories from this day in past years show up here too.', next:true },
   { id:'crew', target:'#nav [data-tab="crew"]', title:'Bring your crew', body:'Invite friends with a link. Your map fills up fast when they log too.', next:true },
   { id:'shelf', target:'#nav [data-tab="shelf"]', title:'Your scrapbook', body:'Every visit you log becomes a page, taped in automatically. Your critters and stickers live here too.', next:true },
   { id:'critters', target:'#navLog', title:'Find critters', body:'Twelve pixel animals live at real places around Dubai. Check in at a place while you’re there, or tap I’m here now on the Critters page. No clues: just explore.', next:true, last:true },

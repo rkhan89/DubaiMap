@@ -210,7 +210,7 @@ function showPeek(venueId){
        : (photos.length?`<div class="peek-quote"><span class="grow muted">${plural(photos.length,'photo')} from the crew</span><button class="btn btn-soft btn-sm" data-pk="view">View</button></div>`:'')}
     <div class="peek-btns">
       <button class="btn btn-soft" data-pk="open">${icon('menu_book')}Details</button>
-      <button class="btn btn-gold" data-pk="log">${icon('add_a_photo')}Add Bite</button>
+      <button class="btn btn-gold" data-pk="log">${icon('where_to_vote')}Check in</button>
     </div>`;
   const p=$('#peek'); p.hidden=false; requestAnimationFrame(()=>p.classList.add('in'));
   MAP.setSelected(venueId);

@@ -43,7 +43,7 @@ function crewSetup(opts){
       el.innerHTML = topbar({title:'Your crew', center:true, profile:false}) + `<div class="screen-body">
         ${opts.onboarding?setupProgress(5):''}
         <h1 class="h-xl mt16">Set up your food crew</h1>
-        <p class="muted mt8" style="font-size:16px">Share places with up to ${APP.crewMax-1} friends. Everything you share lands in one crew scrapbook.</p>
+        <p class="muted mt8" style="font-size:16px">Crews hold up to ${APP.crewMax} people, you included. Everything you share lands in one crew scrapbook.</p>
         <div class="mt24">${seg('ctab', [['create','Create Crew','group_add'],['join','Join Crew','key']], tab)}</div>
         ${tab==='create' && full ? `<div class="alert warn mt24">${icon('groups')}<div class="grow"><b>You're in ${APP.crewsPerPerson} crews</b>That's the most one person can be in. Leave one from the Crew tab to start another.</div></div>` : ''}
         ${tab==='create' ? `
@@ -142,7 +142,7 @@ function crewScreen(){
       if (!crew || members.length<2) return paintSolo(crew);
       const owner=crew.ownerId===me.id;
       const est=new Date(crew.createdAt).getFullYear();
-      el.innerHTML = topbar({title:S.myCrews().length>1?'Your Crews':'Your Crew', eyebrow:'Food journal', back:false}) + `<div class="screen-body">
+      el.innerHTML = topbar({title:S.myCrews().length>1?'Your Crews':'Your Crew', eyebrow:'Visits', back:false}) + `<div class="screen-body">
         ${switcherHTML()}
         <div class="passport mt16"><span class="tape"></span>
           <div class="row" style="align-items:flex-start">
@@ -151,7 +151,7 @@ function crewScreen(){
               <div class="pp-code">CODE: <b>${esc(crew.code)}</b></div></div>
             <button class="btn btn-white btn-sm" id="cpCopy" style="border-radius:999px">${icon('content_copy')}COPY</button>
           </div>
-          <div class="row between mt16"><span class="row" style="gap:var(--sp-2)"><i style="width:9px;height:9px;border-radius:50%;background:var(--green);display:inline-block"></i>${members.length} of ${APP.crewMax} members aboard</span><span class="mono" style="color:var(--rust);font-weight:700;font-size:12px">${APP.crewMax-members.length} spots open</span></div>
+          <div class="row between mt16"><span class="row" style="gap:var(--sp-2)"><i style="width:9px;height:9px;border-radius:50%;background:var(--green);display:inline-block"></i>${members.length} of ${APP.crewMax} members</span><span class="mono" style="color:var(--rust);font-weight:700;font-size:12px">${APP.crewMax-members.length} spots open</span></div>
           <div class="cap-bar"><i style="width:${Math.round(members.length/APP.crewMax*100)}%"></i></div>
         </div>
         <div class="row mt24" style="align-items:flex-start">
@@ -160,7 +160,7 @@ function crewScreen(){
         </div>
         <button class="card mt16 block-btn row" id="cChallenges">${icon('flag')}<span class="grow"><b>Crew challenges</b><span class="muted small" style="display:block">Three to do together this month</span></span>${icon('chevron_right')}</button>
         ${go.eventsCard ? go.eventsCard() : ''}
-        <div class="row between mt24"><span class="eyebrow">Fellow explorers (${members.length})</span>${syncStatusHTML()}</div>
+        <div class="row between mt24"><span class="eyebrow">Members (${members.length})</span>${syncStatusHTML()}</div>
         <div class="stack mt16">${members.map(u=>{
           const isMe=u.id===me.id, isOwner=u.id===crew.ownerId;
           return `<div class="person-row"><button data-profile="${u.id}" aria-label="${esc(u.name||u.handle)}'s profile" style="border-radius:50%">${avatarHTML(u,52)}</button><div class="pr-main">
@@ -193,7 +193,7 @@ function crewScreen(){
     };
     const paintSolo=(crew)=>{
       const me=S.me();
-      el.innerHTML = topbar({title:'Your Crew', eyebrow:'Food journal', back:false, profile:false, actions:`<span class="tag soft" style="width:48px;height:48px;border-radius:50%;justify-content:center;padding:0;font-size:13px">1/${APP.crewMax}</span>`}).replace('<span class="tb-eyebrow"></span>','<span class="eyebrow" style="color:var(--rust)">Food journal</span>') + `<div class="screen-body">
+      el.innerHTML = topbar({title:'Your Crew', eyebrow:'Visits', back:false, profile:false, actions:`<span class="tag soft" style="width:48px;height:48px;border-radius:50%;justify-content:center;padding:0;font-size:13px">1/${APP.crewMax}</span>`}).replace('<span class="tb-eyebrow"></span>','<span class="eyebrow" style="color:var(--rust)">Visits</span>') + `<div class="screen-body">
         ${switcherHTML()}
         <div class="solo-art mt24">
           <div class="solo-card"><div class="inner">${avatarHTML(me,86)}<b>You</b></div>
@@ -202,7 +202,7 @@ function crewScreen(){
           <span class="tag rust" style="font-family:var(--f-mono);font-size:12px;text-transform:none;letter-spacing:0;padding:var(--sp-2) var(--sp-3)">${icon('local_cafe')} Karak poured, waiting for the crew</span>
         </div>
         <h1 class="h-xl center mt24">Your crew is just you for now</h1>
-        <p class="muted center mt16" style="font-size:16px">${esc(APP.name)} is way more fun when you and your friends share the same map. Add up to ${APP.crewMax-1} friends to swap spots, leave reviews, and build your shared scrapbook.</p>
+        <p class="muted center mt16" style="font-size:16px">${esc(APP.name)} is way more fun when you and your friends share the same map. Bring up to ${APP.crewMax-1} friends (${APP.crewMax} people in all) to swap spots, leave reviews, and build your shared scrapbook.</p>
         <button class="btn btn-gold btn-block mt24" id="soInvite">${icon('share')}Invite friends to your crew</button>
         ${crew?`<div class="link-box mt16">${icon('key')}<span>Crew code <b>${esc(crew.code)}</b></span><button class="btn btn-white btn-sm" id="soCopy">${icon('content_copy')}Copy</button></div>`:''}
         <div class="card-soft mt24">

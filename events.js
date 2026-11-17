@@ -60,7 +60,7 @@ export function planBite(venueId, after){
   const start = new Date(Date.now()+864e5); start.setHours(19, 30, 0, 0);
   openSheet(body=>{
     body.innerHTML = `<div class="sheet-head"><span class="round-btn" style="width:44px;height:44px;box-shadow:none;background:var(--gold-fixed)">${icon('event')}</span>
-        <div class="grow"><h2 class="h-md">Plan a crew bite</h2><span class="hand">${crew?`Everyone in ${esc(crew.name)} gets the invite`:'Start a crew to invite friends'}</span></div></div>
+        <div class="grow"><h2 class="h-md">Plan</h2><span class="hand">${crew?`Everyone in ${esc(crew.name)} gets the invite`:'Start a crew to invite friends'}</span></div></div>
       <div class="eyebrow">Where</div>
       <label class="search mt8">${icon('storefront')}<input id="evQ" placeholder="Search a place" value="${esc(v?v.name:'')}" autocomplete="off"></label>
       <div class="stack mt8" id="evRes"></div>
@@ -143,7 +143,7 @@ export function eventRowHTML(ev){
 // crew screen: upcoming bites
 go.eventsCard = ()=>{
   const evs = S.events({upcoming:true});
-  return `<div class="card mt16"><div class="row between"><span class="h-sm">${icon('event')} Upcoming bites</span><button class="btn btn-ghost btn-sm" id="evNew">${icon('add')}Plan one</button></div>
+  return `<div class="card mt16"><div class="row between"><span class="h-sm">${icon('event')} Upcoming plans</span><button class="btn btn-ghost btn-sm" id="evNew">${icon('add')}Plan one</button></div>
     ${evs.length ? `<div class="stack mt8">${evs.slice(0,4).map(eventRowHTML).join('')}</div>` : '<p class="muted small mt8">Nothing planned. Pick a place and a time, and the crew gets the invite.</p>'}</div>`;
 };
 go.bindEventsCard = (el, repaint)=>{
