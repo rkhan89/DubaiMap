@@ -1,0 +1,20 @@
+{
+ "axeCounts": {
+  "q1-welcome": [],
+  "q15-map": [],
+  "q7-search-with-peek-open": [],
+  "q9-filter": [],
+  "q4-checkin-step1": [],
+  "q4-checkin-step2": [],
+  "q11-new-place": [],
+  "q9-plan-sheet": [],
+  "q11-crew": [],
+  "q10-settings-toggles": []
+ },
+ "hits": [
+  "Me/Crew segment: box 75x44, 44px hit yes",
+  "map area label: box 0x0, 44px hit NO",
+  "map place label: box 176x22, 44px hit NO"
+ ],
+ "errs": []
+}
