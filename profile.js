@@ -96,7 +96,6 @@ function settingsScreen(){
       const link = (ic, name, sub, key)=>`<button class="person-row" data-go="${key}">${icon(ic)}<span class="pr-main"><span class="pr-name">${name}</span>${sub?`<span class="pr-sub">${sub}</span>`:''}</span>${icon('chevron_right')}</button>`;
       el.innerHTML = topbar({title:'Settings', eyebrow:'Your scrapbook', profile:false}) + `<div class="screen-body">
         ${!S.cloud?`<div class="note mt16">${icon('science')}<span><b>Preview mode.</b> Your account, crew and photos live on this phone until sign-in goes live. Export a backup to move them.</span></div>`:''}
-        ${supportCardHTML()}
         <button class="person-row mt16 feedback-row" data-go="feedback">${icon('rate_review')}<span class="pr-main"><span class="pr-name">Send feedback</span><span class="pr-sub">Found a bug or have an idea? Tell us</span></span>${icon('chevron_right')}</button>
         <div class="eyebrow mt24">Account</div><div class="stack mt8 glist">
           ${link('face','Edit avatar','Pixel you on the map','avatar')}
@@ -125,7 +124,6 @@ function settingsScreen(){
         </div>
         <div class="eyebrow mt24">Crew</div><div class="stack mt8 glist">
           ${link('groups', crew?esc(crew.name):'Your crew', crew?plural(crew.memberIds.length,'member'):'Start or join a crew', 'crew')}
-          ${APP.sampleCrew?row('diversity_3','Preview with a sample crew','Adds Maya, Omar, Layla, Kabir & Noor with real-looking logs and photos, on this phone only', toggleHTML('sDemo', S.demoOn(),'Sample crew')):''}
         </div>
         <div class="eyebrow mt24">Your data</div><div class="stack mt8 glist">
           ${link('download','Export backup','Your logs and photos as one file','export')}
@@ -139,6 +137,10 @@ function settingsScreen(){
           ${link('table_view','How we use your data','Everything we keep, in one table','legal-data')}
           ${link('dataset','Data sources','Where place names, addresses and links come from','sources')}
         </div>
+        ${supportCardHTML()}
+        ${APP.sampleCrew?`<div class="eyebrow mt24">For testers</div><div class="stack mt8 glist">
+          ${row('diversity_3','Preview with a sample crew','Adds Maya, Omar, Layla, Kabir & Noor with real-looking logs and photos, on this phone only', toggleHTML('sDemo', S.demoOn(),'Sample crew'))}
+        </div>`:''}
         <button class="btn btn-danger btn-block mt24" id="sOut">${icon('logout')}Sign out</button>
         <button class="btn btn-ghost btn-block mt8" id="sDelete" style="color:var(--red)">${icon('delete_forever')}Delete my account</button>
         <p class="center mono muted small mt16">${esc(APP.name)} • version ${esc(APP.version||'')}</p>
