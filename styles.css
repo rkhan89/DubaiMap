@@ -579,9 +579,11 @@ textarea.input{min-height:110px;resize:none;line-height:1.45;}
 .passport .tape{top:-9px;left:50%;margin-left:calc(var(--sp-5) * -1);}
 .pp-icon{width:52px;height:52px;border-radius:50%;background:var(--sc-high);color:var(--ink);display:flex;align-items:center;justify-content:center;flex:none;box-shadow:var(--shadow-sm);}
 .pp-code{font-family:var(--f-mono);font-weight:700;font-size:15px;}
-.pp-code b{color:var(--gold-deep);letter-spacing:.15em;}
+.pp-code b{color:var(--ink);letter-spacing:.15em;}
+/* the crew's own icon: the shared colour (a crew is who you share with) */
+.passport .pp-icon{background:var(--crew-tint);color:var(--crew);}
 .cap-bar{height:12px;border-radius:999px;background:var(--sc);padding:2px;margin-top:var(--sp-2);}
-.cap-bar i{display:block;height:100%;border-radius:999px;background:var(--gold);}
+.cap-bar i{display:block;height:100%;border-radius:999px;background:var(--ink-3);}
 .solo-art{position:relative;background:var(--sc-low);border-radius:var(--r-xl);padding:var(--sp-6) var(--sp-3) var(--sp-4);display:flex;flex-direction:column;align-items:center;gap:var(--sp-3);background-image:radial-gradient(var(--sc-highest) 1.2px, transparent 1.4px);background-size:22px 22px;}
 .solo-art .label{position:absolute;top:-12px;left:50%;transform:translateX(-50%) rotate(-2deg);background:var(--rust-fixed);font-family:var(--f-body);font-weight:600;font-size:13px;padding:var(--sp-1) var(--sp-3);color:var(--rust-ink);}
 .solo-card{position:relative;background:var(--card);border-radius:14px;padding:var(--sp-3);box-shadow:var(--shadow);transform:rotate(-2deg);}

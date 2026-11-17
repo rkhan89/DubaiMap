@@ -59,7 +59,7 @@ export function planBite(venueId, after){
   let v = venueId ? S.venue(venueId) : null;
   const start = new Date(Date.now()+864e5); start.setHours(19, 30, 0, 0);
   openSheet(body=>{
-    body.innerHTML = `<div class="sheet-head"><span class="round-btn" style="width:44px;height:44px;box-shadow:none;background:var(--gold-fixed)">${icon('event')}</span>
+    body.innerHTML = `<div class="sheet-head"><span class="round-btn" style="width:44px;height:44px;box-shadow:none;background:var(--sc-high)">${icon('event')}</span>
         <div class="grow"><h2 class="h-md">Plan</h2><span class="hand">${crew?`Everyone in ${esc(crew.name)} gets the invite`:'Start a crew to invite friends'}</span></div></div>
       <div class="eyebrow">Where</div>
       <label class="search mt8">${icon('storefront')}<input id="evQ" placeholder="Search a place" value="${esc(v?v.name:'')}" autocomplete="off"></label>

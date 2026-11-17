@@ -60,7 +60,7 @@ function crewSetup(opts){
         <button class="btn btn-gold btn-block mt24" id="cInvite">${icon('share')}Invite friends</button>
         <div class="row between mt24"><span class="eyebrow">${icon('visibility')} What they’ll see</span></div>
         <div class="invite-card mt16"><span class="tag rust" style="position:absolute;top:-10px;left:50%;transform:translateX(-50%)">${esc(APP.name)}</span>
-          <div style="width:64px;height:64px;border-radius:50%;background:var(--gold-fixed);margin:var(--sp-2) auto 0;display:flex;align-items:center;justify-content:center">${icon('restaurant','', true)}</div>
+          <div style="width:64px;height:64px;border-radius:50%;background:var(--sc-high);margin:var(--sp-2) auto 0;display:flex;align-items:center;justify-content:center">${icon('restaurant','', true)}</div>
           <h2 class="h-md mt16">You're invited to ${esc(preview.name)}</h2>
           <div class="card-peach mt16" style="text-align:left">
             <div class="row between"><span class="eyebrow">${icon('groups')} Members</span><span class="tag green">1 of ${APP.crewMax}</span></div>
@@ -149,7 +149,7 @@ function crewScreen(){
             <span class="pp-icon">${icon('local_cafe','',true)}</span>
             <div class="grow"><div class="row" style="gap:var(--sp-2)"><span class="eyebrow">Since ${est}</span></div>
               <div class="pp-code">CODE: <b>${esc(crew.code)}</b></div></div>
-            <button class="btn btn-white btn-sm" id="cpCopy" style="border-radius:999px">${icon('content_copy')}COPY</button>
+            <button class="btn btn-white btn-sm" id="cpCopy" style="border-radius:999px">${icon('content_copy')}Copy</button>
           </div>
           <div class="row between mt16"><span class="row" style="gap:var(--sp-2)"><i style="width:9px;height:9px;border-radius:50%;background:var(--green);display:inline-block"></i>${members.length} of ${APP.crewMax} members</span><span class="mono" style="color:var(--rust);font-weight:700;font-size:12px">${APP.crewMax-members.length} spots open</span></div>
           <div class="cap-bar"><i style="width:${Math.round(members.length/APP.crewMax*100)}%"></i></div>
@@ -263,7 +263,7 @@ go.inviteLanding = async (code)=>{
     const count = crew ? (crew.count ?? members.length) : 0;
     el.innerHTML = topbar({title:'Crew invitation', center:true}) + `<div class="screen-body">
       <div class="invite-card mt24"><span class="tag rust" style="position:absolute;top:-10px;left:50%;transform:translateX(-50%)">${esc(APP.name)}</span>
-        <div style="width:64px;height:64px;border-radius:50%;background:var(--gold-fixed);margin:var(--sp-2) auto 0;display:flex;align-items:center;justify-content:center">${icon('restaurant','',true)}</div>
+        <div style="width:64px;height:64px;border-radius:50%;background:var(--sc-high);margin:var(--sp-2) auto 0;display:flex;align-items:center;justify-content:center">${icon('restaurant','',true)}</div>
         <h2 class="h-lg mt16">You're invited to ${esc(crew?crew.name:'a food crew')}</h2>
         ${crew&&crew.tagline?`<p class="muted mt8">${esc(crew.tagline)}</p>`:''}
         <div class="card-peach mt16" style="text-align:left">
