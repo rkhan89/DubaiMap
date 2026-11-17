@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Step 4: tab bar options</title>
+<link rel="stylesheet" href="../../fonts/fonts.css">
+<style>
+/* A mock for review only (step 4, D1): three ways to lay out Map · Crew · + · Scrapbook with the header gone.
+   Open with ?theme=dark for night. Nothing in the app uses this page. */
+:root{--surface:#f7f3ec;--card:#fff;--ink:#1d1712;--ink-2:#4b4239;--ink-3:#6c6258;--line:#8b8176;--gold:#e8a92b;--gold-ink:#5e4000;--crew:#0e6f78;--sc-high:#e7dfd2;--shadow:-2px 2px 0 rgba(18,20,38,.28);}
+:root[data-theme="dark"]{--surface:#141210;--card:#1f1b18;--ink:#f3ede4;--ink-2:#d6ccbf;--ink-3:#a99e91;--line:#7d7266;--gold:#f0b955;--gold-ink:#241800;--crew:#6ccfd4;--sc-high:#2a2521;}
+*{box-sizing:border-box;margin:0}
+body{background:var(--surface);color:var(--ink);font-family:"Google Sans Flex",system-ui,sans-serif;padding:24px;}
+.ms{font-family:"Material Symbols Outlined";font-size:24px;line-height:1;font-weight:400;font-variation-settings:'FILL' 0;-webkit-font-feature-settings:'liga';}
+.row{display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;}
+.opt h2{font-size:20px;margin:0 0 4px;font-weight:700;}
+.opt p{font-size:14px;color:var(--ink-2);max-width:390px;margin-bottom:12px;line-height:1.4;}
+.phone{position:relative;width:390px;height:844px;border-radius:28px;overflow:hidden;box-shadow:0 0 0 1px var(--line);background:#e9dcc6 center/cover no-repeat;}
+:root:not([data-theme="dark"]) .phone{background-image:url(map-light.jpg);}
+:root[data-theme="dark"] .phone{background-image:url(map-dark.jpg);}
+/* floating map chrome: solid, ink edge, hard shadow (the map overlay rule) */
+.float{position:absolute;background:var(--card);box-shadow:0 0 0 1px #1d1712, var(--shadow);}
+.search{top:52px;left:16px;right:16px;height:50px;border-radius:25px;display:flex;align-items:center;gap:10px;padding:0 16px;color:var(--ink-3);font-size:16px;}
+.search.short{right:122px;}
+.fab-top{top:52px;width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--ink);}
+.av{width:50px;height:50px;border-radius:50%;background:#f5c26b url(../../icons/icon-192.png) center/cover;}
+.bell{right:72px;} .me{right:16px;}
+.dot{position:absolute;top:12px;right:13px;width:9px;height:9px;border-radius:50%;background:#e2553f;box-shadow:0 0 0 2px var(--card);}
+/* the sheet at its lowest height */
+.sheet{position:absolute;left:0;right:0;bottom:84px;height:132px;background:var(--surface);border-radius:22px 22px 0 0;box-shadow:0 -1px 0 #1d1712, 0 -6px 18px rgba(0,0,0,.18);padding:10px 16px 0;}
+.grab{width:40px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 12px;}
+.sheet b{font-size:18px;display:block;}
+.sheet small{display:block;color:var(--ink-2);font-size:13px;margin-top:2px;}
+.chips{display:flex;gap:8px;margin-top:12px;}
+.chip{height:36px;padding:0 14px;border-radius:18px;display:flex;align-items:center;font-size:14px;font-weight:600;box-shadow:inset 0 0 0 1px var(--line);background:var(--card);}
+.chip.on{background:var(--ink);color:var(--surface);box-shadow:none;}
+/* the tab bar */
+.bar{position:absolute;left:0;right:0;bottom:0;height:84px;background:var(--surface);border-top:1px solid var(--sc-high);display:flex;align-items:flex-start;padding:6px 8px 0;}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;color:var(--ink-2);padding-top:6px;min-width:0;}
+.tab.on{color:var(--ink);font-weight:700;} .tab.on .ms{font-variation-settings:'FILL' 1;}
+.tab .mini{width:26px;height:26px;border-radius:50%;background:#f5c26b url(../../icons/icon-192.png) center/cover;box-shadow:0 0 0 1.5px var(--ink);}
+.plus{flex:none;width:64px;height:64px;border-radius:50%;background:var(--gold);color:var(--gold-ink);display:flex;align-items:center;justify-content:center;margin:-22px 6px 0;box-shadow:0 0 0 1px #1d1712, 0 0 0 5px var(--surface), var(--shadow);}
+.plus .ms{font-size:34px;font-weight:700;}
+.tab.wide{flex:2;}
+.gap{flex:1;}
+.rec{display:inline-block;margin-left:8px;font-size:12px;font-weight:700;background:var(--ink);color:var(--surface);border-radius:999px;padding:2px 10px;vertical-align:middle;}
+</style>
+<script>try{ if (new URLSearchParams(location.search).get('theme')==='dark') document.documentElement.dataset.theme='dark'; }catch(_){}</script>
+</head><body>
+<div class="row">
+
+<section class="opt">
+  <h2>A. Four across</h2>
+  <p>Map · Crew · + · Scrapbook in four equal slots. The + sits right of centre, under a right thumb. Bell and you float top right, beside a shorter search.</p>
+  <div class="phone">
+    <div class="float search short"><span class="ms">search</span>Search, or paste a link</div>
+    <div class="float fab-top bell"><span class="ms">notifications</span><i class="dot"></i></div>
+    <div class="float fab-top me av"></div>
+    <div class="sheet"><div class="grab"></div><b>Sample Crew’s map</b><small>30 places · 6 people</small><div class="chips"><span class="chip on">All</span><span class="chip">Been</span><span class="chip">Want to try</span></div></div>
+    <nav class="bar"><span class="tab on"><span class="ms">map</span>Map</span><span class="tab"><span class="ms">group</span>Crew</span><span class="plus"><span class="ms">add</span></span><span class="tab"><span class="ms">auto_stories</span>Scrapbook</span></nav>
+  </div>
+</section>
+
+<section class="opt">
+  <h2>B. Centred +, with You <span class="rec">Recommended</span></h2>
+  <p>Map · Crew · + · Scrapbook · You. The + is dead centre; your avatar moves into the bar, so only the bell floats over the map and search gets more room. (The round avatar here is a stand-in for yours.)</p>
+  <div class="phone">
+    <div class="float search short" style="right:72px"><span class="ms">search</span>Search, or paste a Maps link</div>
+    <div class="float fab-top me"><span class="ms">notifications</span><i class="dot"></i></div>
+    <div class="sheet"><div class="grab"></div><b>Sample Crew’s map</b><small>30 places · 6 people</small><div class="chips"><span class="chip on">All</span><span class="chip">Been</span><span class="chip">Want to try</span></div></div>
+    <nav class="bar"><span class="tab on"><span class="ms">map</span>Map</span><span class="tab"><span class="ms">group</span>Crew</span><span class="plus"><span class="ms">add</span></span><span class="tab"><span class="ms">auto_stories</span>Scrapbook</span><span class="tab"><span class="mini"></span>You</span></nav>
+  </div>
+</section>
+
+<section class="opt">
+  <h2>C. Two, +, one</h2>
+  <p>Map and Crew on the left, + centred, Scrapbook alone on the right with a wider target. Literal four items, + centred, but the bar looks lopsided.</p>
+  <div class="phone">
+    <div class="float search short"><span class="ms">search</span>Search, or paste a link</div>
+    <div class="float fab-top bell"><span class="ms">notifications</span><i class="dot"></i></div>
+    <div class="float fab-top me av"></div>
+    <div class="sheet"><div class="grab"></div><b>Sample Crew’s map</b><small>30 places · 6 people</small><div class="chips"><span class="chip on">All</span><span class="chip">Been</span><span class="chip">Want to try</span></div></div>
+    <nav class="bar"><span class="tab on"><span class="ms">map</span>Map</span><span class="tab"><span class="ms">group</span>Crew</span><span class="plus"><span class="ms">add</span></span><span class="tab wide"><span class="ms">auto_stories</span>Scrapbook</span></nav>
+  </div>
+</section>
+
+</div>
+</body></html>
