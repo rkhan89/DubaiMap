@@ -12,7 +12,7 @@ export default async function share1(h){
   const submit = async (v)=>{ await h.js(v=>{ const i=document.querySelector('#shIn'); i.value=v; }, v); await h.js(()=>document.querySelector('#shGo').click()); };
   await h.seed({mode:'crew'});
 
-  await step('+ opens a menu with "Add from link or text"', async ()=>{ await h.click('#navLog'); if (!/Add from link or text/.test(await text())) throw new Error('no menu'); await h.shot('s1-plus'); await h.js(()=>history.back()); await h.sleep(400); });
+  await step('+ opens Check in, with "Add from a link or text"', async ()=>{ await h.click('#navLog'); await h.sleep(300); if (!/Add from a link or text/.test(await text())) throw new Error('no link row'); await h.shot('s1-plus'); await h.js(()=>history.back()); await h.sleep(400); });
   await step('the add screen', async ()=>{ await openAdd(); await h.shot('s1-add'); });
   await step('a Google Maps link → confirm sheet, nobody picked yet', async ()=>{
     await submit(FULL); await p.waitForSelector('#cfAdd', {visible:true, timeout:8000});

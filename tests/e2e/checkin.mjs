@@ -8,13 +8,13 @@ export default async function checkin(h){
   const v = await h.js(async ()=>{ const S=await import('/store.js'); const v=S.addVenue({ name:'Check-in Test Café', zone:'jumeirah', categories:['cafe'], lat:25.2031, lng:55.2502 }); S.flush(); return { id:v.id, name:v.name, lat:v.lat, lng:v.lng }; });
   await h.load(`at=${v.lat},${v.lng},15`);
   const text = ()=>h.js(()=>document.body.innerText);
-  await step('the + menu has one Check in (and Add from link or text)', async ()=>{
-    await h.click('#navLog'); await h.sleep(400);
+  await step('+ opens Check in straight away (Add from link or text on its first step)', async ()=>{
+    await h.click('#navLog'); await h.sleep(700);
+    if (!await h.js(()=>!!document.querySelector('#logQ'))) throw new Error('+ did not open Check in');
     const rows = await h.js(()=>[...document.querySelectorAll('[data-plus]')].map(b=>b.dataset.plus));
-    if (rows.filter(r=>r!=='inbox').join(',') !== 'log,link') throw new Error('rows: '+rows);
-    if (!/Check in/.test(await text()) || /Log a place I've been|Check in where I am/.test(await text())) throw new Error('old wording still there');
+    if (rows.filter(r=>r!=='inbox').join(',') !== 'link') throw new Error('rows: '+rows);
+    if (/Log a place I've been|Check in where I am/.test(await text())) throw new Error('old wording still there');
     await h.shot('ci-menu');
-    await h.js(()=>document.querySelector('[data-plus="log"]').click()); await h.sleep(700);
   });
   await step('step 1 is search only: no I’m here now; typing finds the place', async ()=>{
     if (await h.js(()=>!!document.querySelector('#lHere')) || /I’m here now/.test(await h.js(()=>document.querySelector('.screen.in')?.innerText || ''))) throw new Error('I’m here now still on step 1');

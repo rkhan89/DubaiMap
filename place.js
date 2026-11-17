@@ -341,21 +341,29 @@ function logFlow(opts){
       const header = topbar({title: editing?'Edit visit':'Check in', center:true, actions: venue ? `<button class="icon-btn" id="lMore" aria-label="More">${icon('more_vert')}</button>` : ''});
       const stepRow = `<div class="row between mt8"><span class="ck-steps" aria-hidden="true"><i class="${venue?'done':'on'}"></i><i class="bar"></i><i class="${venue?'on':''}"></i></span><span class="hand">${venue?'Step 2: details and memories':'Step 1: find the place'}</span></div>`;
       if (!venue){
-        const results = S.searchVenues(query, 10);
+        // a pasted link isn't a name: look it up instead (the add-from-link flow)
+        const link = /https?:\/\/\S+/i.test(query);
+        const results = link ? [] : S.searchVenues(query, 10);
         el.innerHTML = header + `<div class="screen-body">${stepRow}
           <label class="search mt16">${icon('search')}<input id="logQ" placeholder="Search a café, bakery, karak stop…" value="${esc(query)}" autocomplete="off"></label>
           <div class="stack mt16" id="lRes">${results.map(v=>{
             const sum=M.venueSummary(v,{...state.scope, mode:'crew', members:null}), z=MAP.zoneById(v.zone);
             return `<button class="search-result" data-v="${v.id}">${stampHTML(sum.state,{cat:M.primaryCat(v)})}<span class="grow"><b class="trunc" style="display:block">${esc(v.name)}</b><span class="muted small">${esc(z?z.label:'')}${sum.visitorIds.length?` • ${plural(sum.visitorIds.length,'crew visit')}`:''}</span></span>${icon('chevron_right')}</button>`;
           }).join('')}
-          ${seedHTML()}
-          ${query.trim()?`<button class="search-result" id="lNew" style="background:var(--sc)"><span class="sr-ico">${icon('add_location_alt')}</span><span class="grow"><b class="trunc" style="display:block">Add “${esc(query.trim())}” yourself</b><span class="muted small" style="display:block">${g.q===query.trim() && !g.loading && !g.list.length ? 'Not in the list: type the name and pin it' : 'Not listed? Type the name and pin it'}</span></span>${icon('chevron_right')}</button>`:''}
+          ${link ? `<button class="search-result" data-plus="link"><span class="sr-ico">${icon('add_link')}</span><span class="grow"><b class="trunc" style="display:block">Look up this link</b><span class="muted small" style="display:block">Google Maps, TikTok or a caption</span></span>${icon('chevron_right')}</button>` : seedHTML()}
+          ${query.trim() && !link?`<button class="search-result" id="lNew" style="background:var(--sc)"><span class="sr-ico">${icon('add_location_alt')}</span><span class="grow"><b class="trunc" style="display:block">Add “${esc(query.trim())}” yourself</b><span class="muted small" style="display:block">${g.q===query.trim() && !g.loading && !g.list.length ? 'Not in the list: type the name and pin it' : 'Not listed? Type the name and pin it'}</span></span>${icon('chevron_right')}</button>`:''}
           </div>
-          ${!query.trim()?`<div class="empty"><span class="stamp st-want big"><span class="st-paper"><span class="st-ico">${iconSvg('karak','#7e5700')}</span></span><span class="st-ribbon">TRY</span></span><span class="hand">Where did you eat?</span><p class="muted small">${S.venues().length ? 'Search places you and your crew have pinned, or type a new name to add it.' : 'Type its name to add it. Every place on the map starts with someone pinning it.'}</p></div>`:''}
+          ${!query.trim()?`<div class="empty"><span class="stamp st-want big"><span class="st-paper"><span class="st-ico">${iconSvg('karak','#7e5700')}</span></span><span class="st-ribbon">TRY</span></span><span class="hand">Where did you eat?</span><p class="muted small">${S.venues().length ? 'Search places you and your crew have pinned, or type a new name to add it.' : 'Type its name to add it. Every place on the map starts with someone pinning it.'}</p></div>
+          <div class="stack mt24">
+            <button class="person-row" data-plus="link">${icon('add_link')}<span class="pr-main"><span class="pr-name">Add from a link or text</span><span class="pr-sub">A Google Maps or TikTok link, a caption, or a name</span></span>${icon('chevron_right')}</button>
+            ${S.inbox().length ? `<button class="person-row" data-plus="inbox">${icon('inbox')}<span class="pr-main"><span class="pr-name">Inbox</span><span class="pr-sub">${plural(S.inbox().length,'share')} waiting to be added</span></span><span class="tag">${S.inbox().length}</span></button>` : ''}
+          </div>`:''}
         </div>`;
         const q=el.querySelector("#logQ"); q.focus();
         q.oninput=()=>{ query=q.value; const pos=q.selectionStart; paint(); const n=el.querySelector("#logQ"); n.setSelectionRange(pos,pos); suggestSoon(); };
         el.querySelectorAll('[data-seed]').forEach(b=>b.onclick=()=>pickSeed(b.dataset.seed, b));
+        // the + button comes straight here: adding from a link and the Inbox live on this step now
+        el.querySelectorAll('[data-plus]').forEach(b=>b.onclick=()=>{ const k=b.dataset.plus, t=link ? query.trim() : undefined; back(); setTimeout(()=> k==='inbox' ? go.inbox() : go.shareAdd(t), 80); });
         el.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{ venue=S.venue(b.dataset.v); paint(); });
         // a landmark's 'Add a pin here' brings its spot along
         const nb=el.querySelector('#lNew'); if (nb) nb.onclick=()=>venueForm({name:query.trim(), ...(opts.prefill && opts.prefill.lat!=null ? { lat:opts.prefill.lat, lng:opts.prefill.lng, zone:zoneFor(opts.prefill.lat, opts.prefill.lng) || opts.zone } : { zone:opts.zone })}, dd=>{

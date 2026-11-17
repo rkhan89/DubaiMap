@@ -26,7 +26,7 @@ export default async function share4(h){
   });
   await step('+ menu shows the Inbox with its count; the Inbox lists it', async ()=>{
     await h.click('#navLog'); await h.sleep(400);
-    if (!/Inbox/.test(await text()) || !/1 share waiting/.test(await text())) throw new Error('no Inbox in the + menu');
+    if (!/Inbox/.test(await text()) || !/1 share waiting/.test(await text())) throw new Error('no Inbox on Check in');
     await h.shot('s4-plus');
     await h.js(()=>document.querySelector('[data-plus="inbox"]').click()); await h.sleep(700);
     if (!/Karak spot/.test(await text())) throw new Error('not listed');

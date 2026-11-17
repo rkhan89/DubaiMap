@@ -453,22 +453,11 @@ window.addEventListener('koko:tabclosed', ()=>{ const r=rootLayer(); navOn(r && 
 $('#nav').addEventListener('click', e=>{
   const b=e.target.closest('button'); if (!b) return;
   haptic(b.id==='navLog' ? 'tap' : 'tick');
-  if (b.id==='navLog') return openPlus();
+  // + is Check in: adding from a link and the Inbox are on its first step
+  if (b.id==='navLog') return go.log({});
   if (b.dataset.tab) toTab(b.dataset.tab);
 });
 
-/* the + menu: check in (there now or after), or add a place you saw somewhere */
-function openPlus(){
-  openSheet(body=>{
-    body.innerHTML = `<div class="stack">
-      <button class="person-row" data-plus="log">${icon('where_to_vote')}<span class="pr-main"><span class="pr-name">Check in</span><span class="pr-sub">Where you are now or somewhere you’ve been. Rate it, add photos.</span></span>${icon('chevron_right')}</button>
-      <button class="person-row" data-plus="link">${icon('add_link')}<span class="pr-main"><span class="pr-name">Add from link or text</span><span class="pr-sub">A Google Maps or TikTok link, a caption, or a name</span></span>${icon('chevron_right')}</button>
-      ${S.inbox().length ? `<button class="person-row" data-plus="inbox">${icon('inbox')}<span class="pr-main"><span class="pr-name">Inbox</span><span class="pr-sub">${plural(S.inbox().length,'share')} waiting to be added</span></span><span class="tag">${S.inbox().length}</span></button>` : ''}
-    </div>`;
-    body.querySelectorAll('[data-plus]').forEach(b=>b.onclick=()=>{ const k=b.dataset.plus; back(); setTimeout(()=> k==='log' ? go.log({}) : k==='inbox' ? go.inbox() : go.shareAdd(), 80); });
-  });
-}
-go.plus = openPlus;
 // back online with shares waiting: a nudge
 window.addEventListener('online', ()=>{ const n = S.me() ? S.inbox().length : 0; if (n) toast(`Back online. ${plural(n,'share')} waiting in your Inbox`, 'Open', ()=>go.inbox(), 6000); });
 
