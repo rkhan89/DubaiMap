@@ -51,7 +51,7 @@
   color-scheme:dark;
 }
 /* Paper stays paper at night: stamps, polaroids and photobook pages keep the light palette */
-:root[data-theme="dark"] :is(.stamp,.polaroid,.page,.spread-card,.map-dot,.cover,.book-spine,.paper,.cm-body){
+:root[data-theme="dark"] :is(.stamp,.polaroid,.page,.spread-card,.map-dot,.cover:not(.screen),.book-spine,.paper,.cm-body){
   --surface:#f7f3ec; --sc-lowest:#ffffff; --sc-low:#f1ece3; --sc:#ece5da; --sc-high:#e7dfd2; --sc-highest:#ded5c6; --sc-dim:#d6ccbb;
   --ink:#1d1712; --ink-2:#4b4239; --ink-3:#6c6258; --outline:#8b8176; --outline-v:#dcd3c5; --ink-on-light:#1d1712;
   --gold:#e8a92b; --gold-deep:#7e5700; --gold-dark:#604100; --gold-ink:#5e4000; --gold-fixed:#ffdead; --gold-fixed-ink:#5e4000; --gold-dim:#fabc4d;
