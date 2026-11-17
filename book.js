@@ -379,6 +379,10 @@ function bookOrder(pgs, mode, spreads){
   const by = new Map(); asc.forEach(p=>{ const k = p.entry ? p.entry.venueId : p.venueId; if (!by.has(k)) by.set(k, []); by.get(k).push(p); });
   return [...by.values()].sort((a,c)=>(a[a.length-1].date||'').localeCompare(c[c.length-1].date||'')).flat();
 }
+// where you left each book (this phone only): it opens there next time, or at the newest page
+const LAST_KEY = 'koko-book-last';
+const lastRead = (key)=>{ try{ return (JSON.parse(localStorage.getItem(LAST_KEY)||'{}'))[key] || null; }catch(_){ return null; } };
+const rememberPage = (key, pageId)=>{ try{ const m = JSON.parse(localStorage.getItem(LAST_KEY)||'{}'); m[key] = pageId; localStorage.setItem(LAST_KEY, JSON.stringify(m)); }catch(_){ } };
 function openPages(bookId, opts){
   opts = opts || {};
   const b = S.book(bookId); if (!b) return;
@@ -403,12 +407,15 @@ function openPages(bookId, opts){
         if (count) count.textContent = i < 0 ? `Cover • ${plural(pgs.length,'page')}` : i >= pgs.length ? 'The end' : `Page ${i+1} of ${pgs.length}`;
         if (slide) slide.value = Math.max(0, Math.min(pgs.length, i+1));
         const pg = pgs[i];
+        if (pg) rememberPage(b.id+'|'+mode, pg.id);
         wand.hidden = !(pg && (pg.entry || (pg.spread && !pg.spread.dropped)));
         el.querySelector('[data-kb="prev"]') && (el.querySelector('[data-kb="prev"]').disabled = i < 0);
         el.querySelector('[data-kb="next"]') && (el.querySelector('[data-kb="next"]').disabled = i >= pgs.length);
       };
       if (!pgs.length){ stage.innerHTML = emptyBookHTML(b, nf); const add = stage.querySelector('#bkAdd'); if (add) add.onclick = ()=>go.log(b.kind==='crew'?{ who:[b.crewId] }:{}); return; }
-      view = mountBook(stage, { book:b, pages:pgs, paper:b.paper||'plain', count:pgs.length, photos:pgs.flatMap(p=>p.photos), startAt, onPage, onAction:act });
+      // no page asked for: the cover swings open onto the page you were last on, else the newest
+      const was = lastRead(b.id+'|'+mode), wi = was ? pgs.findIndex(p=>p.id===was) : -1;
+      view = mountBook(stage, { book:b, pages:pgs, paper:b.paper||'plain', count:pgs.length, photos:pgs.flatMap(p=>p.photos), startAt, openTo: wi >= 0 ? wi : pgs.length-1, onPage, onAction:act });
       el.querySelector('[data-kb="prev"]').onclick = ()=>view.prev();
       el.querySelector('[data-kb="next"]').onclick = ()=>view.next();
       el.querySelector('[data-kb="last"]').onclick = ()=>view.turnTo(pgs.length-1);

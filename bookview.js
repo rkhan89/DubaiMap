@@ -19,10 +19,13 @@ export const preloadBook = ()=>{ if (!reduceMotion()) loadLib(); };
 const NEAR = 3;   // pages filled in either side of the open one
 
 // stage: the element to fill; o: { book, pages, paper, count, photos, startAt (index into pages, or -1 for the cover),
-//   onPage(i), onAction(el, event) }
+//   openTo (the page the cover swings open onto; the first page if not given), onPage(i), onAction(el, event) }
 export function mountBook(stage, o){
   const pages = o.pages, total = pages.length;
   let pf = null, cur = -1, destroyed = false, scale = 1;
+  // our own buttons turn pages: the library's "no flip on tap" setting would also block its own turn back (it
+  // starts from the left edge, which isn't a corner on a single page), so lift it for the call
+  const byButton = fn=>{ const s = pf.getSettings(); s.disableFlipByClick = false; try{ fn(); } finally{ s.disableFlipByClick = true; } };
   // leaves: the cover, the pages, and an end page
   const leaf = (cls, inner, density)=>{ const d = document.createElement('div'); d.className = 'kb-leaf ' + cls; if (density) d.dataset.density = density; d.innerHTML = inner || ''; return d; };
   const coverLeaf = leaf('kb-cover-leaf', `<div class="kb-scale">${coverHTML(o.book, o.count, o.photos)}</div>`, 'hard');
@@ -108,11 +111,11 @@ export function mountBook(stage, o){
     get index(){ return cur; }, total,
     turnTo(i, quiet){   // i: page index; -1 is the cover
       const li = Math.max(0, Math.min(leaves.length-1, i+1));
-      if (pf){ if (quiet) { pf.turnToPage(li); settle(li, true); } else pf.flip(li); }
+      if (pf){ if (quiet) { pf.turnToPage(li); settle(li, true); } else byButton(()=>pf.flip(li)); }
       else if (fadeShow) fadeShow(li);
     },
-    next(){ if (pf) pf.flipNext(); else if (fadeShow) fadeShow(fadeAt+1); },
-    prev(){ if (pf) pf.flipPrev(); else if (fadeShow) fadeShow(fadeAt-1); },
+    next(){ if (pf) byButton(()=>pf.flipNext()); else if (fadeShow) fadeShow(fadeAt+1); },
+    prev(){ if (pf) byButton(()=>pf.flipPrev()); else if (fadeShow) fadeShow(fadeAt-1); },
     pageEl(i){ fill(i); return pageLeaves[i] && pageLeaves[i].querySelector('.kb-page'); },
     lock(on){ stage.classList.toggle('kb-locked', !!on); },
     destroy(){ destroyed = true; try{ pf && pf.destroy(); }catch(_){} pf = null; removeEventListener('resize', onResize); },
@@ -131,7 +134,8 @@ export function mountBook(stage, o){
     if (!ok) fadeShow = fade();
     if (at != null && at >= 0){ near(at); api.turnTo(at, true); return; }
     settle(0, true);
-    if (!quiet && total){ setTimeout(()=>{ if (destroyed) return; moments.bookOpen(); near(0); api.next(); }, reduceMotion() ? 200 : 450); }
+    const to = Math.max(0, Math.min(total-1, o.openTo || 0));
+    if (!quiet && total){ setTimeout(()=>{ if (destroyed) return; moments.bookOpen(); near(to); to ? api.turnTo(to) : api.next(); }, reduceMotion() ? 200 : 450); }
   };
   addEventListener('resize', onResize);
   start(o.startAt);

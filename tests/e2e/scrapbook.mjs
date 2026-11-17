@@ -24,20 +24,22 @@ export default async function scrapbook(h){
     await h.shot('sb-shelf');
     await h.js(()=>{ document.querySelector('#screens .screen.in:last-of-type').scrollTop = 560; }); await h.sleep(300); await h.shot('sb-shelf-2');
   });
-  await step('Everything opens as a book: the cover swings open onto page 1', async ()=>{
+  await step('Everything opens as a book: the cover swings open onto the newest page', async ()=>{
     await h.js(()=>{ document.querySelector('#screens .screen.in:last-of-type').scrollTop = 0; document.querySelector('#screens .screen.in:last-of-type .shelf-book.big').click(); });
-    for (let k = 0; k < 40 && !(await h.js(()=>/Page 1/.test(document.querySelector('#screens .screen.in:last-of-type .kb-count')?.textContent||''))); k++) await h.sleep(250);
+    for (let k = 0; k < 40 && !(await h.js(()=>/Page \d+ of/.test(document.querySelector('#screens .screen.in:last-of-type .kb-count')?.textContent||''))); k++) await h.sleep(250);
     const r = await h.js(()=>{ const s = document.querySelector('#screens .screen.in:last-of-type');
       return { book:!!s.querySelector('.kb-book'), count:s.querySelector('.kb-count')?.textContent, pages:s.querySelectorAll('.kb-page').length, curl:!!s.querySelector('.stf__parent'), fade:!!s.querySelector('.kb-fade') }; });
     expect(r.book && r.pages > 0, 'no book '+JSON.stringify(r));
-    expect(/Page 1 of/.test(r.count||''), 'pager says '+r.count);
+    const m = /Page (\d+) of (\d+)/.exec(r.count||'');
+    expect(m && m[1]===m[2], 'not the newest page: '+r.count);
     console.log('  book', JSON.stringify(r));
     await h.shot('sb-book-p1');
   });
   await step('the pager turns pages', async ()=>{
-    await h.click('#screens .screen.in:last-of-type [data-kb="next"]'); await h.sleep(1100);
+    await h.click('#screens .screen.in:last-of-type [data-kb="prev"]'); await h.sleep(1100);
     const c = await h.js(()=>document.querySelector('#screens .screen.in:last-of-type .kb-count').textContent);
-    expect(/Page 2 of/.test(c), 'after next: '+c);
+    const m = /Page (\d+) of (\d+)/.exec(c||'');
+    expect(m && +m[1]===+m[2]-1, 'after previous: '+c);
     await h.shot('sb-book-p2');
     await h.click('#screens .screen.in:last-of-type [data-kb="last"]'); await h.sleep(1200);
     await h.shot('sb-book-last');
@@ -74,8 +76,9 @@ export default async function scrapbook(h){
     await h.sleep(2200);
     const r = await h.js(()=>{ const s = document.querySelector('#screens .screen.in:last-of-type'); return { fade:!!s.querySelector('.kb-fade'), curl:!!s.querySelector('.stf__parent'), count:s.querySelector('.kb-count')?.textContent }; });
     expect(r.fade && !r.curl, 'reduced motion '+JSON.stringify(r));
-    await h.click('#screens .screen.in:last-of-type [data-kb="next"]'); await h.sleep(500);
-    expect(/Page 2/.test(await h.js(()=>document.querySelector('#screens .screen.in:last-of-type .kb-count').textContent)), 'fade next');
+    await h.click('#screens .screen.in:last-of-type [data-kb="prev"]'); await h.sleep(500);
+    const c2 = await h.js(()=>document.querySelector('#screens .screen.in:last-of-type .kb-count').textContent);
+    expect(/Page \d+ of/.test(c2) && c2 !== r.count, 'fade previous: '+r.count+' then '+c2);
     await h.page.emulateMediaFeatures([{ name:'prefers-reduced-motion', value:'no-preference' }]);
   });
   await step('Settings has the Sounds switch, off by default on the web', async ()=>{
