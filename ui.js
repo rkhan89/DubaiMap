@@ -222,7 +222,7 @@ export function starsStatic(r, size){
   for (let k=1;k<=5;k++) o+=`<i class="${k<=r?'on':(k-0.5===r?'half':'')}">★</i>`;
   return `<span class="stars" style="font-size:${size||14}px">${o}</span>`;
 }
-export function ratingPill(r, cls){ return r ? `<span class="rating-pill ${cls||''}">${icon('star','',false)}${fmtRating(r)}</span>` : ''; }
+export function ratingPill(r, cls){ return r ? `<span class="rating-pill ${cls||''}">${icon('star','',true)}${fmtRating(r)}</span>` : ''; }
 // star input with halves: tap the left half of a star for .5, tap the same value again to clear
 export function starInput(el, value, onChange){
   const draw=()=>{ el.innerHTML=[1,2,3,4,5].map(k=>`<button type="button" data-v="${k}" class="${k<=value?'on':(k-0.5===value?'half':'')}" aria-label="${k} star${k>1?'s':''}">★</button>`).join(''); };

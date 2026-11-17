@@ -93,7 +93,7 @@ function placeScreen(venueId){
         <div class="row muted mt4" style="gap:var(--sp-2);align-items:flex-start">${icon('storefront')}<span style="overflow-wrap:anywhere">${esc([z?z.label:APP.city, v.address].filter(Boolean).join(' • '))}</span></div>
         ${S.venueTags(v.id).length ? `<div class="chip-wrap mt8">${S.venueTags(v.id).map(t=>`<span class="tag soft">${esc(t)}</span>`).join('')}</div>` : ''}
         ${contactHTML(v)}
-        ${mine.length?`<div class="share-card mt24${minePrivate?' private':''}"><span class="sc-ico">${icon(minePrivate?'lock':'lock_open')}</span>
+        ${mine.length?`<div class="share-card mt24${minePrivate?' private':''}"><span class="sc-ico">${icon(minePrivate?'lock':'group')}</span>
           <div class="grow"><b class="h-sm">${minePrivate?'Only you can see your log':esc(whoText(mineWho).replace(/.$/,''))}</b>
           <div class="muted small">${minePrivate?'Your notes & rating stay in your own scrapbook.':'They can see your notes, rating and photos here.'}</div></div>
           <button class="btn btn-soft btn-sm" id="pShare">Change</button></div>`:''}
@@ -109,13 +109,13 @@ function placeScreen(venueId){
         }).join('') || `<div class="card-soft center"><b>Nobody in your crew has been yet</b><p class="muted small mt8">Be the first to log it.</p></div>`}</div>
         ${wanters.length?`<div class="card-soft row mt16">${icon('bookmark')}<div class="grow"><b>Wants to try</b><div class="muted small">${plural(wanters.length,'crew friend')}${(()=>{ const L={google_maps:'from Google Maps',tiktok:'from TikTok',instagram:'from Instagram',text:'from a name'}; const ls=[...new Set(sum.wants.map(e=>L[e.sourceType]).filter(Boolean))]; return ls.length?' ('+ls.join(', ')+')':''; })()} saved this spot</div></div>${avatarStack(wanters,34,3)}</div>`:''}
 ${S.events({venueId:v.id, upcoming:true}).length?`<div class="card mt16"><span class="h-sm">${icon('event')} Crew plans here</span><div class="stack mt8">${S.events({venueId:v.id, upcoming:true}).map(eventRowHTML).join('')}</div></div>`:''}
-        <div class="btn-grid mt16"><button class="btn btn-soft" id="pCheck">${icon('where_to_vote')}Check in</button><button class="btn btn-soft" id="pPlan">${icon('event')}Plan</button></div>
+        <div class="btn-grid mt16"><button class="btn btn-checkin" id="pCheck">${icon('where_to_vote')}Check in</button><button class="btn btn-soft" id="pPlan">${icon('event')}Plan</button></div>
         ${taggedOn ? `<button class="btn btn-gold btn-block mt16" id="pAdd">${icon('add_a_photo')}${S.myRatingOn(taggedOn.id) || S.photos({entryId:taggedOn.id}).some(p=>p.userId===me.id) ? 'Edit your part of the visit' : 'Add your rating & photos'}</button>
         <p class="muted small center mt4">${esc(taggedBy ? (taggedBy.name||'@'+taggedBy.handle) : 'A friend')} tagged you on this visit</p>` : ''}
         <button class="btn ${taggedOn?'btn-ghost':'btn-soft'} btn-block mt16" id="pLog">${icon(taggedOn?'add_location_alt':'add_a_photo')}${mine.some(e=>e.kind==='visit')?'Log another visit':taggedOn?'Log a new visit of your own':'Log your visit'}</button>
         ${photos.length?`<div class="row between mt24"><span class="row h-md" style="gap:var(--sp-2)">${icon('photo_camera')}Photos</span><span class="muted small">${photos.length}</span></div>
         <div class="strip">${photos.map(p=>polaroidHTML({src:S.photoURL(p), caption:p.caption, id:p.id, badge:p.private?`<span class="pol-badge tr">${icon('lock')}Only me</span>`:''})).join('')}</div>`:''}
-        <button class="btn btn-gold btn-block mt16" id="pSend">${icon('send')}Send to crew</button>
+        <button class="btn btn-soft btn-block mt16" id="pSend">${icon('send')}Send to crew</button>
         <div class="btn-grid mt16"><a class="btn btn-soft" href="${esc(directionsURL(v))}" target="_blank" rel="noopener">${icon('directions')}Directions</a><button class="btn btn-soft" id="pMap">${icon('map')}Show on map</button></div>
         ${!mine.some(e=>e.kind==='want') && !mine.some(e=>e.kind==='visit')?`<button class="btn btn-ghost btn-block mt8" id="pWant">${icon('bookmark_add')}Save to try later</button>`:''}
       </div>`;

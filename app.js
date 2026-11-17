@@ -193,7 +193,8 @@ function showPeek(venueId){
   const z=MAP.zoneById(v.zone);
   const latest = sum.latest && S.user(sum.latest.userId);
   let tag='', by='';
-  if (sum.state==='crew') tag = sum.rating>=4.5 ? '<span class="tag green">Crew favourite</span>' : `<span class="tag green">${sum.visitorIds.length} in crew</span>`;
+  // shared with the crew: sea-teal with the crew icon (never colour alone)
+  if (sum.state==='crew') tag = sum.rating>=4.5 ? `<span class="tag crew">${icon('group')}Crew favourite</span>` : `<span class="tag crew">${icon('group')}${sum.visitorIds.length} in crew</span>`;
   else if (sum.state==='visited') tag = `<span class="tag">Visited${sum.myVisitCount>1?` ${sum.myVisitCount}x`:''}</span>`;
   else if (sum.state==='private') tag = `<span class="tag dark">${icon('lock','',true)}Only me</span>`;
   else if (sum.state==='want') tag = '<span class="tag">To try</span>';
@@ -205,14 +206,14 @@ function showPeek(venueId){
   $('#peek').innerHTML = `
     <div class="sheet-handle"></div>
     <div class="peek-top">${tag}${by}</div>
-    ${sum.rating?`<div class="peek-score">${fmtRating(sum.rating)}<span class="ms" style="font-size:16px">star</span></div>`:''}
+    ${sum.rating?`<div class="peek-score">${fmtRating(sum.rating)}${icon('star','',true)}</div>`:''}
     <h2 style="padding-right:${sum.rating?'64px':'0'}">${esc(v.name)}</h2>
     <div class="addr">${icon('location_on')}${esc(z?z.label:APP.city)}${(v.categories||[]).length?` • ${esc(catById(v.categories[0])?.label||'')}`:''}</div>
     ${q?`<div class="peek-quote">${avatarHTML(qu,34)}<q>${esc(q.notes)}</q>${photos.length?`<button class="btn btn-soft btn-sm" data-pk="view">View (${photos.length})</button>`:''}</div>`
        : (photos.length?`<div class="peek-quote"><span class="grow muted">${plural(photos.length,'photo')} from the crew</span><button class="btn btn-soft btn-sm" data-pk="view">View</button></div>`:'')}
     <div class="peek-btns">
       <button class="btn btn-soft" data-pk="open">${icon('menu_book')}Details</button>
-      <button class="btn btn-gold" data-pk="log">${icon('where_to_vote')}Check in</button>
+      <button class="btn btn-checkin" data-pk="log">${icon('where_to_vote')}Check in</button>
     </div>`;
   const p=$('#peek'); p.hidden=false; requestAnimationFrame(()=>p.classList.add('in'));
   MAP.setSelected(venueId);
