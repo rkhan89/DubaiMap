@@ -8,7 +8,9 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DIR = path.join(ROOT, 'fonts');
-const FAMILIES = 'family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&family=Silkscreen&family=Caveat:wght@500;700';
+// Google Sans Flex (weight + roundness) is the UI face; Geist Pixel the map labels; Space Mono and Caveat stay on paper.
+// Plus Jakarta Sans stays for the legal pages, the shared page and the 404, Silkscreen as Geist Pixel's fallback.
+const FAMILIES = 'family=Google+Sans+Flex:wght,ROND@400..800,0..100&family=Geist+Pixel&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&family=Silkscreen&family=Caveat:wght@500;700';
 const KEEP = new Set(['latin', 'latin-ext']);   // the scripts Koko's copy and Dubai place names use
 const UA = 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Mobile Safari/537.36';
 
