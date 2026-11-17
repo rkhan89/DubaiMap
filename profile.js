@@ -8,7 +8,7 @@ import { badgeStatus, stickerHTML } from './badges.js';
 import { goalProgress, crewChallengeList } from './social.js';
 import { CRITTERS, critterById } from './critters.js';
 import { critterArt } from './critterui.js';
-import { PIN_COLORS, colorOf } from './pincolor.js';
+import { pinChoices, colorOf } from './pincolor.js';
 import { CATEGORIES, catById, iconSvg, esc, plural, fmtDate, fmtMonth, fmtRating } from './data.js';
 import { avatarHTML } from './avatar.js';
 import { icon, openScreen, openSheet, topbar, toast, back, seg, bindSeg, toggleHTML, bindToggle, ratingPill } from './ui.js';
@@ -108,7 +108,7 @@ function settingsScreen(){
         <div class="eyebrow mt24">Map</div><div class="stack mt8 glist">
           ${row('my_location','Show me on the map','Only on this phone, never saved', toggleHTML('sLoc', MAP.isTracking(),'Show my location'))}
           <div class="person-row" style="flex-wrap:wrap">${icon('palette')}<span class="pr-main"><span class="pr-name">Your pin colour</span><span class="pr-sub">The ring on your pins, on your crew’s maps too</span></span>
-            <div class="pin-swatches">${PIN_COLORS.map(p=>`<button class="pin-sw${colorOf(me.id)===p.c?' on':''}" data-pin="${p.c}" style="--c:${p.c}" aria-label="${p.n}" aria-pressed="${colorOf(me.id)===p.c}"></button>`).join('')}</div></div>
+            <div class="pin-swatches">${pinChoices(colorOf(me.id)).map(p=>`<button class="pin-sw${colorOf(me.id)===p.c?' on':''}" data-pin="${p.c}" style="--c:${p.c}" aria-label="${p.n}" aria-pressed="${colorOf(me.id)===p.c}"></button>`).join('')}</div></div>
           ${row('format_color_fill','Colour explored areas','Areas you (or your crew) have eaten in glow gold', toggleHTML('sZones', p.zones,'Colour explored areas'))}
           ${row('directions_car','Cars on the roads','Little traffic for life and colour', toggleHTML('sCars', p.cars,'Cars on the roads'))}
           ${row('celebration','Burj Khalifa light shows','7 to 11 pm, every 15 minutes', toggleHTML('sShows', p.shows,'Burj Khalifa light shows'))}

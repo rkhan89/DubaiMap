@@ -258,7 +258,8 @@ export function stampHTML(state, o){
   if (state==='crew' && o.avatars) marks += `<span class="st-avs">${o.avatars}</span>`;
   // whose it is: the ring in their pin colour, and their face in a small circle (crew view, close up)
   if (o.head) marks += `<span class="st-head">${o.head}</span>`;
-  return `<span class="stamp st-${state}${o.big?' big':''}${o.ring?' owned':''}"${o.ring?` style="--ring:${o.ring}"`:''}><span class="st-paper">${inner}</span>${marks}</span>`;
+  // shared with a crew: a teal band between two ink lines (a shape, not just a colour), with the owner's face
+  return `<span class="stamp st-${state}${o.big?' big':''}${o.ring?' owned':''}${o.shared?' shared':''}"${o.ring?` style="--ring:${o.ring}"`:''}><span class="st-paper">${inner}</span>${marks}</span>`;
 }
 
 /* ---------- polaroid ---------- */

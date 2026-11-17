@@ -77,16 +77,19 @@ function renderStamp(cl){
   }
   const sum=cl.items[0].data, v=sum.v, st=sum.state;
   // whose pin: the latest visit in this view (or the latest save, for a place to try)
-  const last = sum.visits.slice().sort((a,b)=>b.createdAt-a.createdAt)[0] || sum.latest;
+  // (a crew pin's face is from a shared visit, never one of your Just me ones)
+  const last = sum.visits.filter(e=>st!=='crew' || !e.private).sort((a,b)=>b.createdAt-a.createdAt)[0] || sum.latest;
   const owner = st!=='unlit' && last ? S.user(last.userId) : null;
   const ring = owner ? colorOf(owner.id) : null;
+  const shared = st==='visited' || st==='crew' || st==='want';
   return stampHTML(st, {
     cat:M.primaryCat(v),
     visits: st==='visited' ? (sum.myVisitCount||sum.visitCount) : 0,
     rating: st==='crew' ? sum.rating : (sum.myRating||sum.rating),
     ring,
-    // faces only in crew view (in Me view they're all yours)
-    head: owner && scope().mode==='crew' ? avatarHTML(owner, 18) + favouriteBadge(owner.id, 32) : '',
+    // shared with a crew (not Just me): the ring band and the owner's face, in Me view too
+    shared: !!owner && shared,
+    head: owner && shared ? avatarHTML(owner, 18) + favouriteBadge(owner.id, 32) : '',
   });
 }
 function rebuild(){

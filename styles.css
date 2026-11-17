@@ -1907,3 +1907,6 @@ body.public-page{background:var(--surface);min-height:100vh;}
 /* onboarding: one progress indicator, the bars across the width */
 .setup-progress .bars{width:100%;}
 .setup-progress .bars i{flex:1;width:auto;}
+/* shared with a crew: a sea-teal band between two ink lines around the pin, with the owner's face (Just me pins have the lock and no band) */
+.stamps-layer .stamp.shared .st-paper{box-shadow:0 0 0 1px #1d1712, 0 0 0 4px var(--crew), 0 0 0 5px #1d1712, -3px 3px 0 rgba(18,20,38,.45);}
+.stamps-layer .stamp-anchor.selected>.stamp.shared .st-paper{box-shadow:0 0 0 1px #1d1712, 0 0 0 4px var(--crew), 0 0 0 5px #1d1712, 0 0 0 8px #fffdf8, 0 0 0 10px #1d1712, -3px 3px 0 rgba(18,20,38,.45);}

@@ -8,7 +8,7 @@ import { $, icon, toast, openScreen, back, closeAll, topbar, setupProgress } fro
 import { go, state } from './go.js';
 import { zoneById } from './map.js';
 import * as MAP from './map.js';
-import { PIN_COLORS, colorOf } from './pincolor.js';
+import { pinChoices, colorOf } from './pincolor.js';
 import { CRITTERS } from './critters.js';
 import { critterArt } from './critterui.js';
 
@@ -95,7 +95,7 @@ function cityIntro(root){
   const place = ()=>pinsBox.querySelectorAll('.wc-pin').forEach((el, i)=>{ const at = MAP.snapshotPoint(cv, centre, ZOOM, MAP.placeWorld(INTRO_SPOTS[i])); el.style.left = at.x+'px'; el.style.top = at.y+'px'; });
   MAP.whenReady(draw);
   function pins(){
-    const cols = PIN_COLORS.map(p=>p.c);
+    const cols = pinChoices().map(p=>p.c);
     pinsBox.innerHTML = INTRO_SPOTS.map((p, i)=>{
       const at = MAP.snapshotPoint(cv, centre, ZOOM, MAP.placeWorld(p));
       return `<span class="wc-pin" style="left:${at.x}px;top:${at.y}px;--c:${cols[(i*5+1)%cols.length]};--i:${i}"><i class="wc-shadow"></i><span class="wc-head">${spriteHead(INTRO_FACES[i%INTRO_FACES.length], 2)}</span></span>`;
@@ -278,7 +278,7 @@ function avatarStep(opts){
         <div class="card-peach mt24 row"><span style="background:var(--card);border-radius:12px;padding:var(--sp-2);box-shadow:var(--shadow-sm)">${spriteSvg(av,3)}</span><div class="grow"><b class="h-sm">On the map</b><div class="muted small">How your pins look to your crew</div></div>${icon('push_pin')}</div>
         <div class="row between mt24"><h3 class="h-md">Pin colour</h3></div>
         <p class="muted small mt4">Your crew sees your pins in this colour, with your face on them up close.</p>
-        <div class="pin-swatches mt8">${PIN_COLORS.map(p=>`<button class="pin-sw${pin===p.c?' on':''}" data-pin="${p.c}" style="--c:${p.c}" aria-label="${p.n}" aria-pressed="${pin===p.c}"></button>`).join('')}</div>
+        <div class="pin-swatches mt8">${pinChoices(pin).map(p=>`<button class="pin-sw${pin===p.c?' on':''}" data-pin="${p.c}" style="--c:${p.c}" aria-label="${p.n}" aria-pressed="${pin===p.c}"></button>`).join('')}</div>
         <div class="note mt16">${icon('shield_lock')}<span>Your avatar and pin colour are visible to your crew.</span></div>
         <button class="btn btn-gold btn-block mt24" id="aGo">${opts.edit?'Save avatar':'Next: Crew Sharing'} ${icon(opts.edit?'check':'arrow_forward')}</button>
         <p class="center hand mt16">You can re-dress your pocket avatar anytime</p>
