@@ -12,7 +12,13 @@ const FAMILIES = 'family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space
 const KEEP = new Set(['latin', 'latin-ext']);   // the scripts Koko's copy and Dubai place names use
 const UA = 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Mobile Safari/537.36';
 
-const css = await (await fetch(`https://fonts.googleapis.com/css2?${FAMILIES}&display=swap`, { headers: { 'User-Agent': UA } })).text();
+// --candidates: the step 2 type candidates (Google Sans Flex with its weight and roundness axes, Geist Pixel) go to
+// fonts/candidates.css for the style guide; nothing in the app uses them until the type system is approved.
+// local() sources are dropped: a phone's own static copy of Google Sans would ignore the roundness axis.
+const CANDIDATES = process.argv.includes('--candidates');
+const QUERY = CANDIDATES ? 'family=Google+Sans+Flex:wght,ROND@400..800,0..100&family=Geist+Pixel' : FAMILIES;
+const OUTCSS = CANDIDATES ? 'candidates.css' : 'fonts.css';
+const css = await (await fetch(`https://fonts.googleapis.com/css2?${QUERY}&display=swap`, { headers: { 'User-Agent': UA } })).text();
 // Google's answer is a list of "/* subset */ @font-face {…}" blocks
 const blocks = [...css.matchAll(/\/\*\s*([a-z-]+)\s*\*\/\s*(@font-face\s*{[^}]+})/g)].filter(m => KEEP.has(m[1]));
 fs.mkdirSync(DIR, { recursive: true });
@@ -27,10 +33,10 @@ for (const [, subset, block] of blocks){
     fs.writeFileSync(path.join(DIR, name), Buffer.from(await (await fetch(url, { headers: { 'User-Agent': UA } })).arrayBuffer()));
     seen.set(url, name);
   }
-  out += `/* ${family} ${weight} ${subset} */\n` + block.replace(/url\([^)]+\)/, `url(/fonts/${name})`) + '\n';
+  out += `/* ${family} ${weight} ${subset} */\n` + block.replace(/local\([^)]*\),\s*/g, '').replace(/url\([^)]+\)/, `url(/fonts/${name})`) + '\n';
 }
-// the icon font (subset by tools/icon-subset.mjs): block, as before, so icon names never flash as words
-out += `@font-face {\n  font-family: 'Material Symbols Outlined';\n  font-style: normal;\n  font-weight: 300 600;\n  font-display: block;\n  src: url(/fonts/material-symbols-subset.woff2) format('woff2');\n}\n`;
-fs.writeFileSync(path.join(DIR, 'fonts.css'), out);
+// the icon font (subset by tools/icon-subset.mjs), in the app's stylesheet only: block, as before, so icon names never flash as words
+if (!CANDIDATES) out += `@font-face {\n  font-family: 'Material Symbols Outlined';\n  font-style: normal;\n  font-weight: 300 600;\n  font-display: block;\n  src: url(/fonts/material-symbols-subset.woff2) format('woff2');\n}\n`;
+fs.writeFileSync(path.join(DIR, OUTCSS), out);
 const kb = [...seen.values()].reduce((s, n) => s + fs.statSync(path.join(DIR, n)).size, 0) / 1024;
-console.log(`${blocks.length} @font-face rules, ${seen.size} files, ${Math.round(kb)} KB -> fonts/fonts.css`);
+console.log(`${blocks.length} @font-face rules, ${seen.size} files, ${Math.round(kb)} KB -> fonts/${OUTCSS}`);

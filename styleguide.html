@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Koko style guide</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="/fonts/fonts.css">
+<link rel="stylesheet" href="/fonts/candidates.css">
+<link rel="stylesheet" href="/styleguide/styleguide.css">
+</head>
+<body>
+<header class="sg-top">
+  <span class="sg-wordmark" role="img" aria-label="Koko"></span>
+  <div class="sg-top-text"><b>Style guide, step 2</b><span>For review. No app screen uses this yet.</span></div>
+  <div class="sg-theme" role="group" aria-label="Theme"><button data-theme-set="light" class="on">Day</button><button data-theme-set="dark">Night</button></div>
+</header>
+
+<nav class="sg-toc" aria-label="Sections">
+  <a href="#checks">Device checks</a><a href="#colour">Colour</a><a href="#type">Type</a><a href="#pixel">Map labels</a><a href="#buttons">Buttons</a><a href="#chips">Chips</a><a href="#inputs">Inputs</a><a href="#lists">Grouped lists</a><a href="#sheets">Sheets</a><a href="#nav">Tab bar</a><a href="#pins">Pins</a><a href="#icons">Icons</a>
+</nav>
+
+<main>
+
+<section id="checks" class="sg-sec">
+  <h2>1. Device checks (open this page on your iPhone and Android phone)</h2>
+  <p class="sg-note">Google Sans Flex has a <b>roundness</b> axis (ROND). Each row is the same word at roundness 0 and 100. If both look the same on a phone, the axis isn't working there and the rounded headings would fall back to square ends.</p>
+  <div class="sg-rond">
+    <div><span class="sg-rond-0">Koko</span><small>ROND 0</small></div>
+    <div><span class="sg-rond-100">Koko</span><small>ROND 100</small></div>
+    <div><span class="sg-rond-0 sg-w800">Karak</span><small>ROND 0, 800</small></div>
+    <div><span class="sg-rond-100 sg-w800">Karak</span><small>ROND 100, 800</small></div>
+  </div>
+  <p class="sg-note" id="sgEnv"></p>
+  <p class="sg-note">The Android app will use the phone's System WebView, which is Chrome's engine. Checking it in Chrome on Android is the closest test until the Capacitor build exists.</p>
+</section>
+
+<section id="colour" class="sg-sec">
+  <h2>2. Colour</h2>
+  <p class="sg-note">Gold only for <b>Check in</b> and <b>ratings</b>. Ink for selected states, selected tabs and the selection ring. Sea-teal means <b>shared with a crew</b> and always comes with the crew icon, on paper or inside an ink outline. "Just me" is ink with a lock.</p>
+  <div class="sg-swatches" id="sgSwatches"></div>
+</section>
+
+<section id="type" class="sg-sec">
+  <h2>3. Type: Google Sans Flex (weight and roundness)</h2>
+  <div class="sg-type">
+    <div class="t-display-l">Ravi Restaurant</div><code>Display L · 32/38 · wght 760 · ROND 100 · −1%</code>
+    <div class="t-display-m">Where did you eat?</div><code>Display M · 24/30 · wght 720 · ROND 100</code>
+    <div class="t-title">Who's been</div><code>Title · 20/26 · wght 680 · ROND 60</code>
+    <div class="t-head">Arabian Tea House</div><code>Row title · 17/22 · wght 650 · ROND 40</code>
+    <div class="t-body">Dal fry and a mango lassi. Karak in the courtyard after, then a walk along the creek.</div><code>Body · 16/24 · wght 420 · ROND 0</code>
+    <div class="t-second">Al Satwa · 3 visits · last week</div><code>Secondary · 15/22 · wght 440 · ROND 0 · ink-3</code>
+    <div class="t-label">Who's this for?</div><code>Label · 13/18 · wght 560 · ROND 0</code>
+    <div class="t-caption">17 Nov, 1:03 pm</div><code>Caption · 12/16 · wght 500 · timestamps only (the floor)</code>
+    <div class="t-num">★ 4.5 · 12 · 3/15</div><code>Numbers · tabular figures</code>
+  </div>
+  <p class="sg-note">Unchanged on paper: <span class="sg-mono">TUESDAY 17 NOVEMBER</span> (Space Mono) and <span class="sg-hand">"Karak in the courtyard."</span> (Caveat, kept for notes).</p>
+  <p class="sg-note">Cost: Google Sans Flex with weight and roundness is <span id="sgGsfKb">about 70 KB</span> for Latin (Latin Extended loads only when a name needs it), replacing Plus Jakarta Sans (26 KB). Licence: SIL Open Font License 1.1.</p>
+</section>
+
+<section id="pixel" class="sg-sec">
+  <h2>4. Map labels: Geist Pixel vs Silkscreen, on the real map</h2>
+  <p class="sg-note">The same map view, same labels, same size (10 px, as today). The left image is Silkscreen (today), the right is Geist Pixel. Crops at phone resolution (3×).</p>
+  <div class="sg-compare" id="sgPixel"></div>
+  <p class="sg-note" id="sgPixelVerdict"></p>
+</section>
+
+<section id="buttons" class="sg-sec">
+  <h2>5. Buttons</h2>
+  <div class="sg-row wrap">
+    <button class="b b-checkin"><span class="ms">where_to_vote</span>Check in</button>
+    <button class="b b-primary">Save</button>
+    <button class="b b-secondary">Directions</button>
+    <button class="b b-text">Change</button>
+    <button class="b b-danger">Delete this visit</button>
+  </div>
+  <div class="sg-row">
+    <button class="b b-save-me"><span class="ms">lock</span>Just me</button>
+    <button class="b b-save-crew"><span class="ms">group</span>Save to Karak Crew</button>
+  </div>
+  <p class="sg-note">One filled button per screen. Gold is only ever Check in. The save buttons show the privacy choice: picking who it's for is the save (decision D4, for later).</p>
+</section>
+
+<section id="chips" class="sg-sec">
+  <h2>6. Chips</h2>
+  <div class="sg-row wrap">
+    <button class="c c-on">All <em>30</em></button><button class="c">Been</button><button class="c">Want to try</button>
+    <button class="c c-kind"><i style="--k:#8B5A2B"></i>Coffee</button><button class="c c-kind c-on"><i style="--k:#B5451B"></i>Karak</button>
+  </div>
+  <div class="sg-row wrap">
+    <span class="w w-crew"><span class="ms">group</span>Karak Crew</span><span class="w w-me"><span class="ms">lock</span>Just me</span>
+    <span class="ribbon">TO TRY</span>
+  </div>
+  <p class="sg-note">36 px tall, 44 px tap area. Selected = ink. Kinds keep their colour in the dot only, text stays ink. The to-try ribbon is ink on paper, no gold.</p>
+</section>
+
+<section id="inputs" class="sg-sec">
+  <h2>7. Inputs</h2>
+  <div class="sg-stack">
+    <label class="f"><span>Name</span><input value="Sunset Karak Corner"></label>
+    <label class="f"><span>When</span><input type="datetime-local" value="2026-11-19T19:30"></label>
+    <label class="f f-search"><span class="ms">search</span><input placeholder="Search, or paste a Maps link" aria-label="Search"></label>
+  </div>
+  <p class="sg-note">52 px tall, 1.5 px border in <code>line</code> (3.4:1), 2 px ink focus ring. Labels sit above, always.</p>
+</section>
+
+<section id="lists" class="sg-sec">
+  <h2>8. Grouped lists (Settings, menus, members)</h2>
+  <div class="gl">
+    <div class="gl-h">Map</div>
+    <div class="gl-box">
+      <label class="gl-row"><span class="ms">directions_car</span><span class="gl-t"><b>Cars on the roads</b><small>Little traffic for life and colour</small></span><input type="checkbox" role="switch" class="sw" checked></label>
+      <label class="gl-row"><span class="ms">celebration</span><span class="gl-t"><b>Burj Khalifa light shows</b><small>7 to 11 pm, every 15 minutes</small></span><input type="checkbox" role="switch" class="sw"></label>
+      <a class="gl-row" href="#lists"><span class="ms">palette</span><span class="gl-t"><b>Your pin colour</b></span><span class="ms gl-chev">chevron_right</span></a>
+    </div>
+  </div>
+  <p class="sg-note">One box per group, hairline separators, the whole row is the target. Replaces a white card per row.</p>
+</section>
+
+<section id="sheets" class="sg-sec">
+  <h2>9. Sheets</h2>
+  <div class="sheet-demo">
+    <div class="sheet">
+      <span class="grab"></span>
+      <div class="t-display-m">Ravi Restaurant</div>
+      <div class="t-second">Al Satwa · Cafeteria · <span class="w w-crew sm"><span class="ms">group</span>Karak Crew</span></div>
+      <div class="sg-row"><button class="b b-checkin"><span class="ms">where_to_vote</span>Check in</button><button class="b b-secondary">Details</button></div>
+    </div>
+  </div>
+  <p class="sg-note">One sheet component: a 36×5 grabber, 24 px top corners, solid paper (no blur), springs between peek, half and full.</p>
+</section>
+
+<section id="nav" class="sg-sec">
+  <h2>10. Tab bar (same tabs as today, new styling)</h2>
+  <div class="tabbar"><span class="tab on"><span class="ms">map</span>Map</span><span class="tab"><span class="ms">list</span>List</span><span class="tab plus"><span class="ms">add</span></span><span class="tab"><span class="ms">group</span>Crew</span><span class="tab"><span class="ms">auto_stories</span>Shelf</span></div>
+  <p class="sg-note">The selected tab is ink with a filled icon and an ink bar above it. Navigation changes (decision D1) are a separate step.</p>
+</section>
+
+<section id="pins" class="sg-sec">
+  <h2>11. Pins on the map</h2>
+  <div class="pin-stage" id="sgPins">
+    <span class="pin" style="--o:#F26B5B;left:18%;top:40%"><span class="ms">coffee</span><img class="face" alt="" src="/demo/d52.jpg"></span>
+    <span class="pin sel" style="--o:#3B6EA5;left:42%;top:56%"><span class="ms">restaurant</span></span>
+    <span class="pin" style="--o:#5F8D4E;left:66%;top:34%"><span class="ms">icecream</span><span class="lock ms">lock</span></span>
+    <span class="cluster" style="left:80%;top:62%"><b>9</b><span class="dots"><i style="--o:#F26B5B"></i><i style="--o:#3B6EA5"></i><i style="--o:#5F8D4E"></i></span></span>
+    <span class="pin want" style="--o:#E1699A;left:28%;top:74%"><span class="ms">cake</span><span class="ribbon sm">TRY</span></span>
+  </div>
+  <p class="sg-note">Owner colour fills the body (not a thin ring), with a 1 px ink outline and a 2 px hard shadow cast down-left like the city's own shadows. Faces at mid zoom; clusters show up to three owner dots. Selected = ink ring. These read against sand by day and the navy city at night.</p>
+</section>
+
+<section id="icons" class="sg-sec">
+  <h2>12. Icon set options</h2>
+  <p class="sg-note">The same 23 icons the app uses most, in three sets. The app stays on the first until you pick.</p>
+  <div class="icon-grid" id="sgIcons"></div>
+  <ul class="sg-note">
+    <li><b>Material Symbols Outlined</b>: today's set, now self-hosted at 147 KB. Familiar and complete, but generic (Google's own look).</li>
+    <li><b>Phosphor</b> (MIT): six weights, friendly rounded geometry, 9,000+ icons including food. Closest to the rounded wordmark.</li>
+    <li><b>Lucide</b> (ISC): crisp 2 px strokes, very consistent, about 1,500 icons. Neutral and modern; fewer food icons.</li>
+  </ul>
+</section>
+
+</main>
+<script type="module" src="/styleguide/styleguide.js"></script>
+</body>
+</html>

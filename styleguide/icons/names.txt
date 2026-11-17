@@ -1,0 +1,1 @@
+map,list,add,group,auto_stories,notifications,search,tune,my_location,lock,star,bookmark,event,photo_camera,ios_share,settings,check,close,arrow_back,more_vert,where_to_vote,storefront,directions,
