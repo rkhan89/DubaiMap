@@ -86,6 +86,7 @@ p{margin:0;}
 .eyebrow{font-family:var(--f-body);font-size:13px;font-weight:600;letter-spacing:0;color:var(--ink-3);}
 .sync-status{font-family:var(--f-mono);font-size:12px;font-weight:600;color:var(--ink-3);}
 .sync-status.ok{color:var(--green);}
+.toggle-row{cursor:pointer;}
 .mono{font-family:var(--f-mono);}
 .h-xl{font-family:var(--f-head);font-weight:800;font-size:30px;line-height:1.12;letter-spacing:-.035em;}
 .h-lg{font-family:var(--f-head);font-weight:800;font-size:25px;line-height:1.16;letter-spacing:-.03em;}
@@ -320,6 +321,8 @@ textarea.input{min-height:110px;resize:none;line-height:1.45;}
 .map-label.name.sel span{background:var(--gold);color:var(--gold-ink);box-shadow:none;}
 .map-label.name.sel em{color:var(--gold-ink);}
 .map-label span:active{transform:translate(-50%,-50%) translateY(1px);}
+/* labels are 20-22px tall: an invisible hit area brings them to 44px without moving or restyling them */
+.map-label span::before{content:"";position:absolute;left:0;right:0;top:min(0px,calc((100% - var(--tap)) / 2));bottom:min(0px,calc((100% - var(--tap)) / 2));}
 .picking .map-label span{pointer-events:none !important;}
 /* undiscovered spots when zoomed in: plain dots with a finger-sized hit area */
 .map-dot{position:absolute;left:-12px;top:-12px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;pointer-events:auto;cursor:pointer;will-change:transform;}
@@ -359,7 +362,7 @@ textarea.input{min-height:110px;resize:none;line-height:1.45;}
 .map-search{pointer-events:auto;}
 .map-top>*{pointer-events:auto;}
 .seg-mode{flex:none;padding:var(--sp-1);gap:var(--sp-1);background:var(--glass);box-shadow:var(--shadow-sm);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);}
-.seg-mode button{min-height:32px;padding:0 var(--sp-3);font-family:var(--f-mono);font-size:12.5px;font-weight:700;letter-spacing:0;gap:var(--sp-2);}
+.seg-mode button{min-height:var(--tap);padding:0 var(--sp-3);font-family:var(--f-mono);font-size:12.5px;font-weight:700;letter-spacing:0;gap:var(--sp-2);}
 .seg-mode button.on{box-shadow:none;}
 .seg-mode em{font-size:10px;padding:0 var(--sp-2);background:var(--seg-em);}
 .map-filter{position:relative;width:var(--tap);height:var(--tap);border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--glass);box-shadow:var(--shadow-sm);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);color:var(--ink);}

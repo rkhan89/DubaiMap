@@ -152,6 +152,8 @@ function settingsScreen(){
       bindToggle(el.querySelector('#sSounds'), on=>{ setSounds(on); if (on) setTimeout(()=>moments.pageTurn(), 300); });
       bindToggle(el.querySelector('#sNotify'), async on=>{ const ok = await go.setNotify(on); if (on && !ok) paint(); });
       const d = el.querySelector('#sDemo'); if (d) bindToggle(d, async on=>{ await S.setDemo(on); toast(on?'Sample crew added':'Sample crew removed'); go.refresh(); paint(); });
+      // a tap anywhere on a toggle's row flips it; the switch stays the one control for keyboards and screen readers
+      el.querySelectorAll('.person-row').forEach(r=>{ const sw=r.querySelector(':scope > .switch'); if (!sw) return; r.classList.add('toggle-row'); r.addEventListener('click', e=>{ if (!e.target.closest('.switch')) sw.click(); }); });
       el.querySelector('#sImport').addEventListener('change', async e=>{
         const f = e.target.files[0]; if (!f) return;
         try{ const n = await S.importBackup(JSON.parse(await f.text())); toast(`Imported ${plural(n,'log')}`); go.refresh(); }catch(_){ toast("That file isn't a backup from this app"); }
