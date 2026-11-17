@@ -18,7 +18,8 @@ let root=null;
 function welcome(){
   if (root) root.remove();
   root=document.createElement('section');
-  root.className='screen in'; root.style.transition='none';
+  // a full-screen flow: no tab bar until you're signed in (styles.css hides it for .cover screens)
+  root.className='screen cover in'; root.style.transition='none';
   root.innerHTML = `<div class="welcome">
     <h1 class="w-brand"><span class="wordmark" role="img" aria-label="${esc(APP.name)}"></span></h1>
     <span class="hand">${esc(APP.tagline)}</span>
