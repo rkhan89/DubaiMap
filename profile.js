@@ -98,15 +98,15 @@ function settingsScreen(){
         ${!S.cloud?`<div class="note mt16">${icon('science')}<span><b>Preview mode.</b> Your account, crew and photos live on this phone until sign-in goes live. Export a backup to move them.</span></div>`:''}
         ${supportCardHTML()}
         <button class="person-row mt16 feedback-row" data-go="feedback">${icon('rate_review')}<span class="pr-main"><span class="pr-name">Send feedback</span><span class="pr-sub">Found a bug or have an idea? Tell us</span></span>${icon('chevron_right')}</button>
-        <div class="eyebrow mt24">Account</div><div class="stack mt8">
+        <div class="eyebrow mt24">Account</div><div class="stack mt8 glist">
           ${link('face','Edit avatar','Pixel you on the map','avatar')}
           ${link('alternate_email','Name & handle','@'+esc(me.handle),'handle')}
           ${row('mail','Email', esc(me.email||'Not set'))}
         </div>
-        <div class="eyebrow mt24">Appearance</div><div class="stack mt8">
+        <div class="eyebrow mt24">Appearance</div><div class="stack mt8 glist">
           <div class="person-row" style="flex-wrap:wrap">${icon('contrast')}<span class="pr-main"><span class="pr-name">Theme</span><span class="pr-sub" id="themeSub">${esc(themeSub(themePref()))}</span></span>${seg('theme', [['light','Light'],['dark','Dark'],['system','System'],['dynamic','Dynamic']], themePref())}</div>
         </div>
-        <div class="eyebrow mt24">Map</div><div class="stack mt8">
+        <div class="eyebrow mt24">Map</div><div class="stack mt8 glist">
           ${row('my_location','Show me on the map','Only on this phone, never saved', toggleHTML('sLoc', MAP.isTracking(),'Show my location'))}
           <div class="person-row" style="flex-wrap:wrap">${icon('palette')}<span class="pr-main"><span class="pr-name">Your pin colour</span><span class="pr-sub">The ring on your pins, on your crew’s maps too</span></span>
             <div class="pin-swatches">${PIN_COLORS.map(p=>`<button class="pin-sw${colorOf(me.id)===p.c?' on':''}" data-pin="${p.c}" style="--c:${p.c}" aria-label="${p.n}" aria-pressed="${colorOf(me.id)===p.c}"></button>`).join('')}</div></div>
@@ -114,26 +114,26 @@ function settingsScreen(){
           ${row('directions_car','Cars on the roads','Little traffic for life and colour', toggleHTML('sCars', p.cars,'Cars on the roads'))}
           ${row('celebration','Burj Khalifa light shows','7 to 11 pm, every 15 minutes', toggleHTML('sShows', p.shows,'Burj Khalifa light shows'))}
         </div>
-        <div class="eyebrow mt24">Scrapbook</div><div class="stack mt8">
+        <div class="eyebrow mt24">Scrapbook</div><div class="stack mt8 glist">
           ${row('volume_up','Sounds','Paper flips, the stamp, stickers and tape', toggleHTML('sSounds', soundsOn(),'Scrapbook sounds'))}
         </div>
-        <div class="eyebrow mt24">Privacy</div><div class="stack mt8">
+        <div class="eyebrow mt24">Privacy</div><div class="stack mt8 glist">
           ${row('share','Who sees your places','You choose every time you save: just you, or any of your crews. Change a place later from its page.', '')}
         </div>
-        <div class="eyebrow mt24">Notifications</div><div class="stack mt8">
+        <div class="eyebrow mt24">Notifications</div><div class="stack mt8 glist">
           ${row('notifications_active','Reminders on this phone', 'Crew plans you’re going to, and a heads-up before light shows. Needs the app open or installed.', toggleHTML('sNotify', p.notify && ('Notification' in window) && Notification.permission==='granted','Reminders'))}
         </div>
-        <div class="eyebrow mt24">Crew</div><div class="stack mt8">
+        <div class="eyebrow mt24">Crew</div><div class="stack mt8 glist">
           ${link('groups', crew?esc(crew.name):'Your crew', crew?plural(crew.memberIds.length,'member'):'Start or join a crew', 'crew')}
           ${APP.sampleCrew?row('diversity_3','Preview with a sample crew','Adds Maya, Omar, Layla, Kabir & Noor with real-looking logs and photos, on this phone only', toggleHTML('sDemo', S.demoOn(),'Sample crew')):''}
         </div>
-        <div class="eyebrow mt24">Your data</div><div class="stack mt8">
+        <div class="eyebrow mt24">Your data</div><div class="stack mt8 glist">
           ${link('download','Export backup','Your logs and photos as one file','export')}
           <label class="person-row" style="position:relative">${icon('upload')}<span class="pr-main"><span class="pr-name">Import backup</span></span>${icon('chevron_right')}<input type="file" accept="application/json,.json" id="sImport" style="position:absolute;inset:0;opacity:0"></label>
           ${S.legacyPlaces().length?link('install_mobile','Import from this phone', plural(S.legacyPlaces().length,'place')+' from the old version','import'):''}
           ${link('tour','Replay the guide','How to pin a place and use the map','tour')}
         </div>
-        <div class="eyebrow mt24">About</div><div class="stack mt8">
+        <div class="eyebrow mt24">About</div><div class="stack mt8 glist">
           ${link('gavel','Terms of use','The rules for using '+esc(APP.name),'legal-terms')}
           ${link('shield','Privacy policy','What we collect and why','legal-privacy')}
           ${link('table_view','How we use your data','Everything we keep, in one table','legal-data')}
