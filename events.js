@@ -64,9 +64,9 @@ export function planBite(venueId, after){
       <div class="eyebrow">Where</div>
       <label class="search mt8">${icon('storefront')}<input id="evQ" placeholder="Search a place" value="${esc(v?v.name:'')}" autocomplete="off"></label>
       <div class="stack mt8" id="evRes"></div>
-      <div class="eyebrow mt16">When</div>
+      <div class="eyebrow mt16"><label for="evWhen">When</label></div>
       <input class="input mt8" type="datetime-local" id="evWhen" value="${localInput(start)}" min="${localInput(new Date())}">
-      <div class="eyebrow mt16">Note (optional)</div>
+      <div class="eyebrow mt16"><label for="evNote">Note (optional)</label></div>
       <input class="input mt8" id="evNote" maxlength="80" placeholder="Late karak run, who's in?">
       <div class="sheet-foot"><button class="btn btn-gold btn-block" id="evGo">${icon('send')}Send to the crew</button></div>`;
     const q = body.querySelector('#evQ'), res = body.querySelector('#evRes');
