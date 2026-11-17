@@ -211,7 +211,8 @@ export function topbar({title, eyebrow, back:showBack=true, actions='', profile=
 // onboarding setup steps (handle, avatar, who sees, collect, crew): one indicator, the same on each
 export const SETUP_STEPS = 5;
 export function setupProgress(n){
-  return `<div class="row between mt8 setup-progress"><span class="step">Step ${n} of ${SETUP_STEPS}</span><span class="bars" aria-hidden="true">${Array.from({length:SETUP_STEPS},(_,i)=>`<i class="${i<n-1?'done':i===n-1?'on':''}"></i>`).join('')}</span></div>`;
+  // the bars only (audit Q13); a screen reader hears "Step n of 5"
+  return `<div class="mt8 setup-progress" role="progressbar" aria-valuemin="1" aria-valuemax="${SETUP_STEPS}" aria-valuenow="${n}" aria-label="Step ${n} of ${SETUP_STEPS}"><span class="bars" aria-hidden="true">${Array.from({length:SETUP_STEPS},(_,i)=>`<i class="${i<n-1?'done':i===n-1?'on':''}"></i>`).join('')}</span></div>`;
 }
 export function catChip(id, on, count){
   const c=catById(id); if (!c) return '';
