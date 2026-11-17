@@ -259,7 +259,11 @@ export function setOutboxOwner(userId, hooks){
   try{ outbox = outKey ? JSON.parse(localStorage.getItem(outKey)) || [] : []; }catch(_){ outbox = []; }
   onSynced = hooks && hooks.synced; onFailed = hooks && hooks.failed; getBlob = hooks && hooks.blob; onPhotoSaved = hooks && hooks.photoSaved;
 }
-const persist = ()=>{ if (outKey) try{ localStorage.setItem(outKey, JSON.stringify(outbox)); }catch(_){} };
+const persist = ()=>{
+  if (outKey) try{ localStorage.setItem(outKey, JSON.stringify(outbox)); }catch(_){}
+  // screens that show sync status (the Crew tab) listen for this
+  if (typeof window!=='undefined') window.dispatchEvent(new CustomEvent('koko:outbox', { detail:{ waiting:outbox.length } }));
+};
 export function pending(){ return outbox.slice(); }
 export function queue(op){
   // a newer full write of the same record replaces an older one still waiting

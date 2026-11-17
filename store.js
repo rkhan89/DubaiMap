@@ -43,6 +43,8 @@ const PREVIEW_KEY = 'koko-preview-import';     // a scrapbook made on this phone
 let db = load();
 const listeners = new Set();
 export function onChange(fn){ listeners.add(fn); return ()=>listeners.delete(fn); }
+// changes on this phone still waiting to reach your account (the outbox in cloud.js)
+export const waitingCount = ()=> C.pending().length;
 function emit(what){ listeners.forEach(f=>{ try{ f(what); }catch(e){ console.error(e); } }); }
 
 function fresh(){ return { version:2, meId:null, users:{}, crews:{}, venues:{}, entries:{}, photos:{}, books:{}, events:{}, inbox:{}, pages:{}, ratings:{}, catches:{}, decorations:{}, unlocks:{}, flags:{} }; }

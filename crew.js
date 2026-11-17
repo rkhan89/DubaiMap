@@ -10,6 +10,19 @@ import { go, state } from './go.js';
 function inviteText(crew){ return `Join my food crew "${crew.name}" on ${APP.name}: code ${crew.code}`; }
 async function sendInvite(crew){ await share({ title:`Join ${crew.name}`, text:inviteText(crew), url:APP.inviteUrl(crew.code) }); }
 
+/* ---------- sync status: what's still waiting on this phone (replaces a fixed "All sync'd") ---------- */
+function syncText(){
+  if (typeof navigator!=='undefined' && navigator.onLine===false) return { text:'Offline', ok:false };
+  const n = S.waitingCount();
+  return n ? { text:plural(n, 'change')+' waiting', ok:false } : { text:'All saved', ok:true };
+}
+function syncStatusHTML(){ const s=syncText(); return `<span class="sync-status${s.ok?' ok':''}" role="status">${s.text}</span>`; }
+function paintSyncStatus(){
+  const s=syncText();
+  document.querySelectorAll('.sync-status').forEach(el=>{ el.textContent=s.text; el.classList.toggle('ok', s.ok); });
+}
+['koko:outbox', 'online', 'offline'].forEach(ev=>window.addEventListener(ev, paintSyncStatus));
+
 /* ---------- 6. crew setup ---------- */
 function crewSetup(opts){
   opts=opts||{};
@@ -147,7 +160,7 @@ function crewScreen(){
         </div>
         <button class="card mt16 block-btn row" id="cChallenges">${icon('flag')}<span class="grow"><b>Crew challenges</b><span class="muted small" style="display:block">Three to do together this month</span></span>${icon('chevron_right')}</button>
         ${go.eventsCard ? go.eventsCard() : ''}
-        <div class="row between mt24"><span class="eyebrow">Fellow explorers (${members.length})</span><span class="mono" style="color:var(--green);font-size:12px">All sync'd</span></div>
+        <div class="row between mt24"><span class="eyebrow">Fellow explorers (${members.length})</span>${syncStatusHTML()}</div>
         <div class="stack mt16">${members.map(u=>{
           const isMe=u.id===me.id, isOwner=u.id===crew.ownerId;
           return `<div class="person-row"><button data-profile="${u.id}" aria-label="${esc(u.name||u.handle)}'s profile" style="border-radius:50%">${avatarHTML(u,52)}</button><div class="pr-main">
