@@ -290,7 +290,7 @@ function openFilters(){
     const paint=()=>{
       const n = M.mapModel({...draft}).filter(s=>s.state!=='unlit').length;
       body.innerHTML = `
-      <div class="sheet-head"><span class="round-btn" style="width:44px;height:44px;box-shadow:none;background:var(--gold-fixed)">${icon('filter_list')}</span>
+      <div class="sheet-head"><span class="round-btn" style="width:44px;height:44px;box-shadow:none;background:var(--sc-high)">${icon('filter_list')}</span>
         <div class="grow"><h2 class="h-md">Filter the map</h2></div>
         <button class="btn btn-ghost btn-sm" data-f="clear">Clear all</button></div>
       <div class="eyebrow">1. View mode</div>
