@@ -105,7 +105,8 @@ export function mountSearchBar(host, ctx, opts){
     </div>`;
   const root = host.firstElementChild, q = root.querySelector('.ksearch-q'), x = root.querySelector('.ksearch-x');
   const drop = root.querySelector('.ksearch-drop'), out = ctx === 'map' ? root.querySelector('.ksearch-out') : opts.out;
-  const setOpen = on=>{ if (drop) drop.hidden = !on; root.classList.toggle('open', on); opts.onActive && opts.onActive(on); };
+  // on the map, results replace an open place card rather than sitting under it
+  const setOpen = on=>{ if (drop) drop.hidden = !on; root.classList.toggle('open', on); if (on && ctx === 'map' && go.hidePeek) go.hidePeek(); opts.onActive && opts.onActive(on); };
   const applyMap = ()=>{
     if (ctx !== 'map') return;
     if (!showOnMap || !query.trim() || !last){ MAP.setSearchMatches(null); return; }

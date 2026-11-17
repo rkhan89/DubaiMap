@@ -224,6 +224,7 @@ go.showOnMap = (venueId)=>{
 };
 go.peek = showPeek;
 function hidePeek(){ const p=$('#peek'); MAP.setSelected(null); if (p.hidden) return; p.classList.remove('in'); peekId=null; setTimeout(()=>{ if (!p.classList.contains('in')) p.hidden=true; }, 280); }
+go.hidePeek = hidePeek;
 $('#peek').addEventListener('click', e=>{
   const b=e.target.closest('[data-pk]');
   const id=peekId;

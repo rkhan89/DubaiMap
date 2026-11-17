@@ -347,6 +347,8 @@ textarea.input{min-height:110px;resize:none;line-height:1.45;}
 /* floating map UI: one slim row */
 .map-ui{pointer-events:auto;}
 .map-top{position:absolute;left:var(--gutter);right:var(--gutter);top:10px;display:flex;flex-direction:column;align-items:stretch;gap:var(--sp-2);z-index:15;pointer-events:none;}
+/* open search results always sit above the place card (.peek is z-index 18) */
+.map-top:has(.ksearch.open){z-index:19;}
 .map-top-row{display:flex;align-items:center;gap:var(--sp-2);pointer-events:none;}
 .map-top-row>*{pointer-events:auto;}
 .map-search{pointer-events:auto;}
