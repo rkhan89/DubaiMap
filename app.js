@@ -71,7 +71,9 @@ function stampItems(){
 function renderStamp(cl){
   if (cl.kind==='area' || cl.items.length>1){
     const cats=[...new Set(cl.items.flatMap(i=>i.data.v.categories||[]))];
-    return stampHTML('cluster', {count:cl.items.length, cats});
+    // the owner colour of each place's latest visit (or save), most recent first, at most three
+    const dots=[...new Set(cl.items.map(i=>{ const s=i.data, last=s.visits.slice().sort((a,b)=>b.createdAt-a.createdAt)[0]||s.latest; return s.state!=='unlit' && last ? colorOf(last.userId) : null; }).filter(Boolean))].slice(0,3);
+    return stampHTML('cluster', {count:cl.items.length, cats, dots});
   }
   const sum=cl.items[0].data, v=sum.v, st=sum.state;
   // whose pin: the latest visit in this view (or the latest save, for a place to try)

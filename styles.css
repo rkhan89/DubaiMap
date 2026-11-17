@@ -1839,3 +1839,30 @@ body.public-page{background:var(--surface);min-height:100vh;}
 .contact-list a.person-row > .ms:first-child{color:var(--gold-deep);}
 .contact-list a.person-row > .ms:last-child{color:var(--outline);font-size:20px;}
 .contact-list .pr-sub{overflow-wrap:anywhere;}
+
+/* =========================================================
+   MAP PINS AND LABELS (design system): pixel-map overlays share one rule with the map buttons:
+   a solid body, a 1px ink edge and a hard shadow cast down-left like the city's own. Scoped to the
+   map's stamps layer, so stamps in lists and search keep their paper look.
+   ========================================================= */
+.stamps-layer .st-paper{border:0;border-radius:12px;background:var(--paper);box-shadow:0 0 0 1px #1d1712, -2px 2px 0 rgba(18,20,38,.45);}
+/* whose pin it is: the owner's colour fills the body (it was a thin ring), the kind's icon in paper */
+.stamps-layer .stamp.owned .st-paper{background:var(--ring);}
+.stamps-layer .stamp.owned .st-ico svg [stroke]:not([stroke="none"]){stroke:#fff;}
+.stamps-layer .stamp.owned .st-ico svg [fill]:not([fill="none"]){fill:#fff;}
+.stamps-layer .st-head .av{box-shadow:0 0 0 1px #1d1712 !important;}
+/* to try: no gold; an ink TRY tab on paper */
+.stamps-layer .st-want .st-paper{background:var(--ring, var(--paper));}
+.stamps-layer .st-ribbon::before{background:#fffdf8;color:#1d1712;box-shadow:inset 0 0 0 1px #1d1712;}
+/* clusters: an ink disc with the count, and up to three owner dots under it (cream at night, on the navy city) */
+.stamps-layer .st-cluster .st-paper{background:#1d1712;border-radius:50%;}
+.stamps-layer .st-cluster .st-count{background:none;color:#f7f3ec;font-family:var(--f-pixel);font-weight:400;font-size:16px;}
+.stamps-layer .st-cluster .st-mini{display:none;}
+:root[data-theme="dark"] .stamps-layer .st-cluster .st-paper{background:#f3ede4;}
+:root[data-theme="dark"] .stamps-layer .st-cluster .st-count{color:#1d1712;}
+.st-dots{position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);display:flex;gap:2px;}
+.st-dots i{width:10px;height:10px;border-radius:50%;background:var(--o);box-shadow:0 0 0 1.5px #1d1712;}
+/* selected: an ink ring (gold is only Check in and ratings) */
+.stamps-layer .stamp-anchor.selected>.stamp .st-paper{box-shadow:0 0 0 1px #1d1712, 0 0 0 4px #fffdf8, 0 0 0 6px #1d1712, -3px 3px 0 rgba(18,20,38,.45);}
+.map-label.name.sel span{background:var(--ink);color:var(--surface);}
+.map-label.name.sel em{color:var(--gold);}

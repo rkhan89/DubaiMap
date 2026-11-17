@@ -245,6 +245,8 @@ export function stampHTML(state, o){
   let inner='', marks='';
   if (state==='cluster'){
     inner = `<span class="st-count">${o.count}</span><span class="st-mini">${(o.cats||[]).slice(0,4).map(c=>iconSvg(c,'#7e5700')).join('')}</span>`;
+    // whose places are in it: up to three owner colours, so the crew shows even in the wide view
+    if (o.dots && o.dots.length) marks += `<span class="st-dots">${o.dots.map(c=>`<i style="--o:${c}"></i>`).join('')}</span>`;
   } else {
     inner = `<span class="st-ico">${ico}</span>${o.label?`<span class="st-label">${esc(o.label)}</span>`:''}`;
   }
