@@ -389,7 +389,7 @@ function logFlow(opts){
       const active = pre || (crew && crews.some(c=>c.id===crew.id) ? crew : crews[0]);
       const isVisit = d.kind==='visit';
       // what's in the folded details, for its one-line summary
-      const filled = [isVisit ? `${d.date===todayISO()?'Today':fmtDate(d.date,{day:'numeric',month:'short'})}` : '', d.meals.length ? d.meals.map(m=>(mealById(m)||{label:m}).label).join(', ') : '', d.dish.length ? plural(d.dish.length,'dish','dishes') : '', d.notes.trim() ? 'notes' : '', d.tags.length ? `${d.tags.length} tagged` : ''].filter(Boolean);
+      const filled = [isVisit ? `${d.date===todayISO()?'Today':fmtDate(d.date,{day:'numeric',month:'short'})}` : '', d.meals.length ? d.meals.map(m=>(mealById(m)||{label:m}).label).join(', ') : '', d.dish.length ? plural(d.dish.length,'dish','dishes') : '', d.notes.trim() ? 'a note' : '', d.tags.length ? `${d.tags.length} tagged` : ''].filter(Boolean);
       const who = editing
         ? `<div class="eyebrow mt24">Who's this for?</div><div class="mt8" id="lWho">${whoHTML(d.who)}</div>`
         // a new log: choosing who it's for is the save (still chosen every time, nothing pre-picked)
