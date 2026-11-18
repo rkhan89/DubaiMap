@@ -50,6 +50,29 @@ await shot('spike-place');
 // overscroll: what the browser is told (real Safari behaviour needs a phone)
 const css = await p.evaluate(() => ({ body: getComputedStyle(document.querySelector('#mSheet .ms-body')).overscrollBehaviorY, sheet: getComputedStyle(document.querySelector('#mSheet')).touchAction, page: getComputedStyle(document.documentElement).overscrollBehaviorY, bodyEl: getComputedStyle(document.body).overscrollBehaviorY }));
 ok('list contains its overscroll; the sheet takes its own touches', css.body === 'contain' && css.sheet === 'none', css);
+// layout B at 360: Map · Crew · + · Scrapbook · You, targets 44+, labels don't touch, the sheet clears the +
+await p.setViewport({ width: 360, height: 780, isMobile: true, hasTouch: true }); await sleep(600);
+const bar = await p.evaluate(() => {
+  const btns = [...document.querySelectorAll('#nav > button')].filter(b => getComputedStyle(b).display !== 'none');
+  const labs = btns.map(b => { const l = b.querySelector('span:last-child'); const r = l.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.right)]; });
+  return { order: btns.map(b => b.id === 'navLog' ? '+' : b.textContent.replace(/^(map|group|auto_stories)/, '').trim()),
+    small: btns.map(b => b.getBoundingClientRect()).filter(r => r.width < 44 || r.height < 44).length,
+    gaps: btns.slice(1).map((b, i) => btns[i + 1].id === 'navLog' || btns[i].id === 'navLog' ? 99 : labs[i + 1][0] - labs[i][1]),
+    header: document.querySelector('.app-header').hidden,
+    youFace: !!document.querySelector('.nav-you .you-face .av'), youRing: getComputedStyle(document.querySelector('.nav-you')).getPropertyValue('--you-c').trim() };
+});
+ok('layout B: Map, Crew, +, Scrapbook, You; no header', bar.order.join() === 'Map,Crew,+,Scrapbook,You' && bar.header, bar);
+ok('at 360 every target is 44+ and labels keep 8px apart', bar.small === 0 && Math.min(...bar.gaps) >= 8, bar.gaps);
+ok('You is your face in your pin colour', bar.youFace && /^#/.test(bar.youRing), bar.youRing);
+const heights = await p.evaluate(async () => {
+  const sh = document.querySelector('#mSheet'), g = sh.querySelector('.ms-grab'), plus = document.querySelector('#navLog').getBoundingClientRect().top, out = [];
+  const css = document.createElement('style'); css.textContent = '.msheet{transition:none !important}'; document.head.appendChild(css);
+  let n = 0; while (sh.dataset.stop !== 'peek' && n++ < 3) g.click();
+  for (let k = 0; k < 3; k++) { if (k) g.click(); await new Promise(r => setTimeout(r, 80)); out.push([sh.dataset.stop, Math.round(plus - sh.querySelector('.ms-body').getBoundingClientRect().bottom)]); }
+  g.click(); css.remove(); return out;
+});
+ok('the sheet content clears the + at every height', heights.length === 3 && heights.every(h => h[1] >= 0), heights);
+await shot('layoutb-360');
 ok('no page errors', errs.length === 0, errs.slice(0, 3));
 console.log(res.join('\n'));
 await b.close();

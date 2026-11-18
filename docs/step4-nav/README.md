@@ -2,7 +2,17 @@
 
 Decisions so far: D6 yes (List folds into the map sheet). D1 is option A changed: **Map · Crew · + · Scrapbook**, with List and the header gone.
 
-## 1. The tab bar: three layouts (waiting for your pick)
+## 1. The tab bar: B chosen, built behind the flag
+
+You picked **B: Map · Crew · + · Scrapbook · You**, on three conditions. With `?nav=sheet` on:
+- **360 px:** every target is at least 44 px (the slots are 64 to 70 px). The + keeps its 64 px, and the labels use the text face, so Scrapbook and You are 29 px apart.
+- **The +:** at peek, half and full, the sheet's content stops 13 px above the + (the place card leaves the same room).
+- **You:** your own face (photo, pixel face or initials on a plain card) in a ring of your pin colour. Gold stays on the + only.
+- **The header is gone.** The bell sits beside search, and the profile buttons on pages hide, because You does that job.
+
+`tests/e2e/sheet-spike.mjs` checks all of this at 360 (18 checks). Screenshot: `spike/layoutb-360.jpg`.
+
+### The three layouts as first proposed
 
 `options.html` here is a mock for review only. Open it from the app (`/docs/step4-nav/options.html`, add `?theme=dark` for night). Screenshots are in `options-light.png` and `options-dark.png`.
 
@@ -54,4 +64,4 @@ Known spike limits: the sheet doesn't remember its height between visits, and ke
 
 ## 3. Not started
 
-Route migration waits for your go-ahead on the spike and your pick of layout. D8 (moving invites and share links to a Koko domain) needs a domain: none is on the Vercel account yet.
+Route migration waits for your go-ahead on the spike, after you've tried it on the phones. D8 (moving invites and share links to a Koko domain) needs a domain: none is on the Vercel account yet.

@@ -7,7 +7,8 @@
 //   - at peek and half the whole sheet drags; at full its list scrolls, and pulling down from the top drags it again
 //   - Android back (and a swipe back) lowers it a step instead of leaving the app
 //   - Safari's rubber band can't pull the page: the list contains its own overscroll
-import { back, pushBackLayer } from './ui.js';
+import { back, pushBackLayer, icon } from './ui.js';
+import { avatarHTML } from './avatar.js';
 
 const KEY = 'koko-nav';
 export function sheetFlag(){
@@ -41,6 +42,7 @@ export function mountSheet({ host, list, onStop }){
     el.style.transition = animate ? 'transform .32s cubic-bezier(.2,.9,.3,1)' : 'none';
     el.style.transform = `translateY(${H() - y}px)`;
     host.style.setProperty('--sheet-y', Math.min(y, Math.round(H() * 0.5)) + 'px');
+    el.style.setProperty('--sheet-vis', y + 'px');
   };
   const go = (i, animate=true)=>{
     const was = at; at = Math.max(0, Math.min(2, i));
@@ -95,7 +97,32 @@ export function mountSheet({ host, list, onStop }){
   // scrolls), so the list never rubber-bands and the sheet comes down instead
   const top = ()=>el.classList.toggle('at-top', body.scrollTop <= 0);
   body.addEventListener('scroll', top, { passive:true }); top();
-  addEventListener('resize', ()=>go(at, false));
+  // the map area changes size on rotation, and when the header goes (layout B)
+  if (window.ResizeObserver) new ResizeObserver(()=>go(at, false)).observe(host); else addEventListener('resize', ()=>go(at, false));
   go(0, false);
   return { go, get stop(){ return el.dataset.stop; }, el };
+}
+
+// Step 4, layout B (behind the same flag): Map · Crew · + · Scrapbook · You. The header goes; the bell floats
+// over the map beside search; You is your own face in a ring of your pin colour (gold stays for check-in).
+export function mountNavB({ nav, header, bell, mapTop }){
+  document.body.classList.add('nav-b');
+  const crew = nav.querySelector('[data-tab="crew"]'), plus = nav.querySelector('#navLog');
+  nav.insertBefore(crew, plus);                                    // Map · Crew · + · …
+  const shelf = nav.querySelector('[data-tab="shelf"]');
+  shelf.querySelector('span:last-child').textContent = 'Scrapbook';
+  const you = document.createElement('button');
+  you.className = 'nav-you'; you.dataset.act = 'profile'; you.setAttribute('aria-label', 'You: profile and settings');
+  you.innerHTML = '<span class="you-face"></span><span>You</span>';
+  nav.appendChild(you);
+  // the bell leaves the header for the map's search row
+  const search = mapTop.querySelector('#mapSearch'), row = document.createElement('div');
+  row.className = 'map-search-row';
+  mapTop.insertBefore(row, search); row.append(search, bell);
+  bell.classList.add('map-bell');
+  header.hidden = true;
+  return function paint(me, color){
+    you.style.setProperty('--you-c', color);
+    you.querySelector('.you-face').innerHTML = me ? avatarHTML(me, 24) : icon('person');
+  };
 }

@@ -29,7 +29,8 @@ import { paintStrip, onThisDay, openMemory } from './memories.js';
 import './rate.js';
 import './critterui.js';
 import { openLandmark } from './landmarkui.js';
-import { sheetFlag, mountSheet } from './sheet.js';
+import { sheetFlag, mountSheet, mountNavB } from './sheet.js';
+let paintYou = null;   // step 4, layout B: the You tab
 let sheet = null;   // step 4 spike: the map sheet (?nav=sheet)
 import { mountMapSearch } from './searchui.js';
 import { checkAiTags, tagAfterUpload } from './aitags.js';
@@ -54,6 +55,7 @@ function applyBrand(){
 function paintProfileButtons(){
   const me=S.me();
   $$('.profile-btn').forEach(b=>{ b.innerHTML = me ? avatarHTML(me, 44) : icon('person'); });
+  paintYou && paintYou(me, me ? colorOf(me.id) : 'var(--line)');
 }
 document.addEventListener('click', e=>{
   const b=e.target.closest('[data-act="profile"]'); if (b){ e.preventDefault(); go.profile(); }
@@ -510,7 +512,10 @@ async function boot(){
     },
   });
   MAP.whenReady(()=>{ $('#mapLoading').classList.add('done'); });
-  if (sheetFlag()){ sheet = mountSheet({ host:$('#mapView'), list:$('#listView') }); renderList(); }
+  if (sheetFlag()){
+    sheet = mountSheet({ host:$('#mapView'), list:$('#listView') }); renderList();
+    paintYou = mountNavB({ nav:$('#nav'), header:$('.app-header'), bell:$('#btnBell'), mapTop:$('.map-top') }); paintProfileButtons();
+  }
   paintMe();
   const join = new URLSearchParams(location.search).get('join');
   if (join){ state.pendingJoin = join.toUpperCase(); history.replaceState(null,'',location.pathname); }

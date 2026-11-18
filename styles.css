@@ -1927,3 +1927,23 @@ body.nav-sheet .map-ctrl{bottom:calc(var(--sheet-y, 148px) + var(--sp-3));transi
 body.nav-sheet .mem-strip{display:none;}
 body.nav-sheet #nav [data-tab="list"]{display:none;}
 body.nav-sheet .peek{z-index:19;}
+/* STEP 4, layout B (same flag): Map · Crew · + · Scrapbook · You; no header, the bell beside search */
+body.nav-b{--plus-clear:24px;}
+body.nav-b .map-top{top:calc(10px + var(--safe-t));}
+.map-search-row{display:flex;align-items:center;gap:var(--sp-2);pointer-events:none;}
+.map-search-row>*{pointer-events:auto;}
+.map-search-row #mapSearch{flex:1;min-width:0;}
+.map-bell{width:48px;height:48px;background:var(--surface);box-shadow:0 0 0 1px var(--ink), var(--overlay-shadow);position:relative;}
+body.nav-b .tb-actions .profile-btn{display:none;}
+/* five slots at 360: the + keeps its size, labels use the text face so Scrapbook fits its slot */
+body.nav-b .bottomnav{padding-left:max(var(--sp-1),var(--safe-l));padding-right:max(var(--sp-1),var(--safe-r));}
+body.nav-b .bottomnav button{font-size:12px;min-width:44px;min-height:52px;padding:0 2px;}
+body.nav-b .bottomnav button>span:last-child{max-width:100%;white-space:nowrap;}
+body.nav-b .bottomnav .nav-log{margin-left:var(--sp-1);margin-right:var(--sp-1);min-height:0;padding:0;}
+.nav-you .you-face{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 0 0 2px var(--surface), 0 0 0 4px var(--you-c, var(--line));}
+.nav-you .you-face .av{width:24px !important;height:24px !important;border:0;}
+.nav-you .you-face .av-init{background:var(--card) !important;color:var(--ink);}
+.nav-you.on .you-face{box-shadow:0 0 0 2px var(--surface), 0 0 0 4px var(--you-c, var(--line)), 0 0 0 5px var(--ink);}
+/* the sheet's content stops above the centre + at every height; the place card too */
+body.nav-b .msheet .ms-body{flex:none;height:max(0px, calc(var(--sheet-vis, 148px) - 28px - var(--plus-clear)));}
+body.nav-b .peek{padding-bottom:calc(var(--sp-3) + var(--plus-clear));}
