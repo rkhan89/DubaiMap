@@ -481,6 +481,8 @@ export function deleteVenue(id){
   delete db.venues[id]; save('venues'); push('venues', v, 'del'); return true;
 }
 export function venueByPlaceId(pid){ return pid ? venues().find(v=>v.googlePlaceId===pid) || null : null; }
+// a change the server already made (a confirmed suggestion): this phone catches up without sending it back
+export function patchVenueLocal(id, patch){ const v=db.venues[id]; if (!v) return; Object.assign(v, patch); save('venues'); return v; }
 export function updateVenue(id, patch){ const v=db.venues[id]; if (!v) return; Object.assign(v, patch); save('venues'); push('venues', { id, patch }, 'upd'); return v; }
 export function searchVenues(q, limit){
   q=(q||'').trim().toLowerCase(); if (!q) return [];

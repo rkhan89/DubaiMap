@@ -16,6 +16,7 @@ import { placesApi, zoneFor, seedInitial } from './share.js';
 import { instagramFrom, cleanWebsite, cleanPhone, validPhone, validUrl } from './placefields.js';
 import { overallHTML, miniStars, rateSheet } from './rate.js';
 import * as RT from './ratings.js';
+import * as SG from './suggest.js';
 
 function whenText(e){
   const d=new Date(e.createdAt), days=Math.floor((Date.now()-e.createdAt)/864e5);
@@ -71,6 +72,25 @@ function withHTML(e, me){
 function placeScreen(venueId){
   const v=S.venue(venueId); if (!v) return;
   openScreen(el=>{
+    let sugg = [];                       // suggested details waiting for someone who's been (0022)
+    const loadSugg = async()=>{ sugg = SG.grouped(await SG.listFor(v.id), v); if (el.isConnected) paint(); };
+    // Confirm or Not right on one field: Confirm writes it to the place for everyone; Not right drops that value
+    const decideSugg = async(field, ok, btn)=>{
+      const g = sugg.find(x=>x.field===field); if (!g) return;
+      btn.disabled = true;
+      try{
+        if (ok){
+          const r = await SG.decide(g.ids[0], true);
+          if (r && r.state==='confirmed'){ S.patchVenueLocal(v.id, { [field]:r.value, fieldSources:{ ...(v.fieldSources||{}), [field]:'user' } }); toast(`Added to ${v.name}. Thanks for checking`); }
+          else if (r && r.state==='already_set') toast('Someone already filled that in');
+          else if (r && r.state==='not_allowed') toast('Only people who’ve been here can confirm details');
+        } else {
+          for (const id of g.ids) await SG.decide(id, false);
+          toast('Thanks. We won’t suggest that again');
+        }
+      }catch(_){ toast('Couldn’t save that. Try again when you’re online'); }
+      await loadSugg();
+    };
     const paint=()=>{
       const me=S.me(), crew=S.myCrew();
       const sum=M.venueSummary(v, {...state.scope, mode:'crew', members:null, privacy:'all'});
@@ -93,6 +113,7 @@ function placeScreen(venueId){
         <div class="row muted mt4" style="gap:var(--sp-2);align-items:flex-start">${icon('storefront')}<span style="overflow-wrap:anywhere">${esc([z?z.label:APP.city, v.address].filter(Boolean).join(' • '))}</span></div>
         ${S.venueTags(v.id).length ? `<div class="chip-wrap mt8">${S.venueTags(v.id).map(t=>`<span class="tag soft">${esc(t)}</span>`).join('')}</div>` : ''}
         ${contactHTML(v)}
+        ${SG.suggestionsHTML(sugg)}
         ${mine.length?`<div class="share-card mt24${minePrivate?' private':''}"><span class="sc-ico">${icon(minePrivate?'lock':'group')}</span>
           <div class="grow"><b class="h-sm">${minePrivate?'Only you can see your log':esc(whoText(mineWho).replace(/.$/,''))}</b>
           <div class="muted small">${minePrivate?'Your notes & rating stay in your own scrapbook.':'They can see your notes, rating and photos here.'}</div></div>
@@ -135,8 +156,10 @@ ${S.events({venueId:v.id, upcoming:true}).length?`<div class="card mt16"><span c
       el.querySelector('#pMap').onclick=()=>{ closeAll(); go.switchView('map'); const w=MAP.placeWorld(v); MAP.flyToSeparate(w, S.venues().filter(x=>x.id!==v.id).map(x=>MAP.placeWorld(x)).filter(p=>Math.hypot(p.x-w.x,p.y-w.y)<60)); MAP.highlight(v.id); };
       const pw=el.querySelector('#pWant'); if (pw) pw.onclick=()=>askWho({ title:'Save '+v.name+' to try', action:'Save to try' }, sel=>{ S.addEntry({venueId:v.id, kind:'want', crewIds:sel}); toast('Saved to try. '+whoText(sel)); go.refresh(); paint(); });
       el.querySelector('#pMore').onclick=()=>moreMenu(v, paint);
+      el.querySelectorAll('[data-sg-ok],[data-sg-no]').forEach(b=>b.onclick=()=>decideSugg(b.dataset.sgOk||b.dataset.sgNo, !!b.dataset.sgOk, b));
     };
     paint();
+    if (S.me() && (SG.isStub() || !String(v.id).startsWith('demo-'))) loadSugg();
   }, {cls:'place-screen'});
 }
 function moreMenu(v, after){

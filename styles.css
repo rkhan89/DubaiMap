@@ -1947,3 +1947,15 @@ body.nav-b .bottomnav .nav-log{margin-left:var(--sp-1);margin-right:var(--sp-1);
 /* the sheet's content stops above the centre + at every height; the place card too */
 body.nav-b .msheet .ms-body{flex:none;height:max(0px, calc(var(--sheet-vis, 148px) - 28px - var(--plus-clear)));}
 body.nav-b .peek{padding-bottom:calc(var(--sp-3) + var(--plus-clear));}
+/* suggested details (0022): sourced, waiting for someone who's been to confirm */
+.sugg{background:var(--card);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);padding:var(--sp-3);}
+.sugg-head{display:flex;flex-direction:column;gap:2px;margin-bottom:var(--sp-2);}
+.sugg-row{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-2) var(--sp-3);padding:var(--sp-3) 0;}
+.sugg-row + .sugg-row{border-top:1px solid var(--outline-v);}
+.sugg-ico{flex:none;color:var(--ink-2);display:flex;}
+.sugg-main{flex:1 1 180px;min-width:0;display:flex;flex-direction:column;}
+.sugg-k{font-size:12px;color:var(--ink-2);}
+.sugg-v{font-weight:600;overflow-wrap:anywhere;}
+.sugg-src{font-size:12px;color:var(--ink-3);overflow-wrap:anywhere;}
+.sugg-act{display:flex;gap:var(--sp-2);margin-left:auto;}
+.sugg-act .btn{min-height:44px;}
