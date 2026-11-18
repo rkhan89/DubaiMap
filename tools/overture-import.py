@@ -28,6 +28,7 @@ pg = importlib.util.module_from_spec(spec); spec.loader.exec_module(pg)
 def main():
     con = pg.connect()
     con.run('begin')
+    con.run('set local statement_timeout = 0')   # the pooler's default limit stops the COPY part way
     try:
         if '--migrate' in flags:
             con.run((ROOT / 'supabase/migrations/0020_places_record.sql').read_text(encoding='utf-8'))
