@@ -20,11 +20,13 @@ export function sheetFlag(){
   }catch(_){ return new URLSearchParams(location.search).get('nav') !== 'old'; }
 }
 
-// heights, as the sheet's top edge measured from the bottom of the map area
+// heights, as the sheet's top edge measured from the bottom of the map area. Peek ends just under peekTo()
+// (the Feed / Places switch), so nothing shows half cut off; 148 until that can be measured.
 const PEEK = 148;
-const stops = (h)=>[PEEK, Math.round(h * 0.5), h - 64];
 
-export function mountSheet({ host, list, onStop }){
+export function mountSheet({ host, list, onStop, peekTo }){
+  let peek = PEEK;
+  const stops = (h)=>[peek, Math.round(h * 0.5), h - 64];
   document.body.classList.add('nav-sheet');
   const el = document.createElement('div');
   el.className = 'msheet'; el.id = 'mSheet';
@@ -37,8 +39,14 @@ export function mountSheet({ host, list, onStop }){
 
   let at = 0, y = PEEK, release = null;         // at: 0 peek, 1 half, 2 full; y: current top, from the bottom
   const H = ()=>host.clientHeight;
+  const measure = ()=>{
+    const t = peekTo && peekTo(); if (!t) return;
+    const below = t.getBoundingClientRect().bottom - body.getBoundingClientRect().top + body.scrollTop;   // from the body's top
+    const clear = parseFloat(getComputedStyle(document.body).getPropertyValue('--plus-clear')) || 0;
+    if (below > 0) peek = Math.round(28 + below + 12 + clear);                                          // grabber 28, then 12 of room
+  };
   const place = (px, animate)=>{
-    y = Math.max(PEEK - 40, Math.min(H() - 64, px));
+    y = Math.max(peek - 40, Math.min(H() - 64, px));
     el.style.transition = animate ? 'transform .32s cubic-bezier(.2,.9,.3,1)' : 'none';
     el.style.transform = `translateY(${H() - y}px)`;
     host.style.setProperty('--sheet-y', Math.min(y, Math.round(H() * 0.5)) + 'px');
@@ -46,6 +54,8 @@ export function mountSheet({ host, list, onStop }){
   };
   const go = (i, animate=true)=>{
     const was = at; at = Math.max(0, Math.min(2, i));
+    measure();
+    if (at === 0) body.scrollTop = 0;
     place(stops(H())[at], animate);
     el.classList.toggle('full', at === 2);
     el.dataset.stop = ['peek','half','full'][at];
@@ -100,7 +110,7 @@ export function mountSheet({ host, list, onStop }){
   // the map area changes size on rotation, and when the header goes (layout B)
   if (window.ResizeObserver) new ResizeObserver(()=>go(at, false)).observe(host); else addEventListener('resize', ()=>go(at, false));
   go(0, false);
-  return { go, get stop(){ return el.dataset.stop; }, el };
+  return { go, get stop(){ return el.dataset.stop; }, get peek(){ return peek; }, el };
 }
 
 // Step 4, layout B (behind the same flag): Map · Crew · + · Scrapbook · You. The header goes; the bell floats
