@@ -1,6 +1,6 @@
-// SPIKE (step 4, behind a flag): the map sheet. A panel over the map with three heights (peek, half, full) that
-// holds what the List tab shows today. Off unless the address has ?nav=sheet (it then stays on, on this phone,
-// until ?nav=old). Nothing else changes yet: routes, the tab bar and the guide are still the old ones.
+// Step 4: the map sheet and layout B (Map · Crew · + · Scrapbook · You). A panel over the map with three heights
+// (peek, half, full) that holds what the List tab showed. On by default since 2026-11-19; ?nav=old turns the old
+// navigation back on for this phone (it stays until ?nav=sheet).
 //
 // What it tries out, before any route moves:
 //   - dragging the sheet never pans the map (the sheet sits outside the map's touch area, and stops the events)
@@ -14,10 +14,10 @@ const KEY = 'koko-nav';
 export function sheetFlag(){
   try{
     const q = new URLSearchParams(location.search).get('nav');
-    if (q === 'sheet') localStorage.setItem(KEY, 'sheet');
-    if (q === 'old') localStorage.removeItem(KEY);
-    return localStorage.getItem(KEY) === 'sheet';
-  }catch(_){ return new URLSearchParams(location.search).get('nav') === 'sheet'; }
+    if (q === 'old') localStorage.setItem(KEY, 'old');
+    if (q === 'sheet') localStorage.removeItem(KEY);
+    return localStorage.getItem(KEY) !== 'old';
+  }catch(_){ return new URLSearchParams(location.search).get('nav') !== 'old'; }
 }
 
 // heights, as the sheet's top edge measured from the bottom of the map area

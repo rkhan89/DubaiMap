@@ -2,9 +2,9 @@
 
 Decisions so far: D6 yes (List folds into the map sheet). D1 is option A changed: **Map · Crew · + · Scrapbook**, with List and the header gone.
 
-## 1. The tab bar: B chosen, built behind the flag
+## 1. The tab bar: B, the default since 2026-11-19
 
-You picked **B: Map · Crew · + · Scrapbook · You**, on three conditions. With `?nav=sheet` on:
+You picked **B: Map · Crew · + · Scrapbook · You**, on three conditions, and asked for it as the default for everyone. `?nav=old` brings the old navigation back on that phone (until `?nav=sheet`). What B meets:
 - **360 px:** every target is at least 44 px (the slots are 64 to 70 px). The + keeps its 64 px, and the labels use the text face, so Scrapbook and You are 29 px apart.
 - **The +:** at peek, half and full, the sheet's content stops 13 px above the + (the place card leaves the same room).
 - **You:** your own face (photo, pixel face or initials on a plain card) in a ring of your pin colour. Gold stays on the + only.
@@ -22,9 +22,9 @@ You picked **B: Map · Crew · + · Scrapbook · You**, on three conditions. Wit
 | **B (recommended)** | Map · Crew · **+** · Scrapbook · **You** | + dead centre, bar balanced; your avatar gets a home, so only the bell floats over the map | Adds a fifth slot (You = profile and settings) |
 | C | Map · Crew · + · Scrapbook, Scrapbook twice as wide | + centred with four items | Looks lopsided |
 
-## 2. The sheet spike (behind a flag)
+## 2. The map sheet
 
-Add `?nav=sheet` to the address to turn it on; it stays on, on that phone, until `?nav=old`. Everyone else gets the old navigation. The spike changes only the map: a sheet with three heights (peek, half, full) holding today's List content. The List tab hides while it's on. The header and tab bar are untouched until the layout above is chosen.
+On for everyone (`?nav=old` turns it off on that phone). A sheet over the map with three heights (peek, half, full) holding what the List tab used to show; the List tab is hidden.
 
 What it does:
 - Drag the grabber or the list to move it; a flick goes one height in its direction, otherwise it settles on the nearest.

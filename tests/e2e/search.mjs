@@ -35,7 +35,8 @@ export default async function searchE2E(h){
 
   await step('the Map has the search bar at the top (no magnifier), with Me/Crew and filters under it', async ()=>{
     const r = await h.js(()=>{ const bar = document.querySelector('#mapSearch .ksearch-bar').getBoundingClientRect(), mode = document.querySelector('#mapMode').getBoundingClientRect();
-      return { w:bar.width, vw:innerWidth, below:mode.top >= bar.bottom, mag:!!document.querySelector('#btnSearch') }; });
+      const row = document.querySelector('.map-search-row');   // layout B: the bell shares the row
+      return { w:row ? row.getBoundingClientRect().width : bar.width, vw:innerWidth, below:mode.top >= bar.bottom, mag:!!document.querySelector('#btnSearch') }; });
     await h.shot('sr-map-bar');
     if (r.mag || r.w < r.vw - 40 || !r.below) throw new Error(JSON.stringify(r));
   });
