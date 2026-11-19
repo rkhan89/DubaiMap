@@ -42,9 +42,9 @@ function filterCount(f){ return f ? ['months','cats','venues','members','tagged'
    SHELF
    ========================================================= */
 // The search bar at the top (the same one as the Map's, searchui.js; it searches every book), then the shelf:
-// Everything (the biggest) with Tagged beside it and a strip of your latest pages under it, a book per kind of place
-// you've logged (most pages first, six shown, See all for the rest), a book per crew, your albums, then New Album and
-// Import Roll. On the date a visit of yours happened a year (or more) ago, its page waits at the top. Every book is
+// Continue (your newest pages, newest first), Everything (the biggest) with Tagged beside it, a book per crew, a book
+// per kind of place you've logged (most pages first, six shown, See all for the rest), your albums, then New Album
+// and Import Roll. On the date a visit of yours happened a year (or more) ago, its page waits at the top. Every book is
 // one tap away. While you search, the results take the shelf's place.
 const KINDS_SHOWN = 6, STRIP = 10;
 function shelf(){
@@ -68,19 +68,19 @@ function shelf(){
       const latest = evPages.slice(0, STRIP);
       dyn.innerHTML = `
         ${ago ? yearAgoHTML(ago, everything) : ''}
-        <h2 class="shelf-h mt16">${icon('auto_stories')}Your books</h2>
+        ${latest.length ? `<div class="row between mt16"><h2 class="shelf-h">${icon('history')}Continue</h2><button class="link small" data-book="${esc(everything.id)}">Open${icon('chevron_right')}</button></div>
+          <div class="chip-scroll shelf-strip mt8">${latest.map((p,i)=>spreadHTML(p, everything, i)).join('')}</div>`
+        : `<div class="card-soft mt16 center" style="padding:var(--sp-4) var(--sp-3)"><div style="width:120px;margin:0 auto">${polaroidHTML({caption:'your first page', rot:-3})}</div><h3 class="h-md mt16">Every visit becomes a page</h3><p class="muted mt8">Log a place you've been and it's taped in here, photos or not.</p><button class="btn btn-gold btn-block mt16" id="shFirst">${icon('add_location_alt')}Log a visit</button></div>`}
+        <h2 class="shelf-h mt24">${icon('auto_stories')}Your books</h2>
         <div class="shelf-top mt8">
           ${bookCardHTML(everything, evPages, 'Everything', true)}
           ${sh.tagged ? bookCardHTML(sh.tagged, pagesOf(sh.tagged), 'Tagged') : `<div class="shelf-book ghost"><span class="sb-ghost">${icon('sell')}</span><b>Tagged</b><span class="sb-meta">When a friend tags you, the page lands here</span></div>`}
         </div>
-        ${latest.length ? `<div class="row between mt16"><span class="eyebrow">Latest pages</span><button class="link small" data-book="${esc(everything.id)}">Open${icon('chevron_right')}</button></div>
-          <div class="chip-scroll shelf-strip mt8">${latest.map((p,i)=>spreadHTML(p, everything, i)).join('')}</div>`
-        : `<div class="card-soft mt16 center" style="padding:var(--sp-4) var(--sp-3)"><div style="width:120px;margin:0 auto">${polaroidHTML({caption:'your first page', rot:-3})}</div><h3 class="h-md mt16">Every visit becomes a page</h3><p class="muted mt8">Log a place you've been and it's taped in here, photos or not.</p><button class="btn btn-gold btn-block mt16" id="shFirst">${icon('add_location_alt')}Log a visit</button></div>`}
-        ${kinds.length ? `<div class="row between mt24"><h2 class="shelf-h">${icon('category')}By kind</h2>${kinds.length > KINDS_SHOWN ? `<button class="link small" id="shAllKinds">See all ${kinds.length}${icon('chevron_right')}</button>` : ''}</div>
-          <div class="spine-row mt8">${kinds.slice(0, KINDS_SHOWN).map(k=>spineHTML(S.kindBook(k.cat), k.pages, w)).join('')}</div>` : ''}
         <h2 class="shelf-h mt24">${icon('groups')}Crews</h2>
         ${sh.crews.length ? `<div class="spine-row mt8">${sh.crews.map(b=>spineHTML(b, pagesOf(b).length, w, pagesOf(b))).join('')}</div>`
           : `<button class="shelf-book ghost wide mt8" id="shNoCrew"><span class="sb-ghost">${icon('group_add')}</span><b>Start a crew</b><span class="sb-meta">Your crew's shared visits become a book of their own</span></button>`}
+        ${kinds.length ? `<div class="row between mt24"><h2 class="shelf-h">${icon('category')}By kind</h2>${kinds.length > KINDS_SHOWN ? `<button class="link small" id="shAllKinds">See all ${kinds.length}${icon('chevron_right')}</button>` : ''}</div>
+          <div class="spine-row mt8">${kinds.slice(0, KINDS_SHOWN).map(k=>spineHTML(S.kindBook(k.cat), k.pages, w)).join('')}</div>` : ''}
         ${sh.albums.length ? `<h2 class="shelf-h mt24">${icon('collections_bookmark')}Albums</h2><div class="spine-row mt8">${sh.albums.map(b=>spineHTML(b, pagesOf(b).length, w, pagesOf(b))).join('')}</div>` : ''}
         <div class="btn-grid mt24 shelf-actions"><button class="btn btn-gold" id="shAlbum">${icon('library_add')}New Album</button><button class="btn btn-white" id="shImport">${icon('upload_file')}Import Roll</button></div>
         <button class="shelf-critters mt16" id="shCritters">${icon('pets')}<span class="grow">Critters you've found</span><em>${shownN(have)}/${CRITTERS.length}</em>${icon('chevron_right')}</button>

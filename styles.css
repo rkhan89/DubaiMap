@@ -673,14 +673,12 @@ textarea.input{min-height:110px;resize:none;line-height:1.45;}
 .cover.leather{background-image:radial-gradient(rgba(0,0,0,.08) 1px, transparent 1.4px), radial-gradient(rgba(255,255,255,.05) 1px, transparent 1.4px);background-size:7px 7px, 11px 11px;}
 .cover.paperback{background-image:linear-gradient(160deg, rgba(255,255,255,.14), transparent 60%);}
 .cover.paperback::before{border-style:solid;border-color:rgba(255,255,255,.25);}
-.cover .cv-ed{align-self:flex-start;background:rgba(255,255,255,.14);border-radius:6px;padding:var(--sp-1) var(--sp-2);font-family:var(--f-mono);font-size:12px;letter-spacing:0;display:flex;align-items:center;gap:var(--sp-2);z-index:1;}
 .cover .cv-count{position:absolute;top:22px;right:22px;width:44px;height:44px;border-radius:50%;background:var(--gold);color:var(--gold-ink);font-family:var(--f-mono);font-weight:700;display:flex;align-items:center;justify-content:center;}
 .cover .cv-title{margin:auto 0 0;text-align:center;font-family:var(--f-head);font-weight:800;font-size:30px;line-height:1.15;z-index:1;}
 .cover .cv-rule{width:60px;height:3px;background:var(--gold);border-radius:2px;margin:var(--sp-3) auto var(--sp-3);}
 .cover .cv-by{text-align:center;font-family:var(--f-body);font-weight:500;font-size:14px;opacity:.9;margin-bottom:auto;z-index:1;}
 .cover .cv-pin{position:absolute;left:28px;bottom:28px;width:70px;height:70px;border-radius:50%;background:var(--gold-fixed);box-shadow:0 0 0 5px rgba(255,255,255,.8), 0 4px 10px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;}
 .cover .cv-pin svg{width:34px;height:34px;}
-.cover .cv-pin em{position:absolute;bottom:-6px;right:-10px;background:var(--green);color:var(--on-deep);font-style:normal;font-family:var(--f-mono);font-size:12px;font-weight:700;padding:2px var(--sp-2);border-radius:999px;}
 .cover .cv-geo{position:absolute;right:28px;bottom:26px;text-align:right;font-family:var(--f-mono);font-size:12px;opacity:.85;line-height:1.5;}
 .cover .cv-photo{position:absolute;inset:0;opacity:.28;background-size:cover;background-position:center;mix-blend-mode:luminosity;}
 .tex-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-2);}

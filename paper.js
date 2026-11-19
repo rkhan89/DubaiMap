@@ -199,16 +199,14 @@ export function coverHTML(b, count, photos){
   const light = LIGHT_TINTS.includes(look.tint);
   const zc = {}; (photos||[]).forEach(p=>{ const zz = S.venue(p.venueId)?.zone; if (zz) zc[zz] = (zc[zz]||0) + 1; });
   const zs = Object.keys(zc).sort((a,c)=>zc[c]-zc[a]).slice(0,2);
-  const z0 = MAP.zoneById(zs[0]||'deira');
   const me = S.me(), crew = b.kind==='crew' ? S.myCrews().find(c=>c.id===b.crewId) : S.myCrew();
   const by = b.byline || (b.kind==='crew'&&crew ? `${crew.name} • shared journal` : b.kind==='kind' ? `Every ${look.title.toLowerCase()} stop, by @${me.handle}` : `Picked by @${me.handle}${crew?` • ${crew.name}`:''}`);
   return `<div class="cover ${esc(b.texture||'leather')}" style="background-color:${esc(look.tint)};${light?'color:var(--ink)':''}">
     ${cover?`<span class="cv-photo" style="background-image:url('${S.photoURL(cover)}')"></span>`:''}
-    <span class="cv-ed">${icon('local_cafe')}DXB ${b.kind==='crew'?'CREW':b.kind==='kind'?esc(look.title.toUpperCase().slice(0,10)):'SOUK'} ED.</span>
     <span class="cv-count">${count}</span>
     <h2 class="cv-title">${esc(look.title)}</h2><span class="cv-rule"></span>
     <span class="cv-by">${esc(by)}</span>
-    <span class="cv-pin">${iconSvg(look.pin,'#7e5700')}<em>PIN</em></span>
-    <span class="cv-geo">${esc(zs.map(zoneLabel).join(' • ').toUpperCase()||APP.city.toUpperCase())}<br>${z0?`${z0.lat.toFixed(4)}° N, ${z0.lng.toFixed(4)}° E`:''}</span>
+    <span class="cv-pin">${iconSvg(look.pin,'#7e5700')}</span>
+    <span class="cv-geo">${esc(zs.map(zoneLabel).join(' • ')||APP.city)}</span>
   </div>`;
 }

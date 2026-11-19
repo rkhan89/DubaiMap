@@ -113,7 +113,7 @@ export default async function scrap(h){
   });
   await step('Shelf: latest pages; the camera opens the log flow with the photos picked', async ()=>{
     await h.click('[data-tab="shelf"]'); await h.sleep(800);
-    if (!/Latest pages/.test(await text())) throw new Error('no latest pages');
+    if (!/Continue/.test(await text())) throw new Error('no Continue strip');
     await h.shot('sc-shelf');
     const [chooser] = await Promise.all([p.waitForFileChooser({timeout:4000}), h.js(()=>document.querySelector('#shNew').click())]);
     await chooser.accept([path.resolve('fixture.jpg')]); await h.sleep(1500);
