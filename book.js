@@ -49,7 +49,7 @@ function filterCount(f){ return f ? ['months','cats','venues','members','tagged'
 const KINDS_SHOWN = 6, STRIP = 10;
 function shelf(){
   openScreen(el=>{
-    el.innerHTML = topbar({title:'Shelf', eyebrow:'Your scrapbooks', back:false, actions:`<button class="icon-btn" id="shNew" aria-label="Log a visit">${icon('add_a_photo')}</button>`}) + `<div class="screen-body">
+    el.innerHTML = topbar({title:'Scrapbook', eyebrow:'Your books', back:false, actions:`<button class="icon-btn" id="shNew" aria-label="Log a visit">${icon('add_a_photo')}</button>`}) + `<div class="screen-body">
         <div class="shelf-search mt8" id="shSearchHost"></div>
         <div class="sr-out shelf-results mt16" id="shResults" hidden></div>
         <div id="shDyn"></div>

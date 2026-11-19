@@ -52,7 +52,7 @@ export default async function lcritters(h){
     await h.sleep(300);
     const shown = await h.js(()=>{ const t = document.querySelector('.lm-reveal-text'); return t && !t.hidden ? t.innerText : ''; });
     const saved = await h.js(async id=>{ const S = await import('/store.js'); const c = S.catchOf(S.me().id, id); return c ? { landmarkId:c.landmarkId, lat:c.lat, acc:c.accuracy } : null; }, c.id);
-    if (!sizes.includes(32) || !sizes.includes(96) || !shown.includes(c.name) || !/Meet again on your Shelf/.test(shown)) bad.push(c.id + ': reveal ' + JSON.stringify(sizes) + ' ' + shown.slice(0,40));
+    if (!sizes.includes(32) || !sizes.includes(96) || !shown.includes(c.name) || !/Meet again in your Scrapbook/.test(shown)) bad.push(c.id + ': reveal ' + JSON.stringify(sizes) + ' ' + shown.slice(0,40));
     if (!saved || saved.landmarkId !== c.lm || saved.lat == null || saved.acc == null) bad.push(c.id + ': not saved ' + JSON.stringify(saved));
     if (c.id === 'steppe_eagle') await h.shot('lc-reveal-burj');
     await close();

@@ -122,7 +122,7 @@ function critterRow(slot, c, lm, pos){
     const fact = c.bonusFact || c.fact;
     slot.innerHTML = `<div class="lm-reveal mt16"><img class="critter-art" src="critters/${esc(c.id)}.png" width="32" height="32" alt="">
       <div class="lm-reveal-text" hidden><b class="h-md">${esc(c.name)}</b><div class="mt4">${chip(c.theme)}</div><p class="mt8">${esc(fact)}</p>
-      <button class="lm-shelf-link mt8" data-open-critter="${esc(c.id)}">Meet again on your Shelf${icon('chevron_right')}</button></div></div>`;
+      <button class="lm-shelf-link mt8" data-open-critter="${esc(c.id)}">Meet again in your Scrapbook${icon('chevron_right')}</button></div></div>`;
     const img = slot.querySelector('img'), text = slot.querySelector('.lm-reveal-text');
     [64, 96].forEach((px, k)=>setTimeout(()=>{ img.width = img.height = px; }, 90*(k+1)));
     setTimeout(()=>{ text.hidden = false; go.checkBadges && go.checkBadges(); }, 270);
