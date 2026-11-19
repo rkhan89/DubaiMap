@@ -109,10 +109,8 @@ export function mountNavB({ nav, header, bell, mapTop }){
   document.body.classList.add('nav-b');
   const crew = nav.querySelector('[data-tab="crew"]'), plus = nav.querySelector('#navLog');
   nav.insertBefore(crew, plus);                                    // Map · Crew · + · …
-  const shelf = nav.querySelector('[data-tab="shelf"]');
-  shelf.querySelector('span:last-child').textContent = 'Scrapbook';
   const you = document.createElement('button');
-  you.className = 'nav-you'; you.dataset.act = 'profile'; you.setAttribute('aria-label', 'You: profile and settings');
+  you.className = 'nav-you'; you.dataset.tab = 'you';               // a tab of its own: your profile, no back arrow you.setAttribute('aria-label', 'You: profile and settings');
   you.innerHTML = '<span class="you-face"></span><span>You</span>';
   nav.appendChild(you);
   // the bell leaves the header for the map's search row

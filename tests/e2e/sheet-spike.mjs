@@ -73,6 +73,14 @@ const heights = await p.evaluate(async () => {
 });
 ok('the sheet content clears the + at every height', heights.length === 3 && heights.every(h => h[1] >= 0), heights);
 await shot('layoutb-360');
+const you = await p.evaluate(async () => {
+  document.querySelector('.nav-you').click(); await new Promise(r => setTimeout(r, 900));
+  const scr = [...document.querySelectorAll('#screens .screen')].pop();
+  const out = { tab: scr && scr.dataset.tab, back: !!(scr && scr.querySelector('[data-act="back"]')), current: document.querySelector('.nav-you').getAttribute('aria-current'), title: scr && scr.querySelector('h1').innerText };
+  document.querySelector('#nav [data-tab="map"]').click(); await new Promise(r => setTimeout(r, 600));
+  out.mapAgain = document.querySelector('#nav [data-tab="map"]').getAttribute('aria-current'); return out;
+});
+ok('You is a tab: your profile, no back arrow, You marked current; Map takes you back', you.tab === 'you' && !you.back && you.current === 'page' && you.title === 'Your profile' && you.mapAgain === 'page', you);
 ok('no page errors', errs.length === 0, errs.slice(0, 3));
 console.log(res.join('\n'));
 await b.close();

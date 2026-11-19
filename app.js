@@ -438,7 +438,7 @@ go.switchView = switchView;
 // Tabs work as on iPhone: switching is instant and starts from that tab's own page;
 // tapping the tab you're already in goes back to its top. Crew and Shelf are pages of
 // their own (tab roots); Map and List are the views underneath everything.
-const tabRoot = { crew:go.crew, shelf:go.shelf };
+const tabRoot = { crew:go.crew, shelf:go.shelf, you:()=>go.profile(null, { tab:'you' }) };   // you: layout B
 function toTab(t){
   const root=rootLayer();
   if (root && root.tab===t){

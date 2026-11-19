@@ -23,7 +23,7 @@ import { soundsOn, setSounds, moments } from './feel.js';
 /* =========================================================
    PROFILE
    ========================================================= */
-function profileScreen(userId){
+function profileScreen(userId, opts={}){   // opts.tab: opened from the You tab (a tab root, no back arrow)
   const me = S.me(); if (!me) return;
   userId = userId || me.id;
   const mine = userId === me.id;
@@ -39,7 +39,7 @@ function profileScreen(userId){
       const favArea = Object.entries(areaCounts).sort((a,b)=>b[1]-a[1])[0];
       const recent = all.visitList.slice().reverse().slice(0,5);
       const goals = mine ? goalProgress() : [];
-      el.innerHTML = topbar({title: mine ? 'Your profile' : (u.name||u.handle), eyebrow: mine ? 'Profile' : 'Crew friend', profile:false,
+      el.innerHTML = topbar({title: mine ? 'Your profile' : (u.name||u.handle), eyebrow: mine ? 'Profile' : 'Crew friend', profile:false, back:!opts.tab,
         actions: mine ? `<button class="icon-btn" id="prSettings" aria-label="Settings">${icon('settings')}</button>` : ''}) + `<div class="screen-body">
         <div class="passport mt16 profile-hero"><span class="tape"></span>
           <div class="row" style="gap:var(--sp-3);align-items:center">${avatarHTML(u, 84)}
@@ -80,7 +80,7 @@ function profileScreen(userId){
     };
     paint();
     el._repaint = paint;
-  });
+  }, opts.tab ? { tab:opts.tab, instant:true } : undefined);
 }
 go.profile = profileScreen;
 
