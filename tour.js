@@ -32,6 +32,7 @@ const STEPS = [
   { id:'bell', target:'#btnBell', title:'Crew news', body:'A dot here means a friend logged somewhere, made a plan or tagged you (add your own rating). Memories from this day in past years show up here too.', next:true },
   { id:'crew', target:'#nav [data-tab="crew"]', title:'Bring your crew', body:'Invite friends with a link. Your map fills up fast when they log too.', next:true },
   { id:'shelf', target:'#nav [data-tab="shelf"]', title:'Your scrapbook', body:'Every visit you log becomes a page, taped in automatically. Your critters and stickers live here too.', next:true },
+  { id:'you', target:'#nav .nav-you', title:'You', body:'Your profile, stickers and settings. The ring is your pin colour: it’s how your crew spots your places on the map.', next:true, skipIf:()=>!has('#nav .nav-you') },
   { id:'critters', target:'#navLog', title:'Find critters', body:'Twelve pixel animals live at real places around Dubai. Check in at a place while you’re there, or tap I’m here now on the Critters page. No clues: just explore.', next:true, last:true },
 ];
 

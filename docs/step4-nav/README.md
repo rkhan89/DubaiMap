@@ -65,3 +65,14 @@ Known spike limits: the sheet doesn't remember its height between visits, and ke
 ## 3. Not started
 
 Route migration waits for your go-ahead on the spike, after you've tried it on the phones. D8 (moving invites and share links to a Koko domain) needs a domain: none is on the Vercel account yet.
+
+## 3. Screens moved to layout B (2026-11-19)
+
+Before (the live site with B on) and after, at 390 in light and dark: `migrate/before-*.jpg`, `migrate/after-*.jpg` (made by `tests/e2e/navshots.mjs`).
+
+- **You is a tab.** It opens your profile as a tab page: no back arrow, You marked current, and tapping it again goes to the top. Before, it pushed the profile on top of whatever was open and the bar kept showing the old tab (Scrapbook, in the before shot). `sheet-spike.mjs` checks it.
+- **Scrapbook.** The tab's page is titled Scrapbook (eyebrow "Your books"), and the old bar's label and the landmark card's link say Scrapbook too. "Shelf" is gone from the app's words.
+- **The map sheet.** Its own search box is gone: the map's search bar is right above it. Me/Crew and the filter share one row, because at half and full the sheet covers the map's own. The Places tab keeps its name search, which searches only places you and your crew have been to.
+- **The tour** has a You step after Scrapbook (skipped on the old bar).
+
+Still on the old bar's terms, for later: the List view's code and the old header stay so `?nav=old` keeps working. They go once the phone tests are done.
