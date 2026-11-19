@@ -618,6 +618,9 @@ textarea.input{min-height:110px;resize:none;line-height:1.45;}
 .strip::-webkit-scrollbar{display:none;}
 .strip .polaroid{width:168px;flex:none;}
 .btn-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-3);}
+/* place page: Check in, then one row of the next likely things */
+.place-btns{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:var(--sp-2);}
+.place-btns .btn{padding:0 var(--sp-2);white-space:nowrap;min-height:44px;}
 .search-result{display:flex;align-items:center;gap:var(--sp-3);width:100%;text-align:left;padding:var(--sp-3);border-radius:14px;background:var(--card);box-shadow:var(--shadow-sm);}
 .search-result .sr-ico{width:40px;height:40px;border-radius:10px;background:var(--sc-high);display:flex;align-items:center;justify-content:center;flex:none;}
 .search-result .sr-ico svg{width:22px;height:22px;}

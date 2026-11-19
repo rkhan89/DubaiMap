@@ -114,6 +114,18 @@ function placeScreen(venueId){
         ${S.venueTags(v.id).length ? `<div class="chip-wrap mt8">${S.venueTags(v.id).map(t=>`<span class="tag soft">${esc(t)}</span>`).join('')}</div>` : ''}
         ${contactHTML(v)}
         ${SG.suggestionsHTML(sugg)}
+        <div class="place-acts mt16">
+          ${taggedOn ? `<button class="btn btn-gold btn-block" id="pAdd">${icon('add_a_photo')}${S.myRatingOn(taggedOn.id) || S.photos({entryId:taggedOn.id}).some(p=>p.userId===me.id) ? 'Edit your part of the visit' : 'Add your rating & photos'}</button>
+          <p class="muted small center mt4">${esc(taggedBy ? (taggedBy.name||'@'+taggedBy.handle) : 'A friend')} tagged you on this visit</p>`
+          : `<button class="btn btn-checkin btn-block" id="pCheck">${icon('where_to_vote')}Check in</button>`}
+          <div class="place-btns mt8">
+            ${taggedOn ? `<button class="btn btn-soft btn-sm" id="pCheck">${icon('where_to_vote')}Check in</button>` : ''}
+            ${!taggedOn && !mine.some(e=>e.kind==='want') && !mine.some(e=>e.kind==='visit') ? `<button class="btn btn-soft btn-sm" id="pWant" aria-label="Save to try later">${icon('bookmark_add')}Save</button>` : ''}
+            <button class="btn btn-soft btn-sm" id="pPlan">${icon('event')}Plan</button>
+            <a class="btn btn-soft btn-sm" href="${esc(directionsURL(v))}" target="_blank" rel="noopener">${icon('directions')}Directions</a>
+          </div>
+          <button class="btn btn-ghost btn-block btn-sm mt8" id="pLog">${icon(taggedOn?'add_location_alt':'history')}${mine.some(e=>e.kind==='visit')?'Log another visit':taggedOn?'Log a new visit of your own':'Log a past visit'}</button>
+        </div>
         ${mine.length?`<div class="share-card mt24${minePrivate?' private':''}"><span class="sc-ico">${icon(minePrivate?'lock':'group')}</span>
           <div class="grow"><b class="h-sm">${minePrivate?'Only you can see your log':esc(whoText(mineWho).replace(/.$/,''))}</b>
           <div class="muted small">${minePrivate?'Your notes & rating stay in your own scrapbook.':'They can see your notes, rating and photos here.'}</div></div>
@@ -130,15 +142,8 @@ function placeScreen(venueId){
         }).join('') || `<div class="card-soft center"><b>Nobody in your crew has been yet</b><p class="muted small mt8">Be the first to log it.</p></div>`}</div>
         ${wanters.length?`<div class="card-soft row mt16">${icon('bookmark')}<div class="grow"><b>Wants to try</b><div class="muted small">${plural(wanters.length,'crew friend')}${(()=>{ const L={google_maps:'from Google Maps',tiktok:'from TikTok',instagram:'from Instagram',text:'from a name'}; const ls=[...new Set(sum.wants.map(e=>L[e.sourceType]).filter(Boolean))]; return ls.length?' ('+ls.join(', ')+')':''; })()} saved this spot</div></div>${avatarStack(wanters,34,3)}</div>`:''}
 ${S.events({venueId:v.id, upcoming:true}).length?`<div class="card mt16"><span class="h-sm">${icon('event')} Crew plans here</span><div class="stack mt8">${S.events({venueId:v.id, upcoming:true}).map(eventRowHTML).join('')}</div></div>`:''}
-        <div class="btn-grid mt16"><button class="btn btn-checkin" id="pCheck">${icon('where_to_vote')}Check in</button><button class="btn btn-soft" id="pPlan">${icon('event')}Plan</button></div>
-        ${taggedOn ? `<button class="btn btn-gold btn-block mt16" id="pAdd">${icon('add_a_photo')}${S.myRatingOn(taggedOn.id) || S.photos({entryId:taggedOn.id}).some(p=>p.userId===me.id) ? 'Edit your part of the visit' : 'Add your rating & photos'}</button>
-        <p class="muted small center mt4">${esc(taggedBy ? (taggedBy.name||'@'+taggedBy.handle) : 'A friend')} tagged you on this visit</p>` : ''}
-        <button class="btn ${taggedOn?'btn-ghost':'btn-soft'} btn-block mt16" id="pLog">${icon(taggedOn?'add_location_alt':'add_a_photo')}${mine.some(e=>e.kind==='visit')?'Log another visit':taggedOn?'Log a new visit of your own':'Log your visit'}</button>
         ${photos.length?`<div class="row between mt24"><span class="row h-md" style="gap:var(--sp-2)">${icon('photo_camera')}Photos</span><span class="muted small">${photos.length}</span></div>
         <div class="strip">${photos.map(p=>polaroidHTML({src:S.photoURL(p), caption:p.caption, id:p.id, badge:p.private?`<span class="pol-badge tr">${icon('lock')}Only me</span>`:''})).join('')}</div>`:''}
-        <button class="btn btn-soft btn-block mt16" id="pSend">${icon('send')}Send to crew</button>
-        <div class="btn-grid mt16"><a class="btn btn-soft" href="${esc(directionsURL(v))}" target="_blank" rel="noopener">${icon('directions')}Directions</a><button class="btn btn-soft" id="pMap">${icon('map')}Show on map</button></div>
-        ${!mine.some(e=>e.kind==='want') && !mine.some(e=>e.kind==='visit')?`<button class="btn btn-ghost btn-block mt8" id="pWant">${icon('bookmark_add')}Save to try later</button>`:''}
       </div>`;
       MAP.whenReady(()=>requestAnimationFrame(()=>{ const c=el.querySelector('#pSnap'); if (c) MAP.drawSnapshot(c, MAP.placeWorld(v), 6); }));
       const sh=el.querySelector('#pShare');
@@ -149,11 +154,9 @@ ${S.events({venueId:v.id, upcoming:true}).length?`<div class="card mt16"><span c
       el.querySelectorAll('.strip [data-photo]').forEach(f=>f.onclick=()=>go.viewer(photos.map(p=>p.id), photos.findIndex(p=>p.id===f.dataset.photo)));
       el.querySelector('#pLog').onclick=()=>logFlow({venueId:v.id});
       const pa=el.querySelector('#pAdd'); if (pa) pa.onclick=()=>rateSheet(taggedOn.id, paint);
-      el.querySelector('#pSend').onclick=()=>sharePlace(v);
       el.querySelector('#pCheck').onclick=()=>go.log({ venueId:v.id, here:true });
       el.querySelector('#pPlan').onclick=()=>planBite(v.id, ()=>paint());
       el.querySelectorAll('[data-event]').forEach(b=>b.onclick=()=>eventSheet(b.dataset.event, paint));
-      el.querySelector('#pMap').onclick=()=>{ closeAll(); go.switchView('map'); const w=MAP.placeWorld(v); MAP.flyToSeparate(w, S.venues().filter(x=>x.id!==v.id).map(x=>MAP.placeWorld(x)).filter(p=>Math.hypot(p.x-w.x,p.y-w.y)<60)); MAP.highlight(v.id); };
       const pw=el.querySelector('#pWant'); if (pw) pw.onclick=()=>askWho({ title:'Save '+v.name+' to try', action:'Save to try' }, sel=>{ S.addEntry({venueId:v.id, kind:'want', crewIds:sel}); toast('Saved to try. '+whoText(sel)); go.refresh(); paint(); });
       el.querySelector('#pMore').onclick=()=>moreMenu(v, paint);
       el.querySelectorAll('[data-sg-ok],[data-sg-no]').forEach(b=>b.onclick=()=>decideSugg(b.dataset.sgOk||b.dataset.sgNo, !!b.dataset.sgOk, b));
@@ -162,6 +165,7 @@ ${S.events({venueId:v.id, upcoming:true}).length?`<div class="card mt16"><span c
     if (S.me() && (SG.isStub() || !String(v.id).startsWith('demo-'))) loadSugg();
   }, {cls:'place-screen'});
 }
+function showOnMap(v){ closeAll(); go.switchView('map'); const w=MAP.placeWorld(v); MAP.flyToSeparate(w, S.venues().filter(x=>x.id!==v.id).map(x=>MAP.placeWorld(x)).filter(p=>Math.hypot(p.x-w.x,p.y-w.y)<60)); MAP.highlight(v.id); }
 function moreMenu(v, after){
   const me=S.me();
   const canEdit = v.createdBy===me.id;
@@ -170,11 +174,13 @@ function moreMenu(v, after){
     body.innerHTML = `<h2 class="h-md">${esc(v.name)}</h2><div class="stack mt16">
       ${wants.length?`<button class="person-row" data-x="unwant">${icon('bookmark_remove')}<span class="pr-main"><span class="pr-name">Remove from want to try</span></span></button>`:''}
       ${canEdit?`<button class="person-row" data-x="edit">${icon('edit_location_alt')}<span class="pr-main"><span class="pr-name">Edit place details</span><span class="pr-sub">Name, area, exact spot</span></span></button>`:''}
-      <button class="person-row" data-x="share">${icon('ios_share')}<span class="pr-main"><span class="pr-name">Share place</span></span></button></div>`;
+      <button class="person-row" data-x="share">${icon('send')}<span class="pr-main"><span class="pr-name">Send to crew</span><span class="pr-sub">Or share it anywhere</span></span></button>
+      <button class="person-row" data-x="map">${icon('map')}<span class="pr-main"><span class="pr-name">Show on map</span></span></button></div>`;
     const q=s=>body.querySelector(`[data-x="${s}"]`);
     if (q('unwant')) q('unwant').onclick=async()=>{ for (const w of wants) await S.deleteEntry(w.id); back(); toast('Removed'); go.refresh(); after(); };
     if (q('edit')) q('edit').onclick=()=>{ back(); setTimeout(()=>editVenue(v, after), 60); };
     q('share').onclick=()=>{ back(); sharePlace(v); };
+    q('map').onclick=()=>{ back(); setTimeout(()=>showOnMap(v), 60); };
   });
 }
 go.place = placeScreen;
