@@ -20,8 +20,12 @@ function syncStatusHTML(){ const s=syncText(); return `<span class="sync-status$
 function paintSyncStatus(){
   const s=syncText();
   document.querySelectorAll('.sync-status').forEach(el=>{ el.textContent=s.text; el.classList.toggle('ok', s.ok); });
+  // on the map: only when something's wrong (offline) or waiting; nothing when all is saved
+  const pill=document.getElementById('syncPill');
+  if (pill){ pill.hidden = s.ok || !S.me(); if (!pill.hidden) pill.innerHTML = icon(s.text==='Offline'?'wifi_off':'sync') + s.text; }
 }
 ['koko:outbox', 'online', 'offline'].forEach(ev=>window.addEventListener(ev, paintSyncStatus));
+S.onChange(()=>paintSyncStatus()); setTimeout(paintSyncStatus, 1500);
 
 /* ---------- 6. crew setup ---------- */
 function crewSetup(opts){
