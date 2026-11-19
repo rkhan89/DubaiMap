@@ -9,8 +9,6 @@ import { go, state } from './go.js';
 import { zoneById } from './map.js';
 import * as MAP from './map.js';
 import { pinChoices, colorOf } from './pincolor.js';
-import { CRITTERS } from './critters.js';
-import { critterArt } from './critterui.js';
 
 let root=null;
 
@@ -203,22 +201,13 @@ function handleStep(opts){
       <div class="mt16" id="hMsg"></div>
       <div class="rules mt8"><span id="rLen">3+ characters</span><span id="rUniq">unique</span></div>
       <div class="field mt24"><label class="eyebrow" for="nIn">Display name <span style="text-transform:none;font-weight:400">(optional)</span></label><input class="input" id="nIn" maxlength="30" value="${esc(me.name||'')}" placeholder="What friends call you"></div>
-      <div class="preview-card mt32"><span class="tape-label">live preview</span>
-        <div class="row between"><span class="row h-sm">How your crew sees you</span></div>
-        <div class="activity-sample mt16">
-          <div class="row"><span class="stamp st-visited"><span class="st-paper"><span class="st-ico">${iconSvg('coffee','#7e5700')}</span></span></span><div class="grow"><b id="pvH">@you</b><div>logged a spot at <b>Trio Cafe</b></div></div><span class="mono muted" style="font-size:12px">Just now</span></div>
-          <div class="as-inner"><img src="demo/d08.jpg" alt="" style="width:56px;height:56px;border-radius:8px;object-fit:cover"><div><b>Iced Spanish Latte &amp; Brioche</b><div class="hand">"The cardamom note was crazy good"</div></div></div>
-        </div>
-        <p class="muted small mt16">Your crews see this on visits you share.</p>
-      </div>
-      <button class="btn btn-gold btn-block mt32" id="hGo" disabled>${opts.edit?'Save':'Next: Choose Avatar'} ${icon(opts.edit?'check':'arrow_forward')}</button>
+      <button class="btn btn-gold btn-block mt32" id="hGo" disabled>${opts.edit?'Save':'Next'} ${icon(opts.edit?'check':'arrow_forward')}</button>
       <p class="center hand mt16">You can change your handle later in your profile.</p>
     </div>`;
     const inp=el.querySelector('#hIn'), box=el.querySelector('#hBox'), msg=el.querySelector('#hMsg'), btn=el.querySelector('#hGo');
     const check=()=>{
       inp.value = inp.value.toLowerCase().replace(/[^a-z0-9_]/g,'');
       const h=inp.value, st=S.handleStatus(h);
-      el.querySelector('#pvH').textContent='@'+(h||'you');
       const lenOk = h.length>=3;
       el.querySelector('#rLen').className = h ? (lenOk?'ok':'bad') : '';
       el.querySelector('#rUniq').className = !lenOk ? '' : (st==='taken'?'bad':'ok');
@@ -280,7 +269,7 @@ function avatarStep(opts){
         <p class="muted small mt4">Your crew sees your pins in this colour, with your face on them up close.</p>
         <div class="pin-swatches mt8">${pinChoices(pin).map(p=>`<button class="pin-sw${pin===p.c?' on':''}" data-pin="${p.c}" style="--c:${p.c}" aria-label="${p.n}" aria-pressed="${pin===p.c}"></button>`).join('')}</div>
         <div class="note mt16">${icon('shield_lock')}<span>Your avatar and pin colour are visible to your crew.</span></div>
-        <button class="btn btn-gold btn-block mt24" id="aGo">${opts.edit?'Save avatar':'Next: Crew Sharing'} ${icon(opts.edit?'check':'arrow_forward')}</button>
+        <button class="btn btn-gold btn-block mt24" id="aGo">${opts.edit?'Save avatar':'Next'} ${icon(opts.edit?'check':'arrow_forward')}</button>
         <p class="center hand mt16">You can re-dress your pocket avatar anytime</p>
       </div>`;
       el.querySelectorAll('[data-k] [data-v]').forEach(b=>b.addEventListener('click', ()=>{
@@ -291,50 +280,13 @@ function avatarStep(opts){
       el.querySelector('#aGo').onclick=()=>{
         S.updateMe({avatar:{...(me.avatar||{}), pixel:{...av}}, ...(pin!==colorOf(me.id) || me.pinColor ? { pinColor:pin } : {})});
         go.paintMe && go.paintMe();
-        if (opts.edit){ back(); toast('Looking sharp'); go.refresh(); } else shareStep();
+        if (opts.edit){ back(); toast('Looking sharp'); go.refresh(); } else go.crewSetup({onboarding:true});
       };
     };
     paint();
   });
 }
 go.editAvatar = ()=>avatarStep({edit:true});
-
-/* ---------- 5. who sees what (you choose on every save) ---------- */
-function shareStep(){
-  openScreen(el=>{ el.classList.add('cover');
-    el.innerHTML = topbar({title:'Crew sharing', center:true, profile:false}) + `<div class="screen-body center">
-      ${setupProgress(3)}
-      <h1 class="h-xl mt16">You decide who sees each place</h1>
-      <p class="muted mt8" style="font-size:16px">Nothing is shared unless you choose.</p>
-      <div class="card mt24" style="text-align:left">
-        <div class="row" style="gap:var(--sp-3);align-items:flex-start">${icon('groups')}<span><b>Up to ${APP.crewsPerPerson} crews</b>, with up to ${APP.crewMax} people in each.</span></div>
-        <div class="row mt16" style="gap:var(--sp-3);align-items:flex-start">${icon('lock')}<span>Each time you save a place, choose <b>Just me</b> or the crews that can see it.</span></div>
-        <div class="row mt16" style="gap:var(--sp-3);align-items:flex-start">${icon('sell')}<span><b>Tag who you were with.</b> It shares the visit with a crew you're both in, and they can add their own rating.</span></div>
-      </div>
-      <button class="btn btn-gold btn-block mt24" id="sGo">Next ${icon('arrow_forward')}</button>
-    </div>`;
-    el.querySelector('#sGo').onclick=collectStep;
-  });
-}
-
-/* ---------- 5. what you'll collect: pages, critters, stickers ---------- */
-function collectStep(){
-  openScreen(el=>{ el.classList.add('cover');
-    const shown = critterArt(CRITTERS[0].id, 64, { silhouette:true });   // one shape, no name: a taste, not a clue
-    el.innerHTML = topbar({title:'Your scrapbook', center:true, profile:false}) + `<div class="screen-body center">
-      ${setupProgress(4)}
-      <h1 class="h-xl mt16">Three things you'll collect</h1>
-      <p class="muted mt8" style="font-size:16px">No points, no scores. Just memories.</p>
-      <div class="collect-list mt24" style="text-align:left">
-        <div class="collect-row"><span class="cl-art">${icon('auto_stories')}</span><span><b>Every visit becomes a page</b><span class="muted small">Log a place and it's taped into your scrapbook, and your crew's if you share it. Photos are optional.</span></span></div>
-        <div class="collect-row"><span class="cl-art critters">${shown}</span><span><b>Critters to find</b><span class="muted small">${CRITTERS.length} pixel animals live at real places around Dubai. Check in where one lives to catch it. There are no clues on the map: just get out and explore.</span></span></div>
-        <div class="collect-row"><span class="cl-art">${icon('verified')}</span><span><b>Stickers for milestones</b><span class="muted small">Your first new place, your first coffee, ten visits. Earned or not, nothing to compete for.</span></span></div>
-      </div>
-      <button class="btn btn-gold btn-block mt24" id="clGo">Continue to Crew Setup ${icon('arrow_forward')}</button>
-    </div>`;
-    el.querySelector('#clGo').onclick=()=>go.crewSetup({onboarding:true});
-  });
-}
 
 /* ---------- finish + 8. import ---------- */
 function finish(){

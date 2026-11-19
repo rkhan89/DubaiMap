@@ -215,10 +215,10 @@ export function topbar({title, eyebrow, back:showBack=true, actions='', profile=
     <div class="tb-actions">${actions}${profile?`<button class="profile-btn" data-act="profile" aria-label="Your profile">${currentUser()?avatarHTML(currentUser(),44):icon('person')}</button>`:''}</div>
   </header>`;
 }
-// onboarding setup steps (handle, avatar, who sees, collect, crew): one indicator, the same on each
-export const SETUP_STEPS = 5;
+// onboarding setup steps (handle, avatar, crew): one indicator, the same on each
+export const SETUP_STEPS = 3;
 export function setupProgress(n){
-  // the bars only (audit Q13); a screen reader hears "Step n of 5"
+  // the bars only (audit Q13); a screen reader hears "Step n of 3"
   return `<div class="mt8 setup-progress" role="progressbar" aria-valuemin="1" aria-valuemax="${SETUP_STEPS}" aria-valuenow="${n}" aria-label="Step ${n} of ${SETUP_STEPS}"><span class="bars" aria-hidden="true">${Array.from({length:SETUP_STEPS},(_,i)=>`<i class="${i<n-1?'done':i===n-1?'on':''}"></i>`).join('')}</span></div>`;
 }
 export function catChip(id, on, count){

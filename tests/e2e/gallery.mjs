@@ -21,7 +21,6 @@ export default async function gallery(h){
   await step('code', async ()=>{ await p.waitForSelector('.code-box input', {visible:true}); await p.click('.code-box input'); await p.keyboard.type('123456'); await G('sign-in-code'); await tap('#vfyGo'); });
   await step('handle', async ()=>{ await typeIn('#hIn', 'sara'); await h.sleep(300); await G('onboarding-handle'); await tap('#hGo'); });
   await step('avatar', async ()=>{ await p.waitForSelector('#aGo', {visible:true}); await G('onboarding-avatar'); await tap('#aGo'); });
-  await step('who sees', async ()=>{ await G('onboarding-who-sees'); await tap('#sGo'); });
   await step('crew setup', async ()=>{ await G('onboarding-crew-create'); await h.js(()=>document.querySelector('[data-seg="ctab"] [data-v="join"]').click()); await h.sleep(400); await G('onboarding-crew-join'); await h.js(()=>document.querySelector('[data-seg="ctab"] [data-v="create"]').click()); await h.sleep(300); await tap('#cGo'); await h.sleep(1500); });
   await step('first-run guide', async ()=>{ await G('first-run-guide'); for (let i=0;i<20 && !(await h.js(()=>!!document.querySelector('.tour [data-t="skip"]')));i++) await h.sleep(200); await h.js(()=>document.querySelector('.tour [data-t="skip"]').click()); await h.sleep(600); await G('empty-map'); });
 

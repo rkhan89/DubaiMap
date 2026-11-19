@@ -41,7 +41,7 @@ function crewSetup(opts){
       const me=S.me();
       const preview = { name: name.trim() || 'My Crew', code: made?.code || ((name.toUpperCase().replace(/[^A-Z]/g,'').slice(0,5)||'CREW')+'··') };
       el.innerHTML = topbar({title:'Your crew', center:true, profile:false}) + `<div class="screen-body">
-        ${opts.onboarding?setupProgress(5):''}
+        ${opts.onboarding?setupProgress(3):''}
         <h1 class="h-xl mt16">Set up your food crew</h1>
         <p class="muted mt8" style="font-size:16px">Crews hold up to ${APP.crewMax} people, you included. Everything you share lands in one crew scrapbook.</p>
         <div class="mt24">${seg('ctab', [['create','Create Crew','group_add'],['join','Join Crew','key']], tab)}</div>
