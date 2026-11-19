@@ -1,8 +1,8 @@
-// First-run guide: "your map looks empty, let's fix it". Walks a new person through pinning
-// their first place (search → add it → where/what → rate → photo → who sees it → save), then
-// a quick look at the map controls. Floating prompts point at the real controls; each step
-// moves on when you do the thing (or tap Next). Skip is always there, and it can be replayed
-// from Settings. Also owns the empty-map card shown to anyone with nothing on their map.
+// First-run guide: "your map looks empty, let's fix it". Three hints while you pin your first
+// place: where to type its name, the save button (who sees it), and the stamp it becomes. The
+// rest (the map controls, the tabs, critters) is left to find. Each hint moves on when you do
+// the thing; Skip is always there, and it can be replayed from Settings. Also owns the
+// empty-map card shown to anyone with nothing on their map.
 import * as S from './store.js';
 import { icon } from './ui.js';
 import { go } from './go.js';
@@ -14,26 +14,11 @@ const logOpen = () => has('#logQ') || has('#lStars') || has('#lWho') || has('#vf
 // step: { id, target, title, body, next (show a Next button), done (moves on by itself), ctx (where it lives) }
 const STEPS = [
   { id:'intro', intro:true },
-  { id:'search', target:'#logQ', title:'Where did you go?', body:'Type its name: a café, a karak stop, the shawarma place you swear by.',
+  { id:'search', target:'#logQ', title:'Where did you go?', body:'Type its name: a café, a karak stop, the shawarma place you swear by. No match? Add it yourself.',
     ctx:logOpen, done:()=>($('#logQ')?.value||'').trim().length>=2 || has('#vfN') || has('#lStars') },
-  { id:'add', target:'#lNew, #lRes [data-v]', title:'Put it on the map', body:'Tap to add it. Every place on the map starts with someone pinning it.',
-    ctx:logOpen, done:()=>has('#vfN') || has('#lStars') },
-  { id:'where', target:'#vfZ', title:'Where is it?', body:'Pick the area. “Pick on map” drops an exact pin if you know the spot.', next:true,
-    ctx:()=>has('#vfN') || has('#lStars'), skipIf:()=>has('#lStars') },
-  { id:'kind', target:'#vfC', title:'What kind of place?', body:'Choose one or more, then tap Next step.',
-    ctx:()=>has('#vfN') || has('#lStars'), done:()=>has('#lStars'), skipIf:()=>has('#lStars') },
-  { id:'rate', target:'#lStars', title:'How was it?', body:'Tap a star. Tap the left half of one for a half star.', next:true,
-    ctx:()=>has('#lStars'), done:()=>has('#lStars .on, #lStars .half') },
-  { id:'photo', target:'.reel .add-photo', title:'Add a photo (optional)', body:'Photos go on this visit’s scrapbook page. No photos? It still gets a page.', next:true, ctx:()=>has('#lWho') },
-  { id:'save', target:'#lWho', title:'Save it', body:'The button says who sees it: Just me, or your crew’s map. You choose every time. Then watch it land.', ctx:()=>has('#lWho') || tourSaved, done:()=>tourSaved },
-  { id:'stamp', target:'.stamp-anchor.dropped .stamp, .stamp-anchor.selected .stamp, .stamp-anchor .stamp', title:'Your first stamp', body:'Every place you log becomes a stamp. Tap one any time for its card, notes and photos.', next:true, wait:1500 },
-  { id:'mode', target:'#mapMode', title:'You, or your crew', body:'Me shows your own places, private ones included. Crew shows what your friends share, each friend’s pins in their own colour, with their face up close.', next:true },
-  { id:'filter', target:'#btnFilter', title:'Filters', body:'Filter by friend, kind of place or meal, or colour the areas you’ve explored.', next:true },
-  { id:'bell', target:'#btnBell', title:'Crew news', body:'A dot here means a friend logged somewhere, made a plan or tagged you (add your own rating). Memories from this day in past years show up here too.', next:true },
-  { id:'crew', target:'#nav [data-tab="crew"]', title:'Bring your crew', body:'Invite friends with a link. Your map fills up fast when they log too.', next:true },
-  { id:'shelf', target:'#nav [data-tab="shelf"]', title:'Your scrapbook', body:'Every visit you log becomes a page, taped in automatically. Your critters and stickers live here too.', next:true },
-  { id:'you', target:'#nav .nav-you', title:'You', body:'Your profile, stickers and settings. The ring is your pin colour: it’s how your crew spots your places on the map.', next:true, skipIf:()=>!has('#nav .nav-you') },
-  { id:'critters', target:'#navLog', title:'Find critters', body:'Twelve pixel animals live at real places around Dubai. Check in at a place while you’re there, or tap I’m here now on the Critters page. No clues: just explore.', next:true, last:true },
+  { id:'save', target:'#lWho', title:'Save it', body:'Rate it if you like, add a photo if you have one. The button says who sees it: Just me, or your crew. You choose every time.',
+    ctx:()=>logOpen() || tourSaved, done:()=>tourSaved },
+  { id:'stamp', target:'.stamp-anchor.dropped .stamp, .stamp-anchor.selected .stamp, .stamp-anchor .stamp', title:'Your first stamp', body:'Every place you log becomes a stamp here, and a page in your Scrapbook. Tap a stamp any time for its card.', next:true, last:true, wait:1500 },
 ];
 
 let tourSaved = false, root = null, raf = 0, idx = -1, since = 0, missingSince = 0, scrolledFor = -1;
@@ -117,8 +102,10 @@ export function startTour(opts){
   stop(); tourSaved = false;
   document.querySelector('#emptyMap')?.remove();
   mount();
+  // someone who has places already (a replay from Settings) skips the "your map looks empty" card
   const mine = S.me() ? S.entries({userId:S.me().id, kind:'visit'}).length : 0;
-  idx = (mine && !opts.fromStart) ? STEPS.findIndex(s=>s.id==='mode') - 1 : -1;
+  idx = -1;
+  if (mine && !opts.fromStart){ idx = 0; go.switchView && go.switchView('map'); go.log && go.log({}); }
   advance();
   raf = requestAnimationFrame(frame);
 }

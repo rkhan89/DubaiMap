@@ -123,7 +123,7 @@ function settingsScreen(){
           ${link('download','Export backup','Your logs and photos as one file','export')}
           <label class="person-row" style="position:relative">${icon('upload')}<span class="pr-main"><span class="pr-name">Import backup</span></span>${icon('chevron_right')}<input type="file" accept="application/json,.json" id="sImport" style="position:absolute;inset:0;opacity:0"></label>
           ${S.legacyPlaces().length?link('install_mobile','Import from this phone', plural(S.legacyPlaces().length,'place')+' from the old version','import'):''}
-          ${link('tour','Replay the guide','How to pin a place and use the map','tour')}
+          ${link('tour','Replay the guide','Three hints for pinning a place','tour')}
         </div>
         <div class="eyebrow mt24">About</div><div class="stack mt8 glist">
           ${link('gavel','Terms of use','The rules for using '+esc(APP.name),'legal-terms')}
