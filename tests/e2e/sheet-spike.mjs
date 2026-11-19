@@ -19,6 +19,11 @@ const shot = async n => { if (OUT) await p.screenshot({ path: `${OUT}/${n}.jpg`,
 
 let s = await st(); ok('starts at peek, List tab gone', s.stop === 'peek' && await p.evaluate(() => getComputedStyle(document.querySelector('#nav [data-tab="list"]')).display === 'none'), s);
 await shot('spike-peek');
+const pk = await p.evaluate(async () => { const M = await import('/map.js'); const body = document.querySelector('#mSheet .ms-body').getBoundingClientRect(), tab = document.querySelector('#lTab').getBoundingClientRect();
+  const next = [...document.querySelectorAll('#listView .list-inner > *')].find(e => e.getBoundingClientRect().top > tab.bottom + 1);
+  return { zoom: +M.zoomRatio().toFixed(2), clip: Math.round(body.bottom), tab: Math.round(tab.bottom), next: next ? Math.round(next.getBoundingClientRect().top) : null }; });
+ok('at peek the sheet ends under Feed / Places: nothing half cut off', pk.tab <= pk.clip && (pk.next === null || pk.next >= pk.clip), pk);
+ok('on a phone the map opens close (2.8x the whole city or more), on your pins', pk.zoom >= 2.8, pk.zoom);
 let c0 = await centre();
 await swipe(195, s.top + 12, s.top - 330, 300);            // drag the grabber up, slowly
 s = await st(); let c1 = await centre();

@@ -2117,14 +2117,33 @@ function fitCity(animate){
   const cx=(b.x0+b.x1)/2, cy=(b.y0+b.y1)/2;
   animate ? flyTo(cx,cy,baseFit) : setView(cx,cy,baseFit);
 }
+// what covers the map, in px: the search bar on top, the sheet's peek below (layout B). Fits frame the strip between.
+let inset = null;
+function setInsets(top, bottom){ inset = { top:top||0, bottom:bottom||0 }; }
+const fitPad = ()=> inset ? { x:50, top:inset.top + 40, bottom:inset.bottom + 40 } : { x:50, top:130, bottom:90 };
+// the world y to centre on so b's middle sits in the middle of that strip
+const stripY = (cy, s, pad)=> cy - (pad.top - pad.bottom) / 2 / s;
 // frame a set of world points; on a phone never zoom out further than ~2x so the city stays readable
 function fitPoints(pts, animate, pad){
   if (!pts.length) return fitCity(animate);
+  pad = pad || fitPad();
   const b = { x0:Math.min(...pts.map(p=>p.x)), x1:Math.max(...pts.map(p=>p.x)), y0:Math.min(...pts.map(p=>p.y)), y1:Math.max(...pts.map(p=>p.y)) };
-  let s = Math.max(baseFit, Math.min(2.2, fitScaleFor(b, pad||{x:50, top:130, bottom:90})));
-  let cx=(b.x0+b.x1)/2, cy=(b.y0+b.y1)/2 - 20/s;
+  let s = Math.max(baseFit, Math.min(2.2, fitScaleFor(b, pad)));
   if (viewW < 600 && s < baseFit*1.9){ s = baseFit*1.9; }
+  const cx=(b.x0+b.x1)/2, cy=inset ? stripY((b.y0+b.y1)/2, s, pad) : (b.y0+b.y1)/2 - 20/s;
   animate ? flyTo(cx,cy,s) : setView(cx,cy,s);
+}
+// the opening view on a phone: not every pin (that's the whole city, too far out to read) but the busiest
+// neighbourhood of them, close enough for streets and area names, framed in the strip you can see
+const OPEN_ZOOM = 3;
+function openOnPins(pts){
+  const pad = fitPad(), s0 = Math.min(MAX_S, baseFit*OPEN_ZOOM);
+  const hw = (viewW - pad.x*2)/s0/2, hh = Math.max(40, viewH - pad.top - pad.bottom)/s0/2;
+  let best = null;
+  pts.forEach(p=>{ const g = pts.filter(q=>Math.abs(q.x-p.x) <= hw && Math.abs(q.y-p.y) <= hh); if (!best || g.length > best.length) best = g; });
+  const b = { x0:Math.min(...best.map(p=>p.x)), x1:Math.max(...best.map(p=>p.x)), y0:Math.min(...best.map(p=>p.y)), y1:Math.max(...best.map(p=>p.y)) };
+  const s = Math.max(s0, Math.min(MAX_S, baseFit*4.5, fitScaleFor(b, pad)));
+  setView((b.x0+b.x1)/2, stripY((b.y0+b.y1)/2, s, pad), s);
 }
 let flyAnim = null;
 function flyTo(cx, cy, s, dur){
@@ -2716,7 +2735,7 @@ function initialView(){
   computeBaseFit();
   if (opts.initialPoints){
     const pts = opts.initialPoints();
-    if (pts && pts.length) fitPoints(pts, false); else fitCity(false);
+    if (pts && pts.length) (viewW < 600 && inset ? openOnPins(pts) : fitPoints(pts, false)); else fitCity(false);
   } else fitCity(false);
   if (viewW < 600 && cam.s < baseFit*1.9){
     const c = viewCenter();
@@ -2891,7 +2910,7 @@ function setTheme(t){
 function resize(){ if (built && resizeCanvas()){ if (needsCenter) initialView(); requestRender(); } }
 
 export { carStats, setSearchMatches, focusLandmark, buildStats,
-  initMap, whenReady, viewAt, rasterPending, rasterStats, landmarkAt, landmarkWorld, showInfo, setStamps, setAreaCounts, placeWorld, fitPoints, fitCity, flyToWorld, flyToSeparate,
+  initMap, whenReady, viewAt, setInsets, openOnPins, rasterPending, rasterStats, landmarkAt, landmarkWorld, showInfo, setStamps, setAreaCounts, placeWorld, fitPoints, fitCity, flyToWorld, flyToSeparate,
   centerLatLng, viewZone, zoomRatio, setPicking, highlight, markDropped, setMeSprite, setSelected, startTracking,
   stopTracking, isTracking, drawSnapshot, snapshotPoint, refresh, resize, visible, setTheme, setShow, setZoneTint, setCars,
   ZONES, zoneById, nearestZone, toAI, toLatLng, inMap, onLand,

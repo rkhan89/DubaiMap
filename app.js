@@ -514,8 +514,11 @@ async function boot(){
   });
   MAP.whenReady(()=>{ $('#mapLoading').classList.add('done'); });
   if (sheetFlag()){
-    sheet = mountSheet({ host:$('#mapView'), list:$('#listView') }); renderList();
+    sheet = mountSheet({ host:$('#mapView'), list:$('#listView'), peekTo:()=>$('#lTab') }); renderList(); sheet.go(0, false);
     paintYou = mountNavB({ nav:$('#nav'), header:$('.app-header'), bell:$('#btnBell'), mapTop:$('.map-top') }); paintProfileButtons();
+    // the map frames pins in the strip between the search bar and the sheet's peek
+    const insets=()=>{ const r=$('#mapView').getBoundingClientRect(); MAP.setInsets(Math.round($('.map-top').getBoundingClientRect().bottom - r.top), sheet.peek); };
+    insets(); if (window.ResizeObserver) new ResizeObserver(insets).observe($('#mapView'));
   }
   paintMe();
   const join = new URLSearchParams(location.search).get('join');
