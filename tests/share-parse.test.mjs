@@ -1,11 +1,10 @@
 // node --test tests/share-parse.test.mjs
 // Google Maps link parsing, short-link expansion and the resolver's decisions, with fixtures
-// (no network: fetch, DNS and Places are faked).
+// (no network: fetch, DNS and the seed search are faked).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parseMapsUrl, firstUrl, sourceOf, mayFetch, cacheKey, unwrapContinue } from '../api/_lib/maps.js';
 import { expandMaps, resolveShare, safeGet, shortName } from '../api/_lib/resolve.js';
-import { categoryFor } from '../api/_lib/categories.js';
 
 const F = {
   fullPlace: 'https://www.google.com/maps/place/Ravi+Restaurant/@25.2329,55.2745,17z/data=!3m1!4b1!4m6!3m5!1s0x3e5f42d0b2b5b5b5:0x8f1f7b1e2c3d4e5f!8m2!3d25.2331!4d55.2759!16s%2Fg%2F1tfz9w0x?entry=ttu&g_ep=abc',
@@ -63,7 +62,6 @@ test('only Google Maps and TikTok hosts may ever be fetched', ()=>{
 });
 test('cache key drops tracking parameters', ()=>{ assert.equal(cacheKey(F.list), 'https://www.google.com/maps/placelists/list/abcdEFGHijkl'); });
 test('consent interstitials carry the real address', ()=>{ assert.equal(unwrapContinue('https://consent.google.com/m?continue=https://www.google.com/maps/place/X'), 'https://www.google.com/maps/place/X'); });
-test('category from Places types', ()=>{ assert.equal(categoryFor(['coffee_shop','cafe','food']), 'coffee'); assert.equal(categoryFor(['tourist_attraction']), null); });
 
 /* ---------- network behaviour with fakes ---------- */
 const publicDns = async ()=>[{ address:'142.250.0.1', family:4 }];
