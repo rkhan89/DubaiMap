@@ -370,7 +370,7 @@ function renderList(){
   else if (listSort==='name') items.sort((a,b)=>a.v.name.localeCompare(b.v.name));
   else if (listSort==='visits') items.sort((a,b)=>b.visitCount-a.visitCount);
   else items.sort((a,b)=>lastTs(b)-lastTs(a));
-  const cats = Object.keys(byCat).sort((a,b)=>byCat[b]-byCat[a]);
+  const cats = Object.keys(byCat).filter(c=>catById(c)).sort((a,b)=>byCat[b]-byCat[a]);   // a kind the app doesn't know gets no chip
   const hidden = sc.mode==='crew' ? 0 : M.mapModel({...sc, privacy:'all', cats:null, status:{been:true,want:true}}).filter(s=>s.state!=='unlit').length - meCount;
   const unlitCount = modelCache.filter(s=>s.state==='unlit').length;
   el.innerHTML = `<div class="list-inner">${listTabHTML('feed')}
