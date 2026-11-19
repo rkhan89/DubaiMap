@@ -363,7 +363,7 @@ function renderList(){
   let items = modelCache.filter(s=>s.state!=='unlit');
   const byCat={}; items.forEach(s=>(s.v.categories||[]).forEach(c=>byCat[c]=(byCat[c]||0)+1));
   if (listCat) items = items.filter(s=>(s.v.categories||[]).includes(listCat));
-  const q=listQuery.trim().toLowerCase();
+  const q=sheet ? '' : listQuery.trim().toLowerCase();   // in the map sheet the map's own search bar does this
   if (q) items = items.filter(s=>{ const z=MAP.zoneById(s.v.zone); return [s.v.name, z?z.label:'', ...s.entries.map(e=>e.notes||'')].join(' ').toLowerCase().includes(q); });
   const lastTs = s=>Math.max(0,...s.entries.map(e=>e.createdAt));
   if (listSort==='rating') items.sort((a,b)=>b.rating-a.rating);
@@ -374,9 +374,10 @@ function renderList(){
   const hidden = sc.mode==='crew' ? 0 : M.mapModel({...sc, privacy:'all', cats:null, status:{been:true,want:true}}).filter(s=>s.state!=='unlit').length - meCount;
   const unlitCount = modelCache.filter(s=>s.state==='unlit').length;
   el.innerHTML = `<div class="list-inner">${listTabHTML('feed')}
-    <div class="search-row mt16"><label class="search">${icon('search')}<input id="lq" type="search" placeholder="Search ${items.length} spots…" value="${esc(listQuery)}" aria-label="Search"></label>
-      <button class="sq-btn${isFiltered()?' filtered':''}" id="lFilter" aria-label="Filters">${icon('tune')}</button></div>
-    <div class="seg mt16" id="lMode"><button data-v="me" class="${sc.mode==='me'?'on':''}">Me <em>${meCount}</em></button><button data-v="crew" class="${sc.mode==='crew'?'on':''}">Crew <em>${crewCount}</em></button></div>
+    ${sheet ? '' : `<div class="search-row mt16"><label class="search">${icon('search')}<input id="lq" type="search" placeholder="Search ${items.length} spots…" value="${esc(listQuery)}" aria-label="Search"></label>
+      <button class="sq-btn${isFiltered()?' filtered':''}" id="lFilter" aria-label="Filters">${icon('tune')}</button></div>`}
+    <div class="${sheet ? 'ms-mode mt16' : ''}"><div class="seg${sheet ? '' : ' mt16'}" id="lMode"><button data-v="me" class="${sc.mode==='me'?'on':''}">Me <em>${meCount}</em></button><button data-v="crew" class="${sc.mode==='crew'?'on':''}">Crew <em>${crewCount}</em></button></div>
+      ${sheet ? `<button class="sq-btn${isFiltered()?' filtered':''}" id="lFilter" aria-label="Filters">${icon('tune')}</button>` : ''}</div>
     <div class="chip-scroll mt16" id="lCats">
       <button class="person-chip${!listCat?' on':''}" data-c="" style="padding-left:var(--sp-3)">All <em>${modelCache.filter(s=>s.state!=='unlit').length}</em></button>
       ${cats.map(c=>`<button class="person-chip${listCat===c?' on':''}" data-c="${c}" style="padding-left:var(--sp-2)"><span style="width:26px;height:26px;display:flex">${iconSvg(c, catById(c).color)}</span>${esc(catById(c).label)} <em>${byCat[c]}</em></button>`).join('')}
@@ -387,7 +388,7 @@ function renderList(){
     ${items.length?`<div class="feed-end"><span class="tag soft">${icon('local_activity')}End of scrapbook page</span><span class="hand">${hidden>0?`${plural(hidden,'more entry','more entries')} hidden by your filters`:`${unlitCount} undiscovered spots still on the map`}</span></div>`:''}
   </div>`;
   const lq=el.querySelector('#lq');
-  lq.addEventListener('input', ()=>{ listQuery=lq.value; const pos=lq.selectionStart; renderList(); const n=$('#lq'); n.focus(); n.setSelectionRange(pos,pos); });
+  if (lq) lq.addEventListener('input', ()=>{ listQuery=lq.value; const pos=lq.selectionStart; renderList(); const n=$('#lq'); n.focus(); n.setSelectionRange(pos,pos); });
   el.querySelector('#lFilter').onclick=openFilters; bindListTab(el);
   el.querySelector('#lMode').addEventListener('click', e=>{ const b=e.target.closest('button'); if (!b) return; scope().mode=b.dataset.v; scope().members=null; saveScope(); rebuild(); });
   el.querySelector('#lCats').addEventListener('click', e=>{ const b=e.target.closest('[data-c]'); if (!b) return; listCat=b.dataset.c||null; renderList(); });

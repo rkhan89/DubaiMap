@@ -1946,6 +1946,9 @@ body.nav-b .bottomnav .nav-log{margin-left:var(--sp-1);margin-right:var(--sp-1);
 .nav-you.on .you-face{box-shadow:0 0 0 2px var(--surface), 0 0 0 4px var(--you-c, var(--line)), 0 0 0 5px var(--ink);}
 /* the sheet's content stops above the centre + at every height; the place card too */
 body.nav-b .msheet .ms-body{flex:none;height:max(0px, calc(var(--sheet-vis, 148px) - 28px - var(--plus-clear)));}
+/* in the sheet the map's search bar does the searching: Me/Crew and the filter share one row */
+.ms-mode{display:flex;gap:var(--sp-2);align-items:center;}
+.ms-mode .seg{flex:1;}
 body.nav-b .peek{padding-bottom:calc(var(--sp-3) + var(--plus-clear));}
 /* suggested details (0022): sourced, waiting for someone who's been to confirm */
 .sugg{background:var(--card);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);padding:var(--sp-3);}
