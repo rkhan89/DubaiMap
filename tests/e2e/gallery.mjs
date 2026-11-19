@@ -53,7 +53,6 @@ export default async function gallery(h){
   await step('profile', async ()=>{ await go('profile', ids.me); await h.sleep(800); await G('profile'); await scrollTop(700); await G('profile-2'); await back(); });
   await step('friend', async ()=>{ await go('profile', ids.maya); await h.sleep(800); await G('friend-profile'); await back(); });
   await step('stickers', async ()=>{ await go('stickers', ids.me); await h.sleep(700); await G('stickers'); await back(); });
-  await step('goals', async ()=>{ await go('goals'); await h.sleep(700); await G('goals'); await back(); });
   await step('recap', async ()=>{ await go('recap'); await h.sleep(900); await G('monthly-recap'); await back(); });
   await step('settings', async ()=>{ await go('settings'); await h.sleep(700); await G('settings'); await scrollTop(700); await G('settings-2'); await scrollTop(1400); await G('settings-3'); await back(); });
   await step('shelf', async ()=>{ await h.click('[data-tab="shelf"]'); await h.sleep(700); await G('shelf'); });

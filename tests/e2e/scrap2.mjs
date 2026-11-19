@@ -1,6 +1,6 @@
 // Playful features around the scrapbook: the small "sticker unlocked" moment after the
-// taped-in one, sticking a sticker on a page, crew
-// challenges, and the monthly recap as a scrapbook spread.
+// taped-in one, sticking a sticker on a page,
+// and the monthly recap as a scrapbook spread.
 export default async function scrap2(h){
   const p = h.page, step = async (name, fn)=>{ try{ await fn(); console.log('ok  ', name); } catch(e){ console.log('FAIL', name, '-', (e.message||'').split('\n')[0]); await h.shot('sc2fail-'+name.replace(/\W+/g,'-')); } };
   const text = ()=>h.js(()=>document.body.innerText);
@@ -33,15 +33,6 @@ export default async function scrap2(h){
     const r = await h.js(()=>{ const pg=document.querySelector('.feed .page'); return { sticker:!!pg.querySelector('.page-sticker'), note:pg.querySelector('.page-note')?.innerText||'' }; });
     if (!r.sticker || !/Best slice/.test(r.note)) throw new Error(JSON.stringify(r));
     await h.shot('sc2-page-sticker');
-    await close();
-  });
-  await step('crew challenges and your own goals: done or not done, no counters or steppers', async ()=>{
-    await h.js(async ()=>{ const {go}=await import('/go.js'); go.goals(); }); await h.sleep(700);
-    const n = await h.js(()=>document.querySelectorAll('.goal-card.challenge').length);
-    if (n !== 3) throw new Error('challenges: '+n);
-    if (!/Just me/.test(await text())) throw new Error('no personal goals');
-    if (/d+ of d+|d+%/.test(await text()) || await h.js(()=>!!document.querySelector('.stepper-mini, .ring, [data-g]'))) throw new Error('counters or steppers still shown');
-    await h.shot('sc2-challenges');
     await close();
   });
   await step('the monthly recap is a scrapbook spread, for you or the crew', async ()=>{

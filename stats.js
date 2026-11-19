@@ -1,4 +1,4 @@
-// Derived counts for profiles, stickers, goals and recaps.
+// Derived counts for profiles, stickers and recaps.
 // Everything is computed from visible records (store.canSee), so a friend's private
 // logs never count toward what you can see of them.
 import * as S from './store.js';

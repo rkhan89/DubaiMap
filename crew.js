@@ -158,7 +158,6 @@ function crewScreen(){
           <div class="grow"><h2 class="h-lg" id="cnm">${esc(crew.name)}</h2><span class="hand">${esc(crew.tagline||(owner?'Tap to add a crew motto':''))}</span></div>
           <button class="btn btn-gold btn-sm" id="cInv" style="border-radius:999px;min-height:48px;font-size:17px">${icon('person_add')}Invite</button>
         </div>
-        <button class="card mt16 block-btn row" id="cChallenges">${icon('flag')}<span class="grow"><b>Crew challenges</b><span class="muted small" style="display:block">Three to do together this month</span></span>${icon('chevron_right')}</button>
         ${go.eventsCard ? go.eventsCard() : ''}
         <div class="row between mt24"><span class="eyebrow">Members (${members.length})</span>${syncStatusHTML()}</div>
         <div class="stack mt16">${members.map(u=>{
@@ -176,7 +175,6 @@ function crewScreen(){
       bindSwitcher(el, paint);
       el.querySelector('#cpCopy').onclick=()=>copy(crew.code, `Passcode ${crew.code} copied!`);
       el.querySelector('#cInv').onclick=()=>sendInvite(crew);
-      el.querySelector('#cChallenges').onclick=()=>go.goals();
       if (go.bindEventsCard) go.bindEventsCard(el, paint);
       const more=el.querySelector('#cMore'); if (more) more.onclick=()=>crewSetup({});
       el.querySelectorAll('.person-row [data-profile]').forEach(b=>b.onclick=()=>go.profile(b.dataset.profile));

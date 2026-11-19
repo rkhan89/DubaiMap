@@ -819,7 +819,7 @@ html{overflow:hidden;}
 .map-cars.on{opacity:1;}
 
 /* =========================================================
-   PHASE 2: profile, stickers, goals, recap (own design)
+   PHASE 2: profile, stickers, recap (own design)
    ========================================================= */
 .block-btn{display:block;width:100%;text-align:left;}
 .card.row{display:flex;align-items:center;gap:var(--sp-3);}
@@ -866,15 +866,6 @@ html{overflow:hidden;}
 @keyframes peelin{0%{transform:rotate(-30deg) scale(.2);opacity:0;}100%{transform:rotate(var(--t,0deg)) scale(1);opacity:1;}}
 
 
-/* goals and challenges: done or not done */
-.goal-tick{flex:none;width:44px;height:44px;border-radius:50%;background:var(--sc-high);color:var(--ink-3);display:flex;align-items:center;justify-content:center;}
-.goal-tick.done{background:var(--green-soft);color:var(--green-ink);}
-.gm .goal-tick{width:40px;height:40px;}
-.goal-mini{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:var(--sp-2);}
-.gm{display:flex;flex-direction:column;align-items:center;gap:var(--sp-2);text-align:center;}
-.gm small{font-size:10.5px;color:var(--ink-3);line-height:1.2;}
-.goal-card{display:flex;align-items:center;gap:var(--sp-3);background:var(--card);border-radius:var(--r-lg);padding:var(--sp-3);box-shadow:var(--shadow-sm);}
-.goal-card b{font-size:15px;}
 
 /* recap */
 .recap-frame{border-radius:18px;overflow:hidden;box-shadow:var(--shadow);background:var(--paper);}
@@ -1148,7 +1139,6 @@ html{overflow:hidden;}
 .sticker-peel .sp-hint{font-size:12px;color:#6b5c4c;}
 html.still .sticker-peel{transform:translate(-50%, 0) rotate(-1deg);}
 
-.goal-card.challenge .hand{color:var(--ink-3);}
 
 /* stickers stuck over the page edges, clear of what's written on it */
 .page .page-sticker.ps-0{top:-20px;right:64px;left:auto;bottom:auto;}

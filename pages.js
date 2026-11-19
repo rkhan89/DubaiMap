@@ -142,39 +142,8 @@ export function withText(names){
   return `with ${names[0]}, ${names[1]} and ${names.length-2} more`;
 }
 
-// the visits shared with a crew, by people in it (its book, its challenges, its recap)
+// the visits shared with a crew, by people in it (its book and its recap)
 export function crewVisits(crew, w){ return (w.entries||[]).filter(e=>belongs({ kind:'crew', crewId:crew.id }, e, { ...w, crews:{ ...(w.crews||{}), [crew.id]:crew } })); }
-/* ---------- crew challenges: three a month, the same for everyone in the crew ----------
-   Picked from the crew's id and the month, so nothing needs storing; progress counts the
-   crew's shared visits this month. */
-const hash = s => { let h = 0; for (let k=0; k<s.length; k++) h = (h*31 + s.charCodeAt(k))>>>0; return h; };
-const KIND_CHALLENGES = [['cafeteria','cafeterias'],['karak','karak spots'],['coffee','coffee spots'],['dessert','dessert spots'],['restaurant','restaurants'],['matcha','matcha spots'],['burger','burger joints'],['icecream','ice cream spots'],['shisha','shisha spots'],['pizza','pizza places']];
-const OTHER_CHALLENGES = [
-  { id:'areas',     ic:'explore',        name:n=>`Eat in ${n} different areas`, n:4, count:(m)=>new Set(m.map(e=>e.zone).filter(Boolean)).size },
-  { id:'together',  ic:'group',          name:n=>`${n} visits together`,       n:3, count:(m)=>m.filter(e=>(e.taggedIds||[]).length).length, hint:'Tag who you were with' },
-  { id:'breakfast', ic:'free_breakfast', name:n=>`${n} breakfasts out`,        n:3, count:(m)=>m.filter(e=>(e.meals||[]).includes('breakfast')).length },
-  { id:'photos',    ic:'photo_camera',   name:n=>`${n} visits with photos`,    n:6, count:(m, w)=>m.filter(e=>(w.photos||[]).some(p=>p.entryId===e.id)).length },
-  { id:'newplaces', ic:'add_location_alt', name:n=>`${n} places new to the crew`, n:5, count:(m, w, first)=>m.filter(e=>first.get(e.venueId)===e).length },
-];
-export function crewChallenges(crew, month, w){
-  const all = crewVisits(crew, w).map(e=>({ ...e, zone:(w.venue && w.venue(e.venueId) || {}).zone }));
-  const inM = all.filter(e=>(e.date||'').slice(0,7)===month);
-  const first = new Map();
-  all.slice().sort((a,b)=>(a.date||'').localeCompare(b.date||'') || (a.createdAt||0)-(b.createdAt||0)).forEach(e=>{ if (!first.has(e.venueId)) first.set(e.venueId, e); });
-  const firstOrig = new Map([...first].map(([k,e])=>[k, inM.find(x=>x.id===e.id)]));
-  const h = hash(crew.id + month);
-  const [cat, label] = KIND_CHALLENGES[h % KIND_CHALLENGES.length];
-  const target = 3 + (h >> 4) % 3;   // 3 to 5
-  const newInCat = inM.filter(e=>firstOrig.get(e.venueId)===e && ((w.venue && w.venue(e.venueId) || {}).categories||[]).includes(cat));
-  const others = OTHER_CHALLENGES.slice().sort((a,b)=>hash(a.id+month+crew.id)-hash(b.id+month+crew.id)).slice(0,2);
-  const list = [
-    { id:'kind-'+cat, ic:'category', cat, name:`Try ${target} new ${label}`, target, have:newInCat.length, who:[...new Set(newInCat.map(e=>e.userId))] },
-    ...others.map(c=>({ id:c.id, ic:c.ic, name:c.name(c.n), target:c.n, hint:c.hint||'', have:c.count(inM, w, firstOrig), who:[...new Set(inM.map(e=>e.userId))] })),
-  ];
-  // just done or not done: no counts on screen
-  return list.map(({ have, target, ...c })=>({ ...c, done:have>=target }));
-}
-
 /* ---------- the monthly recap spread ----------
    For you (your visits and ones you were tagged on) or a crew (its shared visits). */
 export function recapData(scope, month, w){

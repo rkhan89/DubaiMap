@@ -52,7 +52,6 @@ export default async function icons(h){
   await step('settings', async ()=>{ await close(); await go('settings'); await h.sleep(800); });
   await step('critters', async ()=>{ await close(); await go('critters'); await h.sleep(700); });
   await step('stickers', async ()=>{ await close(); await go('stickers', ids.me); await h.sleep(700); });
-  await step('goals', async ()=>{ await close(); await go('goals'); await h.sleep(700); });
   console.log(`icons seen on screen: ${seen.size}`);
   if (bad.size) console.log('FAIL icons: ' + [...bad].map(([n,w])=>`${n} @ ${w}`).join('; '));
   else console.log('ok   every rendered icon is in the subset and drawn as a glyph');

@@ -1,9 +1,9 @@
 // node --test tests/
 // Scrapbook pages: which book a visit is a page in, the old per-day settings, "on this day",
-// and crew challenges. (The server rules are checked in tests/e2e/sqltest.mjs.)
+// and the recap. (The server rules are checked in tests/e2e/sqltest.mjs.)
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { belongs, bookPages, legacyPageRows, onThisDay, withText, crewChallenges, recapData, pageId, kindCounts, bookStats, yearAgo, spreadData, monthEnd, spreadDropped } from '../pages.js';
+import { belongs, bookPages, legacyPageRows, onThisDay, withText, recapData, pageId, kindCounts, bookStats, yearAgo, spreadData, monthEnd, spreadDropped } from '../pages.js';
 
 const ME='me', KABIR='kabir', MAYA='maya', OMAR='omar';
 const crewA = { id:'A', memberIds:[ME, KABIR, MAYA] }, crewB = { id:'B', memberIds:[ME, OMAR] };
@@ -140,15 +140,6 @@ test('"with" text', ()=>{
   assert.equal(withText(['Kabir','Maya','Omar','Noor']), 'with Kabir, Maya and 2 more');
 });
 
-test('challenges: three, the same for the whole crew, with shared progress', ()=>{
-  const es = [V('a', { userId:KABIR, venueId:'v3', crewIds:['A'], date:'2026-10-02' }), V('b', { userId:MAYA, crewIds:['A'], date:'2026-10-03', meals:['breakfast'] })];
-  const c1 = crewChallenges(crewA, '2026-10', world(es)), c2 = crewChallenges(crewA, '2026-10', world(es, { meId:KABIR }));
-  assert.equal(c1.length, 3);
-  assert.deepEqual(c1, c2);
-  // done or not done, never a count
-  assert.ok(c1.every(c=>typeof c.done==='boolean' && !('have' in c) && !('target' in c) && !('pct' in c)));
-  assert.notDeepEqual(crewChallenges(crewA, '2026-11', world(es)).map(c=>c.name), []);
-});
 test('recap for a crew: its shared visits; for you: yours and tagged', ()=>{
   const es = [V('a', { userId:KABIR, crewIds:['A'], date:'2026-10-02' }), V('b', { date:'2026-10-03', private:true, venueId:'v2' }), V('c', { userId:OMAR, crewIds:['B'], date:'2026-10-03', taggedIds:[ME], venueId:'v3' })];
   const crew = recapData({ crew:crewA }, '2026-10', world(es)), me = recapData({}, '2026-10', world(es));

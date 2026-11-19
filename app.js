@@ -15,7 +15,6 @@ import './place.js';
 import './book.js';
 import { primeBadges } from './badges.js';
 import './profile.js';
-import './social.js';
 import './share.js';
 import { prefs, setPref } from './prefs.js';
 import { placesHTML, bindPlaces } from './placesview.js';

@@ -102,7 +102,6 @@ export default async function spacing(h){
   await close();
   await state('stickers', ()=>go(async ()=>{ const {go}=await import('/go.js'); go.stickers(); }));
   await close();
-  await state('goals', ()=>go(async ()=>{ const {go}=await import('/go.js'); go.goals(); }));
   await close();
   await state('recap', ()=>go(async ()=>{ const {go}=await import('/go.js'); go.recap(); }));
   await close();

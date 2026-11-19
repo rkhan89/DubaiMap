@@ -5,7 +5,6 @@ import * as S from './store.js';
 import * as MAP from './map.js';
 import { userStats, thisMonth } from './stats.js';
 import { badgeStatus, stickerHTML } from './badges.js';
-import { goalProgress, crewChallengeList } from './social.js';
 import { CRITTERS, critterById } from './critters.js';
 import { critterArt } from './critterui.js';
 import { pinChoices, colorOf } from './pincolor.js';
@@ -33,12 +32,10 @@ function profileScreen(userId, opts={}){   // opts.tab: opened from the You tab 
       const crew = S.myCrew(), all = userStats(userId);
       const badges = badgeStatus(userId).sort((a,b)=>b.done-a.done);
       const fav = S.favouriteOf(userId), found = S.caughtIds(userId).size;
-      const challenges = mine ? crewChallengeList() : [];
       const topCats = [...all.cats].sort((a,b)=>b[1]-a[1]).slice(0,4), maxCat = topCats[0]?.[1] || 1;
       const areaCounts = {}; all.visitList.forEach(e=>{ const v=S.venue(e.venueId); if (v) areaCounts[v.zone]=(areaCounts[v.zone]||0)+1; });
       const favArea = Object.entries(areaCounts).sort((a,b)=>b[1]-a[1])[0];
       const recent = all.visitList.slice().reverse().slice(0,5);
-      const goals = mine ? goalProgress() : [];
       el.innerHTML = topbar({title: mine ? 'Your profile' : (u.name||u.handle), eyebrow: mine ? 'Profile' : 'Crew friend', profile:false, back:!opts.tab,
         actions: mine ? `<button class="icon-btn" id="prSettings" aria-label="Settings">${icon('settings')}</button>` : ''}) + `<div class="screen-body">
         <div class="passport mt16 profile-hero"><span class="tape"></span>
@@ -53,14 +50,12 @@ function profileScreen(userId, opts={}){   // opts.tab: opened from the You tab 
         <div class="stat-grid mt16">
           <div class="stat"><b>${all.places}</b><span>places</span></div>
           <div class="stat"><b>${all.visits}</b><span>visits</span></div>
-          <div class="stat"><b>${all.areaCount}<small>/${MAP.ZONES.length}</small></b><span>areas</span></div>
+          <div class="stat"><b>${all.areaCount}</b><span>areas</span></div>
           <div class="stat"><b>${all.photos}</b><span>photos</span></div>
         </div>
         <button class="card mt16 block-btn" id="prStickers"><div class="row between"><span class="h-sm">Stickers</span><span class="mono muted small">${icon('chevron_right')}</span></div>
           <div class="sticker-strip mt16">${badges.slice(0,6).map(b=>stickerHTML(b, 52)).join('')}</div></button>
-        ${mine ? `<button class="card mt16 block-btn" id="prGoals"><div class="row between"><span class="h-sm">${challenges.length ? 'Crew challenges' : esc(fmtMonth(thisMonth()))+' goals'}</span><span class="mono muted small">${icon('chevron_right')}</span></div>
-          <div class="goal-mini mt16">${(challenges.length ? challenges : goals).map(g=>`<div class="gm${g.done?' done':''}"><span class="goal-tick${g.done?' done':''}">${icon(g.done?'check':'radio_button_unchecked','',g.done)}</span><small>${esc(g.short||g.name)}</small></div>`).join('')}</div></button>
-        <button class="card mt16 block-btn row" id="prRecap">${icon('auto_awesome')}<span class="grow"><b>Your ${fmtMonth(thisMonth()).split(' ')[0]} spread</b><span class="muted small" style="display:block">Your month as a scrapbook spread, ready to share</span></span>${icon('chevron_right')}</button>` : ''}
+        ${mine ? `<button class="card mt16 block-btn row" id="prRecap">${icon('auto_awesome')}<span class="grow"><b>Your ${fmtMonth(thisMonth()).split(' ')[0]} spread</b><span class="muted small" style="display:block">Your month as a scrapbook spread, ready to share</span></span>${icon('chevron_right')}</button>` : ''}
         ${topCats.length ? `<div class="card mt16"><span class="h-sm">Favourite kinds</span>
           <div class="cat-bars mt16">${topCats.map(([c,n])=>{ const k=catById(c); return `<div class="cb"><span class="cb-ico">${iconSvg(c, k.color)}</span><span class="cb-name">${esc(k.label)}</span><span class="cb-bar"><i style="width:${Math.round(n/maxCat*100)}%;background:${k.color}"></i></span><b>${n}</b></div>`; }).join('')}</div>
           ${favArea ? `<p class="muted small mt16">${icon('location_on')} Most at home in <b>${esc(MAP.zoneById(favArea[0])?.label||'')}</b> (${plural(favArea[1],'visit')})</p>` : ''}</div>` : ''}
@@ -74,7 +69,6 @@ function profileScreen(userId, opts={}){   // opts.tab: opened from the You tab 
       on('prEdit', ()=>go.editHandle());
       on('prStickers', ()=>go.stickers(userId));
       on('prFav', ()=> mine ? (found ? go.favouritePicker() : go.critters()) : go.critters(userId));
-      on('prGoals', ()=>go.goals());
       on('prRecap', ()=>go.recap());
       el.querySelectorAll('[data-venue]').forEach(r=>r.onclick=()=>go.place(r.dataset.venue));
     };
