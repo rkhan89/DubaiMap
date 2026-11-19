@@ -141,18 +141,16 @@ function crewScreen(){
       const members=S.crewMembers(crew);
       if (!crew || members.length<2) return paintSolo(crew);
       const owner=crew.ownerId===me.id;
-      const est=new Date(crew.createdAt).getFullYear();
       el.innerHTML = topbar({title:S.myCrews().length>1?'Your Crews':'Your Crew', eyebrow:'Visits', back:false}) + `<div class="screen-body">
         ${switcherHTML()}
         <div class="passport mt16"><span class="tape"></span>
           <div class="row" style="align-items:flex-start">
             <span class="pp-icon">${icon('local_cafe','',true)}</span>
-            <div class="grow"><div class="row" style="gap:var(--sp-2)"><span class="eyebrow">Since ${est}</span></div>
-              <div class="pp-code">CODE: <b>${esc(crew.code)}</b></div></div>
+            <div class="grow"><span class="eyebrow">Invite code</span>
+              <div class="pp-code"><b>${esc(crew.code)}</b></div>
+              <div class="muted small mt4">${plural(members.length,'member')}${APP.crewMax-members.length<=3?` • ${APP.crewMax-members.length ? plural(APP.crewMax-members.length,'spot')+' left' : 'full'}`:''}</div></div>
             <button class="btn btn-white btn-sm" id="cpCopy" style="border-radius:999px">${icon('content_copy')}Copy</button>
           </div>
-          <div class="row between mt16"><span class="row" style="gap:var(--sp-2)"><i style="width:9px;height:9px;border-radius:50%;background:var(--green);display:inline-block"></i>${members.length} of ${APP.crewMax} members</span><span class="mono" style="color:var(--rust);font-weight:700;font-size:12px">${APP.crewMax-members.length} spots open</span></div>
-          <div class="cap-bar"><i style="width:${Math.round(members.length/APP.crewMax*100)}%"></i></div>
         </div>
         <div class="row mt24" style="align-items:flex-start">
           <div class="grow"><h2 class="h-lg" id="cnm">${esc(crew.name)}</h2><span class="hand">${esc(crew.tagline||(owner?'Tap to add a crew motto':''))}</span></div>
