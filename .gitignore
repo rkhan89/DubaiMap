@@ -6,3 +6,7 @@
 *.pem
 *.key
 node_modules/
+
+# private working notes (they name real places from crews): never committed or deployed
+notes/
+__pycache__/
