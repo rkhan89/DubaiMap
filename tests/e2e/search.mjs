@@ -92,10 +92,10 @@ export default async function searchE2E(h){
     if (!sug.length) throw new Error('no suggestions');
     await close();
   });
-  await step('the Shelf: the same bar at the top, then the books (Everything first, with its latest pages); no magnifier', async ()=>{
+  await step('the Shelf: the same bar at the top, then Continue (the newest pages), then the books (Everything first); no magnifier', async ()=>{
     await h.js(async ()=>{ const { go } = await import('/go.js'); go.shelf(); }); await h.sleep(900);
     const r = await h.js(()=>{ const s = document.querySelector('.screen.in:last-of-type'); const bar = s.querySelector('#shSearchHost .ksearch-bar'), books = s.querySelector('.shelf-top'), strip = s.querySelector('.shelf-strip');
-      return { bar:!!bar, mag:!!s.querySelector('#shSearch'), order: bar && books && strip ? bar.getBoundingClientRect().top < books.getBoundingClientRect().top && books.getBoundingClientRect().top < strip.getBoundingClientRect().top : false,
+      return { bar:!!bar, mag:!!s.querySelector('#shSearch'), order: bar && books && strip ? bar.getBoundingClientRect().top < strip.getBoundingClientRect().top && strip.getBoundingClientRect().top < books.getBoundingClientRect().top : false,
         books:[...s.querySelectorAll('.shelf-book b')].map(c=>c.innerText.trim()), critters:!!s.querySelector('#shCritters'), buttons:!!s.querySelector('#shAlbum') && !!s.querySelector('#shImport') }; });
     await h.shot('sr-shelf');
     if (!r.bar || r.mag || !r.order || !r.buttons || r.books[0] !== 'Everything' || !r.critters) throw new Error(JSON.stringify(r));

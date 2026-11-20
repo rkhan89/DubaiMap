@@ -25,7 +25,7 @@ export default async function tour(h){
     const input=await p.$('#lPh'); await input.uploadFile(path.resolve('fixture.jpg')); await h.sleep(1200);
     await waitBubble(/Save it/); await h.shot('t-09-save'); });
   await step('save', async ()=>{ await h.js(()=>document.querySelector('[data-save]:not([data-save="me"])').click()); await waitBubble(/Your first stamp/); await h.shot('t-10-stamp'); });
-  await step('three hints in all', async ()=>{ const t=await bubble(); if (!/3 \/ 3/.test(t)) throw new Error(t.slice(0, 80)); await h.js(()=>{ const u=document.querySelector('.unlock [data-x="ok"]'); if (u) u.click(); }); });
+  await step('three hints in all', async ()=>{ await waitBubble(/3 \/ 3/); await h.js(()=>{ const u=document.querySelector('.unlock [data-x="ok"]'); if (u) u.click(); }); });
   await step('done, guide gone, place saved', async ()=>{
     await h.js(()=>document.querySelector('[data-t="next"]').click()); await h.sleep(600);
     const r=await h.js(async ()=>{ const S=await import('/store.js'); return { tour:!!document.querySelector('.tour'), done:S.flag('tourDone'), visits:S.entries({kind:'visit'}).length, empty:!!document.querySelector('#emptyMap') }; });
