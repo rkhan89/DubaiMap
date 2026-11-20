@@ -17,10 +17,12 @@ export default async function recordList(h){
     return { total:visited.length, a:{ id:a.id, zone:a.zone, name:a.name }, b:{ id:b.id, zone:b.zone }, c:c.id };
   });
   const rows = ()=>h.js(()=>[...document.querySelectorAll('#pRows [data-venue]')].map(b=>b.dataset.venue));
+  // the places list lives in the map sheet: raise it to full
+  const openSheet = async ()=>{ await h.js(()=>{ const sh=document.querySelector('#mSheet'), g=sh.querySelector('.ms-grab'); let n=0; while (sh.dataset.stop!=='full' && n++<4) g.click(); }); await h.sleep(500); };
   const typeQ = v=>h.js(v=>{ const q=document.querySelector('#pq'); q.value=v; q.dispatchEvent(new Event('input',{bubbles:true})); }, v);
   await step('List has a Feed / Places toggle; Places lists every place been to', async ()=>{
     await h.js(()=>{ const p=JSON.parse(localStorage.getItem('bites-prefs')||'{}'); p.listTab='feed'; localStorage.setItem('bites-prefs', JSON.stringify(p)); });
-    await h.click('[data-tab="list"]'); await h.sleep(500);
+    await openSheet();
     if (!(await h.js(()=>!!document.querySelector('#lTab')))) throw new Error('no toggle');
     await h.shot('pl2-feed');
     await h.click('[data-tab-l="places"]'); await h.sleep(500);
@@ -29,7 +31,7 @@ export default async function recordList(h){
     await h.shot('pl2-places');
   });
   await step('the toggle is remembered', async ()=>{
-    await h.click('[data-tab="map"]'); await h.click('[data-tab="list"]'); await h.sleep(400);
+    await h.page.reload({ waitUntil:'networkidle0' }); await h.sleep(2500); await openSheet();   // a fresh start of the app
     if (!(await h.js(()=>!!document.querySelector('#pRows')))) throw new Error('back on the feed');
   });
   await step('tags: all of the picked ones; areas: any of the picked ones; with the name search too', async ()=>{
