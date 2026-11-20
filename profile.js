@@ -5,7 +5,7 @@ import * as S from './store.js';
 import * as MAP from './map.js';
 import { userStats, thisMonth } from './stats.js';
 import { badgeStatus, stickerHTML } from './badges.js';
-import { CRITTERS, critterById } from './critters.js';
+import { CRITTERS, LANDMARK_CRITTERS, critterById } from './critters.js';
 import { critterArt } from './critterui.js';
 import { pinChoices, colorOf } from './pincolor.js';
 import { CATEGORIES, catById, iconSvg, esc, plural, fmtDate, fmtMonth, fmtRating } from './data.js';
@@ -31,7 +31,9 @@ function profileScreen(userId, opts={}){   // opts.tab: opened from the You tab 
       const u = S.user(userId); if (!u) return;
       const crew = S.myCrew(), all = userStats(userId);
       const badges = badgeStatus(userId).sort((a,b)=>b.done-a.done);
-      const fav = S.favouriteOf(userId), found = S.caughtIds(userId).size;
+      // street critters count toward "n of 12"; landmark ones are a bonus, counted on their own
+      const have = S.caughtIds(userId), fav = S.favouriteOf(userId), found = have.size;
+      const street = CRITTERS.filter(c=>have.has(c.id)).length, bonus = LANDMARK_CRITTERS.filter(c=>have.has(c.id)).length;
       const topCats = [...all.cats].sort((a,b)=>b[1]-a[1]).slice(0,4), maxCat = topCats[0]?.[1] || 1;
       const areaCounts = {}; all.visitList.forEach(e=>{ const v=S.venue(e.venueId); if (v) areaCounts[v.zone]=(areaCounts[v.zone]||0)+1; });
       const favArea = Object.entries(areaCounts).sort((a,b)=>b[1]-a[1])[0];
@@ -45,7 +47,7 @@ function profileScreen(userId, opts={}){   // opts.tab: opened from the You tab 
               ${u.tagline ? `<div class="hand mt4">${esc(u.tagline)}</div>` : ''}</div>
             ${mine ? `<button class="icon-btn" id="prEdit" aria-label="Edit profile">${icon('edit')}</button>` : ''}
           </div>
-          <button class="fav-row mt16" id="prFav">${fav ? critterArt(fav, 64) : `<span class="fav-empty">${icon('pets')}</span>`}<span class="grow"><span class="eyebrow">Favourite critter</span><b>${fav ? esc(critterById(fav).name) : (mine ? 'Pick one' : 'None yet')}</b><span class="mono small muted">${found} of ${CRITTERS.length} found</span></span>${icon('chevron_right')}</button>
+          <button class="fav-row mt16" id="prFav">${fav ? critterArt(fav, 64) : `<span class="fav-empty">${icon('pets')}</span>`}<span class="grow"><span class="eyebrow">Favourite critter</span><b>${fav ? esc(critterById(fav).name) : (mine ? 'Pick one' : 'None yet')}</b><span class="mono small muted">${street} of ${CRITTERS.length} found${bonus ? ` • ${bonus} landmark` : ''}</span></span>${icon('chevron_right')}</button>
         </div>
         <div class="stat-grid mt16">
           <div class="stat"><b>${all.places}</b><span>places</span></div>
