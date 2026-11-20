@@ -116,6 +116,8 @@ function rebuild(){
   $('#btnFilter').classList.toggle('filtered', filtered);
   if (state.view==='list' || sheet) renderList();
   paintProfileButtons();
+  // open screens that know how to repaint (profile, crew, critters, shelf) show the change too
+  document.querySelectorAll('#screens .screen').forEach(s=>{ if (s._repaint) try{ s._repaint(); }catch(_){} });
 }
 function isFiltered(){ const sc=scope(); return !!(sc.cats || sc.meals || sc.members || sc.privacy!=='all' || !sc.status.been || !sc.status.want); }
 let rebuildT=null;
