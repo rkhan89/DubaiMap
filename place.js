@@ -17,6 +17,7 @@ import { instagramFrom, cleanWebsite, cleanPhone, validPhone, validUrl } from '.
 import { overallHTML, miniStars, rateSheet } from './rate.js';
 import * as RT from './ratings.js';
 import * as SG from './suggest.js';
+import { moments } from './feel.js';
 
 function whenText(e){
   const d=new Date(e.createdAt), days=Math.floor((Date.now()-e.createdAt)/864e5);
@@ -69,7 +70,7 @@ function withHTML(e, me){
   if (!names.length) return '';
   return `<div class="rv-with">${icon('group')}<span>with ${esc(names.join(', '))}</span>${ids.includes(me.id)&&e.userId!==me.id?`<button class="link small" data-untag="${e.id}">Not me</button>`:''}</div>`;
 }
-function placeScreen(venueId){
+function placeScreen(venueId, opts={}){   // opts.from 'peek': it rises out of the pin's card
   const v=S.venue(venueId); if (!v) return;
   openScreen(el=>{
     let sugg = [];                       // suggested details waiting for someone who's been (0022)
@@ -163,7 +164,7 @@ ${S.events({venueId:v.id, upcoming:true}).length?`<div class="card mt16"><span c
     };
     paint();
     if (S.me() && (SG.isStub() || !String(v.id).startsWith('demo-'))) loadSugg();
-  }, {cls:'place-screen'});
+  }, {cls:'place-screen'+(opts.from==='peek'?' from-peek':'')});
 }
 function showOnMap(v){ closeAll(); go.switchView('map'); const w=MAP.placeWorld(v); MAP.flyToSeparate(w, S.venues().filter(x=>x.id!==v.id).map(x=>MAP.placeWorld(x)).filter(p=>Math.hypot(p.x-w.x,p.y-w.y)<60)); MAP.highlight(v.id); }
 function moreMenu(v, after){
@@ -592,6 +593,7 @@ function logFlow(opts){
       setTimeout(()=>{
         const w=MAP.placeWorld(venue);
         MAP.markDropped(venue.id);
+        setTimeout(()=>moments.stamp(), 450);   // the stamp's drop lands about here: its thud (and sound, if on)
         MAP.flyToSeparate(w, S.venues().filter(x=>x.id!==venue.id).map(x=>MAP.placeWorld(x)).filter(p=>Math.hypot(p.x-w.x,p.y-w.y)<60));
         // a new visit is taped into its book; then any sticker it earned
         // a check-in also catches any critter living at this place (spots for places count too), then stickers

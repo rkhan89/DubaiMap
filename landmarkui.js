@@ -5,7 +5,7 @@
 // Facts are bundled (landmark-facts.js) so the card works offline. No points or scores anywhere here.
 import * as S from './store.js';
 import { esc } from './data.js';
-import { icon, openSheet, back } from './ui.js';
+import { icon, openSheet, back, haptic } from './ui.js';
 import { go } from './go.js';
 import { landmarkById, landmarkCritter } from './landmarks.js';
 import { accuracyFor } from './landmark-critters.js';
@@ -119,6 +119,7 @@ function critterRow(slot, c, lm, pos){
     // save first (one find per person per critter; lat, lng and accuracy kept for spotting spoofing later)
     S.recordCatch(c.id, { lat:pos.lat, lng:pos.lng, accuracy:pos.accuracy, spot:lm.name, landmarkId:c.landmarkId });
     console.info('landmark critter found', c.id, { lat:pos.lat, lng:pos.lng, accuracy:pos.accuracy });
+    haptic('success');
     const fact = c.bonusFact || c.fact;
     slot.innerHTML = `<div class="lm-reveal mt16"><img class="critter-art" src="critters/${esc(c.id)}.png" width="32" height="32" alt="">
       <div class="lm-reveal-text" hidden><b class="h-md">${esc(c.name)}</b><div class="mt4">${chip(c.theme)}</div><p class="mt8">${esc(fact)}</p>

@@ -11,7 +11,7 @@ import { SHOW_LOCKED_LANDMARK_CRITTERS } from './landmark-critters.js';
 import { critterCheck, accuracyNeeded } from './catch.js';
 import { whereAmI, locationError } from './locate.js';
 import { esc, fmtDate } from './data.js';
-import { icon, toast, openScreen, openSheet, back, topbar, toggleHTML, bindToggle } from './ui.js';
+import { icon, toast, openScreen, openSheet, back, topbar, toggleHTML, bindToggle, haptic } from './ui.js';
 import { go } from './go.js';
 
 const CFG = APP.critters;
@@ -97,6 +97,7 @@ go.critter = detail;
 /* ---------- the catch moment (once per critter: a catch is only ever recorded once) ---------- */
 function catchMoment(c, done){
   const cr = critterById(c.critterId);
+  haptic('success');
   const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   const wrap = document.createElement('div'); wrap.className = 'catch-moment' + (reduce ? ' calm' : '');
   wrap.setAttribute('role', 'dialog'); wrap.setAttribute('aria-label', 'New critter: '+cr.name);

@@ -8,6 +8,8 @@
 //   - Android back (and a swipe back) lowers it a step instead of leaving the app
 //   - Safari's rubber band can't pull the page: the list contains its own overscroll
 import { back, pushBackLayer, icon } from './ui.js';
+import { haptic } from './haptics.js';
+const calm = ()=>typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 import { avatarHTML } from './avatar.js';
 
 // heights, as the sheet's top edge measured from the bottom of the map area. Peek ends just under peekTo()
@@ -27,7 +29,7 @@ export function mountSheet({ host, list, onStop, peekTo }){
   body.appendChild(list);                       // the List's own content moves in
   list.classList.add('active');
 
-  let at = 0, y = PEEK, release = null;         // at: 0 peek, 1 half, 2 full; y: current top, from the bottom
+  let at = 0, y = PEEK, lastY = PEEK, release = null;         // at: 0 peek, 1 half, 2 full; y: current top, from the bottom
   const H = ()=>host.clientHeight;
   const measure = ()=>{
     const t = peekTo && peekTo(); if (!t) return;
@@ -37,7 +39,9 @@ export function mountSheet({ host, list, onStop, peekTo }){
   };
   const place = (px, animate)=>{
     y = Math.max(peek - 40, Math.min(H() - 64, px));
-    el.style.transition = animate ? 'transform .32s cubic-bezier(.2,.9,.3,1)' : 'none';
+    // going up it springs a touch past and settles; going down it eases in (an overshoot there would lift the sheet)
+    const up = px > lastY; lastY = px;
+    el.style.transition = animate && !calm() ? (up ? 'transform .42s cubic-bezier(.3,1.18,.5,1)' : 'transform .3s cubic-bezier(.2,.9,.3,1)') : 'none';
     el.style.transform = `translateY(${H() - y}px)`;
     host.style.setProperty('--sheet-y', Math.min(y, Math.round(H() * 0.5)) + 'px');
     el.style.setProperty('--sheet-vis', y + 'px');
@@ -52,7 +56,7 @@ export function mountSheet({ host, list, onStop, peekTo }){
     // above peek, back lowers the sheet
     if (at > 0 && !release) release = pushBackLayer(()=>{ release = null; go(0); });
     if (at === 0 && release){ const r = release; release = null; r(); }
-    if (was !== at) onStop && onStop(el.dataset.stop);
+    if (was !== at){ if (animate) haptic('tick'); onStop && onStop(el.dataset.stop); }
   };
 
   // dragging: the grabber always; the list too, unless it's full and scrolled, or pulled up at full

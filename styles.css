@@ -427,6 +427,11 @@ textarea.input{min-height:110px;resize:none;line-height:1.45;}
 .screen{position:absolute;inset:0;isolation:isolate;background:var(--surface);overflow-y:auto;overflow-x:hidden;pointer-events:auto;transform:translateX(100%);transition:transform .26s cubic-bezier(.2,.8,.3,1);-webkit-overflow-scrolling:touch;overscroll-behavior:contain;}
 .screen.in{transform:none;}
 .screen.out{transform:translateX(100%);}
+/* a place opened from its pin's card rises out of the card instead of sliding in from the side */
+.screen.from-peek{transform:translateY(56px);opacity:0;}
+.screen.from-peek.in{transform:none;opacity:1;}
+.screen.from-peek.out{transform:translateY(56px);opacity:0;}
+@media (prefers-reduced-motion: no-preference){ .screen.from-peek{transition:transform .4s var(--ease-spring), opacity .18s linear;} }
 .screen.fade{transform:none;opacity:0;transition:opacity .25s;}
 .screen.fade.in{opacity:1;}
 .screen-body{padding:var(--sp-2) var(--gutter) calc(var(--sp-5) + var(--safe-b));max-width:560px;margin:0 auto;}

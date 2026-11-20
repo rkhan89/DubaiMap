@@ -193,6 +193,7 @@ go.activity = openActivity;
 /* ---------- peek card ---------- */
 let peekId=null;
 function showPeek(venueId){
+  haptic('tick');
   sheet && sheet.go(0);   // the place card comes up over a lowered sheet
   const v=S.venue(venueId); if (!v) return;
   const sum=M.venueSummary(v, {...scope(), members:null});
@@ -238,8 +239,8 @@ go.hidePeek = hidePeek;
 $('#peek').addEventListener('click', e=>{
   const b=e.target.closest('[data-pk]');
   const id=peekId;
-  if (!b){ if (e.target.closest('h2, .addr, .peek-top')) go.place(id); return; }
-  if (b.dataset.pk==='open') go.place(id);
+  if (!b){ if (e.target.closest('h2, .addr, .peek-top')) go.place(id, { from:'peek' }); return; }
+  if (b.dataset.pk==='open') go.place(id, { from:'peek' });
   if (b.dataset.pk==='log') go.log({venueId:id});
   if (b.dataset.pk==='view'){ const ps=S.photos({venueId:id}); if (ps.length) go.viewer(ps.map(p=>p.id), 0); }
 });
@@ -247,7 +248,7 @@ $('#peek').addEventListener('click', e=>{
 (function(){
   const p=$('#peek'); let y0=null;
   p.addEventListener('pointerdown', e=>{ if (e.target.closest('button')) return; y0=e.clientY; });
-  p.addEventListener('pointerup', e=>{ if (y0===null) return; const dy=e.clientY-y0; y0=null; if (dy<-40 && peekId) go.place(peekId); else if (dy>50) hidePeek(); });
+  p.addEventListener('pointerup', e=>{ if (y0===null) return; const dy=e.clientY-y0; y0=null; if (dy<-40 && peekId) go.place(peekId, { from:'peek' }); else if (dy>50) hidePeek(); });
 })();
 
 /* ---------- cluster list ---------- */
