@@ -33,7 +33,7 @@ export default async function gallery(h){
   await step('filter', async ()=>{ await h.click('#btnFilter'); await h.sleep(500); await G('map-filter'); await scrollTop(600); await h.js(()=>document.querySelector('#fCats [data-cat-more]')?.click()); await h.sleep(300); await G('map-filter-categories-meals'); await back(); });
   await step('area', async ()=>{ await go('area', ids.zone); await h.sleep(800); await G('area'); await back(); });
   await step('bell', async ()=>{ await h.click('#btnBell'); await h.sleep(500); await G('bell-crew-activity'); await back(); });
-  await step('list', async ()=>{ await h.click('[data-tab="list"]'); await h.sleep(700); await G('list'); await h.click('[data-tab="map"]'); await h.sleep(500); });
+  await step('list', async ()=>{ await h.js(()=>{ const g=document.querySelector('.ms-grab'); g.click(); g.click(); }); await h.sleep(700); await G('list'); await h.js(()=>document.querySelector('.ms-grab').click()); await h.sleep(500); });
   await step('place', async ()=>{ await go('place', ids.ravi); await h.sleep(900); await G('place'); await scrollTop(700); await G('place-reviews'); await scrollTop(1500); await G('place-photos-actions'); });
   await step('plan', async ()=>{ await scrollTop(1100); await h.js(()=>document.querySelector('#pPlan').click()); await h.sleep(600); await G('plan-a-bite'); await back(); });
   await step('check-in', async ()=>{ const here = await h.js(async (vid)=>{ const S=await import('/store.js'), M=await import('/map.js'); const z=M.zoneById(S.venue(vid).zone); return z.lat+','+z.lng; }, ids.ravi); await h.load('at='+here); await go('checkIn', ids.ravi); await h.sleep(1500); await G('check-in-who'); await back(); });

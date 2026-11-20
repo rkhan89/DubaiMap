@@ -39,7 +39,7 @@ export default async function icons(h){
   await step('place', async ()=>{ await close(); await go('place', ids.ravi); await h.sleep(900); });
   await step('plan', async ()=>{ await h.click('#pPlan'); });
   await step('place menu', async ()=>{ await close(); await go('place', ids.ravi); await h.sleep(700); await h.click('#pMore'); });
-  await step('list', async ()=>{ await close(); await h.click('[data-tab="list"]'); await h.sleep(600); await h.click('[data-tab="map"]'); });
+  await step('list', async ()=>{ await close(); await h.js(()=>{ const g=document.querySelector('.ms-grab'); g.click(); g.click(); }); await h.sleep(600); await h.js(()=>document.querySelector('.ms-grab').click()); });
   await step('crew', async ()=>{ await h.click('[data-tab="crew"]'); await h.sleep(800); });
   await step('event', async ()=>{ await h.js(()=>document.querySelector('.screen [data-event]')?.click()); await h.sleep(600); });
   await step('invite', async ()=>{ await close(); await go('inviteLanding', 'SAMPLE7'); await h.sleep(800); });

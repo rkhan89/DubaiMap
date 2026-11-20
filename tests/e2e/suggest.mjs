@@ -8,7 +8,7 @@ const b = await puppeteer.launch({ executablePath: 'C:/Program Files/Google/Chro
 const p = await b.newPage(); await p.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
 const errs = []; p.on('pageerror', e=>errs.push(e.message));
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const BASE = BASEURL + '?local&still&nav=old';
+const BASE = BASEURL + '?local&still';
 await p.goto(BASE, { waitUntil: 'networkidle0' });
 await p.evaluate(async () => { localStorage.clear(); const S = await import('/store.js'); S.signIn({ email: 'r@example.test' }); S.updateMe({ handle: 'rahim', name: 'Rahim', onboarded: true }); await S.setDemo(true); S.setFlag('coachDone'); S.flush(); });
 await p.goto(BASE, { waitUntil: 'networkidle0' }); await sleep(1500);

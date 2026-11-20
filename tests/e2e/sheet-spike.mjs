@@ -1,4 +1,4 @@
-// Step 4 spike checks for the map sheet (?nav=sheet), with real touch input so touch-action applies.
+// Checks for the map sheet and layout B, with real touch input so touch-action applies.
 //   node tests/e2e/sheet-spike.mjs [base url] [screenshot folder]   (default http://localhost:5174/; not part of CI yet)
 import fs from 'fs'; import { pathToFileURL } from 'url';
 const puppeteer = (await import(pathToFileURL('C:/Users/rkhan/DubaiMap/tests/e2e/node_modules/puppeteer-core/lib/puppeteer/puppeteer-core.js').href)).default;
@@ -7,9 +7,9 @@ const b = await puppeteer.launch({ executablePath: 'C:/Program Files/Google/Chro
 const p = await b.newPage(); await p.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
 const errs=[]; p.on('pageerror', e=>errs.push(e.message));
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const BASE = BASEURL + '?local&still&nav=sheet';
+const BASE = BASEURL + '?local&still';
 await p.goto(BASE, { waitUntil: 'networkidle0' });
-await p.evaluate(async () => { localStorage.clear(); localStorage.setItem('koko-nav','sheet'); const S = await import('/store.js'); S.signIn({ email: 'r@example.test' }); S.updateMe({ handle: 'rahim', name: 'Rahim', onboarded: true }); await S.setDemo(true); S.setFlag('coachDone'); localStorage.setItem('bites-scope', JSON.stringify({ mode:'crew' })); S.flush(); });
+await p.evaluate(async () => { localStorage.clear(); const S = await import('/store.js'); S.signIn({ email: 'r@example.test' }); S.updateMe({ handle: 'rahim', name: 'Rahim', onboarded: true }); await S.setDemo(true); S.setFlag('coachDone'); localStorage.setItem('bites-scope', JSON.stringify({ mode:'crew' })); S.flush(); });
 await p.goto(BASE, { waitUntil: 'networkidle0' }); await sleep(2200);
 const res = []; const ok = (name, cond, info) => { res.push((cond ? 'ok   ' : 'FAIL ') + name + (info !== undefined ? '  ' + JSON.stringify(info) : '')); };
 const st = () => p.evaluate(() => ({ stop: document.querySelector('#mSheet')?.dataset.stop, top: Math.round(document.querySelector('#mSheet')?.getBoundingClientRect().top), scroll: document.querySelector('#mSheet .ms-body')?.scrollTop, hist: history.length }));
@@ -17,7 +17,7 @@ const centre = () => p.evaluate(async () => { const M = await import('/map.js');
 const swipe = async (x, y0, y1, ms = 250, steps = 12) => { await p.touchscreen.touchStart(x, y0); for (let i = 1; i <= steps; i++){ await p.touchscreen.touchMove(x, y0 + (y1 - y0) * i / steps); await sleep(ms / steps); } await p.touchscreen.touchEnd(); await sleep(500); };
 const shot = async n => { if (OUT) await p.screenshot({ path: `${OUT}/${n}.jpg`, type:'jpeg', quality:80 }); };
 
-let s = await st(); ok('starts at peek, List tab gone', s.stop === 'peek' && await p.evaluate(() => getComputedStyle(document.querySelector('#nav [data-tab="list"]')).display === 'none'), s);
+let s = await st(); ok('starts at peek, no List tab', s.stop === 'peek' && await p.evaluate(() => !document.querySelector('#nav [data-tab="list"]')), s);
 await shot('spike-peek');
 const pk = await p.evaluate(async () => { const M = await import('/map.js'); const body = document.querySelector('#mSheet .ms-body').getBoundingClientRect(), tab = document.querySelector('#lTab').getBoundingClientRect();
   const next = [...document.querySelectorAll('#listView .list-inner > *')].find(e => e.getBoundingClientRect().top > tab.bottom + 1);
@@ -63,7 +63,7 @@ const bar = await p.evaluate(() => {
   return { order: btns.map(b => b.id === 'navLog' ? '+' : b.textContent.replace(/^(map|group|auto_stories)/, '').trim()),
     small: btns.map(b => b.getBoundingClientRect()).filter(r => r.width < 44 || r.height < 44).length,
     gaps: btns.slice(1).map((b, i) => btns[i + 1].id === 'navLog' || btns[i].id === 'navLog' ? 99 : labs[i + 1][0] - labs[i][1]),
-    header: document.querySelector('.app-header').hidden,
+    header: !document.querySelector('.app-header'),
     youFace: !!document.querySelector('.nav-you .you-face .av'), youRing: getComputedStyle(document.querySelector('.nav-you')).getPropertyValue('--you-c').trim() };
 });
 ok('layout B: Map, Crew, +, Scrapbook, You; no header', bar.order.join() === 'Map,Crew,+,Scrapbook,You' && bar.header, bar);

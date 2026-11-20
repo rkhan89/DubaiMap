@@ -1,24 +1,14 @@
-// Step 4: the map sheet and layout B (Map · Crew · + · Scrapbook · You). A panel over the map with three heights
-// (peek, half, full) that holds what the List tab showed. On by default since 2026-11-19; ?nav=old turns the old
-// navigation back on for this phone (it stays until ?nav=sheet).
+// The map sheet and layout B (Map · Crew · + · Scrapbook · You). A panel over the map with three heights
+// (peek, half, full) that holds the places list. The only navigation since 2026-11-20 (the old List tab, header and
+// ?nav=old are gone).
 //
-// What it tries out, before any route moves:
+// How it behaves:
 //   - dragging the sheet never pans the map (the sheet sits outside the map's touch area, and stops the events)
 //   - at peek and half the whole sheet drags; at full its list scrolls, and pulling down from the top drags it again
 //   - Android back (and a swipe back) lowers it a step instead of leaving the app
 //   - Safari's rubber band can't pull the page: the list contains its own overscroll
 import { back, pushBackLayer, icon } from './ui.js';
 import { avatarHTML } from './avatar.js';
-
-const KEY = 'koko-nav';
-export function sheetFlag(){
-  try{
-    const q = new URLSearchParams(location.search).get('nav');
-    if (q === 'old') localStorage.setItem(KEY, 'old');
-    if (q === 'sheet') localStorage.removeItem(KEY);
-    return localStorage.getItem(KEY) !== 'old';
-  }catch(_){ return new URLSearchParams(location.search).get('nav') !== 'old'; }
-}
 
 // heights, as the sheet's top edge measured from the bottom of the map area. Peek ends just under peekTo()
 // (the Feed / Places switch), so nothing shows half cut off; 148 until that can be measured.
@@ -113,22 +103,11 @@ export function mountSheet({ host, list, onStop, peekTo }){
   return { go, get stop(){ return el.dataset.stop; }, get peek(){ return peek; }, el };
 }
 
-// Step 4, layout B (behind the same flag): Map · Crew · + · Scrapbook · You. The header goes; the bell floats
-// over the map beside search; You is your own face in a ring of your pin colour (gold stays for check-in).
-export function mountNavB({ nav, header, bell, mapTop }){
+// Layout B: Map · Crew · + · Scrapbook · You (index.html). You is your own face in a ring of your pin colour
+// (gold stays for check-in); the bell sits beside the map's search.
+export function mountNavB({ nav }){
   document.body.classList.add('nav-b');
-  const crew = nav.querySelector('[data-tab="crew"]'), plus = nav.querySelector('#navLog');
-  nav.insertBefore(crew, plus);                                    // Map · Crew · + · …
-  const you = document.createElement('button');
-  you.className = 'nav-you'; you.dataset.tab = 'you';               // a tab of its own: your profile, no back arrow you.setAttribute('aria-label', 'You: profile and settings');
-  you.innerHTML = '<span class="you-face"></span><span>You</span>';
-  nav.appendChild(you);
-  // the bell leaves the header for the map's search row
-  const search = mapTop.querySelector('#mapSearch'), row = document.createElement('div');
-  row.className = 'map-search-row';
-  mapTop.insertBefore(row, search); row.append(search, bell);
-  bell.classList.add('map-bell');
-  header.hidden = true;
+  const you = nav.querySelector('.nav-you');
   return function paint(me, color){
     you.style.setProperty('--you-c', color);
     you.querySelector('.you-face').innerHTML = me ? avatarHTML(me, 24) : icon('person');

@@ -28,9 +28,9 @@ import { paintStrip, onThisDay, openMemory } from './memories.js';
 import './rate.js';
 import './critterui.js';
 import { openLandmark } from './landmarkui.js';
-import { sheetFlag, mountSheet, mountNavB } from './sheet.js';
+import { mountSheet, mountNavB } from './sheet.js';
 let paintYou = null;   // step 4, layout B: the You tab
-let sheet = null;   // step 4 spike: the map sheet (?nav=sheet)
+let sheet = null;   // the map sheet (mounted at boot)
 import { mountMapSearch } from './searchui.js';
 import { checkAiTags, tagAfterUpload } from './aitags.js';
 S.onPhotoSaved(id=>tagAfterUpload(id));
@@ -48,8 +48,6 @@ function saveScope(){ try{ localStorage.setItem(scopeKey, JSON.stringify({mode:s
    ========================================================= */
 function applyBrand(){
   document.title = APP.name;
-  $('#brandName').setAttribute('aria-label', APP.name);
-  $('#brandTag').textContent = APP.tagline;
 }
 function paintProfileButtons(){
   const me=S.me();
@@ -114,7 +112,7 @@ function rebuild(){
   // filter dot
   const filtered = isFiltered();
   $('#btnFilter').classList.toggle('filtered', filtered);
-  if (state.view==='list' || sheet) renderList();
+  renderList();
   paintProfileButtons();
   // open screens that know how to repaint (profile, crew, critters, shelf) show the change too
   document.querySelectorAll('#screens .screen').forEach(s=>{ if (s._repaint) try{ s._repaint(); }catch(_){} });
@@ -195,7 +193,7 @@ go.activity = openActivity;
 /* ---------- peek card ---------- */
 let peekId=null;
 function showPeek(venueId){
-  sheet && sheet.go(0);   // (spike) the place card comes up over a lowered sheet
+  sheet && sheet.go(0);   // the place card comes up over a lowered sheet
   const v=S.venue(venueId); if (!v) return;
   const sum=M.venueSummary(v, {...scope(), members:null});
   peekId=venueId;
@@ -347,7 +345,7 @@ go.filters = openFilters;
 /* =========================================================
    LIST VIEW (feed)
    ========================================================= */
-let listQuery='', listSort='recent', listCat=null;
+let listSort='recent', listCat=null;
 // List shows the feed or the Places record (remembered on this phone)
 const listTabHTML = tab => `<div class="seg" id="lTab" role="tablist" aria-label="List view"><button role="tab" data-tab-l="feed" aria-selected="${tab==='feed'}" class="${tab==='feed'?'on':''}">${icon('auto_stories')}Feed</button><button role="tab" data-tab-l="places" aria-selected="${tab==='places'}" class="${tab==='places'?'on':''}">${icon('storefront')}Places</button></div>`;
 function bindListTab(el){ el.querySelector('#lTab').addEventListener('click', e=>{ const b=e.target.closest('[data-tab-l]'); if (!b) return; setPref('listTab', b.dataset.tabL); renderList(); el.scrollTop = 0; }); }
@@ -364,8 +362,6 @@ function renderList(){
   let items = modelCache.filter(s=>s.state!=='unlit');
   const byCat={}; items.forEach(s=>(s.v.categories||[]).forEach(c=>byCat[c]=(byCat[c]||0)+1));
   if (listCat) items = items.filter(s=>(s.v.categories||[]).includes(listCat));
-  const q=sheet ? '' : listQuery.trim().toLowerCase();   // in the map sheet the map's own search bar does this
-  if (q) items = items.filter(s=>{ const z=MAP.zoneById(s.v.zone); return [s.v.name, z?z.label:'', ...s.entries.map(e=>e.notes||'')].join(' ').toLowerCase().includes(q); });
   const lastTs = s=>Math.max(0,...s.entries.map(e=>e.createdAt));
   if (listSort==='rating') items.sort((a,b)=>b.rating-a.rating);
   else if (listSort==='name') items.sort((a,b)=>a.v.name.localeCompare(b.v.name));
@@ -375,21 +371,17 @@ function renderList(){
   const hidden = sc.mode==='crew' ? 0 : M.mapModel({...sc, privacy:'all', cats:null, status:{been:true,want:true}}).filter(s=>s.state!=='unlit').length - meCount;
   const unlitCount = modelCache.filter(s=>s.state==='unlit').length;
   el.innerHTML = `<div class="list-inner">${listTabHTML('feed')}
-    ${sheet ? '' : `<div class="search-row mt16"><label class="search">${icon('search')}<input id="lq" type="search" placeholder="Search ${items.length} spots…" value="${esc(listQuery)}" aria-label="Search"></label>
-      <button class="sq-btn${isFiltered()?' filtered':''}" id="lFilter" aria-label="Filters">${icon('tune')}</button></div>`}
-    <div class="${sheet ? 'ms-mode mt16' : ''}"><div class="seg${sheet ? '' : ' mt16'}" id="lMode"><button data-v="me" class="${sc.mode==='me'?'on':''}">Me <em>${meCount}</em></button><button data-v="crew" class="${sc.mode==='crew'?'on':''}">Crew <em>${crewCount}</em></button></div>
-      ${sheet ? `<button class="sq-btn${isFiltered()?' filtered':''}" id="lFilter" aria-label="Filters">${icon('tune')}</button>` : ''}</div>
+    <div class="ms-mode mt16"><div class="seg" id="lMode"><button data-v="me" class="${sc.mode==='me'?'on':''}">Me <em>${meCount}</em></button><button data-v="crew" class="${sc.mode==='crew'?'on':''}">Crew <em>${crewCount}</em></button></div>
+      <button class="sq-btn${isFiltered()?' filtered':''}" id="lFilter" aria-label="Filters">${icon('tune')}</button></div>
     <div class="chip-scroll mt16" id="lCats">
       <button class="person-chip${!listCat?' on':''}" data-c="" style="padding-left:var(--sp-3)">All <em>${modelCache.filter(s=>s.state!=='unlit').length}</em></button>
       ${cats.map(c=>`<button class="person-chip${listCat===c?' on':''}" data-c="${c}" style="padding-left:var(--sp-2)"><span style="width:26px;height:26px;display:flex">${iconSvg(c, catById(c).color)}</span>${esc(catById(c).label)} <em>${byCat[c]}</em></button>`).join('')}
     </div>
     <div class="feed-head"><span class="hand">${sc.mode==='crew' && crew ? `${esc(crew.name)} shared feed` : 'Your scrapbook'}</span>
       <select class="sort-sel" id="lSort" aria-label="Sort">${[['recent','Recent visits'],['rating','Top rated'],['visits','Most visited'],['name','A–Z']].map(([v,l])=>`<option value="${v}"${listSort===v?' selected':''}>${l}</option>`).join('')}</select></div>
-    ${items.map(feedCardHTML).join('') || `<div class="empty">${stampHTML('unlit',{cat:'coffee', big:true})}<h3 class="h-md">${q?'Nothing matches that':'No stamps yet'}</h3><p class="muted">${q?'Try another name, area or dish.':'Pin your first place with the + button. It lands on your map as a stamp.'}</p></div>`}
+    ${items.map(feedCardHTML).join('') || `<div class="empty">${stampHTML('unlit',{cat:'coffee', big:true})}<h3 class="h-md">No stamps yet</h3><p class="muted">Pin your first place with the + button. It lands on your map as a stamp.</p></div>`}
     ${items.length?`<div class="feed-end"><span class="tag soft">${icon('local_activity')}End of scrapbook page</span><span class="hand">${hidden>0?`${plural(hidden,'more entry','more entries')} hidden by your filters`:`${unlitCount} undiscovered spots still on the map`}</span></div>`:''}
   </div>`;
-  const lq=el.querySelector('#lq');
-  if (lq) lq.addEventListener('input', ()=>{ listQuery=lq.value; const pos=lq.selectionStart; renderList(); const n=$('#lq'); n.focus(); n.setSelectionRange(pos,pos); });
   el.querySelector('#lFilter').onclick=openFilters; bindListTab(el);
   el.querySelector('#lMode').addEventListener('click', e=>{ const b=e.target.closest('button'); if (!b) return; scope().mode=b.dataset.v; scope().members=null; saveScope(); rebuild(); });
   el.querySelector('#lCats').addEventListener('click', e=>{ const b=e.target.closest('[data-c]'); if (!b) return; listCat=b.dataset.c||null; renderList(); });
@@ -430,17 +422,15 @@ function navOn(t){ $$('#nav [data-tab]').forEach(b=>{ const on=b.dataset.tab===t
 function switchView(v){
   state.view=v;
   navOn(v);
-  $('#mapView').classList.toggle('active', v==='map');
-  $('#listView').classList.toggle('active', v==='list');
-  $('#listView').classList.toggle('list-view', true);
-  if (v==='map'){ MAP.resize(); } else renderList();
+  $('#mapView').classList.add('active');
+  MAP.resize();
   hidePeek();
 }
 go.switchView = switchView;
 // Tabs work as on iPhone: switching is instant and starts from that tab's own page;
 // tapping the tab you're already in goes back to its top. Crew and Shelf are pages of
-// their own (tab roots); Map and List are the views underneath everything.
-const tabRoot = { crew:go.crew, shelf:go.shelf, you:()=>go.profile(null, { tab:'you' }) };   // you: layout B
+// their own (tab roots); the Map (with its sheet) is the view underneath everything.
+const tabRoot = { crew:go.crew, shelf:go.shelf, you:()=>go.profile(null, { tab:'you' }) };
 function toTab(t){
   const root=rootLayer();
   if (root && root.tab===t){
@@ -514,13 +504,11 @@ async function boot(){
     },
   });
   MAP.whenReady(()=>{ $('#mapLoading').classList.add('done'); });
-  if (sheetFlag()){
-    sheet = mountSheet({ host:$('#mapView'), list:$('#listView'), peekTo:()=>$('#lTab') }); renderList(); sheet.go(0, false);
-    paintYou = mountNavB({ nav:$('#nav'), header:$('.app-header'), bell:$('#btnBell'), mapTop:$('.map-top') }); paintProfileButtons();
-    // the map frames pins in the strip between the search bar and the sheet's peek
-    const insets=()=>{ const r=$('#mapView').getBoundingClientRect(); MAP.setInsets(Math.round($('.map-top').getBoundingClientRect().bottom - r.top), sheet.peek); };
-    insets(); if (window.ResizeObserver) new ResizeObserver(insets).observe($('#mapView'));
-  }
+  sheet = mountSheet({ host:$('#mapView'), list:$('#listView'), peekTo:()=>$('#lTab') }); renderList(); sheet.go(0, false);
+  paintYou = mountNavB({ nav:$('#nav') }); paintProfileButtons();
+  // the map frames pins in the strip between the search bar and the sheet's peek
+  const insets=()=>{ const r=$('#mapView').getBoundingClientRect(); MAP.setInsets(Math.round($('.map-top').getBoundingClientRect().bottom - r.top), sheet.peek); };
+  insets(); if (window.ResizeObserver) new ResizeObserver(insets).observe($('#mapView'));
   paintMe();
   const join = new URLSearchParams(location.search).get('join');
   if (join){ state.pendingJoin = join.toUpperCase(); history.replaceState(null,'',location.pathname); }

@@ -69,7 +69,7 @@ export default async function spacing(h){
   await close();
   await state('bell', ()=>go(async ()=>{ const {go}=await import('/go.js'); go.activity(); }));
   await close();
-  await state('list', ()=>go(()=>(document.querySelector('[data-tab="list"]:not([hidden])')?.offsetParent ? document.querySelector('[data-tab="list"]').click() : (document.querySelector('.ms-grab').click(), document.querySelector('.ms-grab').click()))));
+  await state('list', ()=>go(()=>(document.querySelector('.ms-grab').click(), document.querySelector('.ms-grab').click())));
   // the Places record on List (Job 4): the list, filters on, nothing matching, a place with all its details
   await state('places', ()=>go(()=>document.querySelector('[data-tab-l="places"]').click()));
   await state('places-filtered', ()=>go(()=>{ document.querySelector('[data-area]')?.click(); document.querySelector('[data-ptag]')?.click(); }));
@@ -119,7 +119,7 @@ export default async function spacing(h){
   await h.js(async ()=>{ const S=await import('/store.js'); const v=S.venues().find(v=>v.name==='Ravi Restaurant'); S.updateVenue(v.id, { name:'Ravi Restaurant and the Very Long Name Karak and Paratha House of Satwa' }); });
   await state('long-place', ()=>go(async ()=>{ const S=await import('/store.js'), {go}=await import('/go.js'); go.place(S.venues().find(v=>v.name.startsWith('Ravi')).id); }));
   await close();
-  await state('long-list', ()=>go(()=>(document.querySelector('[data-tab="list"]:not([hidden])')?.offsetParent ? document.querySelector('[data-tab="list"]').click() : (document.querySelector('.ms-grab').click(), document.querySelector('.ms-grab').click()))));
+  await state('long-list', ()=>go(()=>(document.querySelector('.ms-grab').click(), document.querySelector('.ms-grab').click())));
   await state('long-places', ()=>go(()=>document.querySelector('[data-tab-l="places"]').click()));
   await h.js(()=>{ document.querySelector('[data-tab-l="feed"]')?.click(); });
   await state('long-book', ()=>go(async ()=>{ const S=await import('/store.js'), {go}=await import('/go.js'); go.book(S.books().find(b=>b.kind==='personal').id); }));

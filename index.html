@@ -38,14 +38,6 @@
 <body>
 <div id="app" class="app">
 
-  <header class="app-header">
-    <div class="brand">
-      <div><h1 class="brand-name"><span class="wordmark" id="brandName" role="img" aria-label="Koko"></span></h1><span class="hand" id="brandTag"></span></div>
-    </div>
-    <button class="icon-btn bell-btn" id="btnBell" aria-label="Crew activity"><span class="ms">notifications</span><i class="bell-dot" hidden></i></button>
-    <button class="profile-btn" data-act="profile" aria-label="Your profile"></button>
-  </header>
-
   <main id="views">
     <!-- MAP -->
     <section id="mapView" class="view active">
@@ -54,7 +46,10 @@
         <div id="mapOverlay"></div>
 
         <div class="map-top map-ui">
-          <div id="mapSearch" class="map-search"></div>
+          <div class="map-search-row">
+            <div id="mapSearch" class="map-search"></div>
+            <button class="icon-btn bell-btn map-bell" id="btnBell" aria-label="Crew activity"><span class="ms">notifications</span><i class="bell-dot" hidden></i></button>
+          </div>
           <div class="sync-pill" id="syncPill" role="status" hidden></div>
           <div class="map-top-row">
             <div class="seg seg-mode" id="mapMode"></div>
@@ -88,10 +83,10 @@
 
   <nav class="bottomnav" id="nav">
     <button data-tab="map" class="on"><span class="ms">map</span><span>Map</span></button>
-    <button data-tab="list"><span class="ms">format_list_bulleted</span><span>List</span></button>
-    <button class="nav-log" id="navLog" aria-label="Log a place"><span class="ms">add</span></button>
     <button data-tab="crew"><span class="ms">group</span><span>Crew</span></button>
+    <button class="nav-log" id="navLog" aria-label="Log a place"><span class="ms">add</span></button>
     <button data-tab="shelf"><span class="ms">auto_stories</span><span>Scrapbook</span></button>
+    <button class="nav-you" data-tab="you" aria-label="You: profile and settings"><span class="you-face"></span><span>You</span></button>
   </nav>
 </div>
 

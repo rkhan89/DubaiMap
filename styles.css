@@ -290,11 +290,7 @@ textarea.input{min-height:110px;resize:none;line-height:1.45;}
    APP SHELL
    ========================================================= */
 .app{display:flex;flex-direction:column;height:100vh;height:100dvh;}
-.app-header{display:flex;align-items:center;gap:var(--sp-2);padding:calc(var(--sp-2) + var(--safe-t)) var(--gutter) var(--sp-2);background:var(--surface);z-index:20;position:relative;flex:none;box-shadow:0 1px 8px rgba(var(--shade),.04);}
-.brand{display:flex;align-items:center;gap:var(--sp-2);margin-right:auto;min-width:0;}
 
-.brand h1{font-size:21px;font-weight:800;line-height:1.1;}
-.brand .hand{font-size:12.5px;display:block;}
 #views{flex:1;position:relative;overflow:hidden;}
 .view{position:absolute;inset:0;display:none;}
 .view.active{display:block;}
@@ -471,7 +467,6 @@ textarea.input{min-height:110px;resize:none;line-height:1.45;}
 /* =========================================================
    LIST VIEW
    ========================================================= */
-.list-view{overflow-y:auto;padding:var(--sp-3) var(--gutter) calc(var(--sp-4) + var(--safe-b));}
 .list-inner{max-width:620px;margin:0 auto;}
 .search-row{display:flex;gap:var(--sp-2);}
 .search{flex:1;display:flex;align-items:center;gap:var(--sp-2);height:52px;border-radius:var(--r-lg);padding:0 var(--sp-3);box-shadow:inset 0 0 0 1px var(--line);background:var(--card);}
@@ -936,8 +931,6 @@ html{overflow:hidden;}
    SVG's 258:100 proportions, with clear space of at least the dot's height around it.
    ========================================================= */
 .wordmark{display:block;aspect-ratio:258/100;height:24px;background:var(--wordmark) center/contain no-repeat;}
-.brand-name{margin:0;padding:var(--sp-1) 0 var(--sp-1);line-height:0;}
-.brand .hand{margin-top:2px;}
 .w-brand{margin:var(--sp-3) 0 var(--sp-1);padding:var(--sp-3);line-height:0;}
 .w-brand .wordmark{height:64px;}
 .w-invite{width:100%;display:flex;align-items:center;gap:var(--sp-3);background:var(--card);border-radius:var(--r-lg);padding:var(--sp-3) var(--sp-3);margin:calc(var(--sp-2) * -1) 0 var(--sp-3);box-shadow:var(--shadow-sm);}
@@ -1402,15 +1395,13 @@ html.still .mem-strip.in{opacity:1;}
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 body{font-size:15px;text-rendering:optimizeLegibility;}
 /* landscape: keep chrome and reading columns clear of the notch / Dynamic Island */
-.app-header{padding-left:max(var(--gutter),var(--safe-l));padding-right:max(var(--gutter),var(--safe-r));}
 .bottomnav{padding-left:max(var(--sp-2),var(--safe-l));padding-right:max(var(--sp-2),var(--safe-r));}
 .topbar{padding-left:max(var(--gutter),var(--safe-l));padding-right:max(var(--gutter),var(--safe-r));}
 .screen-body{padding-left:max(var(--gutter),var(--safe-l));padding-right:max(var(--gutter),var(--safe-r));}
-.list-view{padding-left:max(var(--gutter),var(--safe-l));padding-right:max(var(--gutter),var(--safe-r));}
 .toast{max-width:calc(100% - 32px - var(--safe-l) - var(--safe-r));}
 
 /* chrome is for tapping, not selecting: no text selection, no long-press callout */
-:is(.bottomnav,.app-header,.topbar,.sheet-handle,.seg,.toast,.map-ctrl,.ksearch-x),
+:is(.bottomnav,.topbar,.sheet-handle,.seg,.toast,.map-ctrl,.ksearch-x),
 button,.btn,.icon-btn,.cat-chip,.person-chip,.switch{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
 
 /* typing never zooms the page: iOS zooms into any field under 16px */
@@ -1908,7 +1899,6 @@ body.public-page{background:var(--surface);min-height:100vh;}
 /* the map's own buttons ride above the sheet */
 body.nav-sheet .map-ctrl{bottom:calc(var(--sheet-y, 148px) + var(--sp-3));transition:bottom .32s cubic-bezier(.2,.9,.3,1);}
 body.nav-sheet .mem-strip{display:none;}
-body.nav-sheet #nav [data-tab="list"]{display:none;}
 body.nav-sheet .peek{z-index:19;}
 /* STEP 4, layout B (same flag): Map · Crew · + · Scrapbook · You; no header, the bell beside search */
 body.nav-b{--plus-clear:24px;}
